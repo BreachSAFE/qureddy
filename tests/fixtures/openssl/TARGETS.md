@@ -1,0 +1,75 @@
+# TLS Test Targets — MVP 0.1
+
+Live targets used by two things:
+
+1. **Fixture capture** — recorded outputs from these targets get saved here, under `tests/fixtures/openssl/`, and parser unit tests consume them.
+2. **Network-dependent tests** — per `docs/CODING_RULES.md`, every test runs every time, including tests that hit real targets. Those tests connect to the targets below directly. There is no "smoke" carve-out and no skip-by-default.
+
+Targets in this file are the canonical set the suite hits. When CI fails because a target is unreachable, investigate before re-running; that is a real signal, not noise.
+
+## PQ-deployed (should negotiate `X25519MLKEM768`)
+
+| Target | Notes |
+|---|---|
+| `pq.cloudflareresearch.com` | Cloudflare Research's explicit PQ test endpoint. Primary positive fixture source. |
+| `www.cloudflare.com` | Cloudflare flipped PQ to default site-wide; should negotiate hybrid. |
+| `www.google.com` | Google rolled out X25519MLKEM768 to most properties; varies by region/edge. |
+| `www.facebook.com` | Meta enabled hybrid PQ at the load balancer. |
+| `kms.us-east-1.amazonaws.com` | AWS KMS PQ TLS rollout (Nov 2025). Important for the financial-services positioning story. |
+
+## Classical baseline (should negotiate `X25519`, not hybrid)
+
+| Target | Notes |
+|---|---|
+| `example.com` | RFC 2606 reserved. Stable baseline that will not negotiate PQ. |
+| `www.example.org` | RFC 2606 reserved. Useful if it stays on classical TLS. |
+
+## SNI handling
+
+| Target | Invocation | Tests |
+|---|---|---|
+| `1.1.1.1` | `qureddy scan tls 1.1.1.1:443 --sni one.one.one.one` | `--sni` flag against an IP target. |
+
+## Edge cases — `badssl.com` suite
+
+The canonical TLS edge-case test surface. Stable, public, exhaustive. Capture fixtures from at least these:
+
+| Target | Tests | Expected category |
+|---|---|---|
+| `expired.badssl.com` | Expired certificate | scan completes, finding emitted; not `tls_handshake_failed` |
+| `self-signed.badssl.com` | Self-signed cert chain | same; do not silently disable verification |
+| `untrusted-root.badssl.com` | Cert signed by an untrusted CA | same |
+| `wrong.host.badssl.com` | Common-name / SAN mismatch | same |
+| `revoked.badssl.com` | OCSP-revoked cert | same |
+| `tls-v1-0.badssl.com:1010` | Forces TLS 1.0 only | `tls_handshake_failed` (we require TLS 1.3) |
+| `tls-v1-1.badssl.com:1011` | Forces TLS 1.1 only | `tls_handshake_failed` |
+| `tls-v1-2.badssl.com:1012` | Forces TLS 1.2 only | `tls_handshake_failed` (we require TLS 1.3) |
+
+The bad-cert cases are the critical ones. The MVP must record them as findings, not bail with "couldn't connect." The "Disabled TLS verification" anti-pattern in `docs/AGENT_ANTIPATTERNS.md` is non-negotiable.
+
+## Failure categories — fixture mapping
+
+Every failure category in `docs/mvp/MVP-0.1-CLAUDE-PROMPT.md` needs at least one captured fixture. Suggested target for each:
+
+| Failure category | Capture from |
+|---|---|
+| `local_openssl_missing` | Synthesize: rename `openssl` binary or set `--openssl /nonexistent`. |
+| `local_openssl_too_old` | Synthesize: point `--openssl` at an older OpenSSL binary if available. |
+| `local_openssl_lacks_group` | Synthesize: same approach, or use OpenSSL 3.4. |
+| `target_connect_failed` | A non-routable host like `192.0.2.1:443` (RFC 5737 TEST-NET-1). |
+| `tls_handshake_failed` | `tls-v1-0.badssl.com:1010`. |
+| `sni_required_or_wrong` | A virtual-hosted target that 421s without correct SNI. |
+| `middlebox_or_mtu_failure` | Hard to reproduce reliably; capture opportunistically if encountered. |
+| `parse_no_group` | Synthesize by editing a captured trace, or use a target with unusual output. |
+| `parse_ambiguous` | Synthesize by editing a captured fixture. |
+| `unexpected_group` | Synthesize: scan with `-groups secp256r1` and check parser rejects it. |
+
+## Fixture capture protocol
+
+1. Run the probe command from `docs/mvp/MVP-0.1-CLAUDE-PROMPT.md` against the target.
+2. Save raw output to `tests/fixtures/openssl/<descriptive_name>.txt`.
+3. Redact anything host-specific that the parser doesn't need (cert PEM bodies, IP addresses in cert subjects).
+4. Add a one-line comment at the top of the fixture noting source target and date captured.
+5. Reference the fixture from a test in `tests/test_tls_parse.py`.
+
+After fixture capture, all unit tests run offline forever. Re-capture only if OpenSSL output format changes between versions.
