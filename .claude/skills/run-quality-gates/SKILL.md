@@ -53,7 +53,39 @@ bandit -r src/qureddy
 
 Pass criterion: 0 findings at MEDIUM or higher. LOW findings are reported but do not block.
 
-### 5. Secret scan on diff
+### 5. Dependency vulnerability scan
+
+```
+pip-audit
+```
+
+Pass criterion: 0 HIGH or CRITICAL CVEs. MEDIUM and below reported but do not block. Failures here often reflect upstream CVE disclosures, not your code — investigate, do not lower the threshold.
+
+### 6. Dependency hygiene
+
+```
+deptry .
+```
+
+Pass criterion: exit code 0. Catches dependencies declared in `pyproject.toml` but unused, and imports without a corresponding declared dependency.
+
+### 7. License header compliance
+
+```
+reuse lint
+```
+
+Pass criterion: exit code 0. Every source file has an SPDX header (`# SPDX-License-Identifier: Apache-2.0`).
+
+### 8. Semgrep (report-only at MVP 0.1)
+
+```
+semgrep scan --config auto .
+```
+
+Findings are reported but **do not block** MVP 0.1. Semgrep promotes to blocking once false-positive baseline is tuned (later milestone). Do not silence Semgrep findings in code without an explicit `# nosemgrep:<rule-id>  # <reason>` comment.
+
+### 9. Secret scan on diff
 
 If `gitleaks` is installed:
 
@@ -69,7 +101,7 @@ trufflehog filesystem --no-update .
 
 Pass criterion: 0 verified secrets. Unverified detections are reported but do not block.
 
-### 6. Tests with coverage
+### 10. Tests with coverage
 
 ```
 pytest --cov=qureddy --cov-fail-under=80
@@ -81,7 +113,7 @@ Pass criterion: exit code 0. All tests run. Coverage >= 80%.
 
 If the test runs ended with `Rerun:` markers, that means a transient failure was absorbed. Note this in the output but do not flag as a failure.
 
-### 7. Audit script (when it exists)
+### 11. Audit script (when it exists)
 
 ```
 python scripts/audit_phase.py
@@ -100,16 +132,21 @@ Produce this exact structure. **Every row must reflect what actually happened.**
 
 | Gate | Command | Status | Notes |
 |---|---|---|---|
-| Lint | `ruff check .` | PASS / FAIL / NOT RUN | (1-line summary or reason) |
+| Lint | `ruff check .` | PASS / FAIL / NOT RUN | |
 | Format check | `ruff format --check .` | PASS / FAIL / NOT RUN | |
 | Type check | `mypy src/qureddy --strict` | PASS / FAIL / NOT RUN | |
-| Static security | `bandit -r src/qureddy` | PASS / FAIL / NOT RUN | |
-| Secret scan | `gitleaks detect ...` | PASS / FAIL / NOT RUN | |
-| Tests + coverage | `pytest --cov=...` | PASS / FAIL / NOT RUN | N tests, X% coverage |
+| Static security | `bandit -r src/qureddy` | PASS / FAIL / NOT RUN | MEDIUM threshold |
+| Dep CVEs | `pip-audit` | PASS / FAIL / NOT RUN | HIGH/CRITICAL block |
+| Dep hygiene | `deptry .` | PASS / FAIL / NOT RUN | unused / missing imports |
+| License headers | `reuse lint` | PASS / FAIL / NOT RUN | SPDX on every source file |
+| Semgrep (report-only) | `semgrep scan --config auto .` | PASS / FAIL / NOT RUN | findings reported, do not block at MVP 0.1 |
+| Secret scan | `gitleaks detect ...` (or `trufflehog filesystem ...`) | PASS / FAIL / NOT RUN | which tool used |
+| Tests + coverage | `pytest --cov=qureddy --cov-fail-under=80` | PASS / FAIL / NOT RUN | N tests, X% coverage |
 | Audit script | `python scripts/audit_phase.py` | PASS / FAIL / NOT RUN / NOT YET PRESENT | |
 
 **Summary:**
-- All Tier 1 gates: PASS / N gates failed / N gates NOT RUN
+- All blocking gates: PASS / N gates failed / N gates NOT RUN
+- Semgrep findings (report-only): N (does not block)
 - Ready for merge: YES / NO (block on N failed) / NO (block on N not-run gates)
 
 **If any gate FAILED, the failure output (truncated to relevant lines):**
@@ -117,7 +154,7 @@ Produce this exact structure. **Every row must reflect what actually happened.**
 [paste]
 ```
 
-**If any gate was NOT RUN, the reason:**
+**If any gate was NOT RUN, the reason per gate:**
 - Lint: tool not installed / command syntax error / etc.
 ```
 

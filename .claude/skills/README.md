@@ -8,10 +8,10 @@ Skills are **lazily loaded**: the agent reads each skill's description (the YAML
 
 | Skill | When the agent invokes it |
 |---|---|
-| `mvp-implement` | Implementing or extending MVP 0.1 (TLS scanner). Authoritative spec for the current milestone. |
+| `mvp-implement` | Implementing or extending MVP 0.1 (TLS scanner). Self-contained operational authority for the current milestone. |
 | `audit-pr` | Before opening or finalizing a pull request. Walks the diff against `docs/CODING_RULES.md` and produces the PR-template output. |
 | `write-test-fixture` | Adding a new captured OpenSSL fixture under `tests/fixtures/openssl/`. |
-| `self-scan` | Running QuReddy against its own canonical target list and capturing artifacts. |
+| `run-quality-gates` | Pre-final-response check on any code-touching task. Runs the Tier 1 enterprise-grade gates (ruff, mypy, pytest+coverage, bandit, pip-audit, deptry, reuse, semgrep, secret scan) and produces structured PASS/FAIL/NOT RUN output. |
 
 ## For human contributors
 

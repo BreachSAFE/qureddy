@@ -40,6 +40,7 @@ Read these in priority order. Skim only the first; the rest you read when releva
 | `docs/AGENT_ANTIPATTERNS.md` | Before responding to any task. Pre-response audit checklist. |
 | `docs/OSS_STANDARDS.md` | When making decisions about repo hygiene, releases, or community. |
 | `.claude/skills/<skill>/SKILL.md` | When the active task matches a skill. Skills are loaded lazily. |
+| `docs/EXAMPLES.md` | Before writing the first file in a new module. Good vs bad code patterns for Pydantic models, tests, subprocess, logging, exceptions, docstrings, CLI, JSON output. |
 | `tests/fixtures/openssl/TARGETS.md` | When writing or extending TLS scanner tests. |
 
 ## Skills
@@ -50,6 +51,7 @@ Operational workflows live under `.claude/skills/`. Read each skill's `SKILL.md`
 |---|---|
 | `mvp-implement` | Implementing or extending MVP 0.1 scanner code |
 | `audit-pr` | Preparing or finalizing a pull request |
+| `run-quality-gates` | Running ruff/mypy/pytest/bandit and reporting results without modifying files |
 | `write-test-fixture` | Capturing a new OpenSSL output fixture |
 
 See `.claude/skills/README.md` for the catalog.
@@ -129,6 +131,22 @@ Decisions marked **pending** in `docs/CODING_RULES.md` should not be treated as 
 | Architect / reviewer | Codex | Architecture decisions, dependency picks, design defenses |
 | Implementation hand | Claude | Code, docs, tests against the spec |
 | Project lead | Paul Volosen | Final calls, scope, roadmap, vendor/license calls |
+
+## Conflict resolution and escape hatches
+
+When instructions disagree, follow this priority order (from `docs/AGENT_ANTIPATTERNS.md`). Name the conflict in your response — do not silently pick one side:
+
+1. Hard security constraints (`docs/CODING_RULES.md` §26 security bar; refuse-insecure-shortcuts in §26.13)
+2. System / harness / tool constraints
+3. Repository documented rules (`docs/CODING_RULES.md`, `docs/AGENT_ANTIPATTERNS.md`, this file)
+4. The user's most recent instruction
+
+The user can override docs (4 over 3) but cannot override security (4 cannot override 1). If the user asks for `verify=False`, `shell=True`, removed timeouts, or similar: refuse the shortcut and propose the secure alternative.
+
+Two escape hatches exist when you must deviate from the rules — both go in your final response, not in code comments:
+
+- `ANTIPATTERN ACCEPTED: <name>, because <reason>` — for an intentional rule violation. The known accepted one for MVP 0.1 is the CycloneDX-flavored fields on `Asset`/`Finding` (schema stability before CBOM emission).
+- `ASSUMPTION: I am assuming X because the spec is silent on it. If wrong, change to Y.` — when the spec leaves a gap. Do not invent file paths, function names, or library APIs to fill it.
 
 ## How to start a session
 
