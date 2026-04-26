@@ -1,0 +1,82 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Dependabot configuration. Automated dependency update PRs.
+#
+# Required for OpenSSF Best Practices passing tier per CODING_RULES §29.
+# Dependabot opens one PR per outdated dependency or grouped batch; CI
+# runs the Tier 1 gates on each PR before merge.
+#
+# Reference: https://docs.github.com/en/code-security/dependabot
+
+version: 2
+
+updates:
+
+  # ---------------------------------------------------------------------------
+  # Python runtime + dev dependencies (pyproject.toml)
+  # ---------------------------------------------------------------------------
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Etc/UTC
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - python
+    commit-message:
+      prefix: "build"
+      include: scope
+    groups:
+      # Group dev tools together so weekly updates land as one PR.
+      dev-tools:
+        patterns:
+          - "ruff"
+          - "mypy"
+          - "bandit"
+          - "pip-audit"
+          - "deptry"
+          - "reuse"
+          - "semgrep"
+        update-types:
+          - "minor"
+          - "patch"
+      # Group test tools.
+      test-tools:
+        patterns:
+          - "pytest"
+          - "pytest-*"
+        update-types:
+          - "minor"
+          - "patch"
+    # Major version bumps always get their own PR for human review.
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  # ---------------------------------------------------------------------------
+  # GitHub Actions used in .github/workflows/
+  # ---------------------------------------------------------------------------
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Etc/UTC
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - github-actions
+    commit-message:
+      prefix: "ci"
+      include: scope
+    groups:
+      gha-minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"

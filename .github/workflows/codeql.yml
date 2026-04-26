@@ -1,0 +1,75 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# GitHub-native CodeQL static analysis.
+#
+# CodeQL is GitHub's SAST. Free for public repos. Catches taint flows,
+# dataflow issues, and language-specific security smells that ruff/bandit
+# do not. Required for OpenSSF Best Practices passing tier per CODING_RULES §29.
+#
+# Reference: https://github.com/github/codeql-action
+
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Wednesdays 08:00 UTC. Weekly scheduled scan even without PR activity.
+    - cron: "0 8 * * 3"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [python]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          # Use the security-extended queries pack for stricter coverage.
+          queries: +security-extended
+
+      - name: Set up Python 3.12
+        if: matrix.language == 'python'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install project (best-effort)
+        if: matrix.language == 'python'
+        run: |
+          # Pre-MVP: src/qureddy may not exist yet. Install dev extras only
+          # so CodeQL can resolve imports for the dev tools that do exist.
+          pip install --upgrade pip
+          if [ -d src/qureddy ]; then
+            pip install -e ".[dev]"
+          else
+            pip install -e ".[dev]" || echo "no installable package yet (pre-MVP)"
+          fi
+        continue-on-error: true
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"

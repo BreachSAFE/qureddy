@@ -1,0 +1,59 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# OpenSSF Scorecard weekly assessment.
+#
+# Scorecard scans the repo for OSS supply-chain best practices and
+# publishes a score. We target the OpenSSF Best Practices Badge:
+# passing tier by MVP 0.6, silver by v1.0. Per CODING_RULES §29.
+#
+# Reference: https://github.com/ossf/scorecard-action
+
+name: OpenSSF Scorecard
+
+on:
+  branch_protection_rule:
+  schedule:
+    # Mondays 06:00 UTC. Weekly cadence; not on every PR.
+    - cron: "0 6 * * 1"
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions: read-all
+
+jobs:
+  analysis:
+    name: Scorecard analysis
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write  # for SARIF upload
+      id-token: write         # for publish_results
+      contents: read
+      actions: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Run Scorecard
+        uses: ossf/scorecard-action@v2.4.0
+        with:
+          results_file: scorecard-results.sarif
+          results_format: sarif
+          # Publish results to https://api.securityscorecards.dev so the
+          # README badge stays current. Requires repo to be public.
+          publish_results: true
+
+      - name: Upload SARIF artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: scorecard-sarif
+          path: scorecard-results.sarif
+          retention-days: 90
+
+      - name: Upload to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: scorecard-results.sarif
