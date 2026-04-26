@@ -1,3 +1,4 @@
+# SPDX-FileCopyrightText: 2026 BreachSAFE
 # SPDX-License-Identifier: Apache-2.0
 # Pre-MVP skeleton. The [project] block stays minimal until MVP 0.1
 # implementation lands real source files. The [tool.*] blocks lock

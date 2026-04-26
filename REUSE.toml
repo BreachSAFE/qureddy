@@ -1,0 +1,66 @@
+version = 1
+
+# Project-wide REUSE annotations for files that don't carry inline
+# SPDX headers. Source files (Python, shell) carry inline
+# `# SPDX-FileCopyrightText` and `# SPDX-License-Identifier` headers
+# and are not annotated here.
+#
+# This block exists primarily for:
+#   - Markdown / documentation files that look noisy with shebang-style
+#     comment headers
+#   - GitHub templates that GitHub itself parses (issue / PR templates,
+#     CODEOWNERS, dependabot config) where a leading SPDX comment can
+#     interfere with rendering
+#   - Skill SKILL.md files that quote `SPDX-License-Identifier` inside
+#     backticks for documentation; reuse-lint mistakes the quoted form
+#     for an actual declaration. The override below tells reuse the
+#     skill files are Apache-2.0 regardless of any quoted patterns
+#     elsewhere in their body.
+
+[[annotations]]
+path = [
+    "README.md",
+    "CLAUDE.md",
+    "AGENTS.md",
+    "SECURITY.md",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "CODE_OF_CONDUCT.md",
+    "LICENSE",
+    "REUSE.toml",
+    ".gitignore",
+    ".gitattributes",
+    ".editorconfig",
+    "justfile",
+]
+SPDX-FileCopyrightText = "2026 BreachSAFE"
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+path = "docs/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 BreachSAFE"
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+path = ".github/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 BreachSAFE"
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+path = ".claude/**"
+precedence = "override"
+SPDX-FileCopyrightText = "2026 BreachSAFE"
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+path = "tests/fixtures/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 BreachSAFE"
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+path = "LICENSES/**"
+SPDX-FileCopyrightText = "2026 BreachSAFE"
+SPDX-License-Identifier = "Apache-2.0"
