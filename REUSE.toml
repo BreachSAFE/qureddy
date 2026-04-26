@@ -62,5 +62,9 @@ SPDX-License-Identifier = "Apache-2.0"
 
 [[annotations]]
 path = "LICENSES/**"
-SPDX-FileCopyrightText = "2026 BreachSAFE"
+# The Apache 2.0 license text itself is a work of the Apache Software
+# Foundation, not of BreachSAFE — attributing it correctly here keeps
+# REUSE-lint output honest and matches the convention upstream Apache
+# projects use.
+SPDX-FileCopyrightText = "2004 Apache Software Foundation"
 SPDX-License-Identifier = "Apache-2.0"
