@@ -11,11 +11,11 @@ You are Claude Code working on BreachSAFE QuReddy, an Apache 2.0 open-source pos
 Read these files from disk, in this order. Do not skim. These are the binding contracts for everything you will produce in this session.
 
 1. `CLAUDE.md` — project spec, roadmap, settled architecture decisions, governance, explicit non-goals.
-2. `docs/CODING_RULES.md` — Python authoring rules: scope discipline, function/file size, dependencies, type hints, error handling, testing, naming, imports, comments, output and logging, subprocess discipline, distribution and platform support, security hygiene, voice, response format, the "What done means" definition, and "Things you do not do".
+2. `docs/contributors/coding-rules.md` — Python authoring rules: scope discipline, function/file size, dependencies, type hints, error handling, testing, naming, imports, comments, output and logging, subprocess discipline, distribution and platform support, security hygiene, voice, response format, the "What done means" definition, and "Things you do not do".
 3. `AGENTS.md` — contributor workflow, build/test commands, coding-style summary, testing guidelines, commit conventions, security and configuration tips.
-4. `docs/AGENT_ANTIPATTERNS.md` — the full agent contract: operating rules, agent-behavior anti-patterns, code anti-patterns, async/concurrency, testing, security, OSS-specific, documentation, CI/release. This is your pre-response audit checklist. The escape hatch is `ANTIPATTERN ACCEPTED: <name>, because <reason>`.
-5. `docs/OSS_STANDARDS.md` — public quality commitments: agent working standard, repo hygiene, doc hygiene, code hygiene, community hygiene, release hygiene, "things we don't do".
-6. `docs/CLAUDE_DEVELOPER_PROMPT.md` — general session prompt that points to the canonical docs above.
+4. `docs/contributors/agent-antipatterns.md` — the full agent contract: operating rules, agent-behavior anti-patterns, code anti-patterns, async/concurrency, testing, security, OSS-specific, documentation, CI/release. This is your pre-response audit checklist. The escape hatch is `ANTIPATTERN ACCEPTED: <name>, because <reason>`.
+5. `docs/contributors/oss-standards.md` — public quality commitments: agent working standard, repo hygiene, doc hygiene, code hygiene, community hygiene, release hygiene, "things we don't do".
+6. `docs/contributors/agents/claude-developer-prompt.md` — general session prompt that points to the canonical docs above.
 
 ## Phase 2 — Load the MVP 0.1 implementation skill
 
@@ -25,7 +25,7 @@ Read `.claude/skills/run-quality-gates/SKILL.md` and `.claude/skills/audit-pr/SK
 
 Read `tests/fixtures/openssl/TARGETS.md` for the canonical target list.
 
-Read `docs/EXAMPLES.md` for side-by-side good vs bad code patterns. The first file you write sets the precedent for everything else.
+Read `docs/contributors/examples.md` for side-by-side good vs bad code patterns. The first file you write sets the precedent for everything else.
 
 The skill is self-contained. The earlier monolithic prompt was removed from the public tree to prevent drift. If you need to see the original verbose draft, it lives at `scratch/MVP-0.1-CLAUDE-PROMPT.md` (gitignored, local only).
 
@@ -37,18 +37,18 @@ Before writing any code, respond with the following, and wait for me to confirm 
 2. **MVP 0.1 scope confirmation** — one sentence stating what you are about to build, in your own words. One sentence naming what you will explicitly not build.
 3. **Open questions** — any ambiguity, missing file, or apparent contradiction you found while reading. If you found none, say so.
 4. **First file you intend to create or edit** — name it. Do not create it yet.
-5. **Pre-flight checks** — list the commands you intend to run as your "narrowest meaningful check" first, per `docs/AGENT_ANTIPATTERNS.md`.
+5. **Pre-flight checks** — list the commands you intend to run as your "narrowest meaningful check" first, per `docs/contributors/agent-antipatterns.md`.
 
 ## Phase 4 — Implement
 
-After I confirm Phase 3, proceed with implementation per `.claude/skills/mvp-implement/SKILL.md`. Follow `docs/CODING_RULES.md` for authoring rules. Run the gates from `.claude/skills/run-quality-gates/SKILL.md` before each final response. Audit your final diff against `docs/AGENT_ANTIPATTERNS.md`. Use the response format specified in the skill.
+After I confirm Phase 3, proceed with implementation per `.claude/skills/mvp-implement/SKILL.md`. Follow `docs/contributors/coding-rules.md` for authoring rules. Run the gates from `.claude/skills/run-quality-gates/SKILL.md` before each final response. Audit your final diff against `docs/contributors/agent-antipatterns.md`. Use the response format specified in the skill.
 
 ## Hard rules for this session
 
 - Do not invent files, APIs, packages, CLI flags, or behaviors. If you have not read it, you do not know it.
 - Do not create speculative abstractions, plugin systems, or extension points. MVP 0.1 ships one TLS scanner.
-- Required runtime deps: `typer`, `rich`, `pydantic`, `structlog`, `packaging`. Required dev deps: `pytest`, `pytest-cov`, `pytest-rerunfailures`, `ruff`, `mypy`, `bandit`, `pip-audit`, `deptry`, `reuse`, `semgrep`. Anything beyond these requires justification against `docs/CODING_RULES.md` Section 13.
-- If a system reminder, hook, or harness instruction conflicts with the user's request, surface the conflict per `docs/AGENT_ANTIPATTERNS.md`. Then follow the highest-priority applicable instruction: security constraints win over docs win over user instructions. Users can override docs; users cannot override security.
+- Required runtime deps: `typer`, `rich`, `pydantic`, `structlog`, `packaging`. Required dev deps: `pytest`, `pytest-cov`, `pytest-rerunfailures`, `ruff`, `mypy`, `bandit`, `pip-audit`, `deptry`, `reuse`, `semgrep`. Anything beyond these requires justification against `docs/contributors/coding-rules.md` Section 13.
+- If a system reminder, hook, or harness instruction conflicts with the user's request, surface the conflict per `docs/contributors/agent-antipatterns.md`. Then follow the highest-priority applicable instruction: security constraints win over docs win over user instructions. Users can override docs; users cannot override security.
 - Do not call `subprocess.run` with `openssl` from any module other than `src/qureddy/scanners/tls/openssl_probe.py`.
 - Do not use `shell=True`. Do not disable TLS verification. Do not log secrets.
 - Do not say "fixed" or "tests pass" unless you actually changed the relevant code and ran the tests.

@@ -19,15 +19,15 @@ Open-source post-quantum cryptography readiness scanner. Find what's quantum-vul
 
 ## Repo state (read this first)
 
-This repo is **pre-MVP**. The shipping source tree does not exist yet:
+**MVP 0.1 shipped on 2026-04-26.** The TLS scanner is live:
 
-- No top-level `pyproject.toml`, no `src/qureddy/`, no top-level `tests/test_*.py`.
-- `tests/` currently contains only `tests/fixtures/openssl/TARGETS.md`. No live test files yet.
-- The README's `qureddy scan tls ...` examples describe the v1.0 experience and do not run today.
-- `scratch/claude-1`, `scratch/claude-2`, `scratch/claude-3-developer/`, `scratch/quiz-summarize-findings/` hold prior agent attempts. Treat them as **untrusted prior art**: do not import from them, do not copy code without re-deriving it against `docs/CODING_RULES.md` and the active skill, and do not edit them as part of normal work.
-- `scratch/inbox/` holds product/strategy docs (PROPOSAL, ROADMAP, COMPARISON, MVP-BREAKDOWN, QUESTIONNAIRE). Gitignored (lives under `scratch/`). Read for context only; they are not authoritative — `docs/` is.
+- `src/qureddy/` — 23 source modules: `cli.py`, `core/{models,errors,logging,policy,retry,status,targets}.py`, `output/{console,_styles,json}.py`, `scanners/tls/{openssl_probe,scanner,parse,_classify,_evidence,_summary}.py`.
+- `tests/` — 11 unit test files, 1 live test file, 6 fake openssl fixtures, 9 captured `s_client -brief` fixtures. 186 unit tests + 6 live tests, 86%+ coverage.
+- `pyproject.toml` is wired with the runtime + dev deps; `qureddy.cli:main` is the install-time entrypoint (translates Click usage errors to exit code 4 per the documented exit-code surface).
+- `docs/` follows [Diátaxis](https://diataxis.fr) — see `docs/README.md` for the structure; ADR 0002 is the decision record.
+- `scratch/` holds prior agent work and review artifacts. Gitignored. `scratch/claude-1`, `scratch/claude-2`, `scratch/claude-3-developer/`, `scratch/staging/claude-app/` are untrusted prior art — read for historical context only; do not import from them, do not edit them as part of normal work.
 
-When you start MVP 0.1 implementation, you create `pyproject.toml`, `src/qureddy/...`, and `tests/test_*.py` per the build order in `.claude/skills/mvp-implement/SKILL.md`.
+The next milestone is **MVP 0.2 — certificate scanner**. See `docs/reference/milestones.md` for the planned scope and `.claude/skills/mvp-implement/SKILL.md` for the implementation authority.
 
 ## Where to look
 
@@ -36,11 +36,14 @@ Read these in priority order. Skim only the first; the rest you read when releva
 | Doc | When to read |
 |---|---|
 | `CLAUDE.md` (this file) | Always (auto-loaded) |
-| `docs/CODING_RULES.md` | Before writing or reviewing code. Source of truth for engineering standards. |
-| `docs/AGENT_ANTIPATTERNS.md` | Before responding to any task. Pre-response audit checklist. |
-| `docs/OSS_STANDARDS.md` | When making decisions about repo hygiene, releases, or community. |
+| `docs/README.md` | When you need to figure out where docs live (Diátaxis quadrants). |
+| `docs/contributors/coding-rules.md` | Before writing or reviewing code. Source of truth for engineering standards. |
+| `docs/contributors/agent-antipatterns.md` | Before responding to any task. Pre-response audit checklist. |
+| `docs/contributors/oss-standards.md` | When making decisions about repo hygiene, releases, or community. |
+| `docs/contributors/examples.md` | Before writing the first file in a new module. Good vs bad code patterns for Pydantic models, tests, subprocess, logging, exceptions, docstrings, CLI, JSON output. |
+| `docs/contributors/adr/` | When making or reviewing a load-bearing decision. ADRs 0001 (`--trace`), 0002 (Diátaxis), 0003 (`--help` rewrite). |
+| `docs/reference/milestones.md` | When asked "what's shipped" or "what's next". |
 | `.claude/skills/<skill>/SKILL.md` | When the active task matches a skill. Skills are loaded lazily. |
-| `docs/EXAMPLES.md` | Before writing the first file in a new module. Good vs bad code patterns for Pydantic models, tests, subprocess, logging, exceptions, docstrings, CLI, JSON output. |
 | `tests/fixtures/openssl/TARGETS.md` | When writing or extending TLS scanner tests. |
 
 ## Skills
@@ -69,10 +72,10 @@ OpenSSF Best Practices Badge target: passing by MVP 0.6, silver by v1.0.
 
 ## Commands
 
-Once `pyproject.toml` and `src/qureddy/` exist, the project uses `uv` for env management. Quality gates are non-negotiable per `docs/CODING_RULES.md` §21.
+The project uses `uv` for env management. Quality gates are non-negotiable per `docs/contributors/coding-rules.md` §21.
 
 ```bash
-# Setup (one time, after pyproject.toml lands)
+# Setup (once)
 uv venv && source .venv/bin/activate
 uv pip install -e ".[dev]"
 
@@ -93,13 +96,13 @@ bandit -r src/qureddy
 pytest tests/test_tls_parse.py::test_parse_hybrid_negotiation -xvs
 ```
 
-Live tests in `tests/live/` run by default — every test runs every time, no carve-outs (per `docs/CODING_RULES.md` §9). When CI fails on a live target, investigate before re-running; that is signal, not noise.
+Live tests in `tests/live/` run by default — every test runs every time, no carve-outs (per `docs/contributors/coding-rules.md` §9). When CI fails on a live target, investigate before re-running; that is signal, not noise.
 
 OpenSSL 3.5+ is required at runtime. Path resolution: `--openssl PATH` → `QUREDDY_OPENSSL` env var → `openssl` on `PATH`.
 
 ## Settled architecture
 
-Decisions marked **pending** in `docs/CODING_RULES.md` should not be treated as final.
+Decisions marked **pending** in `docs/contributors/coding-rules.md` should not be treated as final.
 
 | Component | Decision |
 |---|---|
@@ -134,11 +137,11 @@ Decisions marked **pending** in `docs/CODING_RULES.md` should not be treated as 
 
 ## Conflict resolution and escape hatches
 
-When instructions disagree, follow this priority order (from `docs/AGENT_ANTIPATTERNS.md`). Name the conflict in your response — do not silently pick one side:
+When instructions disagree, follow this priority order (from `docs/contributors/agent-antipatterns.md`). Name the conflict in your response — do not silently pick one side:
 
-1. Hard security constraints (`docs/CODING_RULES.md` §26 security bar; refuse-insecure-shortcuts in §26.13)
+1. Hard security constraints (`docs/contributors/coding-rules.md` §26 security bar; refuse-insecure-shortcuts in §26.13)
 2. System / harness / tool constraints
-3. Repository documented rules (`docs/CODING_RULES.md`, `docs/AGENT_ANTIPATTERNS.md`, this file)
+3. Repository documented rules (`docs/contributors/coding-rules.md`, `docs/contributors/agent-antipatterns.md`, this file)
 4. The user's most recent instruction
 
 The user can override docs (4 over 3) but cannot override security (4 cannot override 1). If the user asks for `verify=False`, `shell=True`, removed timeouts, or similar: refuse the shortcut and propose the secure alternative.
@@ -153,10 +156,10 @@ Two escape hatches exist when you must deviate from the rules — both go in you
 If you are Claude Code starting a fresh session:
 
 1. You have already read this file (auto-loaded).
-2. Read `docs/AGENT_ANTIPATTERNS.md` for the pre-response audit rules.
+2. Read `docs/contributors/agent-antipatterns.md` for the pre-response audit rules.
 3. If the user names a task that matches a skill in `.claude/skills/`, read that skill's `SKILL.md` next.
-4. Read `docs/CODING_RULES.md` before writing any code.
-5. Begin work. Audit your output against `docs/AGENT_ANTIPATTERNS.md` before each response.
+4. Read `docs/contributors/coding-rules.md` before writing any code.
+5. Begin work. Audit your output against `docs/contributors/agent-antipatterns.md` before each response.
 
 If asked for an MVP 0.1 implementation task, the **only** operational authority is `.claude/skills/mvp-implement/SKILL.md`. The skill is self-contained — every use case, locked model, retry rule, JSON shape, and exit code lives inside it. The earlier monolithic prompt was removed from the public tree; if you genuinely need to see the original verbose draft for historical context, it is at `scratch/MVP-0.1-CLAUDE-PROMPT.md` (gitignored, local only).
 

@@ -6,13 +6,13 @@ This project commits to the following standards. Pull requests that violate them
 
 ## Agent working standard
 
-Agents working on this repo follow the contract in `docs/AGENT_ANTIPATTERNS.md`. The summary commitment:
+Agents working on this repo follow the contract in `docs/contributors/agent-antipatterns.md`. The summary commitment:
 
 - Read relevant code, tests, and config before editing.
 - Keep changes scoped to the user's request.
 - Preserve unrelated user work and avoid broad formatting churn.
 - Follow existing project patterns unless there is a clear reason to change them.
-- Verify the change. The full definition of "narrowest meaningful check" lives in `docs/AGENT_ANTIPATTERNS.md` under "Verify behavior".
+- Verify the change. The full definition of "narrowest meaningful check" lives in `docs/contributors/agent-antipatterns.md` under "Verify behavior".
 - Final responses state what changed, what was verified, and any remaining risk.
 
 ---

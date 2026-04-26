@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 """Live network tests against the canonical MVP 0.1 targets.
 
-Per docs/CODING_RULES.md Rule 9.4 these run as part of the default
+Per docs/contributors/coding-rules.md Rule 9.4 these run as part of the default
 suite. pytest-rerunfailures absorbs transient internet hiccups
 (3 retries, 1s delay; configured globally in pyproject.toml).
 """

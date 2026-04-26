@@ -210,7 +210,7 @@ addopts = [
     "--reruns=3",
     "--reruns-delay=1",
 ]
-# Per docs/CODING_RULES.md Rule 9.3: every test runs every time.
+# Per docs/contributors/coding-rules.md Rule 9.3: every test runs every time.
 # No marker-gated suites at the pytest layer. CI may organize tests
 # into multiple JOBS for fail-fast, but pytest itself runs everything.
 markers = []
@@ -249,7 +249,16 @@ show_missing = true
 # qureddy at runtime; pip is dev-tooling only. Per the quality-gate
 # rules, MEDIUM and below are reported but do not block.
 # Reviewed: 2026-04-26. Re-review when pip ships a fix version.
-ignore-vulns = ["GHSA-58qw-9mgm-455v"]
+#
+# PYSEC-2022-42969: ReDoS in `py.path.svnwc` regex (the `py` package).
+# Severity: MEDIUM. Transitive dep chain: pip-audit → interrogate → py.
+# `py` is unmaintained (frozen in 2022); the vulnerable code path is
+# the SVN integration which interrogate doesn't invoke. Effective
+# exploitability against qureddy or its dev tooling: zero. We do not
+# touch SVN repos. Per the quality-gate rules, MEDIUM and below do
+# not block. Reviewed: 2026-04-26. Re-review when interrogate drops
+# the `py` dependency or when an alternative pip-audit dep tree exists.
+ignore-vulns = ["GHSA-58qw-9mgm-455v", "PYSEC-2022-42969"]
 
 # ============================================================================
 # bandit

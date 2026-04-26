@@ -38,7 +38,7 @@ Fixes #
 
 ## Audit checklist
 
-This is the **Tier 1 PR audit** from `docs/CODING_RULES.md` Quick Reference. Do not skim. Every box must be honestly checked or the PR is not ready.
+This is the **Tier 1 PR audit** from `docs/contributors/coding-rules.md` Quick Reference. Do not skim. Every box must be honestly checked or the PR is not ready.
 
 ### Scope
 
@@ -77,7 +77,7 @@ This is the **Tier 1 PR audit** from `docs/CODING_RULES.md` Quick Reference. Do 
 - [ ] Live tests pass on local network OR transient failure documented
 - [ ] (MVP 0.1 scanner code only) Use case coverage from `.claude/skills/mvp-implement/SKILL.md` checked
 
-### Security bar (`docs/CODING_RULES.md` §26 — hard merge blockers)
+### Security bar (`docs/contributors/coding-rules.md` §26 — hard merge blockers)
 
 - [ ] No `verify=False` or `ssl.CERT_NONE` introduced
 - [ ] No `shell=True` introduced
@@ -91,7 +91,7 @@ This is the **Tier 1 PR audit** from `docs/CODING_RULES.md` Quick Reference. Do 
 
 ### Anti-pattern audit
 
-- [ ] Audited against `docs/AGENT_ANTIPATTERNS.md`. Result:
+- [ ] Audited against `docs/contributors/agent-antipatterns.md`. Result:
 
   - [ ] No violations
   - [ ] Violations accepted (list each as `ANTIPATTERN ACCEPTED: <name>, because <reason>`)
@@ -132,6 +132,6 @@ This is the **Tier 1 PR audit** from `docs/CODING_RULES.md` Quick Reference. Do 
 
 By submitting this PR I confirm:
 
-- [ ] I read `CONTRIBUTING.md` and `docs/CODING_RULES.md` before writing this code
+- [ ] I read `CONTRIBUTING.md` and `docs/contributors/coding-rules.md` before writing this code
 - [ ] I am the author of this code, or it is sourced and licensed compatibly with Apache 2.0
 - [ ] I agree to the [Code of Conduct](../CODE_OF_CONDUCT.md)

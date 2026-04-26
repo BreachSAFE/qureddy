@@ -1,11 +1,11 @@
 ---
 name: audit-pr
-description: Audit a pull request diff against docs/CODING_RULES.md and produce the PR-template output. Use when finalizing a PR, when self-reviewing before requesting review, or when asked "is this ready to merge." This skill walks the diff, runs the Tier 1 quality gates, and produces a structured report so nothing gets skipped.
+description: Audit a pull request diff against docs/contributors/coding-rules.md and produce the PR-template output. Use when finalizing a PR, when self-reviewing before requesting review, or when asked "is this ready to merge." This skill walks the diff, runs the Tier 1 quality gates, and produces a structured report so nothing gets skipped.
 ---
 
 # Skill: audit-pr
 
-This skill is the operational form of `docs/CODING_RULES.md` Quick Reference (Tier 1). When invoked, walk the diff line by line, then produce the structured output below.
+This skill is the operational form of `docs/contributors/coding-rules.md` Quick Reference (Tier 1). When invoked, walk the diff line by line, then produce the structured output below.
 
 The point of this skill is to **stop you from skimming.** A passing exit code from `pytest` is not enough. You must verify each item explicitly.
 

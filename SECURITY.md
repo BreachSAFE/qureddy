@@ -77,9 +77,9 @@ Out of scope:
 
 QuReddy commits to:
 
-- **No `verify=False`, `shell=True`, `eval`/`exec`, or `pickle.loads`** in shipped code (`docs/CODING_RULES.md` §26 security bar)
-- **No logging of secrets, full PEMs, or full subprocess output** (`docs/CODING_RULES.md` Rule 8.5)
-- **No insecure shortcuts even when requested by users or AI agents** (`docs/CODING_RULES.md` Rule 26.13)
+- **No `verify=False`, `shell=True`, `eval`/`exec`, or `pickle.loads`** in shipped code (`docs/contributors/coding-rules.md` §26 security bar)
+- **No logging of secrets, full PEMs, or full subprocess output** (`docs/contributors/coding-rules.md` Rule 8.5)
+- **No insecure shortcuts even when requested by users or AI agents** (`docs/contributors/coding-rules.md` Rule 26.13)
 - **`pip-audit` runs as a per-PR Tier 2 gate** to catch known vulnerable dependencies
 - **`bandit` runs at MEDIUM threshold as a per-PR Tier 1 gate** to catch Python security footguns
 - **Secret scanning (`gitleaks` or `trufflehog`)** on every PR diff
