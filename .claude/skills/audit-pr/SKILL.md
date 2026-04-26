@@ -46,7 +46,9 @@ For each Python file changed in the diff:
 
 ### Step 3: Verify use case coverage (MVP 0.1 only)
 
-If the diff touches scanner code or tests, confirm each use case in `docs/mvp/MVP-0.1-CLAUDE-PROMPT.md` §0B has at least one corresponding test:
+If the diff touches scanner code or tests, confirm each use case in `.claude/skills/mvp-implement/SKILL.md` "MVP 0.1 use cases" section has at least one corresponding test. The skill is the canonical source for the use case definitions and test mappings; do not consult the historical prompt at `docs/mvp/MVP-0.1-CLAUDE-PROMPT.md` for this step (it is reference-only and may drift).
+
+The mappings (mirror of the skill, kept here for audit convenience):
 
 - UC1 (Hybrid PQ negotiation) → `tests/live/test_live_targets.py::test_pq_cloudflareresearch_hybrid` AND `tests/test_tls_parse.py`
 - UC2 (Classical fallback) → `tests/live/test_live_targets.py::test_example_com_classical` AND `tests/test_policy.py`
@@ -55,7 +57,7 @@ If the diff touches scanner code or tests, confirm each use case in `docs/mvp/MV
 - UC5 (TLS 1.3 probe failure) → `tests/live/test_live_targets.py::test_tls12_only_handshake_failure`
 - UC6 (Retry transient failure) → `tests/test_retry.py`
 
-A use case with no test fails the audit.
+If this list ever drifts from the skill, the skill wins and this list is updated to match. A use case with no test fails the audit.
 
 ### Step 4: Verify changelog
 

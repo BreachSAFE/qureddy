@@ -33,7 +33,7 @@ Before writing code, read these files from disk:
 7. `docs/mvp/CURRENT.md`
 8. `tests/fixtures/openssl/TARGETS.md`
 
-After reading, treat this prompt as the locked MVP 0.1 implementation prompt.
+**Reminder: this document is HISTORICAL REFERENCE, not the implementation authority.** The active operational authority is `.claude/skills/mvp-implement/SKILL.md`. The skill is self-contained — it includes the use cases, locked Pydantic models, locked policy model, retry semantics, JSON shape, exit codes, and definition of done that previously lived in this file. If you are implementing MVP 0.1, you should be reading the skill, not this. The sections below remain only because the skill points back at them for the architecture diagram (§0A) and for material the skill chose not to duplicate.
 
 You must audit your final diff against `docs/AGENT_ANTIPATTERNS.md` before final response. If you intentionally violate anything, write:
 
@@ -621,7 +621,7 @@ Frozen config (use this on every model except `ScanMetadata`):
 FROZEN = ConfigDict(frozen=True, extra="forbid")
 ```
 
-`ScanMetadata` uses `ConfigDict(frozen=False, extra="forbid")` because `completed_at` and `status` are set at end-of-scan.
+`ScanMetadata` is fully frozen (`model_config = FROZEN`). Build it once at end-of-scan with `started_at` and `completed_at` both known. The `TLSScanner.scan()` orchestrator captures `started_at` as a local `datetime` at scan start, runs the scan, then constructs `ScanMetadata` once at the end. Do not build a `ScanMetadata` early and mutate it. The actual model definition below (line ~770) shows the frozen form; this paragraph corrects an earlier note that incorrectly said `frozen=False`.
 
 Enums:
 
@@ -1011,7 +1011,7 @@ Required tests:
 - Enums serialize as lowercase strings
 - `Evidence` requires `observation_type`
 - `Finding` requires at least one `evidence_id`
-- All models except `ScanMetadata` are frozen (mutation raises)
+- All models including `ScanMetadata` are frozen (mutation raises)
 
 `tests/test_targets.py`:
 - `example.com`, `example.com:443`, `https://example.com`, `https://example.com:8443`, `1.2.3.4:443`
