@@ -1,6 +1,8 @@
 # CLAUDE.md
 
-Auto-loaded into every Claude Code session in this repo. Tight on purpose. Use it to orient fast, then read the canonical docs for detail.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+Auto-loaded into every Claude Code session. Tight on purpose. Use it to orient fast, then read the canonical docs for detail.
 
 ## Project
 
@@ -14,6 +16,18 @@ Auto-loaded into every Claude Code session in this repo. Tight on purpose. Use i
 | **Tagline** | QuReddy 0.1.0 — BreachSAFE OSS |
 
 Open-source post-quantum cryptography readiness scanner. Find what's quantum-vulnerable. Generate a CBOM. Move on.
+
+## Repo state (read this first)
+
+This repo is **pre-MVP**. The shipping source tree does not exist yet:
+
+- No top-level `pyproject.toml`, no `src/qureddy/`, no top-level `tests/test_*.py`.
+- `tests/` currently contains only `tests/fixtures/openssl/TARGETS.md`. No live test files yet.
+- The README's `qureddy scan tls ...` examples describe the v1.0 experience and do not run today.
+- `scratch/claude-1`, `scratch/claude-2`, `scratch/claude-3-developer/`, `scratch/quiz-summarize-findings/` hold prior agent attempts. Treat them as **untrusted prior art**: do not import from them, do not copy code without re-deriving it against `docs/CODING_RULES.md` and the active skill, and do not edit them as part of normal work.
+- `inbox/` holds product/strategy docs (PROPOSAL, ROADMAP, COMPARISON, MVP-BREAKDOWN, QUESTIONNAIRE). Read for context only; they are not authoritative — `docs/` is.
+
+When you start MVP 0.1 implementation, you create `pyproject.toml`, `src/qureddy/...`, and `tests/test_*.py` per the build order in `.claude/skills/mvp-implement/SKILL.md`.
 
 ## Where to look
 
@@ -50,6 +64,36 @@ See `.claude/skills/README.md` for the catalog.
 | **P2** | Enterprise tier (cloud scanners, SaaS, SIEM integrations, RBAC). Docker is not the differentiator. |
 
 OpenSSF Best Practices Badge target: passing by MVP 0.6, silver by v1.0.
+
+## Commands
+
+Once `pyproject.toml` and `src/qureddy/` exist, the project uses `uv` for env management. Quality gates are non-negotiable per `docs/CODING_RULES.md` §21.
+
+```bash
+# Setup (one time, after pyproject.toml lands)
+uv venv && source .venv/bin/activate
+uv pip install -e ".[dev]"
+
+# Run the CLI
+qureddy scan tls www.google.com
+qureddy scan tls 1.1.1.1:443 --sni one.one.one.one
+qureddy scan tls TARGET --format json
+
+# Tier 1 quality gates — verify-only, do not modify files
+ruff check .
+ruff format --check .          # use --check, not bare format; see CODING_RULES §1.5
+mypy src/qureddy --strict
+pytest                          # full suite, no skip markers; pytest-rerunfailures absorbs flakes
+pytest --cov=qureddy --cov-fail-under=80
+bandit -r src/qureddy
+
+# Single test
+pytest tests/test_tls_parse.py::test_parse_hybrid_negotiation -xvs
+```
+
+Live tests in `tests/live/` run by default — every test runs every time, no carve-outs (per `docs/CODING_RULES.md` §9). When CI fails on a live target, investigate before re-running; that is signal, not noise.
+
+OpenSSL 3.5+ is required at runtime. Path resolution: `--openssl PATH` → `QUREDDY_OPENSSL` env var → `openssl` on `PATH`.
 
 ## Settled architecture
 
