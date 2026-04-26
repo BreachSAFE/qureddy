@@ -1,11 +1,11 @@
 ---
 name: mvp-implement
-description: Implement or extend the MVP 0.1 TLS scanner for QuReddy. Use when the active task is writing scanner code, adding probe behavior, building the CLI, or any work scoped to MVP 0.1 (TLS scanner only, Python via pipx, no Docker, OpenSSL 3.5+ subprocess). This skill is the sole operational authority for MVP 0.1 implementation. The historical prompt at docs/mvp/MVP-0.1-CLAUDE-PROMPT.md is preserved for reference but does not govern behavior.
+description: Implement or extend the MVP 0.1 TLS scanner for QuReddy. Use when the active task is writing scanner code, adding probe behavior, building the CLI, or any work scoped to MVP 0.1 (TLS scanner only, Python via pipx, no Docker, OpenSSL 3.5+ subprocess). This skill is the sole operational authority for MVP 0.1 implementation. It is self-contained — the older monolithic prompt is no longer in the public repo.
 ---
 
 # Skill: mvp-implement
 
-The sole operational authority for MVP 0.1 implementation. Self-contained — you do not need to read the historical prompt at `docs/mvp/MVP-0.1-CLAUDE-PROMPT.md` to follow this skill. Reference docs are still required (see "Before you write any code").
+The sole operational authority for MVP 0.1 implementation. Self-contained — every use case, locked model, retry rule, JSON shape, and exit code you need is in this file. The earlier monolithic prompt was removed from the public tree to prevent drift; it lives in `scratch/` locally if anyone needs it for historical inspection.
 
 ## Before you write any code
 

@@ -8,16 +8,7 @@ Claude Code loads this skill when the active task matches its scope (TLS scanner
 
 ## Historical reference
 
-The earlier monolithic prompt at `docs/mvp/MVP-0.1-CLAUDE-PROMPT.md` is preserved as historical reference. It contains:
-
-- Architecture diagram (§0A)
-- Use case definitions (§0B) — referenced by the skill for test coverage requirements
-- Locked Pydantic model definitions (§15A) — referenced by the skill
-- Locked policy model (§16A) — referenced by the skill
-- JSON output shape (§18)
-- Retry semantics (§12A)
-
-If the skill and the historical prompt disagree, the **skill wins**. The historical prompt should not be edited for behavior changes; update the skill instead.
+The earlier monolithic prompt is no longer in the public tree — the skill replaced it. The skill is now self-contained and canonical for everything MVP 0.1 needs (use cases, locked Pydantic models, locked policy model, JSON shape, retry semantics, build order). If you need the original verbose prompt for historical inspection, it lives at `scratch/MVP-0.1-CLAUDE-PROMPT.md` (gitignored, local only).
 
 ## When a milestone completes
 

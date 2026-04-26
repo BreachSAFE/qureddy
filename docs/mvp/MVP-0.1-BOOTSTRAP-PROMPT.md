@@ -27,7 +27,7 @@ Read `tests/fixtures/openssl/TARGETS.md` for the canonical target list.
 
 Read `docs/EXAMPLES.md` for side-by-side good vs bad code patterns. The first file you write sets the precedent for everything else.
 
-The historical prompt at `docs/mvp/MVP-0.1-CLAUDE-PROMPT.md` is preserved as reference material but **does not govern your behavior**. If the skill and the historical prompt disagree, the skill wins. Read the historical prompt only if the skill explicitly points you at one of its sections (architecture diagram §0A, etc.).
+The skill is self-contained. The earlier monolithic prompt was removed from the public tree to prevent drift. If you need to see the original verbose draft, it lives at `scratch/MVP-0.1-CLAUDE-PROMPT.md` (gitignored, local only).
 
 ## Phase 3 — Confirm understanding before coding
 

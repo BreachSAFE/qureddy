@@ -46,7 +46,7 @@ For each Python file changed in the diff:
 
 ### Step 3: Verify use case coverage (MVP 0.1 only)
 
-If the diff touches scanner code or tests, confirm each use case in `.claude/skills/mvp-implement/SKILL.md` "MVP 0.1 use cases" section has at least one corresponding test. The skill is the canonical source for the use case definitions and test mappings; do not consult the historical prompt at `docs/mvp/MVP-0.1-CLAUDE-PROMPT.md` for this step (it is reference-only and may drift).
+If the diff touches scanner code or tests, confirm each use case in `.claude/skills/mvp-implement/SKILL.md` "MVP 0.1 use cases" section has at least one corresponding test. The skill is the canonical and only source for the use case definitions and test mappings.
 
 The mappings (mirror of the skill, kept here for audit convenience):
 
