@@ -67,9 +67,15 @@ Every new function with non-trivial logic gets a test. "Non-trivial" means: bran
 
 Tests use real fixtures captured from real outputs, not synthetic stubs. The OpenSSL probe tests use captured `openssl s_client` outputs in `tests/fixtures/openssl/`. The cert parser tests use real cert files in `tests/fixtures/certs/`.
 
-Tests do not depend on network access. If a test would need to hit `google.com:443`, it goes in a separate `tests/integration/` directory and is skipped by default in CI.
+Every test runs on every change. No skipped tests, no "smoke vs. integration" split, no `@pytest.mark.slow` exclusions, no `tests/integration/` directory that runs on a different schedule. The full suite runs on every PR and every local `pytest` invocation. Slow CI is acceptable; missing coverage is not.
 
-Tests do not depend on time or randomness. If a test would be flaky, it's wrong and you fix the flakiness, not the test.
+Network-dependent tests are explicitly allowed and encouraged. Hitting real targets (Cloudflare, badssl.com, AWS endpoints) catches middlebox, MTU, SNI, and certificate-edge-case regressions that captured fixtures cannot.
+
+To keep transient internet hiccups from masking signal, the test runner uses `pytest-rerunfailures`: each test gets up to 3 attempts with a 1-second delay before being declared failed. If a test still fails after retries, that is a real finding — investigate before re-running. Do not raise the retry count to mask a flaky test you wrote yourself; flakiness from non-determinism in your code is wrong and you fix it.
+
+The retry knob is on the test runner, not on individual tests. No `@flaky` decorators, no per-test retry overrides. One retry policy for the whole suite.
+
+Tests do not depend on time or test-ordering randomness.
 
 ---
 
