@@ -1,41 +1,88 @@
 # MVP 0.1 — Claude Implementation Prompt
 
-Milestone-scoped implementation prompt for MVP 0.1 (TLS scanner only). Layer this on top of the general session prompt at `docs/CLAUDE_DEVELOPER_PROMPT.md` — that prompt covers how to behave on this repo in general; this one covers what to build for MVP 0.1 specifically.
+You are Claude Code implementing BreachSAFE QuReddy MVP 0.1 in this repository.
 
-When MVP 0.2 starts, a `docs/mvp/MVP-0.2-CLAUDE-PROMPT.md` will live alongside this one.
+Repository root:
+  `/Users/Shared/claude/breachsafe-qureddy`
 
----
+Your task:
+  Build the working MVP 0.1 vertical slice:
+  `qureddy scan tls TARGET`
 
-You are implementing BreachSAFE QuReddy MVP 0.1.
+This prompt is the implementation authority for this task. If existing docs conflict with this prompt, follow this prompt and report the conflict in your final response. Do not silently merge conflicting requirements.
+
+================================================================================
+0. READ FIRST
+================================================================================
 
 Before writing code, read these files from disk:
 
-- `CLAUDE.md`
-- `docs/CODING_RULES.md`
-- `AGENTS.md`
-- `docs/OSS_STANDARDS.md`
-- `docs/AGENT_ANTIPATTERNS.md`
-- `docs/prd/MVP-0.1-PRD.md`
-- `docs/mvp/MVP-0.1-PLAN.md`
-- `docs/mvp/openssl-probing.md`
-- `docs/mvp/acceptance-tests.md`
-- `docs/architecture/0001-license-and-dependencies.md`
-- `docs/architecture/0002-openssl-tls-probing.md`
-- `docs/architecture/0003-evidence-and-findings.md`
+1. `CLAUDE.md`
+2. `AGENTS.md`
+3. `docs/CODING_RULES.md`
+4. `docs/AGENT_ANTIPATTERNS.md`
+5. `docs/OSS_STANDARDS.md`
+6. `docs/CLAUDE_DEVELOPER_PROMPT.md`
+7. `docs/mvp/CURRENT.md`
+8. `tests/fixtures/openssl/TARGETS.md`
 
-Follow the coding standards in `docs/CODING_RULES.md` exactly. Before final response, audit the diff against `docs/AGENT_ANTIPATTERNS.md` and fix violations.
+After reading, treat this prompt as the locked MVP 0.1 implementation prompt.
 
-## Canonical naming
+You must audit your final diff against `docs/AGENT_ANTIPATTERNS.md` before final response. If you intentionally violate anything, write:
+
+  `ANTIPATTERN ACCEPTED: <name>, because <reason>`
+
+================================================================================
+1. CRITICAL RULE: NO PLACEHOLDER SCAFFOLDING
+================================================================================
+
+Do not scaffold placeholders.
+
+Every file you create must be used by one of these:
+- the running command: `qureddy scan tls TARGET`
+- pytest tests
+- packaging/tooling required to run the command
+
+Do not create:
+- empty modules
+- unused abstractions
+- future plugin systems
+- fake scanner registries
+- TODO-only files
+- fake OpenSSL results
+- placeholder tests
+- unused extension points
+- report commands
+- CBOM emitters
+- database layers
+- Docker files
+
+If a file listed below cannot participate in the working MVP command path or tests, do not create it. Explain why in the final response.
+
+MVP 0.1 is incomplete unless this command performs a real OpenSSL subprocess probe:
+
+  `qureddy scan tls pq.cloudflareresearch.com --format json`
+
+and returns valid JSON with: scan metadata, normalized target, OpenSSL dependency metadata, evidence, findings, summary.
+
+================================================================================
+2. CANONICAL NAMING
+================================================================================
 
 - Product: BreachSAFE QuReddy
+- Friendly name: QuReddy
 - CLI command: `qureddy`
-- Python package/import: `qureddy`
-- Do not use `qready`.
-- Do not use `qreddy`.
+- Python import package: `qureddy`
+- PyPI package: `breachsafe-qureddy`
+- OpenSSL env var: `QUREDDY_OPENSSL`
 
-## MVP 0.1 scope
+Do not write `qready`. Do not write `qreddy`. Exception: you may mention them only in a guard statement saying not to use them.
 
-Implement one command:
+================================================================================
+3. MVP 0.1 SCOPE
+================================================================================
+
+Implement exactly one user command:
 
 ```
 qureddy scan tls TARGET
@@ -46,93 +93,213 @@ qureddy scan tls TARGET
   [--retry-on CATEGORY[,CATEGORY...]]
   [--retries N]
   [--retry-delay SECONDS]
+  [-v|-vv|-vvv]
+  [--json-logs]
+  [-q|--quiet]
 ```
 
-### Includes
+MVP 0.1 includes:
+- target parsing and normalization
+- OpenSSL 3.5+ capability detection
+- TLS 1.3 X25519MLKEM768 hybrid probe
+- TLS 1.3 X25519 classical control probe
+- negotiated group/protocol/cipher parsing
+- retry feature: `--retry-on`, `--retries`, `--retry-delay`
+- native QuReddy JSON output
+- Rich terminal output
+- structured logging from day 0
+- fixture-based unit tests
+- live tests against the targets in `tests/fixtures/openssl/TARGETS.md`
+- `docs/STANDARDS.md`
 
-- Parse and normalize a single TLS target.
-- Check local OpenSSL capability.
-- Run TLS 1.3 hybrid probe using OpenSSL 3.5+ subprocess.
-- Detect whether `X25519MLKEM768` was actually negotiated.
-- Run classical X25519 control probe.
-- Emit native QuReddy JSON.
-- Emit Rich terminal table.
-- Add fixture-based parser tests.
-- Add target normalization tests.
-- Add OpenSSL boundary check script if not already present.
-
-### Excludes
-
-- sslyze
-- nassl
-- GPL/AGPL runtime dependencies
-- Python `ssl`-based hybrid probing
-- pyOpenSSL
+MVP 0.1 excludes:
+- sslyze, nassl, pyOpenSSL, Python `ssl`-based hybrid probing
 - oqs-provider integration
+- GPL/AGPL runtime dependencies
 - certificate chain parsing
-- `cryptography` dependency unless absolutely needed
-- CBOM
-- HTML/PDF/CSV/Markdown reports
-- YAML policies
+- `cryptography` dependency
+- CBOM emission
+- SQLite, YAML policies
 - HNDL scoring
-- SQLite persistence
-- SSH/local/code/config scanners
+- HTML/PDF/CSV/Markdown reports
+- SSH/local/cert/code/config scanners
 - batch scanning
 - Docker
+- telemetry
+- stdin input
+- trace fallback parser
+- subprocess boundary CI script
 
-## Dependency policy
+================================================================================
+4. DEPENDENCIES
+================================================================================
 
-- No sslyze.
-- No nassl.
-- No GPL or AGPL runtime dependencies.
-- OpenSSL is an external system binary in MVP, not bundled.
-- Runtime dependencies should be minimal: Typer, Rich, Pydantic, and `packaging` only if needed for version parsing.
-- Any new dependency must satisfy `docs/CODING_RULES.md` dependency rules.
+Required runtime dependencies:
+- `typer`
+- `rich`
+- `pydantic`
+- `structlog`
+- `packaging` (only if needed for OpenSSL version parsing)
 
-## OpenSSL boundary
+Required dev/test dependencies:
+- `pytest`
+- `pytest-rerunfailures` — every test gets up to 3 retries with 1s delay before failing. Configure in `pyproject.toml` `[tool.pytest.ini_options]` so it applies to every `pytest` invocation, not via individual `@pytest.mark.flaky` decorators.
+- `ruff`
+- `mypy`
 
-All OpenSSL subprocess calls must live in:
+Do not add `cryptography`, `cyclonedx-python-lib`, `aiosqlite`, `Jinja2`, Tailwind tooling, `WeasyPrint`, or any report dependencies in MVP 0.1.
+
+Every new dependency must satisfy `docs/CODING_RULES.md`: actively maintained, Apache-compatible license, replaces meaningful code we would otherwise write, justified in final response.
+
+================================================================================
+5. REQUIRED FILES
+================================================================================
+
+Create or update only files needed for the working MVP.
+
+Core files:
+- `pyproject.toml`
+- `README.md` (already exists; update if needed)
+- `LICENSE` (already exists)
+- `.gitignore` (already exists; add `.tmp/` if not present)
+- `AGENTS.md` (already exists; update if needed)
+- `docs/STANDARDS.md`
+
+Python package:
+- `src/qureddy/__init__.py`
+- `src/qureddy/__main__.py`
+- `src/qureddy/cli.py`
+- `src/qureddy/core/__init__.py`
+- `src/qureddy/core/errors.py`
+- `src/qureddy/core/logging.py`
+- `src/qureddy/core/models.py`
+- `src/qureddy/core/policy.py`
+- `src/qureddy/core/targets.py`
+- `src/qureddy/core/retry.py` (new — retry orchestration)
+- `src/qureddy/scanners/__init__.py`
+- `src/qureddy/scanners/tls/__init__.py`
+- `src/qureddy/scanners/tls/openssl_probe.py`
+- `src/qureddy/scanners/tls/parse.py`
+- `src/qureddy/scanners/tls/scanner.py`
+- `src/qureddy/output/__init__.py`
+- `src/qureddy/output/console.py`
+- `src/qureddy/output/json.py`
+
+Tests:
+- `tests/fixtures/openssl/brief_hybrid.txt`
+- `tests/fixtures/openssl/brief_classical.txt`
+- `tests/fixtures/openssl/clienthello_only_hybrid.txt`
+- `tests/fixtures/openssl/parse_no_group.txt`
+- `tests/test_models.py`
+- `tests/test_targets.py`
+- `tests/test_tls_parse.py`
+- `tests/test_policy.py`
+- `tests/test_retry.py`
+- `tests/test_logging.py`
+- `tests/live/__init__.py`
+- `tests/live/test_live_targets.py`
+
+Do not create:
+- `src/qureddy/store/`, `src/qureddy/policies/`
+- `src/qureddy/output/cbom.py`, `src/qureddy/output/html.py`
+- `src/qureddy/scanners/{ssh,certs,code,local}/`
+- `Dockerfile`
+
+Every Python source file must include:
+
+  `# SPDX-License-Identifier: Apache-2.0`
+
+Use `from __future__ import annotations` in every Python file.
+
+================================================================================
+6. PACKAGING
+================================================================================
+
+`pyproject.toml` must declare:
+- project name: `breachsafe-qureddy`
+- Python: `>=3.12`
+- package/import: `qureddy`
+- console script: `qureddy = "qureddy.cli:app"`
+- pytest config that enables `pytest-rerunfailures` globally with 3 reruns and 1s delay
+
+Use `src/` layout.
+
+Development commands must work:
 
 ```
-src/qureddy/scanners/tls/openssl_probe.py
+uv venv
+uv pip install -e ".[dev]"
+qureddy --help
+qureddy scan tls --help
 ```
 
-No other module may call `subprocess.run` with `openssl`.
+================================================================================
+7. BUILD ORDER
+================================================================================
 
-## Retry semantics
+Build in this order. Do not skip ahead.
 
-The CLI accepts retry flags that apply to the scanner's interactions with the target:
+1. Packaging and CLI shell — `pyproject.toml`, `__init__.py`, `__main__.py`, `cli.py`. `qureddy --help` must work.
+2. Core models and errors — `core/models.py`, `core/errors.py`. Run `tests/test_models.py`.
+3. Target parsing — `core/targets.py`, `tests/test_targets.py`.
+4. OpenSSL capability and subprocess probe — `scanners/tls/openssl_probe.py`. Must call real OpenSSL.
+5. OpenSSL output parser — `scanners/tls/parse.py`, `tests/fixtures/openssl/*`, `tests/test_tls_parse.py`.
+6. Policy classification — `core/policy.py`, `tests/test_policy.py`.
+7. Retry orchestration — `core/retry.py`, `tests/test_retry.py`.
+8. TLS scanner orchestration — `scanners/tls/scanner.py`. Calls capability check, hybrid probe, classical probe, parser, retry, and policy.
+9. Output — `output/json.py`, `output/console.py`.
+10. Logging — `core/logging.py`, `tests/test_logging.py`.
+11. Live tests — `tests/live/test_live_targets.py`.
+12. Docs — `docs/STANDARDS.md`, update `AGENTS.md` if needed.
 
-- `--retry-on CATEGORY[,CATEGORY...]` — comma-separated failure categories. Any failure category from the enum below is accepted. No allowlist; the user decides what's worth retrying. Default: empty (no retries).
-- `--retries N` — integer, max 10, default 0.
-- `--retry-delay SECONDS` — float, default 1.0, max 60.
+================================================================================
+8. TARGET PARSING
+================================================================================
 
-Behavior:
+`src/qureddy/core/targets.py` must expose:
 
-1. The first attempt always runs. Retries only fire if the first attempt produced a failure category in `--retry-on`.
-2. Between attempts, sleep `--retry-delay` seconds.
-3. If a retry attempt produces a *different* failure category than the one that triggered the retry, stop and report the new category. Do not keep retrying just because some failure happened.
-4. If a retry attempt produces a non-failure outcome, the scan succeeds and reports that outcome. Earlier failures are recorded as evidence on the success result.
-5. Retries do not apply to local capability failures (`local_openssl_missing`, `local_openssl_too_old`, `local_openssl_lacks_group`) in practice — these will return identical results on every attempt — but the CLI does not block the user from passing them. Document this in the help text: "Retrying deterministic failures (parse errors, capability checks) is allowed but typically pointless."
-6. Validation:
-   - `--retry-on` values must match a category in the failure-category enum exactly. Unknown categories are a usage error (exit code 4).
-   - `--retries` and `--retry-delay` outside their bounds are a usage error (exit code 4).
-   - `--retries N` without `--retry-on` is a usage error: "no retry categories specified."
-7. Each retry attempt produces its own evidence record. The final result reports total attempt count.
+  `parse_target(input_str: str, sni_override: str | None = None) -> ScanTarget`
 
-The default behavior (no flags) is single-attempt, no retries.
+Accepted target inputs: `example.com`, `example.com:443`, `https://example.com`, `https://example.com:8443`, `1.2.3.4:443`.
 
-## Subprocess rules
+Normalize to `ScanTarget` with: `original_input`, `host`, `port`, `sni`, `scheme`, `locator`.
 
-- Use `subprocess.run`.
-- Pass args as a list.
-- Never use `shell=True`.
-- Set `timeout` explicitly.
-- Capture stdout and stderr.
-- Use `check=False` and inspect returncode manually.
-- Support `--openssl PATH` and `QUREDDY_OPENSSL` environment override.
+Rules:
+- default port 443
+- default scheme `tls`
+- hostname target: SNI = host
+- IP target: SNI = `None` unless `--sni` is provided
+- locator format: `tls://host:port`
+- invalid target raises `TargetParseError`
+- missing TARGET exits 4
 
-## OpenSSL capability check
+================================================================================
+9. EXIT CODES
+================================================================================
+
+- 0 = scan completed successfully
+- 1 = reserved for future higher-severity findings
+- 2 = target scan failed
+- 3 = local dependency missing or unsupported
+- 4 = usage/configuration error
+
+MVP 0.1 emits 0, 2, 3, 4. Exit 1 is reserved.
+
+================================================================================
+10. OPENSSL BOUNDARY
+================================================================================
+
+All OpenSSL subprocess calls must live only in `src/qureddy/scanners/tls/openssl_probe.py`. No other module may call OpenSSL.
+
+Use `subprocess.run` with: args as a list, `shell=False`, explicit `timeout` (default 30s), `capture_output=True`, `check=False`, explicit return code handling.
+
+Do not use `os.system`. Do not use `shell=True`. Do not use `subprocess.Popen` unless `subprocess.run` cannot work and you justify why.
+
+OpenSSL path resolution order: `--openssl PATH` → `QUREDDY_OPENSSL` env var → `openssl` on `PATH`.
+
+================================================================================
+11. OPENSSL CAPABILITY CHECK
+================================================================================
 
 Run:
 
@@ -141,16 +308,23 @@ openssl version
 openssl list -tls1_3 -tls-groups
 ```
 
-Required:
+Required: OpenSSL >= 3.5.0, `X25519MLKEM768` appears in the TLS 1.3 group list.
 
-- OpenSSL version >= 3.5.0
-- `X25519MLKEM768` present in TLS 1.3 group list
+Parse the group list as case-insensitive, whitespace-tokenized. Do not depend on column alignment or header lines. The OpenSSL output format may shift between point releases.
 
-If OpenSSL is missing, too old, or lacks `X25519MLKEM768`, emit `UNKNOWN` readiness due to local dependency incapability. Do not report that the server is not PQ-ready.
+If OpenSSL is missing, too old, or lacks `X25519MLKEM768`:
+- do not crash
+- do not claim the server is not PQ-ready
+- emit a structured local dependency result: severity=info, readiness=unknown, confidence=high, failure_category one of `local_openssl_missing` | `local_openssl_too_old` | `local_openssl_lacks_group`
+- exit 3
 
-## Probe commands
+Dependency metadata must appear in JSON: name, path, version, supports_tls13_groups, supports_x25519mlkem768.
 
-Primary hybrid probe:
+================================================================================
+12. PROBE COMMANDS
+================================================================================
+
+Hybrid probe:
 
 ```
 openssl s_client \
@@ -172,95 +346,378 @@ openssl s_client \
   -brief
 ```
 
-Trace fallback:
+If SNI is `None`, omit `-servername` and its value entirely. Default timeout 30s.
 
-```
-openssl s_client \
-  -connect HOST:PORT \
-  -servername SNI \
-  -tls1_3 \
-  -groups X25519MLKEM768 \
-  -trace
-```
+If `-brief` is unreliable in local validation, drop `-brief` and parse default `s_client` output. Document the decision in a code comment and in final response.
 
-Only use trace fallback when the summary output indicates a completed handshake but no negotiated group can be parsed.
+Do not implement trace fallback in MVP 0.1.
 
-## Positive hybrid evidence
+If a probe returns success but no negotiated group can be parsed: emit `parse_no_group`, readiness=unknown, severity=info, confidence=medium.
 
-Accept only these summary forms:
+================================================================================
+12A. RETRY SEMANTICS
+================================================================================
 
-```
-Negotiated TLS1.3 group: X25519MLKEM768
-```
+The CLI accepts retry flags that apply to the scanner's interactions with the target:
+
+- `--retry-on CATEGORY[,CATEGORY...]` — comma-separated failure categories from the `FailureCategory` enum. Open gate: any category is accepted, no allowlist. Default: empty (no retries).
+- `--retries N` — integer, default 0, max 10.
+- `--retry-delay SECONDS` — float, default 1.0, max 60.
+
+Behavior:
+
+1. The first attempt always runs. Retries fire only if the first attempt's failure category matches `--retry-on`.
+2. Between attempts, sleep `--retry-delay` seconds.
+3. If a retry produces a *different* failure category than the one that triggered the retry, stop and report the new category.
+4. If a retry produces a non-failure outcome, the scan succeeds and reports that outcome. Earlier failures are recorded as evidence.
+5. Retries do not apply to local capability failures in practice (`local_openssl_*` will return identical results) but the CLI does not block users from passing them. Help text notes: "Retrying deterministic failures (parse errors, capability checks) is allowed but typically pointless."
+6. Validation:
+   - `--retry-on` value not in `FailureCategory` enum → exit 4
+   - `--retries` outside [0, 10] → exit 4
+   - `--retry-delay` outside [0.0, 60.0] → exit 4
+   - `--retries N > 0` without `--retry-on` → exit 4 with message "no retry categories specified"
+7. Each attempt produces its own `Evidence` record. The result reports total attempt count.
+
+Default behavior (no flags) is single-attempt.
+
+================================================================================
+13. POSITIVE HYBRID EVIDENCE
+================================================================================
+
+Accept hybrid negotiation only from these parsed outputs:
+
+  `Negotiated TLS1.3 group: X25519MLKEM768`
 
 or:
 
-```
-Server Temp Key: X25519MLKEM768, ...
-```
+  `Server Temp Key: X25519MLKEM768, ...`
 
-If parsing trace, accept `X25519MLKEM768` only when it appears as `NamedGroup` under `ServerHello` `key_share`. Do not count `ClientHello` `supported_groups` or `ClientHello` `key_share`. Offered groups are not proof of negotiation.
+Never accept: `X25519MLKEM768` in ClientHello, supported_groups offered by client, key_share offered by client, local OpenSSL supported group list, documentation, or assumptions.
 
-## Evidence contract
+Offered group is not negotiated group.
 
-Every evidence object must include an `observation_type`:
+`readiness=transitional_hybrid` requires: `negotiated_group=X25519MLKEM768` AND `observation_type=negotiated`.
 
-- `negotiated`
-- `offered`
-- `observed`
-- `inferred`
-- `not_testable`
+================================================================================
+14. FAILURE CATEGORIES
+================================================================================
 
-Rule:
+Model these categories: `local_openssl_missing`, `local_openssl_too_old`, `local_openssl_lacks_group`, `target_connect_failed`, `tls_handshake_failed`, `sni_required_or_wrong`, `middlebox_or_mtu_failure`, `parse_no_group`, `parse_ambiguous`, `unexpected_group`.
 
-- `X25519MLKEM768` readiness may be `transitional_hybrid` only with `negotiated` evidence.
-- `offered` evidence is never enough.
+`src/qureddy/core/errors.py` must define:
+- `QureddyError`
+- `LocalOpenSSLMissing`
+- `LocalOpenSSLTooOld`
+- `LocalOpenSSLLacksGroup`
+- `TargetConnectFailed`
+- `TLSHandshakeFailed`
+- `ParseNoGroup`
+- `ParseAmbiguous`
+- `TargetParseError`
 
-## Failure categories to model
+Use specific exceptions or typed failure results. Do not swallow exceptions.
 
-- `local_openssl_missing`
-- `local_openssl_too_old`
-- `local_openssl_lacks_group`
-- `target_connect_failed`
-- `tls_handshake_failed`
-- `sni_required_or_wrong`
-- `middlebox_or_mtu_failure`
-- `parse_no_group`
-- `parse_ambiguous`
-- `unexpected_group`
+================================================================================
+15. CORE VOCABULARY
+================================================================================
 
-## Target normalization
+`observation_type`: `negotiated`, `offered`, `observed`, `inferred`, `not_testable`.
+`severity`: `critical`, `high`, `medium`, `low`, `info`.
+`readiness`: `quantum_vulnerable`, `classically_weak`, `transitional_hybrid`, `quantum_safe`, `unknown`, `not_applicable`.
+`confidence`: `high`, `medium`, `low`.
 
-Accept:
+Use Enums or constrained Pydantic models. No loose strings.
 
-- `example.com`
-- `example.com:443`
-- `https://example.com`
-- `https://example.com:8443`
-- `1.2.3.4:443`
+================================================================================
+15A. REQUIRED MODEL DEFINITIONS
+================================================================================
 
-Normalize to:
+Implement these in `src/qureddy/core/models.py`. You may add fields only if required by this MVP prompt. Do not remove fields.
 
-- `original_input`
-- `host`
-- `port`
-- `sni`
-- `scheme = tls`
-- `locator = tls://host:port`
+Imports:
 
-Default port: `443`.
-
-For DNS hosts, default SNI is `host`.
-
-For IP addresses, default SNI is `null` unless user passes `--sni`.
-
-Support:
-
-```
-qureddy scan tls 1.2.3.4:443 --sni example.com
+```python
+from __future__ import annotations
+from datetime import datetime
+from enum import Enum
+from typing import Any
+from pydantic import BaseModel, ConfigDict, Field
 ```
 
-## Native JSON output shape
+Frozen config (use this on every model except `ScanMetadata`):
+
+```python
+FROZEN = ConfigDict(frozen=True, extra="forbid")
+```
+
+`ScanMetadata` uses `ConfigDict(frozen=False, extra="forbid")` because `completed_at` and `status` are set at end-of-scan.
+
+Enums:
+
+```python
+class ObservationType(str, Enum):
+    NEGOTIATED = "negotiated"
+    OFFERED = "offered"
+    OBSERVED = "observed"
+    INFERRED = "inferred"
+    NOT_TESTABLE = "not_testable"
+
+class Severity(str, Enum):
+    CRITICAL = "critical"
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+    INFO = "info"
+
+class Readiness(str, Enum):
+    QUANTUM_VULNERABLE = "quantum_vulnerable"
+    CLASSICALLY_WEAK = "classically_weak"
+    TRANSITIONAL_HYBRID = "transitional_hybrid"
+    QUANTUM_SAFE = "quantum_safe"
+    UNKNOWN = "unknown"
+    NOT_APPLICABLE = "not_applicable"
+
+class Confidence(str, Enum):
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+
+class FailureCategory(str, Enum):
+    LOCAL_OPENSSL_MISSING = "local_openssl_missing"
+    LOCAL_OPENSSL_TOO_OLD = "local_openssl_too_old"
+    LOCAL_OPENSSL_LACKS_GROUP = "local_openssl_lacks_group"
+    TARGET_CONNECT_FAILED = "target_connect_failed"
+    TLS_HANDSHAKE_FAILED = "tls_handshake_failed"
+    SNI_REQUIRED_OR_WRONG = "sni_required_or_wrong"
+    MIDDLEBOX_OR_MTU_FAILURE = "middlebox_or_mtu_failure"
+    PARSE_NO_GROUP = "parse_no_group"
+    PARSE_AMBIGUOUS = "parse_ambiguous"
+    UNEXPECTED_GROUP = "unexpected_group"
+
+class OutputFormat(str, Enum):
+    RICH = "rich"
+    JSON = "json"
+```
+
+Models:
+
+```python
+class ScanTarget(BaseModel):
+    model_config = FROZEN
+    original_input: str
+    host: str
+    port: int
+    sni: str | None
+    scheme: str = "tls"
+    locator: str
+
+class OpenSSLDependency(BaseModel):
+    model_config = FROZEN
+    name: str = "openssl"
+    path: str | None = None
+    version: str | None = None
+    supports_tls13_groups: bool = False
+    supports_x25519mlkem768: bool = False
+    failure_category: FailureCategory | None = None
+
+class ProbeCommand(BaseModel):
+    model_config = FROZEN
+    executable: str
+    args: tuple[str, ...]
+    timeout_seconds: int
+    redacted: bool = False
+
+class ProbeResult(BaseModel):
+    model_config = FROZEN
+    command: ProbeCommand
+    return_code: int
+    stdout_sha256: str
+    stderr_sha256: str
+    stdout_excerpt: str = ""
+    stderr_excerpt: str = ""
+    duration_ms: int
+    attempt_number: int = 1
+    failure_category: FailureCategory | None = None
+
+class Asset(BaseModel):
+    model_config = FROZEN
+    id: str
+    asset_type: str
+    locator: str
+    display_name: str
+    protocol: str = "tls"
+    protocol_version: str | None = None
+    algorithm: str | None = None
+    primitive: str | None = None
+    parameter_set_identifier: str | None = None
+    key_size: int | None = None
+    negotiated_group: str | None = None
+    bom_ref: str | None = None
+    oid: str | None = None
+    nist_quantum_security_level: int | None = Field(default=None, ge=1, le=5)
+
+class Evidence(BaseModel):
+    model_config = FROZEN
+    id: str
+    asset_id: str
+    evidence_type: str
+    observation_type: ObservationType
+    source: str
+    protocol: str = "tls"
+    protocol_version: str | None = None
+    cipher_suite: str | None = None
+    negotiated_group: str | None = None
+    probe_result: ProbeResult | None = None
+    failure_category: FailureCategory | None = None
+    confidence: Confidence = Confidence.HIGH
+    notes: tuple[str, ...] = Field(default_factory=tuple)
+
+class Finding(BaseModel):
+    model_config = FROZEN
+    id: str
+    asset_id: str
+    evidence_ids: tuple[str, ...]
+    rule_id: str
+    finding_type: str
+    title: str
+    description: str
+    severity: Severity
+    readiness: Readiness
+    confidence: Confidence
+    algorithm: str | None = None
+    primitive: str | None = None
+    parameter_set_identifier: str | None = None
+    key_size: int | None = None
+    protocol: str = "tls"
+    protocol_version: str | None = None
+    negotiated_group: str | None = None
+    bom_ref: str | None = None
+    oid: str | None = None
+    nist_quantum_security_level: int | None = Field(default=None, ge=1, le=5)
+
+class ScanMetadata(BaseModel):
+    model_config = ConfigDict(frozen=False, extra="forbid")
+    scan_id: str
+    started_at: datetime
+    completed_at: datetime | None = None
+    scanner_name: str = "tls"
+    scanner_version: str = "0.1.0"
+    status: str
+    total_attempts: int = 1
+
+class ScanSummary(BaseModel):
+    model_config = FROZEN
+    target: str
+    finding_count: int
+    highest_severity: Severity | None = None
+    readiness: Readiness
+    failure_category: FailureCategory | None = None
+
+class ScanResult(BaseModel):
+    model_config = FROZEN
+    schema_version: str = "qureddy.scan.v1"
+    scan: ScanMetadata
+    target: ScanTarget
+    dependencies: tuple[OpenSSLDependency, ...]
+    assets: tuple[Asset, ...]
+    evidence: tuple[Evidence, ...]
+    findings: tuple[Finding, ...]
+    summary: ScanSummary
+```
+
+Notes:
+- `Evidence.notes: tuple[str, ...]` is the parser's debug context. No `dict[str, Any]` escape hatch.
+- `nist_quantum_security_level` is `ge=1, le=5` (NIST PQC categories are 1-5, not 0-5).
+- `attempt_number` on `ProbeResult` and `total_attempts` on `ScanMetadata` support the retry feature.
+- The CycloneDX-flavored fields (`primitive`, `parameter_set_identifier`, `bom_ref`, `oid`, `nist_quantum_security_level`) are unused at MVP 0.1 but locked in now to avoid a JSON schema migration when CBOM emission lands at MVP 0.3. **`ANTIPATTERN ACCEPTED: speculative generality, because CycloneDX field names will land at MVP 0.3 and JSON schema stability matters for early adopters.`** Mark this in your final-response audit.
+
+================================================================================
+16. POLICY
+================================================================================
+
+Use hardcoded Python policy objects only. Do not implement YAML loading.
+
+MVP rules (exactly these four IDs):
+
+1. `tls.hybrid.negotiated_x25519mlkem768` → severity=info, readiness=transitional_hybrid, confidence=high
+2. `tls.hybrid.not_testable` → severity=info, readiness=unknown, confidence=high
+3. `tls.hybrid.probe_failed` → severity=info, readiness=unknown, confidence=medium
+4. `tls.classical.negotiated_x25519` → severity=low, readiness=quantum_vulnerable, confidence=high
+
+Policy evaluation must produce findings. Findings must reference evidence IDs.
+
+================================================================================
+16A. REQUIRED POLICY MODEL
+================================================================================
+
+In `src/qureddy/core/policy.py`:
+
+```python
+from __future__ import annotations
+from enum import Enum
+from pydantic import BaseModel, ConfigDict
+from qureddy.core.models import (
+    Asset, Confidence, Evidence, FailureCategory, Finding,
+    FROZEN, ObservationType, Readiness, Severity,
+)
+
+class RuleField(str, Enum):
+    NEGOTIATED_GROUP = "negotiated_group"
+    OBSERVATION_TYPE = "observation_type"
+    FAILURE_CATEGORY = "failure_category"
+
+class RuleCondition(BaseModel):
+    model_config = FROZEN
+    field: RuleField
+    equals: str | None = None
+    failure_category: FailureCategory | None = None
+    observation_type: ObservationType | None = None
+
+class PolicyRule(BaseModel):
+    model_config = FROZEN
+    id: str
+    finding_type: str
+    title: str
+    description: str
+    severity: Severity
+    readiness: Readiness
+    confidence: Confidence
+    conditions: tuple[RuleCondition, ...]
+
+MVP_POLICY: tuple[PolicyRule, ...] = (
+    # ... four rules with the IDs above
+)
+
+def classify_evidence(asset: Asset, evidence: list[Evidence]) -> list[Finding]:
+    """Classify TLS evidence into MVP findings."""
+```
+
+Note: `field: RuleField` (an enum), not `field: str`. Catches typos at model construction time, not at "why is my rule not firing" time.
+
+================================================================================
+17. MODELS AND CBOM ALIGNMENT
+================================================================================
+
+MVP 0.1 does not emit CBOM. Internal models are forward-compatible with CycloneDX 1.6 CBOM:
+- `algorithm`: internal name string
+- `primitive`: future `algorithmProperties.primitive`
+- `parameter_set_identifier`: future `algorithmProperties.parameterSetIdentifier`
+- `key_size`: optional, where semantically correct
+- `protocol`: future `protocolProperties.type`, e.g. `tls`
+- `protocol_version`: future `protocolProperties.version`, e.g. `1.3`
+- `negotiated_group`: evidence field, not a `bom-ref`
+- `bom_ref`: optional future CBOM reference
+- `oid`: optional string
+- `nist_quantum_security_level`: optional int 1-5
+- `confidence`: high/medium/low, later mapped to numeric CycloneDX evidence confidence
+
+Do not claim direct mappings (`algorithm` → `algorithmProperties.primitive`, etc.). A later CBOM adapter creates the asset components.
+
+================================================================================
+18. JSON OUTPUT
+================================================================================
+
+Top-level JSON keys must appear in this exact order for stable diffs:
 
 ```json
 {
@@ -275,132 +732,305 @@ qureddy scan tls 1.2.3.4:443 --sni example.com
 }
 ```
 
-Every scan must record OpenSSL dependency metadata:
+Raw evidence policy:
+- include parsed evidence
+- include command args, redacted if needed
+- include return code
+- include stdout/stderr SHA-256 hashes
+- include parsed negotiated group, protocol, cipher
+- include failure category when applicable
+- include attempt_number on each ProbeResult
+- include total_attempts on ScanMetadata
+- do not include full OpenSSL stdout/stderr by default
+- do not include full traces
+- do not include certificate PEM bodies
 
-- `name`
-- `path`
-- `version`
-- `supports_tls13_groups`
-- `supports_x25519mlkem768`
+================================================================================
+19. RICH OUTPUT
+================================================================================
 
-## Raw evidence policy
+Default format is rich. Header line:
 
-Normal JSON output should include parsed evidence and hashes, not full large raw traces.
+  `QuReddy 0.1.0 by BreachSAFE OSS`
 
-Include:
+No emoji. Example shape:
 
-- command args, redacted if needed
-- return code
-- stdout hash
-- stderr hash
-- parsed negotiated group
-- parsed protocol
-- parsed cipher
-- failure category
-- OpenSSL path/version/capabilities
+```
+QuReddy 0.1.0 by BreachSAFE OSS
+Target: tls://example.com:443
+OpenSSL: /path/to/openssl OpenSSL 3.5.x
 
-Do not log secrets or full certificate bodies.
+TLS 1.3 Key Exchange
+Hybrid probe:     X25519MLKEM768    transitional_hybrid | info
+Classical probe:  X25519            quantum_vulnerable   | low
 
-## Policy for MVP
+Summary
+Findings: 2
+Readiness: transitional_hybrid
+```
 
-Use hardcoded Python rule objects, not YAML.
+Layout can vary, but must fit a normal terminal and must not use marketing copy.
 
-Minimum policy outcomes:
+================================================================================
+20. STRUCTURED LOGGING
+================================================================================
 
-1. `negotiated_group == X25519MLKEM768` → severity: `info`, readiness: `transitional_hybrid`, confidence: `high`
-2. hybrid not testable locally → severity: `info`, readiness: `unknown`, confidence: `high`
-3. hybrid probe failed → severity: `info`, readiness: `unknown`, confidence: `medium`
-4. `negotiated_group == X25519` → severity: `low`, readiness: `quantum_vulnerable`, confidence: `high`
+Add `structlog` to runtime dependencies.
 
-### Severity vocabulary
+`src/qureddy/core/logging.py` must expose:
 
-- `critical`
-- `high`
-- `medium`
-- `low`
-- `info`
+```python
+def configure_logging(verbosity: int = 0, json_logs: bool = False) -> None: ...
+def get_logger(name: str) -> structlog.stdlib.BoundLogger: ...
+```
 
-### Readiness vocabulary
+Verbosity: 0=WARNING, 1=INFO, 2=DEBUG, 3=DEBUG with extra subprocess and parsing context.
 
-- `quantum_vulnerable`
-- `classically_weak`
-- `transitional_hybrid`
-- `quantum_safe`
-- `unknown`
-- `not_applicable`
+CLI flags: `-v`, `-vv`, `-vvv`, `--json-logs`, `-q/--quiet`.
 
-## Exit codes
+Discipline:
+- logs go to stderr
+- scan results go to stdout
+- never mix logs and scan output
 
-- `0` = scan completed, no findings above threshold
-- `1` = scan completed, findings above threshold
-- `2` = target scan failed
-- `3` = local dependency missing or unsupported
-- `4` = usage/configuration error
+Log: scanner phase start/end at INFO with duration_ms; subprocess start/end at INFO with redacted args, timeout, return code, duration_ms; parser decisions at DEBUG with bounded input excerpts; policy evaluation at DEBUG with rule_id, matched, reasoning; recoverable errors at WARNING; scan failures at ERROR.
 
-For MVP, threshold defaults to `high`. Info/low findings should not fail CI by default.
+Never log: secrets, private keys, full PEMs, full OpenSSL traces, full certificate bodies.
 
-## Recommended first implementation files
+Tests: `json_logs=True` emits valid JSON; verbosity gates output correctly; scan_id and target context propagate through nested calls.
 
-- `src/qureddy/core/models.py`
-- `src/qureddy/core/targets.py`
-- `src/qureddy/core/policy.py`
-- `src/qureddy/core/errors.py`
-- `src/qureddy/scanners/tls/openssl_probe.py`
-- `src/qureddy/scanners/tls/parse.py`
-- `src/qureddy/scanners/tls/scanner.py`
-- `src/qureddy/output/json.py`
-- `src/qureddy/output/console.py`
-- `src/qureddy/cli.py`
-- `scripts/check_subprocess_boundaries.py`
-- `tests/fixtures/openssl/`
-- `tests/test_targets.py`
-- `tests/test_tls_parse.py`
-- `tests/test_policy.py`
+================================================================================
+21. DOCS/STANDARDS.md
+================================================================================
 
-Do not create speculative plugin infrastructure beyond what MVP needs. If a `Scanner` protocol already exists in docs and is needed, keep it minimal and synchronous.
+Create `docs/STANDARDS.md`. Document alignment to:
+- CycloneDX 1.6: future CBOM emission format
+- NIST IR 8547: PQC transition and CBOM concept reference
+- NIST FIPS 203: ML-KEM
+- NIST FIPS 204: ML-DSA, future scanners
+- NIST FIPS 205: SLH-DSA, future scanners
+- draft-ietf-tls-hybrid-design: TLS hybrid PQ key exchange
+- RFC 8446: TLS 1.3
+- OpenSSL 3.5: MVP probing implementation dependency, not a standard
 
-## Testing requirements
+Document non-alignment: CVSS, OWASP risk rating, NIST SP 800-30, SPDX 3.0, MITRE ATLAS. Say plainly why each does not apply to MVP 0.1 PQC TLS readiness scanning.
 
-- Unit tests must not require network access.
-- Use captured OpenSSL fixture outputs.
-- Parser tests must cover:
-  - `Negotiated TLS1.3 group: X25519MLKEM768`
-  - `Server Temp Key: X25519MLKEM768`
-  - `Server Temp Key: X25519`
-  - ClientHello-only `X25519MLKEM768` must be rejected
-  - ServerHello `key_share` `X25519MLKEM768` in trace must be accepted
-  - Missing group after apparent success produces `parse_no_group`
-- Target tests must cover:
-  - `example.com`
-  - `example.com:443`
-  - `https://example.com`
-  - `https://example.com:8443`
-  - `1.2.3.4:443`
-  - `1.2.3.4:443 --sni example.com`
-- Retry tests must cover:
-  - `--retry-on target_connect_failed --retries 3` against an unreachable host attempts exactly 4 times (1 initial + 3 retries) and reports total attempts in the result.
-  - `--retry-on tls_handshake_failed --retries 3` against an unreachable host does NOT retry (mismatched category) and exits after 1 attempt.
-  - Default behavior (no flags) is single-attempt.
-  - `--retries 3` without `--retry-on` exits with usage error (exit code 4).
-  - `--retry-on unknown_category` exits with usage error (exit code 4).
-  - `--retries 11` exits with usage error.
-  - `--retry-delay 100` exits with usage error.
-  - Retry delay is honored: 3 retries with `--retry-delay 0.1` takes >= 0.3 seconds wall time (use a clock injection or a fake sleep).
-  - Mid-stream category change stops retries: if attempt 1 is `target_connect_failed` (in `--retry-on`) and attempt 2 is `tls_handshake_failed` (not in `--retry-on`), stop and report the second.
-  - Each attempt produces its own evidence record; the result captures all of them.
+================================================================================
+22. TESTS
+================================================================================
 
-## Run before final response
+Use `pytest`. Per `docs/CODING_RULES.md`: every test runs every time. No skip markers, no `-m` gates, no `tests/integration/` carve-out. The full suite runs on every `pytest` invocation.
 
-- `ruff check .`
-- `mypy src/qureddy --strict`
+`pytest-rerunfailures` retries each test up to 3 times with 1s delay before declaring failure. This applies to all tests including live ones; it absorbs transient internet hiccups without hiding real failures.
+
+Required fixtures:
+
+- `tests/fixtures/openssl/brief_hybrid.txt` — realistic OpenSSL output containing `Negotiated TLS1.3 group: X25519MLKEM768` or `Server Temp Key: X25519MLKEM768, ...`
+- `tests/fixtures/openssl/brief_classical.txt` — `Server Temp Key: X25519, ...`
+- `tests/fixtures/openssl/clienthello_only_hybrid.txt` — `X25519MLKEM768` only as offered ClientHello material; parser must reject as proof of negotiation
+- `tests/fixtures/openssl/parse_no_group.txt` — successful-looking output with no parseable group
+
+Required tests:
+
+`tests/test_models.py`:
+- `ScanResult` serializes with top-level keys in exact order: `schema_version`, `scan`, `target`, `dependencies`, `assets`, `evidence`, `findings`, `summary`
+- `nist_quantum_security_level` rejects values below 1 and above 5
+- Enums serialize as lowercase strings
+- `Evidence` requires `observation_type`
+- `Finding` requires at least one `evidence_id`
+- All models except `ScanMetadata` are frozen (mutation raises)
+
+`tests/test_targets.py`:
+- `example.com`, `example.com:443`, `https://example.com`, `https://example.com:8443`, `1.2.3.4:443`
+- `1.2.3.4:443` with `sni_override="example.com"`
+- invalid input raises `TargetParseError`
+
+`tests/test_tls_parse.py`:
+- detects `X25519MLKEM768` from `Negotiated TLS1.3 group`
+- detects `X25519MLKEM768` from `Server Temp Key`
+- detects `X25519` from `Server Temp Key`
+- rejects ClientHello-only `X25519MLKEM768`
+- `parse_no_group` represented correctly
+- unexpected group represented correctly
+
+`tests/test_policy.py`:
+- `X25519MLKEM768` negotiated → `transitional_hybrid`/info/high
+- `X25519` negotiated → `quantum_vulnerable`/low/high
+- local not testable → unknown/info/high
+- failed hybrid probe → unknown/info/medium
+
+`tests/test_retry.py`:
+- `--retry-on target_connect_failed --retries 3` against unreachable host attempts exactly 4 times (1+3) and reports `total_attempts=4`
+- `--retry-on tls_handshake_failed --retries 3` against unreachable host does NOT retry on `target_connect_failed` (mismatched category), exits after 1 attempt
+- default behavior (no flags) is single-attempt
+- `--retries 3` without `--retry-on` exits 4
+- `--retry-on unknown_category` exits 4
+- `--retries 11` exits 4
+- `--retry-delay 100` exits 4
+- mid-stream category change stops retries
+- each attempt produces its own Evidence record
+- retry-delay timing honored: 3 retries with `--retry-delay 0.1` takes >= 0.3s wall time (use a clock injection or fake sleep — do not use `time.sleep` in tests directly)
+
+`tests/test_logging.py`:
+- JSON logs parse as JSON
+- verbosity levels gate logs
+- context vars propagate `scan_id` and `target`
+
+No placeholder tests. No `assert True` tests. No tests that only import modules.
+
+================================================================================
+23. LIVE TESTS
+================================================================================
+
+Live tests run as part of the default `pytest` suite, not behind any marker. They live in `tests/live/`. Every `pytest` invocation runs them. `pytest-rerunfailures` absorbs transient network blips.
+
+Targets are taken from `tests/fixtures/openssl/TARGETS.md`. For MVP 0.1, implement live tests for:
+
+PQ / hybrid candidates:
+- `pq.cloudflareresearch.com`
+- `www.cloudflare.com`
+- `www.google.com`
+
+Classical baseline:
+- `example.com`
+
+SNI handling:
+- `1.1.1.1:443` with `--sni one.one.one.one`
+
+TLS failure baseline (forced TLS 1.2-only):
+- `tls-v1-2.badssl.com:1012`
+
+Acceptance contract:
+
+1. `pq.cloudflareresearch.com` → exits 0 within 30s, valid JSON, includes `readiness=transitional_hybrid`
+2. `www.cloudflare.com` → exits 0 within 30s, valid JSON, *should usually* include `transitional_hybrid` (do not hardcode as required positive — endpoint posture changes)
+3. `www.google.com` → exits 0 within 30s, valid JSON (hybrid result may vary by region/edge)
+4. `example.com` → exits 0 within 30s, valid JSON, should not include `transitional_hybrid`
+5. `1.1.1.1:443 --sni one.one.one.one` → exits 0 within 30s, valid JSON; normalized target host is `1.1.1.1`, normalized SNI is `one.one.one.one`
+6. `tls-v1-2.badssl.com:1012` → exits 2 within 30s, valid JSON error structure, `failure_category=tls_handshake_failed`, no traceback
+
+Do not test against BreachSAFE-owned domains. Use public test infrastructure and controlled protocol edge cases.
+
+If a target fails its expected outcome, do not fake the result. Report whether this looks like endpoint posture change, OpenSSL capability issue, or scanner bug. Include captured output summary in final response.
+
+During implementation, save before/after smoke outputs under:
+
+```
+.tmp/smoke/before/
+.tmp/smoke/after/
+```
+
+Do not commit `.tmp/`. Add `.tmp/` to `.gitignore` if not present.
+
+Final response must summarize live test results for every target above.
+
+================================================================================
+24. QUALITY GATES
+================================================================================
+
+Run before final response:
+
 - `pytest`
+- `ruff check .`
+- `ruff format .`
+- `mypy src/qureddy --strict`
 
-If any command cannot run because project setup is incomplete, state that clearly and explain what blocked it.
+If network or OpenSSL 3.5+ is unavailable, explain exactly what command could not run and why.
 
-## Final response format
+If `ruff format` changes files, say so.
+
+MVP 0.1 is not complete unless: `pytest` passes (including live tests), `ruff check` passes, `ruff format` is clean, `mypy --strict` passes, OR a blocking external dependency is clearly documented.
+
+================================================================================
+24A. CODING RULES AUDIT
+================================================================================
+
+Before final response, walk every Python file you created or changed and audit it against `docs/CODING_RULES.md`. Check explicitly:
+
+**File and function size:**
+- No function longer than 30 lines without a justifying comment. Hard ceiling 50 lines.
+- No file longer than 300 lines without a justifying comment. Hard ceiling 400 lines.
+- Each module has one clear responsibility.
+
+**Naming:**
+- No `utils.py`, `helpers.py`, `common.py`, or any miscellaneous-bucket module.
+- Names describe what the thing is, not how it is implemented (`parse_certificate_chain`, not `cert_parser_func`).
+- No abbreviations except universal ones (TLS, SSH, RSA, KEX, HMAC). `certificate` not `cert` in type names.
+
+**Type hints:**
+- Every public function has type hints on every parameter and return value.
+- `from __future__ import annotations` at the top of every file.
+- `mypy --strict` clean.
+- No implicit `Any`. If you need `Any`, write it explicitly with a comment explaining why.
+
+**Error handling:**
+- No bare `except`. No `except Exception` without re-raise (top-level CLI is the only exception).
+- No swallowed exceptions. Every `except` clause re-raises, logs with structured context, or transforms into a domain error.
+- No `print()` for errors. Use the project logger.
+
+**Imports:**
+- No conditional imports inside functions without a documented reason.
+- Standard library, then third-party, then first-party, with blank lines between groups.
+- No `from x import *`. Ever.
+- No relative imports across modules. Absolute imports only.
+
+**Comments and docstrings:**
+- Every public class and function has a Google-style docstring with Args, Returns, Raises where applicable.
+- No commented-out code.
+- Comments explain *why*, not *what*.
+- No `# TODO` without a tracking issue or `# TODO(reason): description` format.
+- No `# noqa` without a specific rule code and a comment explaining why.
+
+**Subprocess discipline:**
+- All OpenSSL subprocess calls live only in `scanners/tls/openssl_probe.py`. No exceptions.
+- `subprocess.run` with args as a list, `shell=False`, explicit `timeout`, `capture_output=True`, `check=False`.
+- No `os.system`. No `shell=True`.
+
+**Security hygiene:**
+- No `eval()`, `exec()`, `pickle.loads()` on untrusted input.
+- No `verify=False` or `ssl.CERT_NONE`. A bad certificate is a finding, not a workaround.
+- No logging of secrets, private keys, full PEMs, full traces, full certificate bodies.
+- All user-supplied paths resolved via `pathlib.Path.resolve()` and validated.
+
+**Voice in code:**
+- No marketing language in docstrings or comments. No "leverage," no "intersection of," no "robust enterprise-grade."
+- No em dashes anywhere.
+- No emoji.
+- No ASCII art banners.
+
+For every violation, either fix it before responding or mark it explicitly:
+
+  `ANTIPATTERN ACCEPTED: <rule>, because <reason>`
+
+The two known accepted antipatterns for this MVP are already documented in section 15A (CycloneDX-flavored fields on Asset/Finding). Anything else needs explicit justification.
+
+================================================================================
+25. DEFINITION OF DONE
+================================================================================
+
+Incomplete if any of these are true:
+- `qureddy scan tls TARGET` does not execute a real OpenSSL subprocess
+- JSON output lacks dependencies, evidence, or findings
+- parser tests use only invented inline strings and no fixture files
+- live tests are absent
+- OpenSSL missing/old/lacking-group paths crash instead of returning structured output
+- logs appear on stdout
+- scan results appear on stderr
+- any created module is unused by command path or tests
+- TODO placeholders exist for MVP behavior
+- `sslyze`, `nassl`, `cryptography` appear in runtime dependencies
+- SQLite, CBOM, YAML policy loading, or `Dockerfile` appear
+
+================================================================================
+26. FINAL RESPONSE FORMAT
+================================================================================
 
 1. What you implemented.
-2. Files changed.
-3. Commands run and results.
-4. Anti-pattern audit result.
-5. Assumptions made.
+2. Files created or changed.
+3. Commands run and exact results.
+4. Live test results for every target in `tests/live/test_live_targets.py`.
+5. Anti-pattern audit result, including the `ANTIPATTERN ACCEPTED:` for CycloneDX-flavored model fields.
+6. What you intentionally did not implement because it is out of MVP 0.1 scope.
+7. Assumptions and open questions.
+
+Do not end with generic "let me know" language. Do not add marketing copy. Do not over-explain.
