@@ -1,3 +1,4 @@
+# SPDX-FileCopyrightText: 2026 BreachSAFE
 # SPDX-License-Identifier: Apache-2.0
 """CI Phase 7 audit script.
 
@@ -21,15 +22,22 @@ This script must NOT import from the qureddy package. It is a CI utility
 that runs against build outputs; coupling it to the code it audits would
 be circular.
 """
+
 from __future__ import annotations
 
 import argparse
 import json
-import re
 import sys
-import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from pathlib import Path
+
+# defusedxml replaces stdlib xml.etree to neutralize XXE / billion-laughs /
+# external-entity expansion. CI artifacts (coverage.xml, junit.xml) come
+# from third-party tooling output; even though we trust pytest today,
+# the security bar in CODING_RULES §26 is "no untrusted XML parsers,"
+# full stop, so we use the safe parser regardless of source trust.
+# `ET` is the universal Python idiom for ElementTree (N817 ack'd).
+from defusedxml import ElementTree as ET  # type: ignore[import-untyped]  # noqa: N817
 
 EXIT_OK = 0
 EXIT_FAIL = 1
@@ -75,10 +83,7 @@ def _check_phase_2_unit(artifacts: Path, result: AuditResult) -> None:
     """Verify unit tests ran and coverage >= 80%."""
     coverage_files = list(artifacts.glob("coverage-*/coverage.xml"))
     if not coverage_files:
-        result.note(
-            "phase-2: no coverage.xml found. "
-            "Pre-MVP state expected; no failure recorded."
-        )
+        result.note("phase-2: no coverage.xml found. Pre-MVP state expected; no failure recorded.")
         result.pre_mvp_soft_pass = True
         return
 
@@ -104,8 +109,7 @@ def _check_phase_2_unit(artifacts: Path, result: AuditResult) -> None:
             )
         else:
             result.ok(
-                f"phase-2: coverage {line_rate:.1f}% at {cov_file.parent.name} "
-                f"meets threshold"
+                f"phase-2: coverage {line_rate:.1f}% at {cov_file.parent.name} meets threshold"
             )
 
 
@@ -150,10 +154,7 @@ def _check_phase_5_self_scan(artifacts: Path, result: AuditResult) -> None:
 
     pending = self_scan_dir / "PENDING.json"
     if pending.is_file():
-        result.note(
-            "phase-5: scanner not yet present (PENDING.json marker). "
-            "Pre-MVP soft pass."
-        )
+        result.note("phase-5: scanner not yet present (PENDING.json marker). Pre-MVP soft pass.")
         result.pre_mvp_soft_pass = True
         return
 
@@ -176,9 +177,7 @@ def _check_phase_5_self_scan(artifacts: Path, result: AuditResult) -> None:
         scan_meta = data.get("scan", {})
         status = scan_meta.get("status", "<missing>")
         if status not in ("completed", "failed"):
-            result.fail(
-                f"phase-5: {json_file.name} has unexpected scan.status={status}"
-            )
+            result.fail(f"phase-5: {json_file.name} has unexpected scan.status={status}")
 
     missing = [t for t in EXPECTED_LIVE_TARGETS if not any(t in f for f in found_targets)]
     if missing:

@@ -1,0 +1,5 @@
+# captured: 2026-04-26T18:02:21Z
+# openssl: 3.5.6 (homebrew openssl@3.5)
+# command: openssl s_client -connect tls-v1-2.badssl.com:1012 -tls1_3 -groups X25519MLKEM768 -brief
+Connecting to 104.154.89.105
+C0605FFA01000000:error:0A000410:SSL routines:ssl3_read_bytes:ssl/tls alert handshake failure:ssl/record/rec_layer_s3.c:918:SSL alert number 40

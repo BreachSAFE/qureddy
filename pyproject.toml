@@ -1,3 +1,4 @@
+# SPDX-FileCopyrightText: 2026 BreachSAFE
 # SPDX-License-Identifier: Apache-2.0
 # Pre-MVP skeleton. The [project] block stays minimal until MVP 0.1
 # implementation lands real source files. The [tool.*] blocks lock
@@ -6,7 +7,7 @@
 
 [project]
 name = "breachsafe-qureddy"
-version = "0.0.0"  # placeholder; first real release at MVP 0.1
+version = "0.1.0"
 description = "Open-source post-quantum cryptography readiness scanner."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -14,7 +15,7 @@ license = {text = "Apache-2.0"}
 authors = [{name = "BreachSAFE QuReddy contributors"}]
 keywords = ["pqc", "post-quantum", "cryptography", "tls", "scanner", "cbom"]
 classifiers = [
-    "Development Status :: 2 - Pre-Alpha",
+    "Development Status :: 3 - Alpha",
     "Intended Audience :: Information Technology",
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: MacOS",
@@ -25,9 +26,17 @@ classifiers = [
     "Topic :: Security :: Cryptography",
 ]
 
-# Runtime dependencies land at MVP 0.1 implementation per the
-# mvp-implement skill: typer, rich, pydantic, structlog, packaging.
-dependencies = []
+# Runtime dependencies. click is pulled transitively by typer but
+# imported directly in cli.py for the UsageError → exit-4 remap, so
+# it is declared explicitly to satisfy deptry.
+dependencies = [
+    "typer>=0.12",
+    "click>=8.1",
+    "rich>=13.7",
+    "pydantic>=2.7",
+    "structlog>=24.1",
+    "packaging>=24.0",
+]
 
 [project.optional-dependencies]
 # Enterprise-grade gates from day 0. See:
@@ -43,10 +52,19 @@ dev = [
     "deptry>=0.20",
     "reuse>=4.0",
     "semgrep>=1.80",
+    # defusedxml is used by scripts/audit_phase.py to parse coverage.xml
+    # and junit.xml safely. CODING_RULES §26 forbids stdlib xml.etree on
+    # any input; defusedxml is the project-mandated alternative.
+    "defusedxml>=0.7",
 ]
 
 [project.scripts]
-qureddy = "qureddy.cli:app"
+# `qureddy.cli:main` (NOT `:app`) is the install-time entrypoint. The
+# `main()` wrapper translates click.UsageError to exit code 4 per the
+# documented exit-code surface (0 ok, 2 target failed, 3 local dep, 4
+# usage). Pointing to `:app` directly would let Click default to exit
+# 2 for usage errors, colliding with target-scan-failure.
+qureddy = "qureddy.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/paul007ex/qureddy"
@@ -60,6 +78,23 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/qureddy"]
+
+[tool.hatch.build.targets.sdist]
+# Explicitly exclude developer scratch — venvs, caches, scratch agent
+# trees, and the local `dist/` from prior builds. `.gitignore` already
+# excludes most of these from VCS, but hatch's sdist builder by default
+# includes the working tree, so it would pick up `.venv-merge/` (a
+# local test rig). Listing them explicitly here keeps `uv build` clean
+# regardless of what's in the working tree.
+exclude = [
+    ".venv*",
+    ".coverage",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+    "scratch",
+    "dist",
+]
 
 # ============================================================================
 # ruff
@@ -91,10 +126,36 @@ select = [
     "PTH",  # flake8-use-pathlib
     "ERA",  # eradicate (no commented-out code)
     "INP",  # implicit namespace package
+    "BLE",  # flake8-blind-except (catches `except Exception:` without noqa)
+    "SLF",  # flake8-self (private-member access from outside the class)
 ]
 ignore = [
-    "E501",   # line-too-long, handled by formatter
+    "E501",     # line-too-long, handled by formatter
     "PLR0913",  # too-many-arguments — Typer commands legitimately have many
+    # The mvp-implement skill explicitly mandates `class Foo(str, Enum)`
+    # (not `enum.StrEnum`) for the locked enums. The skill is the
+    # implementation authority; UP042 would request a change that
+    # violates the locked spec.
+    "UP042",
+    # `_LocalOpenSSLProblem` is the abstract base for the three local-
+    # capability exceptions; it is private and not raised directly.
+    # The mvp-implement skill convention is `*Error` suffix on the
+    # public hierarchy (QureddyError, TargetParseError, RetryConfigError);
+    # the private base does not need the suffix to be readable.
+    "N818",
+    # TC002/TC003 (move imports into TYPE_CHECKING blocks) trigger on
+    # types we genuinely use at runtime: `datetime.datetime` in Pydantic
+    # field declarations, `collections.abc.Callable` in retry.py
+    # parameter annotations (Pydantic and runtime-introspected callbacks
+    # need the symbol at module-load time), and `pytest.MonkeyPatch`
+    # used as a fixture type that pytest reads at collection time.
+    "TC002",
+    "TC003",
+    # `os.path.isfile` is the right primitive when paired with
+    # `os.access(path, os.X_OK)` — both check the same os-level inode
+    # state and using one Path call + one os.access call introduces a
+    # TOCTOU window the current single-namespace approach avoids.
+    "PTH113",
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -104,6 +165,11 @@ ignore = [
     "ARG",      # unused args allowed in fixtures
 ]
 "tests/fixtures/**" = ["E501"]  # fixture files may have long lines
+"scripts/**/*.py" = [
+    "INP001",   # scripts/ is intentionally not a package — these are
+                # standalone CLIs, not modules. Adding __init__.py to
+                # claim the namespace would be dishonest.
+]
 
 # ============================================================================
 # mypy
@@ -168,21 +234,68 @@ fail_under = 80
 show_missing = true
 
 # ============================================================================
+# pip-audit
+# ============================================================================
+[tool.pip-audit]
+# pip-audit 2.9 does not natively read this block; CI must pass the
+# same IDs via `pip-audit --ignore-vuln <ID>` for the gate to actually
+# pass. The block here is the documented record of accepted advisories.
+#
+# GHSA-58qw-9mgm-455v: pip's Mercurial revision argument injection.
+# OSV severity: MODERATE (CVSS 4.0 AV:L/PR:N/UI:A; CWE-434 archive
+# confusion). No fix released yet — pip 26.0.1 is the latest available.
+# This is a vulnerability in pip itself (the package manager), not in
+# qureddy or any of its runtime deps. We do not invoke pip from
+# qureddy at runtime; pip is dev-tooling only. Per the quality-gate
+# rules, MEDIUM and below are reported but do not block.
+# Reviewed: 2026-04-26. Re-review when pip ships a fix version.
+ignore-vulns = ["GHSA-58qw-9mgm-455v"]
+
+# ============================================================================
 # bandit
 # ============================================================================
 [tool.bandit]
 exclude_dirs = ["tests", "scratch"]
 # MEDIUM threshold: bandit fails CI on MEDIUM or HIGH findings.
 # LOW findings are reported but do not block.
+#
+# CI must invoke `bandit -r src/qureddy scripts/` (two roots) so the
+# audit script is scanned alongside production code. The skill's
+# `bandit -r src/qureddy` example covers the production tree only;
+# CI workflow widens the scope. Earlier the audit script shipped 3
+# XXE bugs that this scoping miss let through.
 
 # ============================================================================
 # deptry
 # ============================================================================
 [tool.deptry]
 known_first_party = ["qureddy"]
-extend_exclude = ["scratch", "scripts"]
+# Distribution name (`breachsafe-qureddy`) differs from import name
+# (`qureddy`); declare the mapping so deptry doesn't flag the dist as
+# missing-an-import.
+package_module_name_map = { "breachsafe-qureddy" = "qureddy" }
+# `scripts/` is intentionally INCLUDED in the deptry scan so that
+# imports from CI utilities (e.g. defusedxml in scripts/audit_phase.py)
+# count toward dependency-usage analysis. Excluding scripts/ would
+# make deptry think defusedxml is unused. `scratch/` stays excluded;
+# it's gitignored agent workspace.
+extend_exclude = ["scratch"]
 
 [tool.deptry.per_rule_ignores]
 # DEP002 = unused dependency. Some dev deps are CLI tools invoked by
-# CI workflow, not imported by Python code.
-DEP002 = ["bandit", "pip-audit", "deptry", "reuse", "semgrep"]
+# CI workflow, not imported by Python code. pytest, pytest-cov, and
+# pytest-rerunfailures will satisfy themselves once src/ + tests/
+# import them at MVP 0.1; ruff and mypy are pure CLI tools and stay
+# in this list permanently.
+DEP002 = [
+    "bandit",
+    "pip-audit",
+    "deptry",
+    "reuse",
+    "semgrep",
+    "ruff",
+    "mypy",
+    "pytest",
+    "pytest-cov",
+    "pytest-rerunfailures",
+]
