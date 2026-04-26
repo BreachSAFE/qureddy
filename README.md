@@ -1,5 +1,19 @@
 # BreachSAFE QuReddy
 
+[![Status: Pre-MVP](https://img.shields.io/badge/status-pre--MVP-orange?style=flat-square)](docs/mvp/CURRENT.md)
+[![Version](https://img.shields.io/badge/version-0.0.0--dev-lightgrey?style=flat-square)](CHANGELOG.md)
+[![Milestone](https://img.shields.io/badge/milestone-MVP%200.1-blue?style=flat-square)](.claude/skills/mvp-implement/SKILL.md)
+[![Python](https://img.shields.io/badge/python-3.12%2B-blue?style=flat-square&logo=python&logoColor=white)](https://www.python.org/downloads/)
+[![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue?style=flat-square)](LICENSE)
+[![Code Style: Ruff](https://img.shields.io/badge/code%20style-ruff-D7FF64?style=flat-square&logo=ruff&logoColor=black)](https://docs.astral.sh/ruff/)
+[![Type Checked: mypy strict](https://img.shields.io/badge/type%20check-mypy%20strict-blue?style=flat-square)](https://mypy-lang.org/)
+[![Security: bandit](https://img.shields.io/badge/security-bandit-yellow?style=flat-square)](https://github.com/PyCQA/bandit)
+[![OpenSSF Best Practices](https://img.shields.io/badge/OpenSSF-passing%20%28target%20MVP%200.6%29-yellow?style=flat-square)](https://www.bestpractices.dev/)
+[![CI](https://img.shields.io/badge/CI-not%20yet%20wired-lightgrey?style=flat-square)](.github/workflows/ci.yml)
+[![Coverage](https://img.shields.io/badge/coverage-%E2%89%A580%25%20required-brightgreen?style=flat-square)](pyproject.toml)
+[![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-FE5196?style=flat-square&logo=conventionalcommits&logoColor=white)](https://www.conventionalcommits.org)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square)](CONTRIBUTING.md)
+
 > Open-source post-quantum cryptography readiness scanner.
 > Find what's quantum-vulnerable. Generate a CBOM. Move on.
 
