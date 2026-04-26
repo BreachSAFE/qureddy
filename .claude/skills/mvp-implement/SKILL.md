@@ -133,16 +133,20 @@ Use case coverage from `docs/mvp/MVP-0.1-CLAUDE-PROMPT.md` Section 0B is mandato
 
 ## Quality gates before final response
 
-Run these before responding:
+Run these before responding (verify-only, do not modify files):
 
 ```
 ruff check .
-ruff format .
+ruff format --check .
 mypy src/qureddy --strict
 pytest
 ```
 
-If `ruff format` changes files, say so explicitly. If a command cannot run because the project setup is incomplete, name the blocking step.
+`ruff format --check .` reports formatting issues without rewriting files. Per CODING_RULES §1.5, mechanical formatting changes are separate from behavior changes. If formatting is wrong, surface it; do not silently rewrite the diff.
+
+If you are explicitly doing a formatting-only task, run `ruff format .` and warn that it will modify files. Otherwise use `--check`.
+
+If a command cannot run because project setup is incomplete, name the blocking step.
 
 ## Final response format
 

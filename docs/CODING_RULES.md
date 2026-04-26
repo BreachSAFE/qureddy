@@ -2,11 +2,13 @@
 
 These are the engineering standards for QuReddy. They apply to every contributor: humans, AI agents, and reviewers. They are not aspirational.
 
-This document is concrete enough to be a checklist. If your code disagrees with this document, your code is wrong, not the document.
+This document is concrete enough to be a checklist. The default is: when your code disagrees with this document, change the code. But this document is sometimes wrong (engineering rules age, projects evolve, edge cases exist). When you genuinely believe a rule is wrong for the situation in front of you, surface the conflict per Section 20 ("When You Disagree With This Document") rather than silently violating or silently following.
 
 This document covers Python authoring rules, CI/CD gates, security bar, and self-scanning discipline. Agent behavior rules (operating discipline, anti-patterns, the pre-response audit) live in `docs/AGENT_ANTIPATTERNS.md`. Project orientation lives in `CLAUDE.md`.
 
 QuReddy targets **OpenSSF Best Practices Badge — passing tier** by MVP 0.6, **silver tier** by v1.0. Rules below are mapped to OpenSSF criteria where applicable.
+
+> **Note on planned files.** Several rules below reference files that do not yet exist in the repo: `scripts/audit_phase.py`, `docs/SECURITY_EXCEPTIONS.md`, `SECURITY.md`, `docs/STANDARDS.md`, `.github/PULL_REQUEST_TEMPLATE.md`, the CI workflow files. They are referenced because the rules will be active once those files land. **Do not create empty placeholder files just to satisfy a doc reference.** When you need to refer to a planned file in code or docs, mark it as planned. The rules become enforced when their backing files exist.
 
 ---
 
@@ -247,8 +249,12 @@ Library code (anything under `src/qureddy/scanners/`, `src/qureddy/core/`) never
 Captured OpenSSL output from a real scan goes in `tests/fixtures/openssl/`. Captured certs go in `tests/fixtures/certs/`. Tests parse the fixtures.
 Synthetic test data is acceptable only when fixtures are unavailable. Document why.
 
-**Rule 9.3 — Every test runs every time. No skipped tests, no marker-gated suites.**
-The full suite runs on every PR and every local `pytest` invocation. No `@pytest.mark.acceptance`, no `tests/integration/` directory that runs on a different schedule, no `@pytest.mark.slow` exclusions. Slow CI is acceptable; missing coverage is not.
+**Rule 9.3 — Every test runs every time. No skipped tests, no marker-gated suites at the pytest layer.**
+The full suite runs on every PR and every local `pytest` invocation. No `@pytest.mark.acceptance`, no `tests/integration/` directory that runs on a different schedule, no `@pytest.mark.slow` exclusions, no `pytest -m "not X"` shortcuts.
+
+This is a pytest-layer rule. CI may organize the same tests into multiple **jobs** for fail-fast and isolation reasons (the 7-phase pipeline in §21 splits unit, integration, live, etc. into separate CI jobs). Splitting at the CI-job layer is fine and encouraged. What this rule forbids is splitting at the pytest layer with markers that exclude tests from default `pytest` invocations. Locally, `pytest` should run everything.
+
+Slow CI is acceptable; missing coverage is not.
 
 **Rule 9.4 — Network-dependent tests are explicitly allowed and required.**
 Hitting real targets (Cloudflare, badssl.com, AWS endpoints) catches middlebox, MTU, SNI, and certificate-edge-case regressions that captured fixtures cannot. Live tests live in `tests/live/` and run with the default `pytest` invocation.
@@ -384,7 +390,7 @@ Reproducible builds. Lock file is committed. Updates happen deliberately, with P
 QuReddy is Apache 2.0. AGPL and GPL dependencies make the project derivative-licensed. This is the project's most important license rule. LGPL is rejected by default.
 
 **Rule 13.4 — Prefer the standard library.**
-`pathlib`, `datetime`, `urllib3`, `subprocess`, `re`, `json`, `secrets`, `hmac`. The stdlib is well-maintained, well-known, and free.
+`pathlib`, `datetime`, `subprocess`, `re`, `json`, `secrets`, `hmac`, `urllib.request`, `urllib.parse`. The stdlib is well-maintained, well-known, and free. (Note: `urllib3` and `requests` are third-party. The stdlib equivalent is `urllib.request`. Reach for third-party HTTP only if stdlib genuinely falls short.)
 
 ---
 
@@ -603,28 +609,40 @@ Artifact: `phase-7-audit.json`, `phase-7-audit.md`
 
 ---
 
-## Section 22 — Required Per-PR Quality Gates
+## Section 22 — Quality Gates (Tier 1 Per-PR, Tier 2 Per-Release)
 
-Every PR must pass these before merge. They map to the 7 phases above. Branch protection enforces them.
+CI quality gates are split into two tiers based on cost-benefit at MVP scale.
 
-| Gate | Phase | Tool |
+**Tier 1 — every PR.** Lightweight gates that catch real bugs without spending much CI time. Branch protection requires every Tier 1 gate to pass before merge.
+
+| Gate | Phase | Tool | Notes |
+|---|---|---|---|
+| Lint | 1 | `ruff check` | |
+| Format | 1 | `ruff format --check` | check-only, never rewrites |
+| Type check | 1 | `mypy --strict` | |
+| Static security | 1 | `bandit` (MEDIUM threshold) | |
+| Secrets scan | 1 | `gitleaks` (or `trufflehog`) on diff | |
+| Unit tests | 2 | `pytest` excluding `tests/live/` (>=80% coverage) | |
+| Integration tests | 3 | `pytest tests/test_openssl_probe.py` | needs OpenSSL 3.5+ on runner |
+| Live tests | 4 | `pytest tests/live/` | needs network; 3 retries via `pytest-rerunfailures` |
+| Audit | 7 | `scripts/audit_phase.py` | reads phase artifacts, asserts on counts |
+
+**Tier 2 — every release tag.** Heavier gates that gate-block release artifacts but are too noisy or slow for per-PR cycles at MVP scale.
+
+| Gate | Tool | Notes |
 |---|---|---|
-| Lint | 1 | `ruff check` |
-| Format | 1 | `ruff format --check` |
-| Type check | 1 | `mypy --strict` |
-| Static security | 1 | `bandit` (MEDIUM threshold) |
-| Dependency CVEs | 1 | `pip-audit` (HIGH/CRITICAL block) |
-| License compatibility | 1 | `pip-licenses` (AGPL/GPL/LGPL block) |
-| Secrets scan | 1 | `trufflehog` or `gitleaks` |
-| Unit tests | 2 | `pytest` (>=80% coverage) |
-| Integration tests | 3 | `pytest tests/test_openssl_probe.py` |
-| Live tests | 4 | `pytest tests/live/` |
-| Self-scan | 5 | `qureddy scan tls <target>` (when scanner exists) |
-| Build | 6 | `uv build` |
-| Filesystem scan | 6 | `trivy fs` |
-| Audit | 7 | `scripts/audit_phase.py` |
+| Dependency CVEs | `pip-audit` (HIGH/CRITICAL block) | per-PR generates noise from upstream CVEs you don't control; fix on release cadence |
+| License compatibility | `pip-licenses` (AGPL/GPL/LGPL block) | runs on `pyproject.toml` change at minimum; full sweep on release |
+| Self-scan | `qureddy scan tls <target>` × 6 targets | requires scanner to exist (MVP 0.1+) |
+| Build verification | `uv build` (sdist + wheel) | |
+| Filesystem scan | `trivy fs` (HIGH/CRITICAL block) | release-time only |
+| Internal link check | `lychee` on `*.md` | release-time + when docs change |
 
-CI runs on the matrix: **ubuntu-latest × macos-latest × windows-latest × Python 3.12**. All three platforms must pass. OpenSSL 3.5+ is installed per-platform during CI setup.
+**Rationale for the split:** at MVP 0.1 there is no scanner, no release cadence, and a small dependency tree. Running every Tier 2 gate on every PR creates more red CI from upstream noise than it catches in our own code. Tier 1 catches what we can fix; Tier 2 catches what we ship.
+
+**At v1.0**, Tier 2 gates promote to Tier 1 on a case-by-case basis as the dependency tree, release cadence, and threat model justify the per-PR cost.
+
+CI runs on the matrix: **ubuntu-latest × macos-latest × windows-latest × Python 3.12**. All three platforms must pass for both tiers. OpenSSL 3.5+ is installed per-platform during CI setup.
 
 ---
 
@@ -881,14 +899,14 @@ The minimum checklist for every PR. Long enough to catch real issues, short enou
 - [ ] Error paths and boundary values tested
 - [ ] No new `@pytest.mark.skip` or `@pytest.mark.acceptance`
 
-**Security:**
+**Security (Tier 1 per-PR):**
 - [ ] `bandit` passes at MEDIUM threshold
-- [ ] `pip-audit` passes (no HIGH or CRITICAL CVEs)
-- [ ] `pip-licenses` passes (no AGPL/GPL/LGPL)
-- [ ] Secret scan clean
+- [ ] Secret scan on diff clean (`gitleaks` or `trufflehog`)
 - [ ] No `verify=False`, `shell=True`, `eval`/`exec`, `pickle.loads`
 - [ ] Subprocess calls are list-form with explicit timeout
 - [ ] OpenSSL subprocess calls live only in `openssl_probe.py`
+
+(`pip-audit` and `pip-licenses` run as Tier 2 per-release per Section 22; per-PR, they only fire when `pyproject.toml` or `uv.lock` changes.)
 
 **Process:**
 - [ ] Anti-pattern audit recorded in PR description
@@ -903,8 +921,9 @@ If any of these are unchecked, the PR is not ready.
 
 In addition to Tier 1:
 
-- [ ] `trivy fs` passes
-- [ ] `interrogate` >= 90% docstring coverage (when adopted)
+- [ ] `pip-audit` passes (no HIGH or CRITICAL CVEs)
+- [ ] `pip-licenses` passes (no AGPL/GPL/LGPL)
+- [ ] `trivy fs` passes (no HIGH or CRITICAL findings)
 - [ ] Build verifies (`uv build` succeeds, both sdist and wheel)
 - [ ] Internal documentation links verified (`lychee`)
 - [ ] External documentation links checked within last 7 days

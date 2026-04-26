@@ -1,4 +1,11 @@
-# MVP 0.1 — Claude Implementation Prompt
+# MVP 0.1 — Claude Implementation Prompt (HISTORICAL REFERENCE)
+
+> **This document is no longer the implementation authority.**
+> The active authority is `.claude/skills/mvp-implement/SKILL.md`. That skill is what Claude Code loads when working on MVP 0.1.
+>
+> This file is preserved as historical reference. It contains material the skill references but does not duplicate: the architecture diagram (§0A), use cases (§0B), locked Pydantic model definitions (§15A), locked policy model (§16A), JSON output shape (§18), and retry semantics (§12A). Read those sections when the skill points you here.
+>
+> If this file and the skill disagree, **the skill wins.** Behavior changes go in the skill, not here.
 
 You are Claude Code implementing BreachSAFE QuReddy MVP 0.1 in this repository.
 
@@ -9,7 +16,7 @@ Your task:
   Build the working MVP 0.1 vertical slice:
   `qureddy scan tls TARGET`
 
-This prompt is the implementation authority for this task. If existing docs conflict with this prompt, follow this prompt and report the conflict in your final response. Do not silently merge conflicting requirements.
+The sections below remain the canonical reference for the technical material the skill points at (architecture, use cases, locked models, JSON shape, retry semantics).
 
 ================================================================================
 0. READ FIRST
@@ -1107,16 +1114,16 @@ Final response must summarize live test results for every target above.
 24. QUALITY GATES
 ================================================================================
 
-Run before final response:
+Run before final response (verify-only, do not modify files):
 
 - `pytest`
 - `ruff check .`
-- `ruff format .`
+- `ruff format --check .`
 - `mypy src/qureddy --strict`
 
-If network or OpenSSL 3.5+ is unavailable, explain exactly what command could not run and why.
+`ruff format --check .` reports issues without rewriting files. Per CODING_RULES §1.5, mechanical formatting is a separate commit from behavior. If formatting is wrong, surface it; do not silently rewrite the diff. Only run `ruff format .` (no `--check`) when explicitly doing a formatting-only task, and warn the user it will modify files.
 
-If `ruff format` changes files, say so.
+If network or OpenSSL 3.5+ is unavailable, explain exactly what command could not run and why.
 
 MVP 0.1 is not complete unless: `pytest` passes (including live tests), `ruff check` passes, `ruff format` is clean, `mypy --strict` passes, OR a blocking external dependency is clearly documented.
 

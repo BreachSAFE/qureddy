@@ -96,7 +96,7 @@ If you are Claude Code starting a fresh session:
 4. Read `docs/CODING_RULES.md` before writing any code.
 5. Begin work. Audit your output against `docs/AGENT_ANTIPATTERNS.md` before each response.
 
-If asked for an MVP 0.1 implementation task, the operational authority is `.claude/skills/mvp-implement/SKILL.md`. The previous monolithic prompt in `docs/mvp/MVP-0.1-CLAUDE-PROMPT.md` has been migrated into that skill.
+If asked for an MVP 0.1 implementation task, the **only** operational authority is `.claude/skills/mvp-implement/SKILL.md`. When the skill points you at sections of `docs/mvp/MVP-0.1-CLAUDE-PROMPT.md` (locked model definitions, use cases, JSON shape, retry semantics), read those sections — but the skill is what governs your behavior, not the historical prompt. If the two disagree, the skill wins.
 
 ## License
 
