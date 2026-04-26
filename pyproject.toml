@@ -1,0 +1,188 @@
+# SPDX-License-Identifier: Apache-2.0
+# Pre-MVP skeleton. The [project] block stays minimal until MVP 0.1
+# implementation lands real source files. The [tool.*] blocks lock
+# the enterprise-grade gates from day 0 so they apply to the first
+# line of code anyone writes.
+
+[project]
+name = "breachsafe-qureddy"
+version = "0.0.0"  # placeholder; first real release at MVP 0.1
+description = "Open-source post-quantum cryptography readiness scanner."
+readme = "README.md"
+requires-python = ">=3.12"
+license = {text = "Apache-2.0"}
+authors = [{name = "BreachSAFE QuReddy contributors"}]
+keywords = ["pqc", "post-quantum", "cryptography", "tls", "scanner", "cbom"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Information Technology",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Security :: Cryptography",
+]
+
+# Runtime dependencies land at MVP 0.1 implementation per the
+# mvp-implement skill: typer, rich, pydantic, structlog, packaging.
+dependencies = []
+
+[project.optional-dependencies]
+# Enterprise-grade gates from day 0. See:
+# .claude/skills/mvp-implement/SKILL.md "Quality gates" section.
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "pytest-rerunfailures>=14.0",
+    "ruff>=0.6",
+    "mypy>=1.10",
+    "bandit>=1.7",
+    "pip-audit>=2.7",
+    "deptry>=0.20",
+    "reuse>=4.0",
+    "semgrep>=1.80",
+]
+
+[project.scripts]
+qureddy = "qureddy.cli:app"
+
+[project.urls]
+Homepage = "https://github.com/paul007ex/qureddy"
+Repository = "https://github.com/paul007ex/qureddy"
+Issues = "https://github.com/paul007ex/qureddy/issues"
+Changelog = "https://github.com/paul007ex/qureddy/blob/main/CHANGELOG.md"
+
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/qureddy"]
+
+# ============================================================================
+# ruff
+# ============================================================================
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "B",    # flake8-bugbear
+    "C4",   # flake8-comprehensions
+    "UP",   # pyupgrade
+    "N",    # pep8-naming
+    "S",    # flake8-bandit (security)
+    "SIM",  # flake8-simplify
+    "TCH",  # flake8-type-checking
+    "RUF",  # ruff-specific
+    "PL",   # pylint
+    "PT",   # pytest style
+    "RET",  # flake8-return
+    "ARG",  # flake8-unused-arguments
+    "DTZ",  # flake8-datetimez (timezone-aware datetime)
+    "PTH",  # flake8-use-pathlib
+    "ERA",  # eradicate (no commented-out code)
+    "INP",  # implicit namespace package
+]
+ignore = [
+    "E501",   # line-too-long, handled by formatter
+    "PLR0913",  # too-many-arguments — Typer commands legitimately have many
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = [
+    "S101",     # asserts allowed in tests
+    "PLR2004",  # magic numbers allowed in tests
+    "ARG",      # unused args allowed in fixtures
+]
+"tests/fixtures/**" = ["E501"]  # fixture files may have long lines
+
+# ============================================================================
+# mypy
+# ============================================================================
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+no_implicit_reexport = true
+disallow_any_generics = true
+disallow_subclassing_any = true
+disallow_untyped_calls = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+strict_equality = true
+extra_checks = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false  # tests can have looser typing
+
+# ============================================================================
+# pytest + pytest-rerunfailures + pytest-cov
+# ============================================================================
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+    "--reruns=3",
+    "--reruns-delay=1",
+]
+# Per docs/CODING_RULES.md Rule 9.3: every test runs every time.
+# No marker-gated suites at the pytest layer. CI may organize tests
+# into multiple JOBS for fail-fast, but pytest itself runs everything.
+markers = []
+
+# ============================================================================
+# coverage
+# ============================================================================
+[tool.coverage.run]
+branch = true
+source = ["qureddy"]
+omit = ["tests/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+]
+fail_under = 80
+show_missing = true
+
+# ============================================================================
+# bandit
+# ============================================================================
+[tool.bandit]
+exclude_dirs = ["tests", "scratch", "inbox"]
+# MEDIUM threshold: bandit fails CI on MEDIUM or HIGH findings.
+# LOW findings are reported but do not block.
+
+# ============================================================================
+# deptry
+# ============================================================================
+[tool.deptry]
+known_first_party = ["qureddy"]
+extend_exclude = ["scratch", "inbox", "scripts"]
+
+[tool.deptry.per_rule_ignores]
+# DEP002 = unused dependency. Some dev deps are CLI tools invoked by
+# CI workflow, not imported by Python code.
+DEP002 = ["bandit", "pip-audit", "deptry", "reuse", "semgrep"]
