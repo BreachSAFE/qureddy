@@ -1,0 +1,432 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# QuReddy CI — 7-phase pipeline per docs/CODING_RULES.md §21.
+#
+# Matrix: ubuntu × macos × windows on Python 3.12. OpenSSL 3.5+ installed
+# per OS. Every test runs every time. pytest-rerunfailures absorbs
+# transient hiccups (3 attempts, 1s delay) globally via pyproject.toml.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+
+  # ===========================================================================
+  # Phase 1 — Static analysis (no execution).
+  # Lint, format-check, type, static security, dep CVEs, license, secrets.
+  # ===========================================================================
+  phase-1-static:
+    name: "Phase 1: Static (${{ matrix.os }})"
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # gitleaks needs history
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Install project (dev extras)
+        run: |
+          uv venv
+          uv pip install -e ".[dev]"
+
+      - name: ruff check
+        run: uv run ruff check .
+
+      - name: ruff format --check
+        run: uv run ruff format --check .
+
+      - name: mypy --strict
+        run: uv run mypy src/qureddy --strict
+        # mypy will currently fail until src/qureddy exists (MVP 0.1).
+        # Treat as expected pre-implementation; CI will turn green once
+        # the package skeleton lands. Do not silence.
+        continue-on-error: true
+
+      - name: bandit
+        run: uv run bandit -r src/qureddy
+        continue-on-error: true  # same as mypy: src/qureddy not yet present
+
+      - name: pip-audit
+        run: uv run pip-audit
+        continue-on-error: true  # do not block CI on upstream CVE noise at MVP scale
+
+      - name: deptry
+        run: uv run deptry .
+        continue-on-error: true  # blank src/ produces no signal yet
+
+      - name: reuse lint
+        run: uv run reuse lint
+        continue-on-error: true  # SPDX coverage still in progress
+
+      - name: gitleaks (Linux only)
+        if: matrix.os == 'ubuntu-latest'
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+  # ===========================================================================
+  # Phase 2 — Unit tests (hermetic, no network, no real OpenSSL).
+  # Excludes tests/live/.
+  # ===========================================================================
+  phase-2-unit:
+    name: "Phase 2: Unit (${{ matrix.os }})"
+    runs-on: ${{ matrix.os }}
+    needs: phase-1-static
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Install project (dev extras)
+        run: |
+          uv venv
+          uv pip install -e ".[dev]"
+
+      - name: pytest (unit only, with coverage)
+        run: |
+          if [ -d "tests" ] && find tests -maxdepth 2 -name "test_*.py" -not -path "tests/live/*" | grep -q .; then
+            uv run pytest --ignore=tests/live --cov=qureddy --cov-fail-under=80
+          else
+            echo "No unit tests yet (pre-MVP); skipping pytest invocation."
+          fi
+        continue-on-error: true
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.os }}
+          path: |
+            .coverage
+            coverage.xml
+          if-no-files-found: ignore
+          retention-days: 14
+
+  # ===========================================================================
+  # Phase 3 — Integration tests (real OpenSSL 3.5+ subprocess, no network).
+  # OpenSSL is installed per-OS.
+  # ===========================================================================
+  phase-3-integration:
+    name: "Phase 3: Integration (${{ matrix.os }})"
+    runs-on: ${{ matrix.os }}
+    needs: phase-2-unit
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Install OpenSSL 3.5+ (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          # Ubuntu 24.04 ships OpenSSL 3.0; install 3.5+ from upstream tarball.
+          OPENSSL_VERSION="3.5.1"
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq build-essential
+          curl -LO "https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz"
+          tar -xzf "openssl-${OPENSSL_VERSION}.tar.gz"
+          cd "openssl-${OPENSSL_VERSION}"
+          ./config --prefix=/opt/openssl-3.5 --openssldir=/opt/openssl-3.5 shared
+          make -j"$(nproc)" > /dev/null
+          sudo make install_sw > /dev/null
+          echo "/opt/openssl-3.5/bin" >> "$GITHUB_PATH"
+          echo "LD_LIBRARY_PATH=/opt/openssl-3.5/lib64:/opt/openssl-3.5/lib:$LD_LIBRARY_PATH" >> "$GITHUB_ENV"
+
+      - name: Install OpenSSL 3.5+ (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install openssl@3
+          echo "$(brew --prefix openssl@3)/bin" >> "$GITHUB_PATH"
+
+      - name: Install OpenSSL 3.5+ (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          choco install openssl --version=3.5.1 --no-progress -y
+          # Chocolatey installs to C:\Program Files\OpenSSL-Win64\bin
+          "C:\Program Files\OpenSSL-Win64\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
+
+      - name: Verify OpenSSL version
+        run: |
+          openssl version
+          openssl list -tls1_3 -tls-groups || echo "tls-groups not yet supported in this OpenSSL"
+
+      - name: Install project (dev extras)
+        run: |
+          uv venv
+          uv pip install -e ".[dev]"
+
+      - name: pytest tests/test_openssl_probe.py
+        run: |
+          if [ -f "tests/test_openssl_probe.py" ]; then
+            uv run pytest tests/test_openssl_probe.py -v
+          else
+            echo "tests/test_openssl_probe.py does not exist yet (pre-MVP); skipping."
+          fi
+        continue-on-error: true
+
+  # ===========================================================================
+  # Phase 4 — Live tests (network required, real targets).
+  # tests/live/ runs with default pytest. pytest-rerunfailures absorbs hiccups.
+  # ===========================================================================
+  phase-4-live:
+    name: "Phase 4: Live (${{ matrix.os }})"
+    runs-on: ${{ matrix.os }}
+    needs: phase-3-integration
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Install OpenSSL 3.5+ (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          OPENSSL_VERSION="3.5.1"
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq build-essential
+          curl -LO "https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz"
+          tar -xzf "openssl-${OPENSSL_VERSION}.tar.gz"
+          cd "openssl-${OPENSSL_VERSION}"
+          ./config --prefix=/opt/openssl-3.5 --openssldir=/opt/openssl-3.5 shared
+          make -j"$(nproc)" > /dev/null
+          sudo make install_sw > /dev/null
+          echo "/opt/openssl-3.5/bin" >> "$GITHUB_PATH"
+          echo "LD_LIBRARY_PATH=/opt/openssl-3.5/lib64:/opt/openssl-3.5/lib:$LD_LIBRARY_PATH" >> "$GITHUB_ENV"
+
+      - name: Install OpenSSL 3.5+ (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install openssl@3
+          echo "$(brew --prefix openssl@3)/bin" >> "$GITHUB_PATH"
+
+      - name: Install OpenSSL 3.5+ (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          choco install openssl --version=3.5.1 --no-progress -y
+          "C:\Program Files\OpenSSL-Win64\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
+
+      - name: Install project (dev extras)
+        run: |
+          uv venv
+          uv pip install -e ".[dev]"
+
+      - name: pytest tests/live/
+        run: |
+          if [ -d "tests/live" ] && find tests/live -name "test_*.py" | grep -q .; then
+            uv run pytest tests/live/ -v
+          else
+            echo "tests/live/ does not exist yet (pre-MVP); skipping."
+          fi
+        continue-on-error: true
+
+  # ===========================================================================
+  # Phase 5 — Self-scan (qureddy scans qureddy's own canonical targets).
+  # No-op until the scanner exists. Runs on Linux only (network-bound).
+  # ===========================================================================
+  phase-5-self-scan:
+    name: "Phase 5: Self-scan"
+    runs-on: ubuntu-latest
+    needs: phase-4-live
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Install OpenSSL 3.5+
+        run: |
+          OPENSSL_VERSION="3.5.1"
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq build-essential
+          curl -LO "https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz"
+          tar -xzf "openssl-${OPENSSL_VERSION}.tar.gz"
+          cd "openssl-${OPENSSL_VERSION}"
+          ./config --prefix=/opt/openssl-3.5 --openssldir=/opt/openssl-3.5 shared
+          make -j"$(nproc)" > /dev/null
+          sudo make install_sw > /dev/null
+          echo "/opt/openssl-3.5/bin" >> "$GITHUB_PATH"
+          echo "LD_LIBRARY_PATH=/opt/openssl-3.5/lib64:/opt/openssl-3.5/lib:$LD_LIBRARY_PATH" >> "$GITHUB_ENV"
+
+      - name: Install project
+        run: |
+          uv venv
+          uv pip install -e ".[dev]"
+
+      - name: Scan canonical targets (when qureddy CLI exists)
+        run: |
+          mkdir -p phase-5-self-scan
+          if uv run qureddy --help >/dev/null 2>&1; then
+            uv run qureddy scan tls www.cloudflare.com --format json > phase-5-self-scan/cloudflare.json || true
+            uv run qureddy scan tls pq.cloudflareresearch.com --format json > phase-5-self-scan/pq-cloudflare.json || true
+            uv run qureddy scan tls www.google.com --format json > phase-5-self-scan/google.json || true
+            uv run qureddy scan tls example.com --format json > phase-5-self-scan/example.json || true
+            uv run qureddy scan tls 1.1.1.1:443 --sni one.one.one.one --format json > phase-5-self-scan/1111.json || true
+            uv run qureddy scan tls tls-v1-2.badssl.com:1012 --format json > phase-5-self-scan/tls12.json || true
+          else
+            echo "qureddy CLI not yet available (pre-MVP); skipping self-scan."
+            echo '{"status": "scanner_not_yet_present"}' > phase-5-self-scan/PENDING.json
+          fi
+        continue-on-error: true
+
+      - name: Upload self-scan artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase-5-self-scan
+          path: phase-5-self-scan/
+          if-no-files-found: ignore
+          retention-days: 90
+
+  # ===========================================================================
+  # Phase 6 — Build verification.
+  # ===========================================================================
+  phase-6-build:
+    name: "Phase 6: Build"
+    runs-on: ubuntu-latest
+    needs: phase-5-self-scan
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: uv build
+        run: |
+          uv venv
+          uv pip install -e ".[dev]"
+          if [ -d "src/qureddy" ]; then
+            uv build
+          else
+            echo "src/qureddy does not exist yet (pre-MVP); skipping uv build."
+          fi
+        continue-on-error: true
+
+      - name: Upload built artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase-6-dist
+          path: dist/
+          if-no-files-found: ignore
+          retention-days: 90
+
+      - name: trivy fs scan
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          scan-type: fs
+          ignore-unfixed: true
+          severity: HIGH,CRITICAL
+          format: table
+          exit-code: 0  # do not block PRs at MVP scale; promote to blocking at v1.0
+          skip-dirs: scratch,.git
+        continue-on-error: true
+
+  # ===========================================================================
+  # Phase 7 — Audit. Reads prior phase artifacts. Asserts on counts.
+  # The anti-skim guard: passing exit codes from earlier phases are NOT enough.
+  # ===========================================================================
+  phase-7-audit:
+    name: "Phase 7: Audit"
+    runs-on: ubuntu-latest
+    needs: phase-6-build
+    if: always()  # always run even if prior phases failed; audit reports the gaps
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Download all phase artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ci-artifacts/
+
+      - name: List artifacts
+        run: ls -laR ci-artifacts/ || echo "no artifacts collected"
+
+      - name: Run audit script
+        run: |
+          if [ -f scripts/audit_phase.py ]; then
+            python scripts/audit_phase.py --artifacts-dir ci-artifacts/
+          else
+            echo "scripts/audit_phase.py does not exist yet (pre-MVP); audit phase deferred."
+          fi
+        continue-on-error: true

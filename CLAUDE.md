@@ -25,7 +25,7 @@ This repo is **pre-MVP**. The shipping source tree does not exist yet:
 - `tests/` currently contains only `tests/fixtures/openssl/TARGETS.md`. No live test files yet.
 - The README's `qureddy scan tls ...` examples describe the v1.0 experience and do not run today.
 - `scratch/claude-1`, `scratch/claude-2`, `scratch/claude-3-developer/`, `scratch/quiz-summarize-findings/` hold prior agent attempts. Treat them as **untrusted prior art**: do not import from them, do not copy code without re-deriving it against `docs/CODING_RULES.md` and the active skill, and do not edit them as part of normal work.
-- `inbox/` holds product/strategy docs (PROPOSAL, ROADMAP, COMPARISON, MVP-BREAKDOWN, QUESTIONNAIRE). Read for context only; they are not authoritative — `docs/` is.
+- `scratch/inbox/` holds product/strategy docs (PROPOSAL, ROADMAP, COMPARISON, MVP-BREAKDOWN, QUESTIONNAIRE). Gitignored (lives under `scratch/`). Read for context only; they are not authoritative — `docs/` is.
 
 When you start MVP 0.1 implementation, you create `pyproject.toml`, `src/qureddy/...`, and `tests/test_*.py` per the build order in `.claude/skills/mvp-implement/SKILL.md`.
 

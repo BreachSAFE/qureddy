@@ -1,5 +1,9 @@
-# Planning artifacts (per CLAUDE.md: not shipped)
+# Planning artifacts (per CLAUDE.md: not shipped).
+# Lives under scratch/inbox/ now, not at root. Keep both forms for safety
+# in case someone or something resurrects an `inbox/` at root by mistake.
 inbox/
+/inbox/
+scratch/inbox/
 
 # Python bytecode
 __pycache__/

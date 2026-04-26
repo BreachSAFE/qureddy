@@ -171,7 +171,7 @@ show_missing = true
 # bandit
 # ============================================================================
 [tool.bandit]
-exclude_dirs = ["tests", "scratch", "inbox"]
+exclude_dirs = ["tests", "scratch"]
 # MEDIUM threshold: bandit fails CI on MEDIUM or HIGH findings.
 # LOW findings are reported but do not block.
 
@@ -180,7 +180,7 @@ exclude_dirs = ["tests", "scratch", "inbox"]
 # ============================================================================
 [tool.deptry]
 known_first_party = ["qureddy"]
-extend_exclude = ["scratch", "inbox", "scripts"]
+extend_exclude = ["scratch", "scripts"]
 
 [tool.deptry.per_rule_ignores]
 # DEP002 = unused dependency. Some dev deps are CLI tools invoked by
