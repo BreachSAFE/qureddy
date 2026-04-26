@@ -100,9 +100,14 @@ desktop.ini
 nohup.out
 
 # Logs and local scratch
+# Agents drop sketch code under scratch/. Never commit it.
+# Belt and suspenders: match scratch anywhere AND scratch at the repo root explicitly.
 *.log
 .scratch/
 scratch/
+/scratch/
+Scratch/
+/Scratch/
 
 # Secrets, never commit
 .env

@@ -5,12 +5,14 @@
 
 `qureddy` runs in your terminal. Apache 2.0. No signup. No telemetry.
 
+> **Status: pre-MVP.** This README describes the v1.0 experience. None of the commands or installs below work yet. The first shipping milestone (MVP 0.1) implements only the TLS scanner. See [`CLAUDE.md`](CLAUDE.md) for the project spec and roadmap, and [`docs/mvp/CURRENT.md`](docs/mvp/CURRENT.md) for the active milestone.
+
 ---
 
 ## Quick Start
 
 ```bash
-# Install
+# Install (available at v1.0)
 pipx install breachsafe-qureddy
 
 # Scan a TLS endpoint
