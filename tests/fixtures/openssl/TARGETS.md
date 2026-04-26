@@ -32,20 +32,31 @@ Targets in this file are the canonical set the suite hits. When CI fails because
 
 ## Edge cases — `badssl.com` suite
 
-The canonical TLS edge-case test surface. Stable, public, exhaustive. Capture fixtures from at least these:
+The canonical TLS edge-case test surface. Stable, public, exhaustive.
+
+### MVP 0.1: TLS-version edge cases (in scope)
+
+These fail at the TLS layer and are observable without certificate chain parsing.
 
 | Target | Tests | Expected category |
 |---|---|---|
-| `expired.badssl.com` | Expired certificate | scan completes, finding emitted; not `tls_handshake_failed` |
-| `self-signed.badssl.com` | Self-signed cert chain | same; do not silently disable verification |
-| `untrusted-root.badssl.com` | Cert signed by an untrusted CA | same |
-| `wrong.host.badssl.com` | Common-name / SAN mismatch | same |
-| `revoked.badssl.com` | OCSP-revoked cert | same |
 | `tls-v1-0.badssl.com:1010` | Forces TLS 1.0 only | `tls_handshake_failed` (we require TLS 1.3) |
 | `tls-v1-1.badssl.com:1011` | Forces TLS 1.1 only | `tls_handshake_failed` |
 | `tls-v1-2.badssl.com:1012` | Forces TLS 1.2 only | `tls_handshake_failed` (we require TLS 1.3) |
 
-The bad-cert cases are the critical ones. The MVP must record them as findings, not bail with "couldn't connect." The "Disabled TLS verification" anti-pattern in `docs/AGENT_ANTIPATTERNS.md` is non-negotiable.
+### Future cert-scanner targets (NOT MVP 0.1)
+
+These targets exercise certificate-chain validity. MVP 0.1 explicitly excludes certificate chain parsing (see `docs/mvp/MVP-0.1-CLAUDE-PROMPT.md` §3 excludes), so the scanner cannot record cert-chain findings yet. These targets are recorded here so the future cert scanner (MVP 0.2+) has a known target list ready.
+
+| Target | Tests at cert-scanner stage |
+|---|---|
+| `expired.badssl.com` | Expired certificate finding |
+| `self-signed.badssl.com` | Self-signed cert chain finding |
+| `untrusted-root.badssl.com` | Cert signed by an untrusted CA |
+| `wrong.host.badssl.com` | Common-name / SAN mismatch |
+| `revoked.badssl.com` | OCSP-revoked cert |
+
+The "Disabled TLS verification" anti-pattern in `docs/AGENT_ANTIPATTERNS.md` is non-negotiable: when MVP 0.2 wires up these targets, the scanner records cert problems as findings, not as workarounds via `verify=False`.
 
 ## Failure categories — fixture mapping
 

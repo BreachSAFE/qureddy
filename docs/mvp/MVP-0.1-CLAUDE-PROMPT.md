@@ -286,7 +286,7 @@ Required runtime dependencies:
 - `rich`
 - `pydantic`
 - `structlog`
-- `packaging` (only if needed for OpenSSL version parsing)
+- `packaging` — required for OpenSSL version parsing. Do not hand-roll `Version` comparisons.
 
 Required dev/test dependencies:
 - `pytest`
@@ -304,12 +304,12 @@ Every new dependency must satisfy `docs/CODING_RULES.md`: actively maintained, A
 
 Create or update only files needed for the working MVP.
 
-Core files:
+Core files (create if missing, update only if needed):
 - `pyproject.toml`
-- `README.md` (already exists; update if needed)
-- `LICENSE` (already exists)
-- `.gitignore` (already exists; add `.tmp/` if not present)
-- `AGENTS.md` (already exists; update if needed)
+- `README.md`
+- `LICENSE`
+- `.gitignore` — ensure `.tmp/` is listed
+- `AGENTS.md`
 - `docs/STANDARDS.md`
 
 Python package:
@@ -339,6 +339,7 @@ Tests:
 - `tests/fixtures/openssl/parse_no_group.txt`
 - `tests/test_models.py`
 - `tests/test_targets.py`
+- `tests/test_openssl_probe.py` — capability detection: missing OpenSSL, version too old, lacks `X25519MLKEM768`. Use a fake OpenSSL binary (a tiny shell script in a fixture directory that emits canned `version` and `list -tls1_3 -tls-groups` output) so this stays hermetic.
 - `tests/test_tls_parse.py`
 - `tests/test_policy.py`
 - `tests/test_retry.py`
@@ -505,11 +506,26 @@ If a probe returns success but no negotiated group can be parsed: emit `parse_no
 12A. RETRY SEMANTICS
 ================================================================================
 
-The CLI accepts retry flags that apply to the scanner's interactions with the target:
+The CLI accepts retry flags that apply to the scanner's interactions with the target. Retries are narrow by design for MVP 0.1: only failures that can plausibly be transient are retryable.
 
-- `--retry-on CATEGORY[,CATEGORY...]` — comma-separated failure categories from the `FailureCategory` enum. Open gate: any category is accepted, no allowlist. Default: empty (no retries).
-- `--retries N` — integer, default 0, max 10.
-- `--retry-delay SECONDS` — float, default 1.0, max 60.
+Retryable categories (allowlist):
+- `target_connect_failed`
+- `tls_handshake_failed`
+- `middlebox_or_mtu_failure`
+- `parse_no_group`
+
+Non-retryable categories (always reject in `--retry-on`):
+- `local_openssl_missing`
+- `local_openssl_too_old`
+- `local_openssl_lacks_group` — local capability is deterministic; retry orchestration must not see it
+- `sni_required_or_wrong` — fix your SNI, don't retry
+- `parse_ambiguous` — deterministic on identical input
+- `unexpected_group` — deterministic on identical input
+
+Flags:
+- `--retry-on CATEGORY[,CATEGORY...]` — comma-separated failure categories. Only categories from the retryable allowlist above are accepted. Default: empty.
+- `--retries N` — integer, default 0, max 3.
+- `--retry-delay SECONDS` — float, default 1.0, max 10.
 
 Behavior:
 
@@ -517,11 +533,12 @@ Behavior:
 2. Between attempts, sleep `--retry-delay` seconds.
 3. If a retry produces a *different* failure category than the one that triggered the retry, stop and report the new category.
 4. If a retry produces a non-failure outcome, the scan succeeds and reports that outcome. Earlier failures are recorded as evidence.
-5. Retries do not apply to local capability failures in practice (`local_openssl_*` will return identical results) but the CLI does not block users from passing them. Help text notes: "Retrying deterministic failures (parse errors, capability checks) is allowed but typically pointless."
+5. Local capability failures are never reached by retry orchestration. They are detected at capability-check time before any probe runs and exit 3 immediately.
 6. Validation:
-   - `--retry-on` value not in `FailureCategory` enum → exit 4
-   - `--retries` outside [0, 10] → exit 4
-   - `--retry-delay` outside [0.0, 60.0] → exit 4
+   - `--retry-on` value not in the retryable allowlist → exit 4 with message naming the rejected category and the allowed set
+   - `--retry-on` value not in `FailureCategory` enum at all → exit 4 with message "unknown failure category"
+   - `--retries` outside [0, 3] → exit 4
+   - `--retry-delay` outside [0.0, 10.0] → exit 4
    - `--retries N > 0` without `--retry-on` → exit 4 with message "no retry categories specified"
 7. Each attempt produces its own `Evidence` record. The result reports total attempt count.
 
@@ -701,7 +718,7 @@ class Asset(BaseModel):
     negotiated_group: str | None = None
     bom_ref: str | None = None
     oid: str | None = None
-    nist_quantum_security_level: int | None = Field(default=None, ge=1, le=5)
+    nist_quantum_security_level: int | None = Field(default=None, ge=0, le=5)
 
 class Evidence(BaseModel):
     model_config = FROZEN
@@ -723,7 +740,7 @@ class Finding(BaseModel):
     model_config = FROZEN
     id: str
     asset_id: str
-    evidence_ids: tuple[str, ...]
+    evidence_ids: tuple[str, ...] = Field(min_length=1)
     rule_id: str
     finding_type: str
     title: str
@@ -740,13 +757,13 @@ class Finding(BaseModel):
     negotiated_group: str | None = None
     bom_ref: str | None = None
     oid: str | None = None
-    nist_quantum_security_level: int | None = Field(default=None, ge=1, le=5)
+    nist_quantum_security_level: int | None = Field(default=None, ge=0, le=5)
 
 class ScanMetadata(BaseModel):
-    model_config = ConfigDict(frozen=False, extra="forbid")
+    model_config = FROZEN
     scan_id: str
     started_at: datetime
-    completed_at: datetime | None = None
+    completed_at: datetime
     scanner_name: str = "tls"
     scanner_version: str = "0.1.0"
     status: str
@@ -774,8 +791,10 @@ class ScanResult(BaseModel):
 
 Notes:
 - `Evidence.notes: tuple[str, ...]` is the parser's debug context. No `dict[str, Any]` escape hatch.
-- `nist_quantum_security_level` is `ge=1, le=5` (NIST PQC categories are 1-5, not 0-5).
+- `nist_quantum_security_level` is `ge=0, le=5`, CycloneDX-aligned. `0` means "assessed and not in any PQ category"; `None` means "not assessed."
+- `Finding.evidence_ids` requires `min_length=1`. The model rejects orphan findings at construction time, not at test time.
 - `attempt_number` on `ProbeResult` and `total_attempts` on `ScanMetadata` support the retry feature.
+- **`ScanMetadata` is fully frozen.** `started_at` and `completed_at` are both required, no two-phase mutable construction. The `TLSScanner.scan()` orchestrator captures `started_at` as a local `datetime`, runs the scan, then constructs `ScanMetadata` once at the end with `completed_at` known. Do not build a `ScanMetadata` early and mutate it. Do not mutate any nested model after `ScanResult` is built.
 - The CycloneDX-flavored fields (`primitive`, `parameter_set_identifier`, `bom_ref`, `oid`, `nist_quantum_security_level`) are unused at MVP 0.1 but locked in now to avoid a JSON schema migration when CBOM emission lands at MVP 0.3. **`ANTIPATTERN ACCEPTED: speculative generality, because CycloneDX field names will land at MVP 0.3 and JSON schema stability matters for early adopters.`** Mark this in your final-response audit.
 
 ================================================================================
@@ -981,7 +1000,7 @@ Required tests:
 
 `tests/test_models.py`:
 - `ScanResult` serializes with top-level keys in exact order: `schema_version`, `scan`, `target`, `dependencies`, `assets`, `evidence`, `findings`, `summary`
-- `nist_quantum_security_level` rejects values below 1 and above 5
+- `nist_quantum_security_level` rejects values below 0 and above 5
 - Enums serialize as lowercase strings
 - `Evidence` requires `observation_type`
 - `Finding` requires at least one `evidence_id`
@@ -1032,7 +1051,7 @@ Every use case in section 0B must be covered by at least one test. Mapping:
 - Use Case 1 (Hybrid PQ negotiation) → `tests/live/test_live_targets.py::test_pq_cloudflareresearch_hybrid` AND `tests/test_tls_parse.py` (parser side)
 - Use Case 2 (Classical fallback) → `tests/live/test_live_targets.py::test_example_com_classical` AND `tests/test_policy.py`
 - Use Case 3 (SNI against IP) → `tests/live/test_live_targets.py::test_one_one_one_one_with_sni` AND `tests/test_targets.py`
-- Use Case 4 (Unsupported local OpenSSL) → `tests/test_tls_parse.py` or a dedicated `tests/test_capability.py` using a fake OpenSSL path that exits with stale version output
+- Use Case 4 (Unsupported local OpenSSL) → `tests/test_openssl_probe.py` using a fake OpenSSL binary (small shell script under `tests/fixtures/openssl/fake/`) that emits canned `openssl version` and `openssl list -tls1_3 -tls-groups` output. Capability detection is a probe-module concern, not a parser concern.
 - Use Case 5 (TLS 1.3 probe failure) → `tests/live/test_live_targets.py::test_tls12_only_handshake_failure`
 - Use Case 6 (Retry transient failure) → `tests/test_retry.py` (unit) — live retry verification is not required because the unit test already verifies attempt counting and Evidence records
 
