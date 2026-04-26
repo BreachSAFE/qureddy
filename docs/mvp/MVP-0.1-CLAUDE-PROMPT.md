@@ -33,6 +33,153 @@ You must audit your final diff against `docs/AGENT_ANTIPATTERNS.md` before final
   `ANTIPATTERN ACCEPTED: <name>, because <reason>`
 
 ================================================================================
+0A. ARCHITECTURE
+================================================================================
+
+```
+                          BreachSAFE QuReddy MVP 0.1
+
+                                  User
+                                   |
+                                   v
+                     qureddy scan tls TARGET [options]
+                                   |
+                                   v
+                            Typer CLI
+                         src/qureddy/cli.py
+                                   |
+                +------------------+------------------+
+                |                                     |
+                v                                     v
+        Target Normalizer                      Logging Setup
+     core/targets.py                           core/logging.py
+                |                                     |
+                v                                     v
+        ScanTarget model                    stderr structured logs
+                |
+                v
+           TLS Scanner
+    scanners/tls/scanner.py
+                |
+      +---------+----------+
+      |                    |
+      v                    v
+OpenSSL Capability     TLS Probe Runner
+openssl_probe.py       openssl_probe.py
+      |                    |
+      |                    +-----------------------------+
+      |                                                  |
+      v                                                  v
+OpenSSLDependency                              Hybrid probe: X25519MLKEM768
+path/version/groups                            Classical probe: X25519
+      |                                                  |
+      +----------------------+---------------------------+
+                             |
+                             v
+                       ProbeResult
+               stdout/stderr hashes, return code,
+               duration, attempt number, failure category
+                             |
+                             v
+                       TLS Parser
+                 scanners/tls/parse.py
+                             |
+                             v
+                         Evidence
+          negotiated group, protocol, cipher, observation type
+                             |
+                             v
+                     Policy Classifier
+                       core/policy.py
+                             |
+                             v
+                          Findings
+            severity, readiness, confidence, evidence refs
+                             |
+                             v
+                        ScanResult
+                       core/models.py
+                             |
+              +--------------+--------------+
+              |                             |
+              v                             v
+      Rich Output stdout             JSON Output stdout
+      output/console.py              output/json.py
+```
+
+**Boundary rule:**
+
+Only this module may execute OpenSSL:
+
+  `src/qureddy/scanners/tls/openssl_probe.py`
+
+All other modules consume typed models. They do not know OpenSSL exists.
+
+**No storage path:**
+
+MVP 0.1 has no SQLite, no CBOM, no reports, no scanner registry. Scan in, result out, exit.
+
+================================================================================
+0B. MVP USE CASES
+================================================================================
+
+These are the concrete user scenarios MVP 0.1 must satisfy. Every use case must be covered by either a unit test or a live test. If a use case has no corresponding test, the MVP is incomplete.
+
+**Use Case 1: Check Hybrid PQ Negotiation**
+
+As a security engineer, I want to scan one public TLS endpoint and determine whether it actually negotiates X25519MLKEM768.
+
+Command:
+  `qureddy scan tls pq.cloudflareresearch.com --format json`
+
+Success: JSON includes `readiness=transitional_hybrid` based on `negotiated` evidence (not `offered`).
+
+**Use Case 2: Confirm Classical Fallback**
+
+As a reviewer, I want to see whether a server still negotiates classical X25519 so I can compare hybrid and classical behavior.
+
+Command:
+  `qureddy scan tls example.com --format json`
+
+Success: JSON is valid. Findings do not falsely claim `transitional_hybrid`. Classical X25519 is reported as `quantum_vulnerable`.
+
+**Use Case 3: Scan With SNI Against An IP**
+
+As an operator, I want to scan a TLS virtual host by IP while supplying SNI.
+
+Command:
+  `qureddy scan tls 1.1.1.1:443 --sni one.one.one.one --format json`
+
+Success: Normalized target has `host=1.1.1.1` and `sni=one.one.one.one`. Probe uses `-servername one.one.one.one`.
+
+**Use Case 4: Detect Unsupported Local OpenSSL**
+
+As a user, I want a clear result when my local OpenSSL cannot test X25519MLKEM768.
+
+Command:
+  `qureddy scan tls google.com --openssl /path/to/old/openssl --format json`
+
+Success: Exit code 3. Output has `readiness=unknown`, `failure_category=local_openssl_too_old` or `local_openssl_lacks_group`. The scanner does not falsely claim the server is not PQ-ready.
+
+**Use Case 5: Handle TLS 1.3 Probe Failure Cleanly**
+
+As a reviewer, I want a TLS 1.2-only server to fail as structured scanner output, not a Python traceback.
+
+Command:
+  `qureddy scan tls tls-v1-2.badssl.com:1012 --format json`
+
+Success: Exit code 2. Output has `failure_category=tls_handshake_failed`. JSON is valid. No traceback on stderr.
+
+**Use Case 6: Retry A Transient Network Failure**
+
+As an operator, I want to retry only failure categories that might be transient.
+
+Command:
+  `qureddy scan tls example.com --retry-on target_connect_failed --retries 3 --retry-delay 1 --format json`
+
+Success: Each attempt is recorded as its own `Evidence`. `total_attempts` reflects actual attempts. Mid-stream change to a non-retryable category stops retries.
+
+================================================================================
 1. CRITICAL RULE: NO PLACEHOLDER SCAFFOLDING
 ================================================================================
 
@@ -878,6 +1025,19 @@ Required tests:
 
 No placeholder tests. No `assert True` tests. No tests that only import modules.
 
+**Use case coverage (per section 0B):**
+
+Every use case in section 0B must be covered by at least one test. Mapping:
+
+- Use Case 1 (Hybrid PQ negotiation) → `tests/live/test_live_targets.py::test_pq_cloudflareresearch_hybrid` AND `tests/test_tls_parse.py` (parser side)
+- Use Case 2 (Classical fallback) → `tests/live/test_live_targets.py::test_example_com_classical` AND `tests/test_policy.py`
+- Use Case 3 (SNI against IP) → `tests/live/test_live_targets.py::test_one_one_one_one_with_sni` AND `tests/test_targets.py`
+- Use Case 4 (Unsupported local OpenSSL) → `tests/test_tls_parse.py` or a dedicated `tests/test_capability.py` using a fake OpenSSL path that exits with stale version output
+- Use Case 5 (TLS 1.3 probe failure) → `tests/live/test_live_targets.py::test_tls12_only_handshake_failure`
+- Use Case 6 (Retry transient failure) → `tests/test_retry.py` (unit) — live retry verification is not required because the unit test already verifies attempt counting and Evidence records
+
+If any use case has no corresponding test, the MVP is incomplete (per definition of done in section 25).
+
 ================================================================================
 23. LIVE TESTS
 ================================================================================
@@ -1013,6 +1173,7 @@ Incomplete if any of these are true:
 - JSON output lacks dependencies, evidence, or findings
 - parser tests use only invented inline strings and no fixture files
 - live tests are absent
+- any of the 6 use cases in section 0B has no corresponding test
 - OpenSSL missing/old/lacking-group paths crash instead of returning structured output
 - logs appear on stdout
 - scan results appear on stderr
