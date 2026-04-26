@@ -11,31 +11,64 @@
 
 ## Quick Start
 
+At MVP 0.1 there is no published package yet. Install from this directory:
+
 ```bash
-# Install (available at v1.0)
-pipx install breachsafe-qureddy
+git clone git@github.com:paul007ex/qureddy.git
+cd qureddy
+uv venv && source .venv/bin/activate
+uv pip install -e ".[dev]"
 
-# Scan a TLS endpoint
 qureddy scan tls www.google.com
+qureddy scan tls pq.cloudflareresearch.com
+qureddy scan tls example.com
+```
 
-# Scan your local machine
-qureddy scan local
+At v1.0 the published-package install path will be:
 
-# Export CBOM
+```bash
+pipx install breachsafe-qureddy
+qureddy scan tls www.google.com
 qureddy report --format cbom > cbom.json
 ```
 
 ## What It Does
 
 ```bash
-$ qureddy scan tls www.pecu.org
+$ qureddy scan tls www.google.com
 
-Scanning www.pecu.org:443...
+Scanning www.google.com:443...
 
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ www.pecu.org:443                                           ┃
+┃ www.google.com:443                                         ┃
 ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
 ┃ Certificate      ECDSA P-256          ⚠️  QUANTUM VULNERABLE┃
+┃ Key Exchange     X25519MLKEM768       ✅ TRANSITIONAL HYBRID┃
+┃ Encryption       AES-256-GCM          ✅ QUANTUM SAFE       ┃
+┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+┃ HNDL Score       45/100               Grade: C             ┃
+┃ Recommendation   Cert chain still RSA/ECDSA — migrate 2028 ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+$ qureddy scan tls pq.cloudflareresearch.com
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ pq.cloudflareresearch.com:443                              ┃
+┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+┃ Certificate      ECDSA P-256          ⚠️  QUANTUM VULNERABLE┃
+┃ Key Exchange     X25519MLKEM768       ✅ TRANSITIONAL HYBRID┃
+┃ Encryption       AES-256-GCM          ✅ QUANTUM SAFE       ┃
+┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+┃ HNDL Score       40/100               Grade: C             ┃
+┃ Recommendation   On the PQ frontier; track ML-DSA certs    ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+$ qureddy scan tls example.com
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ example.com:443                                            ┃
+┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+┃ Certificate      RSA 2048             ⚠️  QUANTUM VULNERABLE┃
 ┃ Key Exchange     X25519               ⚠️  QUANTUM VULNERABLE┃
 ┃ Encryption       AES-256-GCM          ✅ QUANTUM SAFE       ┃
 ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
