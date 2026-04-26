@@ -44,6 +44,10 @@ dev = [
     "deptry>=0.20",
     "reuse>=4.0",
     "semgrep>=1.80",
+    # defusedxml is used by scripts/audit_phase.py to parse coverage.xml
+    # and junit.xml safely. CODING_RULES §26 forbids stdlib xml.etree on
+    # any input; defusedxml is the project-mandated alternative.
+    "defusedxml>=0.7",
 ]
 
 [project.scripts]
@@ -105,6 +109,11 @@ ignore = [
     "ARG",      # unused args allowed in fixtures
 ]
 "tests/fixtures/**" = ["E501"]  # fixture files may have long lines
+"scripts/**/*.py" = [
+    "INP001",   # scripts/ is intentionally not a package — these are
+                # standalone CLIs, not modules. Adding __init__.py to
+                # claim the namespace would be dishonest.
+]
 
 # ============================================================================
 # mypy
@@ -175,15 +184,40 @@ show_missing = true
 exclude_dirs = ["tests", "scratch"]
 # MEDIUM threshold: bandit fails CI on MEDIUM or HIGH findings.
 # LOW findings are reported but do not block.
+#
+# CI must invoke `bandit -r src/qureddy scripts/` (two roots) so the
+# audit script is scanned alongside production code. The skill's
+# `bandit -r src/qureddy` example covers the production tree only;
+# CI workflow widens the scope. Earlier the audit script shipped 3
+# XXE bugs that this scoping miss let through.
 
 # ============================================================================
 # deptry
 # ============================================================================
 [tool.deptry]
 known_first_party = ["qureddy"]
-extend_exclude = ["scratch", "scripts"]
+# `scripts/` is intentionally INCLUDED in the deptry scan so that
+# imports from CI utilities (e.g. defusedxml in scripts/audit_phase.py)
+# count toward dependency-usage analysis. Excluding scripts/ would
+# make deptry think defusedxml is unused. `scratch/` stays excluded;
+# it's gitignored agent workspace.
+extend_exclude = ["scratch"]
 
 [tool.deptry.per_rule_ignores]
 # DEP002 = unused dependency. Some dev deps are CLI tools invoked by
-# CI workflow, not imported by Python code.
-DEP002 = ["bandit", "pip-audit", "deptry", "reuse", "semgrep"]
+# CI workflow, not imported by Python code. pytest, pytest-cov, and
+# pytest-rerunfailures will satisfy themselves once src/ + tests/
+# import them at MVP 0.1; ruff and mypy are pure CLI tools and stay
+# in this list permanently.
+DEP002 = [
+    "bandit",
+    "pip-audit",
+    "deptry",
+    "reuse",
+    "semgrep",
+    "ruff",
+    "mypy",
+    "pytest",
+    "pytest-cov",
+    "pytest-rerunfailures",
+]
