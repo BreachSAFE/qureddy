@@ -17,7 +17,7 @@ assignees: []
 
 - [ ] [`README.md`](../../README.md)
 - [ ] [`CLAUDE.md`](../../CLAUDE.md) (project orientation)
-- [ ] [`docs/CODING_RULES.md`](../../docs/CODING_RULES.md) (engineering standards)
+- [ ] [`docs/contributors/coding-rules.md`](../../docs/contributors/coding-rules.md) (engineering standards)
 - [ ] Existing GitHub issues (search before filing)
 
 ## Context (if relevant)

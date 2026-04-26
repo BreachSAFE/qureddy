@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 #
-# QuReddy CI — 7-phase pipeline per docs/CODING_RULES.md §21.
+# QuReddy CI — 7-phase pipeline per docs/contributors/coding-rules.md §21.
 #
 # Matrix: ubuntu × macos × windows on Python 3.12. OpenSSL 3.5+ installed
 # per OS. Every test runs every time. pytest-rerunfailures absorbs

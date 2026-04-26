@@ -3,7 +3,7 @@
 """Color and style tables for the Rich console adapter.
 
 Extracted from console.py to keep that file under the 400-line hard
-ceiling per docs/CODING_RULES.md Rule 2.2. Pure functions and tables —
+ceiling per docs/contributors/coding-rules.md Rule 2.2. Pure functions and tables —
 no rendering, no I/O. The only consumers are the renderers in
 console.py and tests under tests/test_output.py.
 

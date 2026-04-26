@@ -210,7 +210,7 @@ addopts = [
     "--reruns=3",
     "--reruns-delay=1",
 ]
-# Per docs/CODING_RULES.md Rule 9.3: every test runs every time.
+# Per docs/contributors/coding-rules.md Rule 9.3: every test runs every time.
 # No marker-gated suites at the pytest layer. CI may organize tests
 # into multiple JOBS for fail-fast, but pytest itself runs everything.
 markers = []

@@ -81,7 +81,7 @@ These are enforceable in code review:
 ### What gets harder
 
 - Reviewers have to know which quadrant a new doc belongs in. The `docs/README.md` and the rules in this ADR address that, but it's a real cost on the first few PRs.
-- External tutorials, blog posts, or bookmarks that link to `docs/CODING_RULES.md` will 404. Mitigated by a stub redirect (a one-line `docs/CODING_RULES.md` saying "moved to `contributors/coding-rules.md`") if external links are observed in the wild — not added preemptively.
+- External tutorials, blog posts, or bookmarks that link to the old `docs/CODING_RULES.md` will 404. Mitigated by a stub redirect (a one-line `docs/CODING_RULES.md` saying "moved to `contributors/coding-rules.md`") if external links are observed in the wild — not added preemptively.
 - Splitting mixed-purpose docs is real work that adds up. Done lazily: each mixed doc gets fenced sections now, gets split when next touched.
 
 ## Alternatives considered

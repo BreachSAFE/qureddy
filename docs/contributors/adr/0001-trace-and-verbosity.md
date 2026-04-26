@@ -192,8 +192,8 @@ For PR 2 to be considered complete:
 
 - claude-3 proposal: `scratch/claude-3-developer/MVP-v01/inbox/reviewboard/adr/claude-developer-3-trace-proposal.md`
 - mvp-implement skill: `.claude/skills/mvp-implement/SKILL.md`
-- coding rules: `docs/CODING_RULES.md`
-- agent anti-patterns: `docs/AGENT_ANTIPATTERNS.md`
+- coding rules: `docs/contributors/coding-rules.md`
+- agent anti-patterns: `docs/contributors/agent-antipatterns.md`
 - prior code reviews:
   - `scratch/inbox/qa/claude-app/mvp-code-review-v2.md`
   - `scratch/inbox/qa/claude-3-developer/mvp-v01-code-review.md`

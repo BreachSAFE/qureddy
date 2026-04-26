@@ -15,9 +15,9 @@ Read these in order:
 
 1. [`README.md`](README.md) — what QuReddy is and what state it's in.
 2. [`CLAUDE.md`](CLAUDE.md) — project orientation, roadmap, settled architecture.
-3. [`docs/CODING_RULES.md`](docs/CODING_RULES.md) — engineering standards. **Source of truth.** Read fully before writing code.
-4. [`docs/AGENT_ANTIPATTERNS.md`](docs/AGENT_ANTIPATTERNS.md) — anti-patterns and pre-response audit checklist (applies to humans and AI agents both).
-5. [`docs/EXAMPLES.md`](docs/EXAMPLES.md) — good-vs-bad code patterns. Read before writing the first file in a new module.
+3. [`docs/contributors/coding-rules.md`](docs/contributors/coding-rules.md) — engineering standards. **Source of truth.** Read fully before writing code.
+4. [`docs/contributors/agent-antipatterns.md`](docs/contributors/agent-antipatterns.md) — anti-patterns and pre-response audit checklist (applies to humans and AI agents both).
+5. [`docs/contributors/examples.md`](docs/contributors/examples.md) — good-vs-bad code patterns. Read before writing the first file in a new module.
 
 If you are an AI coding agent (Claude Code, Codex, Cursor, etc.):
 - Read `.claude/skills/README.md` to find the right skill for your task.
@@ -29,7 +29,7 @@ If you are an AI coding agent (Claude Code, Codex, Cursor, etc.):
 
 QuReddy is **pre-MVP**. The package is not installable yet. The first milestone (MVP 0.1) implements a TLS scanner; everything else (cert scanner, SSH scanner, CBOM emission, HNDL scoring, reports) is roadmap, not delivered.
 
-The current milestone is named in [`docs/mvp/CURRENT.md`](docs/mvp/CURRENT.md).
+The current milestone is named in [`docs/reference/milestones.md`](docs/reference/milestones.md).
 
 ## Setting up a dev environment
 
@@ -76,7 +76,7 @@ QuReddy's capability check exits 3 with a clear message when OpenSSL is missing 
 
 ## Coding style
 
-Read `docs/CODING_RULES.md` and `docs/EXAMPLES.md`. The short version:
+Read `docs/contributors/coding-rules.md` and `docs/contributors/examples.md`. The short version:
 
 - Python 3.12+, typed (`mypy --strict`), formatted (`ruff format`), linted (`ruff check`)
 - Functions ≤ 30 lines normal, 50 ceiling
@@ -92,7 +92,7 @@ Read `docs/CODING_RULES.md` and `docs/EXAMPLES.md`. The short version:
 
 ## Testing
 
-Per `docs/CODING_RULES.md` Section 9:
+Per `docs/contributors/coding-rules.md` Section 9:
 
 - Every test runs every time. No `@pytest.mark.skip`, no `@pytest.mark.acceptance`.
 - Network-dependent tests live in `tests/live/` and run on default `pytest`. `pytest-rerunfailures` absorbs hiccups.

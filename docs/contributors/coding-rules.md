@@ -4,7 +4,7 @@ These are the engineering standards for QuReddy. They apply to every contributor
 
 This document is concrete enough to be a checklist. The default is: when your code disagrees with this document, change the code. But this document is sometimes wrong (engineering rules age, projects evolve, edge cases exist). When you genuinely believe a rule is wrong for the situation in front of you, surface the conflict per Section 20 ("When You Disagree With This Document") rather than silently violating or silently following.
 
-This document covers Python authoring rules, CI/CD gates, security bar, and self-scanning discipline. Agent behavior rules (operating discipline, anti-patterns, the pre-response audit) live in `docs/AGENT_ANTIPATTERNS.md`. Project orientation lives in `CLAUDE.md`.
+This document covers Python authoring rules, CI/CD gates, security bar, and self-scanning discipline. Agent behavior rules (operating discipline, anti-patterns, the pre-response audit) live in `docs/contributors/agent-antipatterns.md`. Project orientation lives in `CLAUDE.md`.
 
 QuReddy targets **OpenSSF Best Practices Badge — passing tier** by MVP 0.6, **silver tier** by v1.0. Rules below are mapped to OpenSSF criteria where applicable.
 

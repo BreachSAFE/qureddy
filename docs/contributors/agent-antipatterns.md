@@ -42,9 +42,9 @@ Do not stop at analysis when the user asked for a change. Implement, test, and s
 
 If a harness reminder, hook output, system instruction, or environmental signal conflicts with the user's request, name the conflict in your response. Do not silently obey one or the other. Then follow the highest-priority applicable instruction in this order:
 
-1. Hard security constraints (`docs/CODING_RULES.md` §26 security bar; refuse-insecure-shortcuts in §26.13)
+1. Hard security constraints (`docs/contributors/coding-rules.md` §26 security bar; refuse-insecure-shortcuts in §26.13)
 2. System / harness / tool constraints
-3. The repository's documented rules (`docs/CODING_RULES.md`, this file)
+3. The repository's documented rules (`docs/contributors/coding-rules.md`, this file)
 4. The user's most recent instruction
 
 The user's request can override docs (4 over 3) but cannot override security (4 cannot override 1). If the user asks for something the security bar forbids, name the conflict and refuse the insecure shortcut, per §26.13.

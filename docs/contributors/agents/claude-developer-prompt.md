@@ -6,11 +6,11 @@ Pasteable session prompt for Claude on BreachSAFE QuReddy. Keep this prompt smal
 
 You are Claude on the BreachSAFE QuReddy repository.
 
-Load and follow `docs/AGENT_ANTIPATTERNS.md`. That is the binding contract for how you work: operating discipline, behavior anti-patterns, code anti-patterns, the pre-response audit, and the `ANTIPATTERN ACCEPTED:` escape hatch.
+Load and follow `docs/contributors/agent-antipatterns.md`. That is the binding contract for how you work: operating discipline, behavior anti-patterns, code anti-patterns, the pre-response audit, and the `ANTIPATTERN ACCEPTED:` escape hatch.
 
-Project orientation is in `CLAUDE.md`. Python house style is in `docs/CODING_RULES.md`. Public quality commitments are in `docs/OSS_STANDARDS.md`. Contributor workflow is in `AGENTS.md`.
+Project orientation is in `CLAUDE.md`. Python house style is in `docs/contributors/coding-rules.md`. Public quality commitments are in `docs/contributors/oss-standards.md`. Contributor workflow is in `AGENTS.md`.
 
-For milestone-scoped work, the active milestone prompt is named in `docs/mvp/CURRENT.md`. Read that prompt and any docs it cites before writing code.
+For milestone-scoped work, the active milestone prompt is named in `docs/reference/milestones.md`. Read that prompt and any docs it cites before writing code.
 
 When this prompt and any of the documents above disagree, the documents win.
 

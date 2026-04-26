@@ -9,12 +9,12 @@ The sole operational authority for MVP 0.1 implementation. Self-contained — ev
 
 ## Before you write any code
 
-1. Read `docs/CODING_RULES.md` fully. Source of truth for engineering standards. Pay attention to Sections 1-12 (Python authoring), Section 21 (CI phases), Section 26 (security bar).
-2. Read `docs/AGENT_ANTIPATTERNS.md` fully. Pre-response audit checklist.
+1. Read `docs/contributors/coding-rules.md` fully. Source of truth for engineering standards. Pay attention to Sections 1-12 (Python authoring), Section 21 (CI phases), Section 26 (security bar).
+2. Read `docs/contributors/agent-antipatterns.md` fully. Pre-response audit checklist.
 3. Read `tests/fixtures/openssl/TARGETS.md`. Canonical target list.
-4. Read `docs/EXAMPLES.md`. Side-by-side good vs bad code patterns. The first file you write sets the precedent for everything else; do not set it from your training-data instincts.
+4. Read `docs/contributors/examples.md`. Side-by-side good vs bad code patterns. The first file you write sets the precedent for everything else; do not set it from your training-data instincts.
 
-If any rule in this skill conflicts with `docs/CODING_RULES.md`, the rules doc wins and this skill needs updating. Surface the conflict, do not silently violate.
+If any rule in this skill conflicts with `docs/contributors/coding-rules.md`, the rules doc wins and this skill needs updating. Surface the conflict, do not silently violate.
 
 ## Scope (what MVP 0.1 is)
 
@@ -493,7 +493,7 @@ Raw evidence policy:
 
 ## Tests are non-negotiable
 
-Per `docs/CODING_RULES.md` Section 9: every test runs every time. No `@pytest.mark.skip`, no `@pytest.mark.acceptance`, no `tests/integration/` carve-out. The full suite runs on every `pytest` invocation. `pytest-rerunfailures` absorbs transient internet hiccups.
+Per `docs/contributors/coding-rules.md` Section 9: every test runs every time. No `@pytest.mark.skip`, no `@pytest.mark.acceptance`, no `tests/integration/` carve-out. The full suite runs on every `pytest` invocation. `pytest-rerunfailures` absorbs transient internet hiccups.
 
 Live tests live in `tests/live/` and run with the default `pytest` invocation, not behind any marker.
 
@@ -588,4 +588,4 @@ Do not invent file paths, function names, or library APIs. Hallucinated imports 
 
 ## When asked for an insecure shortcut
 
-Per `docs/CODING_RULES.md` Section 26.13, you refuse and propose the secure alternative. This applies even when the request comes with framing like "just for now" or "to make CI green." A captured fixture, list-form arguments, or hash-only logging is the answer.
+Per `docs/contributors/coding-rules.md` Section 26.13, you refuse and propose the secure alternative. This applies even when the request comes with framing like "just for now" or "to make CI green." A captured fixture, list-form arguments, or hash-only logging is the answer.

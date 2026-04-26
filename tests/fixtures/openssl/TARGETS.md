@@ -3,7 +3,7 @@
 Live targets used by two things:
 
 1. **Fixture capture** — recorded outputs from these targets get saved here, under `tests/fixtures/openssl/`, and parser unit tests consume them.
-2. **Network-dependent tests** — per `docs/CODING_RULES.md`, every test runs every time, including tests that hit real targets. Those tests connect to the targets below directly. There is no "smoke" carve-out and no skip-by-default.
+2. **Network-dependent tests** — per `docs/contributors/coding-rules.md`, every test runs every time, including tests that hit real targets. Those tests connect to the targets below directly. There is no "smoke" carve-out and no skip-by-default.
 
 Targets in this file are the canonical set the suite hits. When CI fails because a target is unreachable, investigate before re-running; that is a real signal, not noise.
 
@@ -56,7 +56,7 @@ These targets exercise certificate-chain validity. MVP 0.1 explicitly excludes c
 | `wrong.host.badssl.com` | Common-name / SAN mismatch |
 | `revoked.badssl.com` | OCSP-revoked cert |
 
-The "Disabled TLS verification" anti-pattern in `docs/AGENT_ANTIPATTERNS.md` is non-negotiable: when MVP 0.2 wires up these targets, the scanner records cert problems as findings, not as workarounds via `verify=False`.
+The "Disabled TLS verification" anti-pattern in `docs/contributors/agent-antipatterns.md` is non-negotiable: when MVP 0.2 wires up these targets, the scanner records cert problems as findings, not as workarounds via `verify=False`.
 
 ## Failure categories — fixture mapping
 

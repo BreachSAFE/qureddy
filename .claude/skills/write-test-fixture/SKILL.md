@@ -101,7 +101,7 @@ def test_parser_detects_hybrid_from_brief() -> None:
     assert result.failure_category is None
 ```
 
-The test must reference the fixture by name. Tests using only inline string literals do not satisfy the fixture rule (per `docs/CODING_RULES.md` Rule 9.2).
+The test must reference the fixture by name. Tests using only inline string literals do not satisfy the fixture rule (per `docs/contributors/coding-rules.md` Rule 9.2).
 
 ### Step 5: Update the failure-category mapping in TARGETS.md
 

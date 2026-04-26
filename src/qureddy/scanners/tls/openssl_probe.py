@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 """OpenSSL 3.5+ subprocess probe.
 
-Per docs/CODING_RULES.md §7 and the mvp-implement skill, this module is
+Per docs/contributors/coding-rules.md §7 and the mvp-implement skill, this module is
 the only place in the codebase that calls `openssl` via `subprocess`.
 Other modules consume typed `OpenSSLDependency` and `ProbeResult` values.
 """

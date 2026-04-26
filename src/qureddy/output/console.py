@@ -5,7 +5,7 @@
 This module owns the renderers (verdict panel, summary table, findings
 table, dependencies table, commands panel). The pure style helpers and
 color tables live in `qureddy.output._styles` to keep this module under
-the 400-line hard ceiling per docs/CODING_RULES.md Rule 2.2.
+the 400-line hard ceiling per docs/contributors/coding-rules.md Rule 2.2.
 
 Color discipline (full rationale in `_styles.py`):
 

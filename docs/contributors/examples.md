@@ -2,7 +2,7 @@
 
 Side-by-side examples for the highest-frequency QuReddy code patterns. Read this **before writing the first file in a new module**. The first 5 files in any module set the precedent for everything that follows; this doc anchors that precedent.
 
-This is companion material to `docs/CODING_RULES.md`. The rules document tells you *what* the standard is; this document shows you *what it looks like*.
+This is companion material to `docs/contributors/coding-rules.md`. The rules document tells you *what* the standard is; this document shows you *what it looks like*.
 
 ---
 
@@ -609,7 +609,7 @@ def render_json(result):  # no types
 When you start writing a new file in MVP 0.1:
 
 1. Find the section above that matches what you're writing (Pydantic model? subprocess call? CLI command?).
-2. Read the **Why** explanation. The patterns aren't arbitrary — each one prevents a specific failure mode named in `docs/CODING_RULES.md`.
+2. Read the **Why** explanation. The patterns aren't arbitrary — each one prevents a specific failure mode named in `docs/contributors/coding-rules.md`.
 3. Write your code in the **Good** style. If your code starts to look like the **Bad** example, you have drifted; revisit the example.
 
-When this document and `docs/CODING_RULES.md` disagree, the rules document wins. This document is illustration; the rules are authority.
+When this document and `docs/contributors/coding-rules.md` disagree, the rules document wins. This document is illustration; the rules are authority.
