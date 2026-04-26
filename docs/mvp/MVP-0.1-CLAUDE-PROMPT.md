@@ -38,7 +38,14 @@ Follow the coding standards in `docs/CODING_RULES.md` exactly. Before final resp
 Implement one command:
 
 ```
-qureddy scan tls TARGET [--sni NAME] [--openssl PATH] [--format rich|json] [--timeout SECONDS]
+qureddy scan tls TARGET
+  [--sni NAME]
+  [--openssl PATH]
+  [--format rich|json]
+  [--timeout SECONDS]
+  [--retry-on CATEGORY[,CATEGORY...]]
+  [--retries N]
+  [--retry-delay SECONDS]
 ```
 
 ### Includes
@@ -91,6 +98,29 @@ src/qureddy/scanners/tls/openssl_probe.py
 ```
 
 No other module may call `subprocess.run` with `openssl`.
+
+## Retry semantics
+
+The CLI accepts retry flags that apply to the scanner's interactions with the target:
+
+- `--retry-on CATEGORY[,CATEGORY...]` — comma-separated failure categories. Any failure category from the enum below is accepted. No allowlist; the user decides what's worth retrying. Default: empty (no retries).
+- `--retries N` — integer, max 10, default 0.
+- `--retry-delay SECONDS` — float, default 1.0, max 60.
+
+Behavior:
+
+1. The first attempt always runs. Retries only fire if the first attempt produced a failure category in `--retry-on`.
+2. Between attempts, sleep `--retry-delay` seconds.
+3. If a retry attempt produces a *different* failure category than the one that triggered the retry, stop and report the new category. Do not keep retrying just because some failure happened.
+4. If a retry attempt produces a non-failure outcome, the scan succeeds and reports that outcome. Earlier failures are recorded as evidence on the success result.
+5. Retries do not apply to local capability failures (`local_openssl_missing`, `local_openssl_too_old`, `local_openssl_lacks_group`) in practice — these will return identical results on every attempt — but the CLI does not block the user from passing them. Document this in the help text: "Retrying deterministic failures (parse errors, capability checks) is allowed but typically pointless."
+6. Validation:
+   - `--retry-on` values must match a category in the failure-category enum exactly. Unknown categories are a usage error (exit code 4).
+   - `--retries` and `--retry-delay` outside their bounds are a usage error (exit code 4).
+   - `--retries N` without `--retry-on` is a usage error: "no retry categories specified."
+7. Each retry attempt produces its own evidence record. The final result reports total attempt count.
+
+The default behavior (no flags) is single-attempt, no retries.
 
 ## Subprocess rules
 
@@ -347,6 +377,17 @@ Do not create speculative plugin infrastructure beyond what MVP needs. If a `Sca
   - `https://example.com:8443`
   - `1.2.3.4:443`
   - `1.2.3.4:443 --sni example.com`
+- Retry tests must cover:
+  - `--retry-on target_connect_failed --retries 3` against an unreachable host attempts exactly 4 times (1 initial + 3 retries) and reports total attempts in the result.
+  - `--retry-on tls_handshake_failed --retries 3` against an unreachable host does NOT retry (mismatched category) and exits after 1 attempt.
+  - Default behavior (no flags) is single-attempt.
+  - `--retries 3` without `--retry-on` exits with usage error (exit code 4).
+  - `--retry-on unknown_category` exits with usage error (exit code 4).
+  - `--retries 11` exits with usage error.
+  - `--retry-delay 100` exits with usage error.
+  - Retry delay is honored: 3 retries with `--retry-delay 0.1` takes >= 0.3 seconds wall time (use a clock injection or a fake sleep).
+  - Mid-stream category change stops retries: if attempt 1 is `target_connect_failed` (in `--retry-on`) and attempt 2 is `tls_handshake_failed` (not in `--retry-on`), stop and report the second.
+  - Each attempt produces its own evidence record; the result captures all of them.
 
 ## Run before final response
 
