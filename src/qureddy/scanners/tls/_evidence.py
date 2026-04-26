@@ -1,0 +1,115 @@
+# SPDX-FileCopyrightText: 2026 BreachSAFE
+# SPDX-License-Identifier: Apache-2.0
+"""Evidence-record builders for the TLS scanner.
+
+Pure functions that turn a `ProbeResult` into the locked `Evidence`
+shape downstream consumers (policy, summary, JSON output) expect.
+Extracted from `scanner.py` to keep that file under the 400-line
+hard ceiling.
+"""
+
+from __future__ import annotations
+
+import uuid
+
+from qureddy.core.models import (
+    Asset,
+    Evidence,
+    FailureCategory,
+    ObservationType,
+    ProbeResult,
+    ScanTarget,
+)
+from qureddy.scanners.tls.parse import ParsedNegotiation, parse_brief_output
+
+
+def build_asset(target: ScanTarget) -> Asset:
+    """Construct the single `Asset` record for one TLS endpoint scan."""
+    return Asset(
+        id=f"asset-{uuid.uuid4().hex[:12]}",
+        asset_type="tls.endpoint",
+        locator=target.locator,
+        display_name=f"{target.host}:{target.port}",
+    )
+
+
+def evidence_from_probe(
+    *,
+    asset: Asset,
+    probe: ProbeResult,
+    expected_group: str,
+) -> Evidence:
+    """Turn a `ProbeResult` into the appropriate `Evidence` record.
+
+    Three branches, mutually exclusive: probe failed, probe succeeded
+    but parser couldn't classify, or probe succeeded and parser found
+    a clean negotiation. Each branch builds an `Evidence` with the
+    field set that matches the verdict shape.
+    """
+    if probe.failure_category is not None or probe.return_code != 0:
+        return _evidence_for_probe_failure(asset, probe, expected_group)
+    parsed = parse_brief_output(probe.stdout_excerpt, expected_group=expected_group)
+    if parsed.failure_category is not None:
+        return _evidence_for_parse_failure(asset, probe, parsed)
+    return _evidence_for_negotiation(asset, probe, parsed)
+
+
+def _evidence_for_probe_failure(
+    asset: Asset,
+    probe: ProbeResult,
+    expected_group: str,
+) -> Evidence:
+    # Trust the probe module's stderr-based classification verbatim.
+    # Falling back to TLS_HANDSHAKE_FAILED here would erase
+    # target_connect_failed / sni_required_or_wrong /
+    # middlebox_or_mtu_failure — the categories retry policy needs.
+    category = probe.failure_category or FailureCategory.TLS_HANDSHAKE_FAILED
+    return Evidence(
+        id=f"ev-{uuid.uuid4().hex[:12]}",
+        asset_id=asset.id,
+        evidence_type="tls.probe.failure",
+        observation_type=ObservationType.OBSERVED,
+        source="qureddy.openssl_probe",
+        probe_result=probe,
+        failure_category=category,
+        notes=(f"probe for {expected_group} failed", probe.stderr_excerpt[:200]),
+    )
+
+
+def _evidence_for_parse_failure(
+    asset: Asset,
+    probe: ProbeResult,
+    parsed: ParsedNegotiation,
+) -> Evidence:
+    return Evidence(
+        id=f"ev-{uuid.uuid4().hex[:12]}",
+        asset_id=asset.id,
+        evidence_type="tls.probe.parse",
+        observation_type=ObservationType.OBSERVED,
+        source="qureddy.scanners.tls.parse",
+        protocol_version=parsed.protocol_version,
+        cipher_suite=parsed.cipher_suite,
+        negotiated_group=parsed.negotiated_group,
+        probe_result=probe,
+        failure_category=parsed.failure_category,
+        notes=parsed.notes,
+    )
+
+
+def _evidence_for_negotiation(
+    asset: Asset,
+    probe: ProbeResult,
+    parsed: ParsedNegotiation,
+) -> Evidence:
+    return Evidence(
+        id=f"ev-{uuid.uuid4().hex[:12]}",
+        asset_id=asset.id,
+        evidence_type="tls.negotiation",
+        observation_type=ObservationType.NEGOTIATED,
+        source="qureddy.scanners.tls.parse",
+        protocol_version=parsed.protocol_version,
+        cipher_suite=parsed.cipher_suite,
+        negotiated_group=parsed.negotiated_group,
+        probe_result=probe,
+        notes=parsed.notes,
+    )

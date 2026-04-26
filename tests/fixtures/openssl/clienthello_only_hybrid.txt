@@ -1,0 +1,16 @@
+# synthesized: ClientHello-derived trace lines mention X25519MLKEM768
+# but no ServerHello-derived line ever names a group. This shape is
+# what the hybrid parser must reject per .claude/skills/mvp-implement/
+# SKILL.md MVP policy rule #1 (`negotiated_group == "X25519MLKEM768"`
+# AND `observation_type == NEGOTIATED`). Real `openssl s_client` does
+# not emit ClientHello extensions in `-brief` mode; this fixture
+# represents the shape `-trace` or a debug build would produce, and is
+# used to prove the parser does not infer hybrid negotiation from
+# offered groups alone.
+ClientHello extension supported_groups: X25519MLKEM768:X25519:secp256r1
+ClientHello extension key_share: X25519MLKEM768, X25519
+CONNECTION ESTABLISHED
+Protocol version: TLSv1.3
+Ciphersuite: TLS_AES_128_GCM_SHA256
+Verification: OK
+DONE

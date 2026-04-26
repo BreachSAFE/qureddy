@@ -1,0 +1,13 @@
+# captured: 2026-04-26T18:02:21Z
+# openssl: 3.5.6 (homebrew openssl@3.5)
+# command: openssl s_client -connect pq.cloudflareresearch.com:443 -tls1_3 -groups X25519MLKEM768 -brief
+Connecting to 2606:4700::6812:1fdc
+CONNECTION ESTABLISHED
+Protocol version: TLSv1.3
+Ciphersuite: TLS_AES_256_GCM_SHA384
+Peer certificate: CN=pq.cloudflareresearch.com
+Hash used: SHA256
+Signature type: ecdsa_secp256r1_sha256
+Verification: OK
+Negotiated TLS1.3 group: X25519MLKEM768
+DONE

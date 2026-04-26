@@ -1,0 +1,267 @@
+# SPDX-FileCopyrightText: 2026 BreachSAFE
+# SPDX-License-Identifier: Apache-2.0
+"""Tests for openssl_probe capability detection using fake binaries.
+
+Use Case 4 (Detect Unsupported Local OpenSSL) is covered here.
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+import pytest
+
+from qureddy.core.errors import (
+    LocalOpenSSLLacksGroup,
+    LocalOpenSSLMissing,
+    LocalOpenSSLTooOld,
+)
+from qureddy.core.models import FailureCategory
+from qureddy.scanners.tls.openssl_probe import (
+    _classify_failure,
+    probe_capability,
+    raise_if_unusable,
+    resolve_openssl_path,
+    run_hybrid_probe,
+)
+
+FAKE_DIR = Path(__file__).parent / "fixtures" / "openssl" / "fake"
+
+
+class TestResolveOpenSSLPath:
+    def test_explicit_override_wins(self, tmp_path: Path) -> None:
+        binary = tmp_path / "fake_openssl"
+        binary.write_text("#!/usr/bin/env bash\nexit 0\n")
+        binary.chmod(0o755)
+        assert resolve_openssl_path(str(binary)) == str(binary)
+
+    def test_missing_path_raises(self) -> None:
+        with pytest.raises(LocalOpenSSLMissing):
+            resolve_openssl_path("/this/path/does/not/exist/openssl")
+
+    def test_non_executable_raises(self, tmp_path: Path) -> None:
+        non_exec = tmp_path / "fake_openssl"
+        non_exec.write_text("not executable\n")
+        with pytest.raises(LocalOpenSSLMissing):
+            resolve_openssl_path(str(non_exec))
+
+
+class TestProbeCapability:
+    def test_too_old_version_flagged(self) -> None:
+        dep = probe_capability(str(FAKE_DIR / "openssl_too_old.sh"))
+        assert dep.failure_category is FailureCategory.LOCAL_OPENSSL_TOO_OLD
+        assert dep.version == "3.4.0"
+
+    def test_lacks_group_flagged(self) -> None:
+        dep = probe_capability(str(FAKE_DIR / "openssl_lacks_group.sh"))
+        assert dep.failure_category is FailureCategory.LOCAL_OPENSSL_LACKS_GROUP
+        assert dep.supports_tls13_groups is True
+        assert dep.supports_x25519mlkem768 is False
+
+    def test_supported_capability(self) -> None:
+        dep = probe_capability(str(FAKE_DIR / "openssl_ok.sh"))
+        assert dep.failure_category is None
+        assert dep.supports_x25519mlkem768 is True
+        assert dep.version == "3.5.6"
+
+
+class TestRaiseIfUnusable:
+    def test_too_old_raises(self) -> None:
+        dep = probe_capability(str(FAKE_DIR / "openssl_too_old.sh"))
+        with pytest.raises(LocalOpenSSLTooOld):
+            raise_if_unusable(dep)
+
+    def test_lacks_group_raises(self) -> None:
+        dep = probe_capability(str(FAKE_DIR / "openssl_lacks_group.sh"))
+        with pytest.raises(LocalOpenSSLLacksGroup):
+            raise_if_unusable(dep)
+
+    def test_ok_does_not_raise(self) -> None:
+        dep = probe_capability(str(FAKE_DIR / "openssl_ok.sh"))
+        raise_if_unusable(dep)
+
+
+class TestStderrClassification:
+    """Probe-level stderr classification per blocker 4.
+
+    The probe module itself classifies nonzero exits into specific
+    failure categories so retry policy and policy classification get
+    the right signal. Collapsing to TLS_HANDSHAKE_FAILED later loses
+    that fidelity.
+    """
+
+    def test_connect_refused_is_target_connect_failed(self) -> None:
+        result = run_hybrid_probe(
+            str(FAKE_DIR / "openssl_connect_refused.sh"),
+            "192.0.2.1",
+            443,
+            None,
+            timeout_seconds=5,
+        )
+        assert result.return_code != 0
+        assert result.failure_category is FailureCategory.TARGET_CONNECT_FAILED
+
+    def test_handshake_failure_is_tls_handshake_failed(self) -> None:
+        result = run_hybrid_probe(
+            str(FAKE_DIR / "openssl_handshake_failure.sh"),
+            "104.154.89.105",
+            1012,
+            None,
+            timeout_seconds=5,
+        )
+        assert result.return_code != 0
+        assert result.failure_category is FailureCategory.TLS_HANDSHAKE_FAILED
+
+    def test_classify_failure_dispatch(self) -> None:
+        """Direct check that _classify_failure picks the most specific category."""
+        assert _classify_failure("connect:errno=61") is FailureCategory.TARGET_CONNECT_FAILED
+        assert (
+            _classify_failure("getaddrinfo: nodename nor servname provided")
+            is FailureCategory.TARGET_CONNECT_FAILED
+        )
+        assert (
+            _classify_failure("ssl/tls alert handshake failure")
+            is FailureCategory.TLS_HANDSHAKE_FAILED
+        )
+        assert (
+            _classify_failure("tlsv1 alert unrecognized name")
+            is FailureCategory.SNI_REQUIRED_OR_WRONG
+        )
+        assert (
+            _classify_failure("Connection reset by peer")
+            is FailureCategory.MIDDLEBOX_OR_MTU_FAILURE
+        )
+        # Unknown stderr shape falls back to TLS_HANDSHAKE_FAILED.
+        assert _classify_failure("") is FailureCategory.TLS_HANDSHAKE_FAILED
+        assert _classify_failure("some weird unknown error") is FailureCategory.TLS_HANDSHAKE_FAILED
+
+
+# Parametrized coverage for every classifier pattern. Lifted from
+# claude-app's pre-archive test suite; each row is a real OpenSSL
+# stderr fragment seen in the wild. Adding a new pattern to
+# `_STDERR_SIGNATURES` should mean adding a row here in the same PR.
+@pytest.mark.parametrize(
+    ("stderr_fragment", "expected_category"),
+    [
+        # DNS / resolver
+        ("getaddrinfo: nodename nor servname provided", FailureCategory.TARGET_CONNECT_FAILED),
+        ("name or service not known", FailureCategory.TARGET_CONNECT_FAILED),
+        ("could not resolve", FailureCategory.TARGET_CONNECT_FAILED),
+        ("Temporary failure in name resolution", FailureCategory.TARGET_CONNECT_FAILED),
+        # TCP-layer connect failures
+        ("connect:errno=61", FailureCategory.TARGET_CONNECT_FAILED),
+        ("connection refused on port 443", FailureCategory.TARGET_CONNECT_FAILED),
+        ("Connection timed out", FailureCategory.TARGET_CONNECT_FAILED),
+        ("Operation timed out", FailureCategory.TARGET_CONNECT_FAILED),
+        ("No route to host", FailureCategory.TARGET_CONNECT_FAILED),
+        ("Network is unreachable", FailureCategory.TARGET_CONNECT_FAILED),
+        ("Host is down", FailureCategory.TARGET_CONNECT_FAILED),
+        # SNI failures
+        ("alert handshake failure", FailureCategory.TLS_HANDSHAKE_FAILED),
+        ("alert unrecognized name", FailureCategory.SNI_REQUIRED_OR_WRONG),
+        ("SSL alert number 112", FailureCategory.SNI_REQUIRED_OR_WRONG),
+        ("tlsv1 unrecognized name", FailureCategory.SNI_REQUIRED_OR_WRONG),
+        # TLS handshake-level alerts
+        ("SSL alert number 40", FailureCategory.TLS_HANDSHAKE_FAILED),
+        ("alert protocol version", FailureCategory.TLS_HANDSHAKE_FAILED),
+        ("inappropriate fallback", FailureCategory.TLS_HANDSHAKE_FAILED),
+        ("no shared cipher", FailureCategory.TLS_HANDSHAKE_FAILED),
+        ("no shared groups", FailureCategory.TLS_HANDSHAKE_FAILED),
+        ("wrong version number", FailureCategory.TLS_HANDSHAKE_FAILED),
+        ("unsupported protocol", FailureCategory.TLS_HANDSHAKE_FAILED),
+        ("decode error", FailureCategory.TLS_HANDSHAKE_FAILED),
+        ("decrypt error", FailureCategory.TLS_HANDSHAKE_FAILED),
+        ("bad record mac", FailureCategory.TLS_HANDSHAKE_FAILED),
+        # Middlebox / MTU patterns
+        ("EPIPE", FailureCategory.MIDDLEBOX_OR_MTU_FAILURE),
+        ("Broken pipe", FailureCategory.MIDDLEBOX_OR_MTU_FAILURE),
+        ("Connection reset by peer", FailureCategory.MIDDLEBOX_OR_MTU_FAILURE),
+        ("ssl_read returned 0", FailureCategory.MIDDLEBOX_OR_MTU_FAILURE),
+        ("ssl_read_internal: bad something", FailureCategory.MIDDLEBOX_OR_MTU_FAILURE),
+        ("unexpected EOF while reading", FailureCategory.MIDDLEBOX_OR_MTU_FAILURE),
+        ("Message too long", FailureCategory.MIDDLEBOX_OR_MTU_FAILURE),
+        ("Fragmentation needed", FailureCategory.MIDDLEBOX_OR_MTU_FAILURE),
+        ("premature close", FailureCategory.MIDDLEBOX_OR_MTU_FAILURE),
+    ],
+)
+def test_classify_failure_recognizes_known_patterns(
+    stderr_fragment: str, expected_category: FailureCategory
+) -> None:
+    """Every entry in `_STDERR_SIGNATURES` has at least one test row.
+
+    Lifted from claude-app/mvp-implementation before that staging tree
+    was archived. Ensures regressions don't quietly drop a pattern.
+    """
+    assert _classify_failure(stderr_fragment) is expected_category
+
+
+class TestTimeoutPreservesPartialOutput:
+    """`subprocess.TimeoutExpired` carries any output produced before
+    the kill. The probe must NOT discard it.
+
+    Reviewer-flagged bug: the legacy timeout branch replaced
+    stdout/stderr with sha256(b"") and a synthetic message, losing
+    forensic data. This test asserts the new behavior preserves bytes.
+    """
+
+    def test_timeout_preserves_partial_stdout_hash(self) -> None:
+        # The fake binary writes "partial-stdout-marker\n" then sleeps
+        # 30s. With a 1s timeout, subprocess.TimeoutExpired fires while
+        # the partial output is in the pipe.
+        result = run_hybrid_probe(
+            str(FAKE_DIR / "openssl_slow_with_partial_output.sh"),
+            "192.0.2.99",
+            443,
+            None,
+            timeout_seconds=1,
+        )
+        empty_hash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        assert result.failure_category is FailureCategory.TLS_HANDSHAKE_FAILED
+        assert result.return_code == -1
+        # Stdout came through; hash is NOT the empty-string hash.
+        assert result.stdout_sha256 != empty_hash, (
+            "timeout branch lost partial stdout — should preserve bytes received before the kill"
+        )
+        assert "partial-stdout-marker" in result.stdout_excerpt
+
+    def test_timeout_preserves_partial_stderr_with_marker(self) -> None:
+        result = run_hybrid_probe(
+            str(FAKE_DIR / "openssl_slow_with_partial_output.sh"),
+            "192.0.2.99",
+            443,
+            None,
+            timeout_seconds=1,
+        )
+        # stderr captured the connection lines AND the timeout marker
+        # the probe added on the timeout branch.
+        assert "CONNECTION ESTABLISHED" in result.stderr_excerpt
+        assert "[qureddy] timeout after 1s" in result.stderr_excerpt
+
+
+class TestLocalOpenSSLExceptionsCarryDependency:
+    """`raise_if_unusable` and `resolve_openssl_path` must populate the
+    exception's `dependency` attribute so the CLI doesn't have to
+    re-probe to build a capability-failure result.
+    """
+
+    def test_too_old_exception_carries_dependency(self) -> None:
+        dep = probe_capability(str(FAKE_DIR / "openssl_too_old.sh"))
+        with pytest.raises(LocalOpenSSLTooOld) as exc_info:
+            raise_if_unusable(dep)
+        assert exc_info.value.dependency is dep
+        assert exc_info.value.dependency.failure_category is FailureCategory.LOCAL_OPENSSL_TOO_OLD
+
+    def test_lacks_group_exception_carries_dependency(self) -> None:
+        dep = probe_capability(str(FAKE_DIR / "openssl_lacks_group.sh"))
+        with pytest.raises(LocalOpenSSLLacksGroup) as exc_info:
+            raise_if_unusable(dep)
+        assert exc_info.value.dependency is dep
+
+    def test_resolve_missing_exception_carries_dependency(self) -> None:
+        with pytest.raises(LocalOpenSSLMissing) as exc_info:
+            resolve_openssl_path("/this/path/does/not/exist/openssl")
+        # Even on the resolve path (no probe ran), the exception still
+        # carries a populated OpenSSLDependency so callers don't have
+        # to construct a default in the catch block.
+        assert exc_info.value.dependency is not None
+        assert exc_info.value.dependency.failure_category is FailureCategory.LOCAL_OPENSSL_MISSING
