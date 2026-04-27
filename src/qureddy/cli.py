@@ -217,7 +217,7 @@ def main() -> None:
     `click.UsageError` and `click.BadParameter` and re-exits with 4.
     """
     try:
-        app(standalone_mode=False)
+        exit_code = app(standalone_mode=False)
     except click.exceptions.UsageError as exc:
         exc.show(file=sys.stderr)
         sys.exit(EXIT_USAGE)
@@ -228,3 +228,4 @@ def main() -> None:
     except Exception as exc:  # noqa: BLE001 -- last-resort top-level catch
         sys.stderr.write(f"qureddy: unexpected error: {exc}\n")
         sys.exit(EXIT_TARGET_FAILED)
+    sys.exit(EXIT_OK if exit_code is None else exit_code)
