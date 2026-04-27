@@ -10,6 +10,7 @@ The `qureddy` CLI uses POSIX exit codes to signal what happened. Scripts and CI 
 | **2** | `EXIT_TARGET_FAILED` | Target scan failed | Probes ran but the target is unreachable, refused TLS, MTU-blackholed, parser-rejected, etc. The target's problem (or the network between you and it). |
 | **3** | `EXIT_LOCAL_DEPENDENCY` | Local OpenSSL is missing or unsupported | `openssl` not found on PATH, or version below 3.5.0, or the binary doesn't list `X25519MLKEM768` as a TLS 1.3 group. **Your problem, not the target's** — install OpenSSL 3.5+ and re-run. |
 | **4** | `EXIT_USAGE` | Usage or configuration error | Bad flag value (e.g. `--format yaml`), unknown retry category, `--retries` without `--retry-on`, malformed target string. |
+| **70** | `EXIT_INTERNAL_ERROR` | Internal qureddy bug | An unhandled exception escaped to `main()`'s last-resort catch (e.g., a programming error in qureddy itself, an unhandled dependency failure). **This is qureddy's problem, not yours.** Open an issue with the printed error message and a reproducer. Code 70 is BSD `sysexits.h` `EX_SOFTWARE`. |
 
 ## Why these specific values
 
@@ -17,6 +18,7 @@ The `qureddy` CLI uses POSIX exit codes to signal what happened. Scripts and CI 
 - **2 for "the operation didn't succeed"** matches `grep` and most CLIs that distinguish "no match" (1) from "I failed" (2). QuReddy doesn't have a "no match" outcome — failure is always a real failure.
 - **3 separates the operator's problem from the target's problem.** If your CI shows exit 3, you fix your runner image. If it shows exit 2, you investigate the target.
 - **4 separates "you typed something wrong" from "the scan didn't work".** This is the same convention `git`, `ssh`, and `curl` use.
+- **70 (BSD `sysexits.h` `EX_SOFTWARE`) is reserved for "qureddy itself crashed".** Without a distinct code, an internal bug exits 2 (target failed) — indistinguishable from a real target problem. CI scripts that branch on exit 2 must be able to trust that 2 means the target, not qureddy.
 
 ## Worked examples
 
@@ -39,6 +41,10 @@ case $? in
     ;;
   4)
     echo "Bug in this script — bad CLI flags"
+    exit 1
+    ;;
+  70)
+    echo "Internal qureddy bug — open an issue at github.com/paul007ex/qureddy"
     exit 1
     ;;
 esac
