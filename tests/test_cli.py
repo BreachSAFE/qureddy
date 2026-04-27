@@ -38,6 +38,126 @@ def test_scan_help_lists_documented_options() -> None:
     assert "--json-logs" in result.stdout
 
 
+def test_scan_tls_help_carries_examples_block() -> None:
+    """Issue #41 / ADR 0003 Pattern 3: EXAMPLES block on every subcommand."""
+    runner = CliRunner()
+    result = runner.invoke(app, ["scan", "tls", "--help"])
+    assert result.exit_code == 0
+    assert "EXAMPLES" in result.stdout
+    assert "google.com" in result.stdout, "expected the google.com example"
+
+
+def _line_with_substring(stdout: str, needle: str) -> str:
+    """Return the (stripped) line containing `needle`, or '' if absent."""
+    for line in stdout.split("\n"):
+        if needle in line:
+            return line.strip()
+    return ""
+
+
+def test_scan_tls_help_examples_render_one_per_line() -> None:
+    """Issue #71: comments and commands render on separate lines.
+
+    The pre-fix bug collapsed every single newline to a space, so a
+    `# comment` line followed by a `qureddy scan tls ...` line rendered
+    as `# comment ... qureddy scan tls ...` on a single output line.
+
+    The strong assertion: NO line in the help output contains BOTH a
+    `#` comment marker AND a `qureddy scan tls` command invocation.
+    Catches comment-merged-with-command for any example in the EXAMPLES
+    block, not just the named ones — so adding a 5th example wouldn't
+    silently regress.
+    """
+    runner = CliRunner()
+    result = runner.invoke(app, ["scan", "tls", "--help"])
+    assert result.exit_code == 0
+
+    for line in result.stdout.split("\n"):
+        # In a properly-rendered EXAMPLES block, comment lines and command
+        # lines never share a single output line.
+        if "# " in line and "qureddy scan tls" in line:
+            raise AssertionError(f"comment merged with command on one line: {line.strip()!r}")
+
+    # Also lock that each named example's command appears in the output.
+    for cmd in (
+        "qureddy scan tls google.com",
+        "qureddy scan tls pq.cloudflareresearch.com",
+        "qureddy scan tls 1.1.1.1:443",
+        "qureddy scan tls flaky.example.com",
+    ):
+        assert cmd in result.stdout, f"missing example command: {cmd}"
+
+
+def test_scan_tls_help_carries_exit_codes_block() -> None:
+    """Issue #41 / ADR 0003 Pattern 4: EXIT CODES block in epilog."""
+    runner = CliRunner()
+    result = runner.invoke(app, ["scan", "tls", "--help"])
+    assert result.exit_code == 0
+    assert "EXIT CODES" in result.stdout
+    assert "scan succeeded" in result.stdout
+    assert "target scan failed" in result.stdout
+    assert "local dependency" in result.stdout
+    assert "usage" in result.stdout.lower()
+
+
+def test_scan_tls_help_exit_codes_render_one_per_line() -> None:
+    """Issue #71: each exit code (0/2/3/4/70) on a distinct line.
+
+    Pre-fix, all five codes ran together on one line. A user trying to
+    scan the table couldn't tell which description belongs to which
+    code. Lock that the exit-code rows split on rendering.
+    """
+    runner = CliRunner()
+    result = runner.invoke(app, ["scan", "tls", "--help"])
+    assert result.exit_code == 0
+
+    succeeded = _line_with_substring(result.stdout, "scan succeeded")
+    assert succeeded, "exit-code 0 row not found"
+    # "scan succeeded" must NOT share a line with "target scan failed" (code 2).
+    assert "target scan failed" not in succeeded, (
+        f"exit codes 0 and 2 collapsed onto one line: {succeeded!r}"
+    )
+
+    target = _line_with_substring(result.stdout, "target scan failed")
+    assert "local dependency" not in target, (
+        f"exit codes 2 and 3 collapsed onto one line: {target!r}"
+    )
+
+    local = _line_with_substring(result.stdout, "local dependency")
+    assert "usage" not in local.lower() or "EX_SOFTWARE" in local or local.endswith("3.5)"), (
+        f"exit codes 3 and 4 collapsed onto one line: {local!r}"
+    )
+
+    internal = _line_with_substring(result.stdout, "EX_SOFTWARE")
+    assert internal, "exit-code 70 (EX_SOFTWARE) row not found"
+
+
+def test_scan_tls_help_carries_environment_block() -> None:
+    """Issue #41 / ADR 0003 Pattern 4: ENVIRONMENT block in epilog."""
+    runner = CliRunner()
+    result = runner.invoke(app, ["scan", "tls", "--help"])
+    assert result.exit_code == 0
+    assert "ENVIRONMENT" in result.stdout
+    assert "NO_COLOR" in result.stdout
+    assert "QUREDDY_OPENSSL" in result.stdout
+
+
+def test_scan_tls_help_environment_renders_one_per_line() -> None:
+    """Issue #71: NO_COLOR and QUREDDY_OPENSSL appear on distinct lines."""
+    runner = CliRunner()
+    result = runner.invoke(app, ["scan", "tls", "--help"])
+    assert result.exit_code == 0
+
+    no_color = _line_with_substring(result.stdout, "NO_COLOR")
+    assert no_color, "NO_COLOR row not found"
+    assert "QUREDDY_OPENSSL" not in no_color, (
+        f"NO_COLOR and QUREDDY_OPENSSL collapsed onto one line: {no_color!r}"
+    )
+
+    qureddy_openssl = _line_with_substring(result.stdout, "QUREDDY_OPENSSL")
+    assert qureddy_openssl, "QUREDDY_OPENSSL row not found"
+
+
 def test_version_flag_emits_banner() -> None:
     """Issue #41: --version prints `<name> <version> -- <url>` and exits 0."""
     runner = CliRunner()

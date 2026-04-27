@@ -21,6 +21,7 @@ import typer
 
 from qureddy._branding import (
     PROJECT_NAME,
+    PROJECT_URL,
     VERSION_BANNER,
 )
 from qureddy.core.errors import (
@@ -93,8 +94,18 @@ app = typer.Typer(
     help=f"{PROJECT_NAME} -- post-quantum TLS readiness scanner.",
     no_args_is_help=True,
     add_completion=False,
+    # rich_markup_mode=None disables Typer's Rich-based formatter for help
+    # output; falls back to Click's classic formatter which respects literal
+    # newlines + the `\b` form-feed convention. Required for the multi-line
+    # epilog blocks (EXAMPLES, EXIT CODES, ENVIRONMENT) to render one item
+    # per line. See issue #71 for the full investigation.
+    rich_markup_mode=None,
 )
-scan_app = typer.Typer(help="Run scans.", no_args_is_help=True)
+scan_app = typer.Typer(
+    help="Run scans.",
+    no_args_is_help=True,
+    rich_markup_mode=None,
+)
 app.add_typer(scan_app, name="scan")
 
 
@@ -155,7 +166,72 @@ JsonLogsOpt = Annotated[bool, typer.Option("--json-logs", help="Emit JSON-format
 QuietOpt = Annotated[bool, typer.Option("-q", "--quiet", help="Suppress non-error logs.")]
 
 
-@scan_app.command("tls")
+# Tier-2 epilog for `qureddy scan tls --help` (issue #41 / ADR 0003 patterns 3-4).
+#
+# Exit-code lines reference the EXIT_* constants so a contract change there
+# (e.g. issue #12's exit 70) doesn't drift the help text — single source of
+# truth per agent-antipatterns "Copy-paste duplication" rule.
+#
+# Why every paragraph starts with `\b\n`:
+#   Click's text formatter collapses single `\n` into spaces within a
+#   paragraph (issue #71). The `\b` marker (literal backspace, ASCII 8)
+#   tells the formatter to preserve literal newlines for THAT paragraph.
+#   Each paragraph (each EXAMPLES pair, each EXIT CODES table, each
+#   ENVIRONMENT row) needs its own `\b\n` prefix because blank lines
+#   between paragraphs end the `\b` block. Single `\b` at the top of a
+#   block isn't enough — paragraphs after the first blank reflow again.
+_SCAN_TLS_EPILOG = f"""\
+EXAMPLES:
+
+\b
+# Most common: scan a hostname with rich console output.
+qureddy scan tls google.com
+
+\b
+# Machine-readable JSON for CI pipelines.
+qureddy scan tls pq.cloudflareresearch.com --format json
+
+\b
+# Scan an IP target (SNI override required).
+qureddy scan tls 1.1.1.1:443 --sni one.one.one.one
+
+\b
+# Tolerate transient network hiccups (3 retries, 2s apart).
+qureddy scan tls flaky.example.com --retry-on tls_handshake_failed --retries 3 --retry-delay 2
+
+EXIT CODES:
+
+\b
+{EXIT_OK}   scan succeeded
+{EXIT_TARGET_FAILED}   target scan failed (handshake, parse, etc.)
+{EXIT_LOCAL_DEPENDENCY}   local dependency missing or unsupported (OpenSSL <3.5)
+{EXIT_USAGE}   usage / configuration error
+{EXIT_INTERNAL_ERROR}  internal qureddy error (BSD sysexits.h EX_SOFTWARE)
+
+ENVIRONMENT:
+
+\b
+NO_COLOR         Disable ANSI color (https://no-color.org).
+
+\b
+QUREDDY_OPENSSL  Override path to the OpenSSL 3.5+ binary
+                 (precedence: --openssl > $QUREDDY_OPENSSL > $PATH).
+
+Project: {PROJECT_URL}
+"""
+
+
+@scan_app.command(
+    "tls",
+    epilog=_SCAN_TLS_EPILOG,
+    # Disable Click's text-wrapping for the epilog. With wrapping on,
+    # `\b` blocks still see individual `\n` chars merged within a
+    # paragraph (issue #71). Setting max_content_width to a very large
+    # value tells Click "don't wrap" — the epilog string's literal
+    # newlines survive. Option-table column widths are unaffected
+    # because they have their own column-fitting logic.
+    context_settings={"max_content_width": 10000},
+)
 def scan_tls(
     target: TargetArg,
     sni: SniOpt = None,
