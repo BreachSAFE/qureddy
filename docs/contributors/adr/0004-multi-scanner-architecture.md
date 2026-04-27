@@ -86,6 +86,7 @@ The flat `FailureCategory` enum is replaced with namespaced values to prevent NÃ
 |---|---|
 | `LOCAL_OPENSSL_MISSING` | `local_openssl_missing` |
 | `LOCAL_OPENSSL_BROKEN` | `local_openssl_broken` |
+| `LOCAL_OPENSSL_VERSION_UNREADABLE` | `local_openssl_version_unreadable` |
 | `LOCAL_OPENSSL_TOO_OLD` | `local_openssl_too_old` |
 | `LOCAL_OPENSSL_LACKS_GROUP` | `local_openssl_lacks_group` |
 | `TARGET_CONNECT_FAILED` | `tls.target_connect_failed` |

@@ -589,6 +589,27 @@ def test_local_openssl_broken_exits_3() -> None:
     assert payload["summary"]["failure_category"] == "local_openssl_broken"
 
 
+def test_local_openssl_version_unreadable_exits_3() -> None:
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        [
+            "scan",
+            "tls",
+            "example.com",
+            "--openssl",
+            str(FAKE_DIR / "openssl_unparseable_version.sh"),
+            "--format",
+            "json",
+        ],
+    )
+    assert result.exit_code == 3
+    payload = json.loads(result.stdout)
+    assert payload["scan"]["status"] == "local_openssl_version_unreadable"
+    assert payload["dependencies"][0]["failure_category"] == "local_openssl_version_unreadable"
+    assert payload["summary"]["failure_category"] == "local_openssl_version_unreadable"
+
+
 def test_json_output_top_level_keys_in_locked_order() -> None:
     runner = CliRunner()
     result = runner.invoke(

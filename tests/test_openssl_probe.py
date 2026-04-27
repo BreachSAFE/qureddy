@@ -16,6 +16,7 @@ from qureddy.core.errors import (
     LocalOpenSSLLacksGroup,
     LocalOpenSSLMissing,
     LocalOpenSSLTooOld,
+    LocalOpenSSLVersionUnreadable,
 )
 from qureddy.core.models import FailureCategory
 from qureddy.scanners.tls.openssl_probe import (
@@ -73,12 +74,28 @@ class TestProbeCapability:
         assert exc_info.value.dependency is not None
         assert exc_info.value.dependency.failure_category is FailureCategory.LOCAL_OPENSSL_BROKEN
 
+    def test_unparseable_version_flagged(self) -> None:
+        dep = probe_capability(str(FAKE_DIR / "openssl_unparseable_version.sh"))
+        assert dep.version is None
+        assert dep.supports_tls13_groups is True
+        assert dep.supports_x25519mlkem768 is True
+        assert dep.failure_category is FailureCategory.LOCAL_OPENSSL_VERSION_UNREADABLE
+
 
 class TestRaiseIfUnusable:
     def test_too_old_raises(self) -> None:
         dep = probe_capability(str(FAKE_DIR / "openssl_too_old.sh"))
         with pytest.raises(LocalOpenSSLTooOld):
             raise_if_unusable(dep)
+
+    def test_unparseable_version_message_is_readable(self) -> None:
+        dep = probe_capability(str(FAKE_DIR / "openssl_unparseable_version.sh"))
+        with pytest.raises(LocalOpenSSLVersionUnreadable) as exc_info:
+            raise_if_unusable(dep)
+        message = str(exc_info.value)
+        assert "unparseable version output" in message
+        assert str(FAKE_DIR / "openssl_unparseable_version.sh") in message
+        assert "OpenSSL None" not in message
 
     def test_lacks_group_raises(self) -> None:
         dep = probe_capability(str(FAKE_DIR / "openssl_lacks_group.sh"))

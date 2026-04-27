@@ -23,6 +23,7 @@ from qureddy.core.errors import (
     LocalOpenSSLLacksGroup,
     LocalOpenSSLMissing,
     LocalOpenSSLTooOld,
+    LocalOpenSSLVersionUnreadable,
 )
 from qureddy.core.logging import get_logger
 from qureddy.core.models import (
@@ -95,10 +96,19 @@ def probe_capability(
     supports_groups = bool(groups)
     supports_hybrid = HYBRID_GROUP.lower() in {g.lower() for g in groups}
 
-    if version is None or version < MIN_OPENSSL_VERSION:
+    if version is None:
         return OpenSSLDependency(
             path=openssl_path,
-            version=str(version) if version else None,
+            version=None,
+            supports_tls13_groups=supports_groups,
+            supports_x25519mlkem768=supports_hybrid,
+            failure_category=FailureCategory.LOCAL_OPENSSL_VERSION_UNREADABLE,
+        )
+
+    if version < MIN_OPENSSL_VERSION:
+        return OpenSSLDependency(
+            path=openssl_path,
+            version=str(version),
             supports_tls13_groups=supports_groups,
             supports_x25519mlkem768=supports_hybrid,
             failure_category=FailureCategory.LOCAL_OPENSSL_TOO_OLD,
@@ -131,6 +141,12 @@ def raise_if_unusable(dep: OpenSSLDependency) -> None:
     if dep.failure_category is FailureCategory.LOCAL_OPENSSL_BROKEN:
         msg = f"OpenSSL at {dep.path} exited nonzero during capability detection"
         raise LocalOpenSSLBroken(msg, dependency=dep)
+    if dep.failure_category is FailureCategory.LOCAL_OPENSSL_VERSION_UNREADABLE:
+        msg = (
+            f"OpenSSL at {dep.path} produced unparseable version output "
+            f"(required: {MIN_OPENSSL_VERSION})"
+        )
+        raise LocalOpenSSLVersionUnreadable(msg, dependency=dep)
     if dep.failure_category is FailureCategory.LOCAL_OPENSSL_TOO_OLD:
         msg = f"OpenSSL {dep.version} is below required {MIN_OPENSSL_VERSION}"
         raise LocalOpenSSLTooOld(msg, dependency=dep)
