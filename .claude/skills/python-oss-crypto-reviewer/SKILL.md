@@ -16,6 +16,7 @@ The point of this skill: **stop you from rubber-stamping a fix that introduces a
 - Codex/Claude suggested a patch and you want a second opinion before merging
 - You're triaging an open issue and need to evaluate which suggested fix to take
 - A reviewer disagrees with you and you need to defend or concede with rigor
+- **A new PR opens or updates while you are in the conversation.** Default to running the reviewer pass without being asked, including for docs-only PRs. The exception is a PR you authored: post a `## Self-Review:` comment with disclaimer and ask the maintainer or another reviewer to do a proper pass. Never silently skip review on a self-authored PR — closing the audit trail with explicit "this was self-merged, no external review" is materially better than leaving it ambiguous (issue #48).
 
 If you're writing the fix yourself, use `mvp-implement` (or `surgical-fix` if it exists) instead. This skill is for *reviewing* fixes, not authoring them.
 
