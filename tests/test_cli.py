@@ -149,10 +149,6 @@ def test_retry_constants_are_canonical_in_core_retry() -> None:
     once in `core/retry.py`) creates a future drift risk where the
     Typer guard and the validator report different boundaries.
     """
-    # Canonical names exist in core.retry.
-    assert retry_module.MAX_RETRIES == 3
-    assert retry_module.MAX_RETRY_DELAY_SECONDS == 10.0
-
     # Local duplicates removed from cli.py.
     assert not hasattr(cli_module, "_MAX_RETRIES"), (
         "_MAX_RETRIES still defined in cli.py — should import from core.retry"
@@ -160,6 +156,18 @@ def test_retry_constants_are_canonical_in_core_retry() -> None:
     assert not hasattr(cli_module, "_MAX_RETRY_DELAY_SECONDS"), (
         "_MAX_RETRY_DELAY_SECONDS still defined in cli.py — should import from core.retry"
     )
+
+    # cli.py's references resolve to the canonical objects in core.retry,
+    # not local shadows. Identity (`is`) — not equality — catches the
+    # `MAX_RETRIES = 3` shadow case where a future contributor re-defines
+    # the constant at cli.py module scope without the underscore.
+    # Note: CPython interns small ints (-5..256), so an idempotent
+    # `MAX_RETRIES = 3` re-definition with the same int value passes
+    # identity by accident. The `not hasattr(_MAX_RETRIES)` guard above
+    # catches the underscore-prefixed shape; this `is` check catches
+    # any drift to a different value (or a non-cached float).
+    assert cli_module.MAX_RETRIES is retry_module.MAX_RETRIES
+    assert cli_module.MAX_RETRY_DELAY_SECONDS is retry_module.MAX_RETRY_DELAY_SECONDS
 
 
 def test_main_exits_3_on_capability_failure(monkeypatch: pytest.MonkeyPatch) -> None:
