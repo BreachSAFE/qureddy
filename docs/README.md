@@ -43,6 +43,7 @@ Look-it-up information. Comprehensive, accurate, dry.
 ### [Explanation](explanation/)
 Conceptual discussion. Why we made the choices we did.
 
+- [Architecture](explanation/architecture.md) — module map, scan flow, output stream contract, failure-category routing
 - [Why hybrid post-quantum?](explanation/why-hybrid-pq.md) — the X25519MLKEM768 design call
 - [Harvest now, decrypt later (HNDL)](explanation/hndl.md) — the threat model that drives the timeline
 - [Threat model and scope](explanation/threat-model.md) — what QuReddy assumes, what it doesn't try to defend against
@@ -52,6 +53,7 @@ Conceptual discussion. Why we made the choices we did.
 The rules and conventions for working *on* QuReddy (not *with* it) live separately from user-facing docs:
 
 - [`contributors/`](contributors/) — engineering rules, anti-patterns, examples, OSS standards
+- [`contributors/review-process.md`](contributors/review-process.md) — how a fix lands: reviewer / validator / arbiter pipeline + label tiers
 - [`contributors/agents/`](contributors/agents/) — agent role specifications and bootstrap prompts
 
 These follow Diátaxis internally too — `coding-rules.md` is reference, `examples.md` is how-to, etc. — but they sit under `contributors/` because they're not for end users of the `qureddy` CLI.
