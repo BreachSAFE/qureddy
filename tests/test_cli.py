@@ -229,6 +229,85 @@ def test_version_on_scan_subcommand_only_also_suggests_root_form(
     assert "qureddy --version" in combined
 
 
+@pytest.mark.parametrize("bad_flag", ["--v", "--vv", "--vvv", "--vvvv"])
+def test_double_dash_v_typo_emits_helpful_hint(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    bad_flag: str,
+) -> None:
+    """Issue #74: `--v`/`--vv`/`--vvv` typos emit a hint about single-dash form.
+
+    Click's default error reads `No such option: --vvv` with no hint
+    that the verbosity flag is `-vvv` (single dash). Replace with an
+    actionable hint that names both the short and long form.
+    """
+    monkeypatch.setattr(
+        "sys.argv",
+        ["qureddy", "scan", "tls", "example.com", bad_flag],
+    )
+    with pytest.raises(SystemExit) as exit_info:
+        main()
+    assert exit_info.value.code == 4
+    captured = capsys.readouterr()
+    combined = captured.out + captured.err
+    # Hint must reference the single-dash form so the user knows what to type.
+    assert "-v" in combined, f"missing -v hint for {bad_flag}: {combined!r}"
+    # Hint should call out the dash-confusion explicitly so the user
+    # understands why their input was wrong, not just what to type instead.
+    assert "single" in combined.lower() or "single-dash" in combined.lower(), (
+        f"hint should mention single-dash for {bad_flag}: {combined!r}"
+    )
+
+
+def test_verbose_typo_emits_helpful_hint(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Issue #74: `--verbos` (typo missing `e`) gets the same hint."""
+    monkeypatch.setattr(
+        "sys.argv",
+        ["qureddy", "scan", "tls", "example.com", "--verbos"],
+    )
+    with pytest.raises(SystemExit) as exit_info:
+        main()
+    assert exit_info.value.code == 4
+    captured = capsys.readouterr()
+    combined = captured.out + captured.err
+    # Same strong assertion as the dash-confusion tests: explicit
+    # mention of "single-dash" so the user understands the issue.
+    assert "single" in combined.lower() or "single-dash" in combined.lower(), (
+        f"hint should mention single-dash for --verbos: {combined!r}"
+    )
+
+
+def test_unrelated_v_word_does_not_trigger_verbosity_hint(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Issue #74: `--view` (legitimate word starting with v) does NOT get the hint.
+
+    The detector targets verbosity-shaped typos specifically; unrelated
+    flag typos like `--view`, `--variable` should fall through to
+    Click's default "No such option" without our extra hint. Otherwise
+    every flag-starting-with-v typo would suggest the user wanted
+    verbosity, which is wrong.
+    """
+    monkeypatch.setattr(
+        "sys.argv",
+        ["qureddy", "scan", "tls", "example.com", "--view"],
+    )
+    with pytest.raises(SystemExit) as exit_info:
+        main()
+    assert exit_info.value.code == 4
+    captured = capsys.readouterr()
+    combined = captured.out + captured.err
+    # Default Click error must fire; OUR hint must NOT.
+    assert "No such option" in combined
+    assert "single-dash" not in combined.lower(), (
+        f"unrelated --view typo got verbosity hint: {combined!r}"
+    )
+
+
 def test_invalid_target_exits_4() -> None:
     runner = CliRunner()
     result = runner.invoke(app, ["scan", "tls", ""])
