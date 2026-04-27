@@ -63,7 +63,20 @@ The split is a structural refactor. Every file existed in the source tree before
 Every existing test passes without modification. Test files may need import-path updates only — never assertion changes. If an assertion breaks, the split changed observable behavior and the PR is rejected.
 
 **Rule H — One file per ADR commitment.**
-This ADR commits to splitting two files (`cli.py`, `openssl_probe.py`) as separate PRs. It does **not** commit to splitting `tests/test_cli.py` (#69) — that's a test-organization concern handled by a separate ADR or PR. Future Rule 2.1 breaches in production code reference this ADR and follow Rules A-G; future Rule 2.1 breaches in test code may need their own decision because the constraints are different (test files are organized by behavior-under-test, not by purpose).
+This ADR commits to splitting two files (`cli.py`, `openssl_probe.py`) as separate PRs. Future Rule 2.1 breaches in production code reference this ADR and follow Rules A-G. Future Rule 2.1 breaches in **test** code follow **Rule H.1** below — added to this ADR per #95 because the splitting axes for tests are genuinely different from production files.
+
+**Rule H.1 — Test files split by tested module, mirroring the production package.**
+When `tests/test_<module>.py` exceeds 400 LOC, split into a `tests/test_<module>/` directory with one file per top-level public function or behavior cluster of the production module under test. Test directory structure mirrors the `src/qureddy/` package structure that #60 lands.
+
+**Example.** When `cli.py` becomes a `cli/` package per Worked Example 1 below, `tests/test_cli.py` becomes `tests/test_cli/` with `test_main.py` (the `main()` entrypoint and exit-code translation), `test_scan.py` (the `scan tls` subcommand), `test_branding.py` (the `--version` and root help), `test_options.py` (option types and validation), etc. — one test file per production-package module that has tests.
+
+**When the production module is single-file.** Some Rule 2.1 breaches won't have a corresponding production split (the production module stays single-file because it's still under 400 LOC). In that case, the test-file split is by **behavior cluster** rather than by production-module structure: `test_<module>_<cluster>.py`. Cluster names match the test-class shape, not the production-function shape. Pick clusters that group tests likely to fail together — a cluster too narrow ("test_one_function.py") doesn't earn its own file; a cluster too wide ("test_misc.py") inherits the original file's problem.
+
+**No test-content changes during a split.** Rule G applies to test files: every existing test passes without modification. Test files may need import-path updates and `conftest.py` placement reviews — never assertion changes.
+
+**Why test-file split rules differ from production.** Production files split by *purpose* (Rule B) — `_branding.py` is what it is regardless of which test exercises it. Test files split by *behavior under test* — a single behavior may invoke five production modules, and a single production module may have ten behaviors worth testing separately. The two axes are orthogonal at the cluster level even when they're aligned at the file level. The MVP-0.1 set has only one over-ceiling test file (`tests/test_cli.py` at 774 LOC, #69) and one Yellow-band file (`tests/test_output.py` at 353 LOC), so the rule is small. By MVP 0.6 with five scanners, six or more test files will hit the ceiling; locking the convention now is cheap.
+
+**Scope of CI enforcement for test-file splits.** The `file-size-gate.yml` workflow currently scopes to `src/qureddy/` only. Rule H.1 extends the *rule* to test files; whether to extend the *gate* to fail PRs on `tests/**` over-ceiling files is a separate decision tracked at #95's follow-ups (warning-only at first to avoid blocking unrelated PRs while #69 lands the first split).
 
 ### Worked example 1: `src/qureddy/cli.py` (#60)
 
@@ -162,7 +175,7 @@ When a file exceeds 400 LOC, walk this tree:
 
 1. **Can the file be split by purpose into 4-7 files?** (Yes for `cli.py`, `openssl_probe.py`.) Apply Rules A-G.
 2. **Is the file already at the lowest reasonable purpose-decomposition?** (e.g. `core/models.py` is 233 LOC of Pydantic models; splitting it by model is feature-decomposition, not purpose-decomposition.) Don't split — flag in `coding-rules.md` as an accepted exception. **Today: no production file is in this category.**
-3. **Is the file actually a test file?** Tests are organized by behavior, not by purpose; their split rule is different. See Rule H. **Today: only `tests/test_cli.py` (774 LOC) hits this; tracked separately at #69.**
+3. **Is the file actually a test file?** Tests are organized by behavior, not by purpose; their split rule is different. See **Rule H.1**: split into `tests/test_<module>/` mirroring the production package, or by behavior cluster when production is single-file. **Today: `tests/test_cli.py` (774 LOC, #69) and `tests/test_output.py` (353 LOC, Yellow band) are the relevant cases.**
 
 ## Why this fits the project
 
