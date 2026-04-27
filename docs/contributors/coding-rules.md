@@ -8,7 +8,7 @@ This document covers Python authoring rules, CI/CD gates, security bar, and self
 
 QuReddy targets **OpenSSF Best Practices Badge — passing tier** by MVP 0.6, **silver tier** by v1.0. Rules below are mapped to OpenSSF criteria where applicable.
 
-> **Note on planned files.** Several rules below reference files that do not yet exist in the repo: `scripts/audit_phase.py`, `docs/SECURITY_EXCEPTIONS.md`, `SECURITY.md`, `docs/STANDARDS.md`, `.github/PULL_REQUEST_TEMPLATE.md`, the CI workflow files. They are referenced because the rules will be active once those files land. **Do not create empty placeholder files just to satisfy a doc reference.** When you need to refer to a planned file in code or docs, mark it as planned. The rules become enforced when their backing files exist.
+> **Note on planned files.** Two rules below reference files that do not yet exist in the repo: `docs/SECURITY_EXCEPTIONS.md` and `docs/STANDARDS.md`. They are referenced because the rules will be active once those files land. **Do not create empty placeholder files just to satisfy a doc reference.** When you need to refer to a planned file in code or docs, mark it as planned. The rules become enforced when their backing files exist. The previously planned `scripts/audit_phase.py`, `SECURITY.md`, `.github/PULL_REQUEST_TEMPLATE.md`, and the CI workflow files have all landed.
 
 ---
 
