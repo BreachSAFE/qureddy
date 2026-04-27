@@ -30,6 +30,7 @@ from qureddy.core.errors import (
     LocalOpenSSLLacksGroup,
     LocalOpenSSLMissing,
     LocalOpenSSLTooOld,
+    LocalOpenSSLVersionUnreadable,
     QureddyError,
     RetryConfigError,
     TargetParseError,
@@ -306,6 +307,7 @@ def _execute_scan(
         LocalOpenSSLBroken,
         LocalOpenSSLMissing,
         LocalOpenSSLTooOld,
+        LocalOpenSSLVersionUnreadable,
         LocalOpenSSLLacksGroup,
     ) as exc:
         log.warning("scan.local_dependency_unusable", error=str(exc))

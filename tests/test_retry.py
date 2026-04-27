@@ -65,6 +65,10 @@ class TestParseRetryOn:
         with pytest.raises(RetryConfigError, match="not retryable"):
             parse_retry_on("local_openssl_broken")
 
+    def test_local_openssl_version_unreadable_is_not_retryable(self) -> None:
+        with pytest.raises(RetryConfigError, match="not retryable"):
+            parse_retry_on("local_openssl_version_unreadable")
+
     def test_parse_ambiguous_is_not_retryable(self) -> None:
         with pytest.raises(RetryConfigError, match="not retryable"):
             parse_retry_on("parse_ambiguous")

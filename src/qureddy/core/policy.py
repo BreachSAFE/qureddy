@@ -60,6 +60,7 @@ class PolicyRule(BaseModel):
 _LOCAL_NOT_TESTABLE = (
     FailureCategory.LOCAL_OPENSSL_MISSING,
     FailureCategory.LOCAL_OPENSSL_BROKEN,
+    FailureCategory.LOCAL_OPENSSL_VERSION_UNREADABLE,
     FailureCategory.LOCAL_OPENSSL_TOO_OLD,
     FailureCategory.LOCAL_OPENSSL_LACKS_GROUP,
 )

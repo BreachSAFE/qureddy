@@ -46,6 +46,13 @@ class LocalOpenSSLBroken(_LocalOpenSSLProblem):
     """
 
 
+class LocalOpenSSLVersionUnreadable(_LocalOpenSSLProblem):
+    """OpenSSL version output could not be parsed.
+
+    Maps to FailureCategory.LOCAL_OPENSSL_VERSION_UNREADABLE. Triggers exit code 3.
+    """
+
+
 class LocalOpenSSLTooOld(_LocalOpenSSLProblem):
     """OpenSSL is below 3.5.0.
 
