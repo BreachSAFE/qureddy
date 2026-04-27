@@ -56,27 +56,36 @@ def _line_with_substring(stdout: str, needle: str) -> str:
 
 
 def test_scan_tls_help_examples_render_one_per_line() -> None:
-    """Issue #71: each example command appears on its own line.
+    """Issue #71: comments and commands render on separate lines.
 
-    The pre-fix bug collapsed every single newline to a space, smushing
-    the comment-with-command pairs onto one line each (and the JSON
-    example onto the same line as its comment). Lock that each
-    example's `qureddy scan tls ...` invocation lands on a distinct
-    line from its `# comment` predecessor.
+    The pre-fix bug collapsed every single newline to a space, so a
+    `# comment` line followed by a `qureddy scan tls ...` line rendered
+    as `# comment ... qureddy scan tls ...` on a single output line.
+
+    The strong assertion: NO line in the help output contains BOTH a
+    `#` comment marker AND a `qureddy scan tls` command invocation.
+    Catches comment-merged-with-command for any example in the EXAMPLES
+    block, not just the named ones — so adding a 5th example wouldn't
+    silently regress.
     """
     runner = CliRunner()
     result = runner.invoke(app, ["scan", "tls", "--help"])
     assert result.exit_code == 0
 
-    google_line = _line_with_substring(result.stdout, "qureddy scan tls google.com")
-    assert google_line, "google.com example not found"
-    assert google_line.startswith("qureddy scan tls google.com"), (
-        f"google.com example merged with its comment: {google_line!r}"
-    )
+    for line in result.stdout.split("\n"):
+        # In a properly-rendered EXAMPLES block, comment lines and command
+        # lines never share a single output line.
+        if "# " in line and "qureddy scan tls" in line:
+            raise AssertionError(f"comment merged with command on one line: {line.strip()!r}")
 
-    pq_line = _line_with_substring(result.stdout, "pq.cloudflareresearch.com")
-    assert pq_line, "pq.cloudflareresearch.com example not found"
-    assert "# Machine-readable" not in pq_line, f"pq example merged with its comment: {pq_line!r}"
+    # Also lock that each named example's command appears in the output.
+    for cmd in (
+        "qureddy scan tls google.com",
+        "qureddy scan tls pq.cloudflareresearch.com",
+        "qureddy scan tls 1.1.1.1:443",
+        "qureddy scan tls flaky.example.com",
+    ):
+        assert cmd in result.stdout, f"missing example command: {cmd}"
 
 
 def test_scan_tls_help_carries_exit_codes_block() -> None:
