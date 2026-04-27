@@ -6,6 +6,27 @@ The `FailureCategory` enum is QuReddy's typed failure surface. Every probe, pars
 - The `--retry-on` flag's allowlist
 - The exit code mapping (categories prefixed `LOCAL_OPENSSL_` map to exit 3; the rest to exit 2)
 
+## Routing diagram
+
+```mermaid
+flowchart LR
+    fail([Failure]) --> kind{Detected where?}
+
+    kind -->|capability check| local["LOCAL_OPENSSL_MISSING<br/>LOCAL_OPENSSL_TOO_OLD<br/>LOCAL_OPENSSL_LACKS_GROUP"]
+    kind -->|probe<br/>(subprocess + stderr)| probe_cat["TARGET_CONNECT_FAILED<br/>TLS_HANDSHAKE_FAILED<br/>SNI_REQUIRED_OR_WRONG<br/>MIDDLEBOX_OR_MTU_FAILURE"]
+    kind -->|parser| parse_cat["PARSE_NO_GROUP<br/>PARSE_AMBIGUOUS<br/>UNEXPECTED_GROUP"]
+
+    local --> exit3[Exit 3<br/>local dependency]
+    probe_cat --> exit2[Exit 2<br/>target failed]
+    parse_cat --> exit2
+
+    local -.->|never retryable| not_retry[Not in<br/>--retry-on allowlist]
+    probe_cat -.->|TARGET_CONNECT_FAILED<br/>TLS_HANDSHAKE_FAILED<br/>MIDDLEBOX_OR_MTU_FAILURE<br/>retryable| retry[--retry-on allowlist]
+    probe_cat -.->|SNI_REQUIRED_OR_WRONG<br/>not retryable| not_retry
+    parse_cat -.->|PARSE_NO_GROUP<br/>retryable| retry
+    parse_cat -.->|PARSE_AMBIGUOUS<br/>UNEXPECTED_GROUP<br/>not retryable| not_retry
+```
+
 ## The values
 
 | Category | Source | Triggers exit | Retryable | Meaning |
