@@ -60,8 +60,9 @@ This is the **Tier 1 PR audit** from `docs/contributors/coding-rules.md` Quick R
 
 ### Code
 
-- [ ] No file over 400 lines
-- [ ] No function over 50 lines (30 line norm)
+- [ ] **All files touched by this PR remain under 400 lines AFTER the diff applies.** Author ran `wc -l src/qureddy/<changed_file>` post-merge to verify, not just measured the delta.
+- [ ] Files in the 320-400 LOC Yellow/Orange band (per `coding-rules.md` §2.2.1) have a refactor follow-up issue filed and linked in this PR's "Reviewer notes" section.
+- [ ] No function over 50 lines (30 line norm). Functions in the 31-50 LOC Yellow/Orange band have a follow-up issue.
 - [ ] No class over 200 lines
 - [ ] Every public function has a Google-style docstring
 - [ ] Every Pydantic model is frozen with `extra="forbid"` unless explicitly mutable

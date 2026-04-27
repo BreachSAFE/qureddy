@@ -42,6 +42,23 @@ Failure mode: 200-line functions where bug fixes touch four unrelated branches a
 Counted from line 1 to last line, excluding blank lines and module docstrings. Files over 400 lines almost always have a wrong abstraction. Split before you cross 500.
 The TLS scanner directory has separate files (`scanner.py`, `openssl_probe.py`, `parse.py`) instead of one `tls.py` for exactly this reason.
 
+**Rule 2.2.1 — Edge bands and per-band actions.**
+
+Files that approach the ceiling without crossing it accumulate silently across PRs. The 400-line cliff produces a pattern where every PR adds 5-15 LOC, files quietly drift from "fine" to "over the ceiling" between merges, and the breach gets filed as a follow-up issue *after* it lands. The bands below catch each transition before the breach.
+
+| Band | LOC range | What it means | Required action |
+|---|---|---|---|
+| **Green** | 0–319 | Plenty of room | None |
+| **Yellow** | 320–360 | At the edge | Note in PR review's "Concerns" section. PR may merge. |
+| **Orange** | 361–400 | Imminent breach | **File a refactor follow-up issue at PR-review time.** PR may merge. |
+| **Red** | 401+ | Hard ceiling breached | **Block merge** unless the PR body documents `ANTIPATTERN ACCEPTED: file-size-ceiling, because <reason>` AND links the refactor follow-up issue. |
+
+Same edge bands apply to functions per Rule 2.1, scaled to the 50-line ceiling: Green ≤30, Yellow 31–40, Orange 41–50, Red 51+.
+
+The CI workflow `.github/workflows/file-size-gate.yml` enforces Red-band breaches. Yellow and Orange bands surface as warnings in the workflow output and reviewer skill output; they are not gate-blocking by themselves but are mandatory PR-review items.
+
+**Rationale.** The cliff version of Rule 2.2 was honor-system. The post-PR-#83 audit (cli.py 429 / openssl_probe.py 424) showed that good-faith adherence to "no file over 400 lines" still ships breaches when authors measure the *delta* their PR adds rather than the *post-merge* file size. Edge bands surface the trajectory, not just the threshold.
+
 **Rule 2.3 — Modules have one responsibility.**
 A file named `parse.py` parses. It does not also fetch, classify, or render. If the module name has "and" or "utils" in it, the responsibility is wrong.
 Failure mode: `helpers.py` becoming the dumping ground that nobody understands six months later.
