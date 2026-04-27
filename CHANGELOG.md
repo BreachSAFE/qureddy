@@ -15,14 +15,26 @@ OpenSSF Best Practices Badge target: passing tier by MVP 0.6, silver by v1.0.
 
 ### Added
 
-- Exit code **70** (`EXIT_INTERNAL_ERROR`, BSD `sysexits.h` `EX_SOFTWARE`) for internal qureddy bugs. CI scripts branching on `$? == 2` can now trust that 2 means "target scan failed", not "qureddy crashed". Closes [#12](https://github.com/paul007ex/qureddy/issues/12).
+- `--version` / `-V` flag at the root and on every subcommand, printing the locked `BreachSAFE QuReddy <version> -- https://www.breachsafe.ai` banner. PR [#55](https://github.com/paul007ex/qureddy/pull/55).
+- `qureddy scan tls --help` now includes `EXAMPLES`, `EXIT CODES`, and `ENVIRONMENT` sections in the epilog, rendered with literal newline preservation (Click `\b` form-feed convention). Closes [#71](https://github.com/paul007ex/qureddy/issues/71). PR [#73](https://github.com/paul007ex/qureddy/pull/73).
+- Exit code **70** (`EXIT_INTERNAL_ERROR`, BSD `sysexits.h` `EX_SOFTWARE`) for internal qureddy bugs. CI scripts branching on `$? == 2` can now trust that 2 means "target scan failed", not "qureddy crashed". Closes [#12](https://github.com/paul007ex/qureddy/issues/12). Implementation in PR [#51](https://github.com/paul007ex/qureddy/pull/51).
+- Failure category classification for unreadable OpenSSL version output — capability checks against ancient or non-standard OpenSSL builds now produce a typed `local_dependency_unusable` outcome rather than crashing. Closes [#16](https://github.com/paul007ex/qureddy/issues/16). PR [#83](https://github.com/paul007ex/qureddy/pull/83).
+- Failure category classification for broken OpenSSL capability checks (segfaults, wrong-binary-name, missing PQ groups) — these now route through the typed exception hierarchy instead of bubbling raw subprocess errors. Closes [#10](https://github.com/paul007ex/qureddy/issues/10). PR [#81](https://github.com/paul007ex/qureddy/pull/81).
 - Diátaxis documentation structure: `docs/{tutorials,how-to,reference,explanation,contributors}/`. Standard recorded in [ADR 0002](docs/contributors/adr/0002-diataxis-documentation-standard.md).
 - Tutorial: `docs/tutorials/your-first-scan.md`.
 - How-to guides: `docs/how-to/scan-ip-with-sni.md`, `docs/how-to/json-output-for-ci.md`.
 - Reference docs: `docs/reference/cli.md`, `docs/reference/exit-codes.md`, `docs/reference/failure-categories.md`, `docs/reference/json-schema.md`, `docs/reference/milestones.md`.
 - Explanation docs: `docs/explanation/why-hybrid-pq.md`, `docs/explanation/hndl.md`, `docs/explanation/threat-model.md`.
 - ADR 0001 — `--trace` flag and verbosity refactor (Accepted; implementation pending).
-- ADR 0003 — CLI `--help` rewrite per best-practice patterns (Proposed).
+- ADR 0003 — CLI `--help` rewrite per best-practice patterns (Implementing; slices 1–3 of #41 shipped, slice 4 in progress).
+- ADR 0004 — multi-scanner architecture for MVP 0.2 (Proposed).
+- ADR 0005 — splitting oversized files (Proposed; tracks the cli.py + openssl_probe.py refactor).
+
+### Fixed
+
+- `--version` / `-V` on a subcommand (e.g. `qureddy scan tls --version`) now prints a clear error pointing the user at the root-level form, instead of Click's default cryptic "no such option" message. Closes [#64](https://github.com/paul007ex/qureddy/issues/64). PR [#65](https://github.com/paul007ex/qureddy/pull/65).
+- `--v`, `--vv`, `--vvv`, `--verbos` typos at the root level now produce a helpful hint pointing the user at the single-dash POSIX-stacking form (`-v`, `-vv`, `-vvv`), instead of Click's default "no such option" message. Closes [#74](https://github.com/paul007ex/qureddy/issues/74). PR [#80](https://github.com/paul007ex/qureddy/pull/80).
+- TLS scanner parser now strictly validates input contract (no trailing whitespace surprises, no NUL-byte injection paths, no silent fallback on unparseable group lines). Closes [#8](https://github.com/paul007ex/qureddy/issues/8) and [#9](https://github.com/paul007ex/qureddy/issues/9). PR [#87](https://github.com/paul007ex/qureddy/pull/87).
 
 ### Changed
 
