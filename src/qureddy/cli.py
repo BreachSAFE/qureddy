@@ -26,6 +26,7 @@ from qureddy._branding import (
     VERSION_BANNER,
 )
 from qureddy.core.errors import (
+    LocalOpenSSLBroken,
     LocalOpenSSLLacksGroup,
     LocalOpenSSLMissing,
     LocalOpenSSLTooOld,
@@ -301,7 +302,12 @@ def _execute_scan(
     try:
         result = scanner.scan(scan_target, timeout_seconds=timeout)
         exit_code = EXIT_OK
-    except (LocalOpenSSLMissing, LocalOpenSSLTooOld, LocalOpenSSLLacksGroup) as exc:
+    except (
+        LocalOpenSSLBroken,
+        LocalOpenSSLMissing,
+        LocalOpenSSLTooOld,
+        LocalOpenSSLLacksGroup,
+    ) as exc:
         log.warning("scan.local_dependency_unusable", error=str(exc))
         # Consume exc.dependency directly. Re-probing would waste a
         # subprocess and open a TOCTOU window.

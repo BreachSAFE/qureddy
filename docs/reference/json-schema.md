@@ -59,7 +59,7 @@ The order is contractual:
 | `version` | string \| null | e.g. `"3.5.6"` |
 | `supports_tls13_groups` | bool | Whether `openssl list -tls1_3 -tls-groups` produced output |
 | `supports_x25519mlkem768` | bool | Whether the hybrid group appears in the supported list |
-| `failure_category` | string \| null | One of `local_openssl_missing`, `local_openssl_too_old`, `local_openssl_lacks_group`, or `null` if usable |
+| `failure_category` | string \| null | One of `local_openssl_missing`, `local_openssl_broken`, `local_openssl_too_old`, `local_openssl_lacks_group`, or `null` if usable |
 
 ### `Asset` (`assets[]`)
 

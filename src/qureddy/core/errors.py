@@ -19,7 +19,7 @@ class TargetParseError(QureddyError):
 
 
 class _LocalOpenSSLProblem(QureddyError):
-    """Base for the three local-OpenSSL failure modes.
+    """Base for local-OpenSSL failure modes.
 
     Each subclass carries the populated `OpenSSLDependency` from the
     capability check that detected the problem so consumers don't need
@@ -36,6 +36,13 @@ class LocalOpenSSLMissing(_LocalOpenSSLProblem):
     """OpenSSL binary not found at any expected path.
 
     Maps to FailureCategory.LOCAL_OPENSSL_MISSING. Triggers exit code 3.
+    """
+
+
+class LocalOpenSSLBroken(_LocalOpenSSLProblem):
+    """OpenSSL exists but exits nonzero during capability detection.
+
+    Maps to FailureCategory.LOCAL_OPENSSL_BROKEN. Triggers exit code 3.
     """
 
 

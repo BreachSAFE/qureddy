@@ -12,6 +12,7 @@ from pathlib import Path
 import pytest
 
 from qureddy.core.errors import (
+    LocalOpenSSLBroken,
     LocalOpenSSLLacksGroup,
     LocalOpenSSLMissing,
     LocalOpenSSLTooOld,
@@ -63,6 +64,14 @@ class TestProbeCapability:
         assert dep.failure_category is None
         assert dep.supports_x25519mlkem768 is True
         assert dep.version == "3.5.6"
+
+    def test_broken_returncode_flagged(self) -> None:
+        with pytest.raises(LocalOpenSSLBroken) as exc_info:
+            probe_capability(str(FAKE_DIR / "openssl_broken_returncode.sh"))
+        assert "exited with code 139" in str(exc_info.value)
+        assert "Library not loaded" in str(exc_info.value)
+        assert exc_info.value.dependency is not None
+        assert exc_info.value.dependency.failure_category is FailureCategory.LOCAL_OPENSSL_BROKEN
 
 
 class TestRaiseIfUnusable:
