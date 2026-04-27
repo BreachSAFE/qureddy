@@ -14,6 +14,8 @@ Skills are **lazily loaded**: the agent reads each skill's description (the YAML
 | `write-test-fixture` | Adding a new captured OpenSSL fixture under `tests/fixtures/openssl/`. |
 | `run-quality-gates` | Pre-final-response check on any code-touching task. Runs the Tier 1 enterprise-grade gates (ruff, mypy, pytest+coverage, bandit, pip-audit, deptry, reuse, semgrep, secret scan) and produces structured PASS/FAIL/NOT RUN output. |
 | `python-oss-crypto-reviewer` | Reviewing a proposed bug fix, PR diff, or another agent's code suggestion. Produces APPROVE / APPROVE WITH CHANGES / REJECT verdict against correctness, security, and schema-stability standards. |
+| `validate-fix` | Verifying a single PR actually resolves the GitHub issue(s) it claims to fix. Read-only on the PR diff. Distinguishes "tests pass" from "issue resolved" — applies a `validation:claude:<verdict>` label. |
+| `audit-docs` | Auditing the doc surface for drift against the working tree. Four classes: runnable examples (Class A), ADR status freshness (Class B), cross-reference integrity (Class C), cross-doc consistency for canonical contracts (Class D). Read-only — produces a findings report. |
 
 ## For human contributors
 
