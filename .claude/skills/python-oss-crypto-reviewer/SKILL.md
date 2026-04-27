@@ -17,7 +17,22 @@ The point of this skill: **stop you from rubber-stamping a fix that introduces a
 - You're triaging an open issue and need to evaluate which suggested fix to take
 - A reviewer disagrees with you and you need to defend or concede with rigor
 
-If you're writing the fix yourself, use `mvp-implement` instead. This skill is for *reviewing* fixes, not authoring them.
+If you're writing the fix yourself, use `mvp-implement` (or `surgical-fix` if it exists) instead. This skill is for *reviewing* fixes, not authoring them.
+
+## Two modes: Reviewer and Arbiter
+
+This skill operates in one of two modes. The standards (hats, checklist, output format) are the same in both. What differs is what your verdict means and what labels you apply.
+
+| Mode | Who runs it | Verdict means | Labels applied |
+|---|---|---|---|
+| **Reviewer** (default) | Any reviewer (Claude, other agents, humans) | Recommendation — non-binding | `review:<name>:<verdict>` |
+| **Arbiter** | Codex (per `CLAUDE.md` Governance: "Architect / reviewer") | Binding decision, gates merge | `arbiter:codex:<verdict>` + `decision:<outcome>` |
+
+**Reviewer mode** is the common case. Multiple reviewers can run on the same issue/PR concurrently — each posts an independent verdict. None of them gate merge.
+
+**Arbiter mode** is invoked once all relevant reviewers have weighed in (or after a timeout). The arbiter reads every prior reviewer comment, settles disagreements, and produces the binding decision. The merge gate (CI or human) reads the `decision:*` label and nothing else.
+
+If you're invoked without explicit mode, default to **Reviewer**. To run as Arbiter, the invoker must say "review as arbiter" or set `mode: arbiter` explicitly.
 
 ## Hats you wear, in priority order
 
@@ -154,6 +169,47 @@ The most common invocation. Inputs: an issue number (or URL) and the proposed fi
 
 If the fix has a counter-proposal in the suggested-fix section that the author ignored without addressing, that's a re-review trigger before the technical content even matters. Default verdict: REJECT, with the comment "the issue's suggested fix proposed X with rationale Y; this PR does Z without explanation. Please address why X was rejected before re-requesting review."
 
+## Procedure: arbitrate between reviewers (Arbiter mode only)
+
+Inputs: an issue or PR number where one or more reviewers have already posted verdicts. Default arbiter is Codex per `CLAUDE.md` Governance.
+
+1. **Read every prior reviewer comment in full.** `gh issue view <n> --repo paul007ex/qureddy --comments` or `gh pr view <n> --comments`. Look for any comment ending in the standard signature block (see "Comment signature" below). Do not skim. Do not skip a reviewer because their verdict matches yours — read the *reasoning* in case it surfaces a constraint you missed.
+2. **Read the proposed fix end-to-end yourself.** Same procedure as Reviewer mode steps 2–5. Do not delegate the read to "the other reviewers already covered this." Arbiter is responsible for the binding decision.
+3. **Tabulate reviewer verdicts.** For each reviewer, record: name, verdict, key citations from their comment. Use a 2-column table in your eventual arbiter comment.
+4. **Settle disagreements explicitly.** For each point where reviewers diverged:
+   - Quote each reviewer's position (`> Per @claude (#<comment-id>): "..."`).
+   - State which position prevails, **or** synthesize a third position.
+   - Cite the rule, RFC, or test that justifies your call. "Both have a point but I'm going with X" is not enough — name *why* X.
+5. **Run the tests one more time.** Even if reviewers ran them. Three passes (`pytest <path> --count=3` or three back-to-back invocations), no `Rerun:` markers. Arbiter's signature is on the binding verdict; you don't trust anyone else's green claim.
+6. **Apply the standard checklist** as if no one else had reviewed. Reviewers find different things; no one's checklist is complete.
+7. **Produce the arbiter verdict** in the standard output format, with three additions:
+   - `### Reviewers consulted` — table of reviewer name + their verdict + one-line summary
+   - `### Disagreements settled` — list each disagreement and the resolution
+   - `### Binding decision` — `approved` / `needs-changes` / `rejected` (this is what the merge gate reads)
+8. **Post the arbiter comment + apply both labels.**
+   - `arbiter:codex:<verdict>` — informational, shows arbiter's verdict mirrors reviewer namespace
+   - `decision:<outcome>` — binding, the merge gate
+9. **Do not remove prior reviewer labels.** Keep them as the audit trail. The arbiter label sits alongside, not replacing.
+
+If you (Arbiter) and a reviewer disagree on a security/correctness invariant and the reviewer was right, concede with a one-line acknowledgment in the arbiter comment, then implement the reviewer's verdict as the binding decision. Arbiter is the bottleneck on purpose — being slow and right beats being fast and wrong.
+
+If reviewers all agree, arbiter still posts a one-line confirmation comment + the labels. Nothing merges without arbitration. The bottleneck is intentional.
+
+## Comment signature
+
+Every review and arbitration comment ends with this block so the audit trail is unambiguous:
+
+```
+---
+**Role:** Reviewer | Arbiter
+**Reviewer:** Claude (python-oss-crypto-reviewer) | Codex | <other>
+**Verdict:** APPROVE | APPROVE WITH CHANGES | REJECT
+**Decision (Arbiter only):** approved | needs-changes | rejected
+**Date:** YYYY-MM-DD
+```
+
+Skipping the block is a re-review trigger — without it the labels and comments don't reliably tie back to a known reviewer.
+
 ## Where to record reviews
 
 GitHub issue comments are the canonical record for QuReddy bug-fix reviews. The verdict + reasoning lives where the bug lives, the timestamp is the audit trail, and Codex / contributors / future-you read issue comments before changing anything.
@@ -169,26 +225,54 @@ Layered approach:
 | `gh pr review <n> --comment --body "..."` or `--approve` / `--request-changes` | Once a fix lands as a PR — formal review on the diff |
 | `docs/contributors/reviews/<topic>.md` | Long-form decision records (architecture, security review notes, postmortems). Don't put per-bug verdicts here — they rot. |
 
-### Label convention
+### Label convention (three tiers)
 
-Three labels, applied to issues after review:
+Labels split into three tiers, mirroring the Reviewer / Arbiter / Decision separation:
 
-- `reviewed:approve` — fix proposal is correct as-is, ready to implement
-- `reviewed:approve-with-changes` — fix is mostly right; counter-proposal in the comment is what to land
-- `reviewed:reject` — fix is wrong; do not land. Counter-proposal explains what to do instead.
+| Tier | Prefix | Who applies | Count per issue | What it means |
+|---|---|---|---|---|
+| **Reviewer** | `review:<name>:<verdict>` | Each individual reviewer | 0..N | Recommendation; informational |
+| **Arbiter** | `arbiter:codex:<verdict>` | Only the arbiter (Codex) | 0 or 1 | Arbiter's verdict, mirrors the reviewer namespace for filterability |
+| **Decision** | `decision:<outcome>` | Only the arbiter | 0 or 1 | **Binding.** The merge gate reads this label and nothing else. |
+
+Verdicts are `approve`, `approve-with-changes`, `reject`. Decision outcomes are `approved`, `needs-changes`, `rejected`.
 
 If the labels don't exist on the repo yet, create them:
 
 ```bash
-gh label create "reviewed:approve" --repo paul007ex/qureddy --color "0e8a16" --description "Fix proposal reviewed and approved"
-gh label create "reviewed:approve-with-changes" --repo paul007ex/qureddy --color "fbca04" --description "Fix proposal reviewed, changes requested in comment"
-gh label create "reviewed:reject" --repo paul007ex/qureddy --color "b60205" --description "Fix proposal reviewed and rejected"
+# Per-reviewer verdicts (multiple per issue, informational)
+gh label create "review:claude:approve"               --repo paul007ex/qureddy --color "c2e0c6" --description "Reviewed by Claude — approve"
+gh label create "review:claude:approve-with-changes"  --repo paul007ex/qureddy --color "fef2c0" --description "Reviewed by Claude — approve with changes"
+gh label create "review:claude:reject"                --repo paul007ex/qureddy --color "f9d0c4" --description "Reviewed by Claude — reject"
+gh label create "review:other:approve"                --repo paul007ex/qureddy --color "c2e0c6" --description "Reviewed by other agent — approve"
+gh label create "review:other:approve-with-changes"  --repo paul007ex/qureddy --color "fef2c0" --description "Reviewed by other agent — approve with changes"
+gh label create "review:other:reject"                --repo paul007ex/qureddy --color "f9d0c4" --description "Reviewed by other agent — reject"
+
+# Arbiter verdict (one per issue, by Codex)
+gh label create "arbiter:codex:approve"               --repo paul007ex/qureddy --color "0e8a16" --description "Arbiter (Codex) verdict — approve"
+gh label create "arbiter:codex:approve-with-changes"  --repo paul007ex/qureddy --color "fbca04" --description "Arbiter (Codex) verdict — approve with changes"
+gh label create "arbiter:codex:reject"                --repo paul007ex/qureddy --color "b60205" --description "Arbiter (Codex) verdict — reject"
+
+# Binding decision (the merge gate reads this)
+gh label create "decision:approved"                   --repo paul007ex/qureddy --color "0e8a16" --description "BINDING — fix approved, ready to merge"
+gh label create "decision:needs-changes"              --repo paul007ex/qureddy --color "fbca04" --description "BINDING — fix needs changes before merge"
+gh label create "decision:rejected"                   --repo paul007ex/qureddy --color "b60205" --description "BINDING — fix rejected, do not merge"
 ```
 
-### Standard workflow per review
+### Filterable views
+
+| Query | Use |
+|---|---|
+| `label:decision:approved` | Ready to merge |
+| `label:decision:needs-changes` | Author's queue |
+| `-label:arbiter:codex:* label:review:claude:*` | Reviewed but not yet arbitrated |
+| `label:review:claude:approve label:review:other:reject` | Disagreements awaiting arbiter |
+| `-label:review:claude:* -label:review:other:*` | New PRs needing first review |
+
+### Standard workflow per review (Reviewer mode)
 
 ```bash
-# 1. Post the review as a comment in the structured format above
+# 1. Post the review as a comment in the structured format above, ending with the signature block
 gh issue comment <n> --repo paul007ex/qureddy --body "$(cat <<'EOF'
 ## Review: <issue title>
 
@@ -203,14 +287,61 @@ gh issue comment <n> --repo paul007ex/qureddy --body "$(cat <<'EOF'
 
 ### Test additions required
 ...
+
+---
+**Role:** Reviewer
+**Reviewer:** Claude (python-oss-crypto-reviewer)
+**Verdict:** <APPROVE | APPROVE WITH CHANGES | REJECT>
+**Date:** YYYY-MM-DD
 EOF
 )"
 
-# 2. Apply the matching label
-gh issue edit <n> --repo paul007ex/qureddy --add-label "reviewed:<verdict>"
+# 2. Apply the matching reviewer-tier label
+gh issue edit <n> --repo paul007ex/qureddy --add-label "review:claude:<verdict>"
 ```
 
-Re-reviewing later (after the proposal is updated) means another comment + label swap. **Do not edit prior review comments** — keep them as the audit trail.
+### Standard workflow per arbitration (Arbiter mode)
+
+```bash
+# 1. Read prior reviewer comments
+gh issue view <n> --repo paul007ex/qureddy --comments
+
+# 2. Post arbiter verdict in the standard output format with the additional sections
+#    (Reviewers consulted, Disagreements settled, Binding decision)
+gh issue comment <n> --repo paul007ex/qureddy --body "$(cat <<'EOF'
+## Arbitration: <issue title>
+
+### Reviewers consulted
+| Reviewer | Verdict | Summary |
+|---|---|---|
+| Claude | APPROVE WITH CHANGES | <one line> |
+| <other> | REJECT | <one line> |
+
+### Disagreements settled
+- <disagreement>: <resolution + rule cited>
+
+### Binding decision
+<approved | needs-changes | rejected>
+
+### Why
+- ...
+
+---
+**Role:** Arbiter
+**Reviewer:** Codex
+**Verdict:** <APPROVE | APPROVE WITH CHANGES | REJECT>
+**Decision (Arbiter only):** <approved | needs-changes | rejected>
+**Date:** YYYY-MM-DD
+EOF
+)"
+
+# 3. Apply both arbiter-tier labels (do NOT remove reviewer labels)
+gh issue edit <n> --repo paul007ex/qureddy \
+    --add-label "arbiter:codex:<verdict>" \
+    --add-label "decision:<outcome>"
+```
+
+Re-reviewing later (after the proposal is updated) means another comment + label swap on that reviewer's namespace. **Do not edit prior review comments** — keep them as the audit trail. **Do not remove other reviewers' labels.**
 
 ### What does NOT belong in issue comments
 
@@ -219,6 +350,153 @@ Re-reviewing later (after the proposal is updated) means another comment + label
 - Off-topic chat
 
 If a review needs more than ~50 lines of justification, it's no longer a review — it's a decision record. Write it as an ADR or under `docs/contributors/reviews/`, then link it from the issue comment.
+
+## False-positive guardrails — things that look wrong but aren't
+
+The reviewer's job is to catch substantive defects, not to bikeshed. **Do not flag** the following unless they're actually breaking something:
+
+- **Tuples vs lists in non-frozen contexts.** Style preference. Frozen Pydantic models force tuples, but mutable local variables can use either.
+- **Missing docstrings on private helpers** (`_classify_group`, `_build_command`). Not required. CODING_RULES defaults to no comments / no docstrings on private code.
+- **Comments removed during a fix.** The project default is no comments; deletions are usually correct. Only flag if the deleted comment encoded a non-obvious WHY (hidden constraint, workaround for a specific bug, surprising invariant).
+- **Black/ruff-formatting nits** (trailing commas, line length, import order). Not part of a bug-fix review. Mechanical formatting goes in a separate commit per coding-rules §1.5; flagging it here muddies the verdict.
+- **`from __future__ import annotations` already present.** Don't ask for it again on existing files.
+- **Type-narrowing via `assert isinstance(x, T)` in hot paths.** Style; only flag if the assertion can actually fail in production.
+- **Test names that read fine but aren't perfect.** `test_json_output_has_no_log_leak` is acceptable even if `test_cli_run_with_mix_stderr_true_produces_pure_json_stdout` is more precise. Don't rename for taste.
+- **Two-line refactors that genuinely clarify the bug fix.** E.g. extracting a magic number to a named constant *on the changed line* is fine. The "minimum viable fix" rule blocks unrelated cleanup, not legibility on the changed line itself.
+- **Removing an `# noqa` that's no longer needed.** Reasonable hygiene, not scope creep.
+
+If you flag one of these, you're not adding value — you're stalling the merge. When unsure whether something is a guardrail item or a real defect, ask: *would I write this fix differently if I were doing it myself, and would the difference change observable behavior?* If no behavior change, it's a style preference — drop it.
+
+## When to escalate to the human maintainer
+
+The skill produces a verdict per fix, but some questions are above the reviewer's authority. Escalate (do not just block) when:
+
+| Situation | Why escalate | What to write in the verdict |
+|---|---|---|
+| The fix author insists their version is right after one round of disagreement | A second back-and-forth becomes a debate, not a review | `### Disagreement` block + tag `@paul007ex` in the issue comment, label `reviewed:needs-maintainer` |
+| Schema bump required (`ScanResult.schema_version` → `qureddy.scan.v2`) | Maintainer call — affects every downstream consumer | Verdict: `APPROVE WITH CHANGES`, but the change is "open ADR + bump schema_version, do not merge fix until decided" |
+| Fix would close issue #N but breaks issue #M's planned fix | Cross-issue conflict; only the maintainer knows priority | List both issues in `### Out-of-scope items`, recommend sequencing (which lands first) |
+| The fix introduces a new exit code, or changes the meaning of an existing one (`cli.py` exit-code surface) | Contract change visible to every CI integration | Verdict: `REJECT`, counter-proposal: "open ADR before changing exit-code surface" |
+| The fix removes a dependency or adds a new top-level one (`pyproject.toml` `dependencies`) | Supply-chain decision; OpenSSF / REUSE / license review territory | Verdict: `APPROVE WITH CHANGES`, ask for `oss-standards.md` review before merge |
+| You can't tell whether the protocol behavior is correct (e.g. "should `X25519MLKEM768` be reported as hybrid even when negotiated as fallback?") | Domain question — RFC + Codex's read needed | Verdict: `APPROVE WITH CHANGES`, request Codex review specifically on the protocol point |
+| Two reviews in a row by this skill on the same PR have produced opposite verdicts | The skill itself may be wrong | Stop reviewing. Write `## Skill disagreement` note, ask maintainer to arbitrate or update the skill |
+
+The escalation pattern is always the same: **state the verdict, name the question, tag the maintainer, label the issue, stop.** Do not loop on a question only the maintainer can answer.
+
+If `reviewed:needs-maintainer` doesn't exist as a label, create it:
+
+```bash
+gh label create "reviewed:needs-maintainer" --repo paul007ex/qureddy --color "5319e7" --description "Reviewer escalated — needs maintainer decision"
+```
+
+## Worked example: reviewing a fix for issue #15
+
+This shows what a complete review looks like end-to-end. Issue #15 is the `cli: log output leaks into stdout` bug — the issue body recommends Option A (snapshot kernel-level stderr fd) over Option B (refactor tests to use `mix_stderr=False`) and explains why Option B doesn't fix real users.
+
+Suppose a contributor opens PR #N implementing Option B. Here's the review.
+
+```
+## Review: PR #N — fix(cli): use mix_stderr=False to unmask JSON output
+
+### Verdict
+REJECT
+
+### Why
+- The issue body recommended Option A (snapshot the kernel-level stderr fd in
+  `core/logging.py`) and explicitly noted that Option B "fixes only the test suite;
+  it does not protect real users running `2>&1`." This PR implements Option B without
+  addressing why Option A was rejected. (Re-review trigger from the procedure section.)
+- Option B leaves the production bug live: a user running `qureddy scan tls X --format
+  json 2>&1 | jq` still sees `JSONDecodeError: Extra data` because the structlog warning
+  line still leaks into stdout. The bug is in `core/logging.py:24,45` binding to the
+  Python-level `sys.stderr`, not in the test runner. Test-only fixes don't move
+  `core/logging.py`.
+- The PR adds `mix_stderr=False` to 5 test fixtures but does not add a test that
+  exercises `CliRunner(mix_stderr=True)`. Without that test, the regression returns
+  silently the next time someone refactors logging. Issue §"Suggested fix" calls this
+  test out as required.
+- `pytest-rerunfailures` was masking these 5 deterministic failures (issue body confirms).
+  Option B makes the tests pass but does not fix the underlying flakiness contract — the
+  rerun config is still configured to swallow hard fails. Separate issue, but worth
+  flagging here so the maintainer doesn't believe "5 failing tests" is fully resolved.
+
+### Counter-proposal
+Implement Option A from the issue body. `core/logging.py` should snapshot the real
+stderr fd at import time, before any test runner can rebind `sys.stderr`:
+
+```python
+# src/qureddy/core/logging.py
+from __future__ import annotations
+
+import logging
+import os
+import sys
+
+import structlog
+
+_STDERR_FD = os.dup(2)
+_STDERR_FILE = os.fdopen(_STDERR_FD, "w", buffering=1)
+
+
+def configure_logging(level: int) -> None:
+    logging.basicConfig(
+        stream=_STDERR_FILE,
+        level=level,
+        format="%(message)s",
+        force=True,
+    )
+    structlog.configure(
+        processors=[...],
+        wrapper_class=structlog.make_filtering_bound_logger(level),
+        logger_factory=structlog.PrintLoggerFactory(file=_STDERR_FILE),
+        cache_logger_on_first_use=True,
+    )
+```
+
+This binds logs to the original kernel-level stderr fd, which is unaffected by Python's
+`sys.stderr` rebinding inside `CliRunner` or any other in-process redirection. Real users
+running `2>&1` still get clean JSON on stdout because the OS-level redirection happens
+after our fd snapshot.
+
+Reason it satisfies the constraint: the bug's root cause is "we bound to a Python-level
+object that the test runner mutates." Option A binds to a kernel-level fd that no Python
+code can rebind. Option B does not change the binding — it only changes the test
+configuration so the test happens to not trigger the bug.
+
+### Test additions required
+- `tests/test_cli.py::test_json_output_clean_when_stderr_redirected_to_stdout` —
+  invoke `CliRunner(mix_stderr=True)`, run a command that emits a structlog warning
+  (e.g. old OpenSSL), assert `json.loads(result.stdout)` succeeds and that the warning
+  is *not* present in `result.stdout`. This is the contract test that issue #15 is asking
+  for, and it must fail under Option B and pass under Option A.
+- `tests/test_logging.py::test_logger_binds_to_kernel_stderr_not_sys_stderr` (new file
+  if needed) — monkeypatch `sys.stderr` to a `StringIO`, call `configure_logging`, emit
+  a log line, assert the `StringIO` is empty (the log went to fd 2, not the rebind).
+
+### Out-of-scope items
+- The PR also touches `tests/conftest.py` to silence a deprecation warning. Unrelated
+  to issue #15 — please open a separate PR for that change.
+
+### Disagreement (if any)
+None — issue body's analysis is correct, this PR did not engage with it.
+```
+
+Followed by:
+
+```bash
+gh issue comment 15 --repo paul007ex/qureddy --body "$(cat review.md)"
+gh issue edit 15 --repo paul007ex/qureddy --add-label "reviewed:reject"
+```
+
+What this example demonstrates:
+- **Re-review trigger** (issue's suggested fix proposed Option A; PR took Option B without explanation) — default REJECT.
+- **Root-cause vs symptom** distinction (rule §1) — Option B is symptom, Option A is root cause.
+- **Concrete counter-proposal with code** — the reviewer doesn't just say "use Option A," it shows the diff.
+- **Test additions tied to the rule** (rule §5) — names the specific contract test that resolves the disagreement.
+- **Out-of-scope item flagged but not blocking** — separate PR ask, not part of this verdict.
+- **Escalation not needed** — the issue body already settled the question; this is straightforward enforcement.
+
+If the PR author had opened a counter-counter ("Option A breaks Windows because `os.dup(2)` doesn't behave the same"), that would be the moment to escalate per the table above — not to argue further.
 
 ## Hard rules
 
