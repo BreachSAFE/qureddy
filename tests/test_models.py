@@ -148,6 +148,17 @@ class TestEnumSerialization:
         )
         assert dep.model_dump(mode="json")["failure_category"] == "local_openssl_too_old"
 
+    def test_probe_result_parser_input_is_not_serialized(self) -> None:
+        probe = ProbeResult(
+            command=ProbeCommand(executable="openssl", args=("s_client",), timeout_seconds=30),
+            return_code=0,
+            stdout_sha256="stdout",
+            stderr_sha256="stderr",
+            parser_input="full parser-only output",
+            duration_ms=1,
+        )
+        assert "parser_input" not in probe.model_dump(mode="json")
+
 
 class TestModelImmutability:
     """All non-ScanMetadata models are frozen; mutation must raise."""

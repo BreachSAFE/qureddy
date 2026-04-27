@@ -233,14 +233,13 @@ def _run_probe(
     duration_ms = int((datetime.now(UTC) - started).total_seconds() * 1000)
     failure = classify_failure(completed.stderr) if completed.returncode != 0 else None
     _log_subprocess_complete(args, completed.returncode, duration_ms, attempt_number, failure)
-    # `openssl s_client -brief` writes summary lines to stderr; concatenate
-    # so downstream parsers see one stream regardless of which OpenSSL chose.
-    combined_excerpt = (completed.stdout + completed.stderr)[:EXCERPT_LIMIT]
+    parser_input = _combined_probe_output(completed.stdout, completed.stderr)
     return _build_probe_result(
         args=args,
         stdout=completed.stdout,
         stderr=completed.stderr,
-        stdout_excerpt=combined_excerpt,
+        parser_input=parser_input,
+        stdout_excerpt=parser_input[:EXCERPT_LIMIT],
         return_code=completed.returncode,
         duration_ms=duration_ms,
         attempt_number=attempt_number,
@@ -302,6 +301,7 @@ def _probe_result_from_timeout(
         args=args,
         stdout=partial_stdout,
         stderr=partial_stderr,
+        parser_input=_combined_probe_output(partial_stdout, partial_stderr),
         stdout_excerpt=partial_stdout[:EXCERPT_LIMIT],
         stderr_excerpt_override=stderr_with_marker[:EXCERPT_LIMIT],
         return_code=-1,
@@ -317,6 +317,7 @@ def _build_probe_result(
     args: list[str],
     stdout: str,
     stderr: str,
+    parser_input: str,
     stdout_excerpt: str,
     return_code: int,
     duration_ms: int,
@@ -341,6 +342,7 @@ def _build_probe_result(
         return_code=return_code,
         stdout_sha256=hashlib.sha256(stdout.encode("utf-8", "replace")).hexdigest(),
         stderr_sha256=hashlib.sha256(stderr.encode("utf-8", "replace")).hexdigest(),
+        parser_input=parser_input,
         stdout_excerpt=stdout_excerpt,
         stderr_excerpt=stderr_excerpt_override
         if stderr_excerpt_override is not None
@@ -349,6 +351,16 @@ def _build_probe_result(
         attempt_number=attempt_number,
         failure_category=failure_category,
     )
+
+
+def _combined_probe_output(stdout: str, stderr: str) -> str:
+    """Return parser input with an explicit stdout/stderr line boundary.
+
+    `openssl s_client -brief` summary lines can appear on either stream.
+    Joining with a newline preserves the parser's line-boundary contract
+    so regex anchors cannot match across the stream boundary.
+    """
+    return f"{stdout}\n{stderr}"
 
 
 # Re-exported so existing tests at tests/test_openssl_probe.py that
