@@ -517,3 +517,27 @@ If Codex (or another Claude session, or a human reviewer) pushes back on this sk
 4. If you can't tell whether you or they are right, propose the test that would settle it. "If this test passes with their patch, they're right. If not, I'm right." Then run it.
 
 The point isn't to win the argument — it's to not approve a bad fix because someone pushed back loudly.
+
+## Common review failure modes (trap list)
+
+Things this skill should explicitly check for, because they recur. Each entry references the QuReddy issue where it surfaced — read the issue body for full context and the test that resolves it.
+
+- **Stream contamination** (#15): log handlers binding `sys.stderr` at function-call time get captured by test runners that mix streams. Production looks fine, tests fail. Fix: bind to the kernel-level fd via `os.dup(2)`.
+- **Truncated parser input** (#8): "I added a 4 KB excerpt cap for log payloads" → parser now uses the truncated copy and misparses long inputs. Fix: separate the storage cap from the parser input.
+- **Stream concat without separator** (#9): `stdout + stderr` glued without `\n` produces a synthetic line at the seam that satisfies MULTILINE regexes. Fix: join with `\n`.
+- **Subprocess exit-code ignored** (#10): `subprocess.run(..., check=False)` then return stdout without checking returncode. A nonzero exit silently returns whatever the process emitted. Fix: check returncode explicitly.
+- **Empty-stderr fallback to a specific category** (#11): classifier sees empty stderr on nonzero exit and picks `TLS_HANDSHAKE_FAILED`. Wrong — empty stderr means *unknown*. Fix: distinct `UNKNOWN_FAILURE` category.
+- **CLI top-level `Exception` exits same as target failure** (#12): `except Exception: sys.exit(EXIT_TARGET_FAILED)` makes "qureddy crashed" indistinguishable from "site is broken." Fix: distinct `EXIT_INTERNAL_ERROR=70`.
+- **IPv6 in URIs without brackets** (#13): `tls://2001:db8::1:443` is malformed per RFC 3986. Fix: bracket IPv6 in URI authority components.
+- **Brittle parser regex** (#14): `\s*$` and tight character classes (`[A-Z0-9_]+`) silently drop fields when OpenSSL adds trailing annotations. Fix: anchor with `\b`, accept `\S+`.
+- **Misleading version-unparseable message** (#16): `"OpenSSL None is below required 3.5.0"` — `None` formatted into the user-facing error when the version regex didn't match. Fix: distinct `LOCAL_OPENSSL_VERSION_UNREADABLE` category, guard the message.
+- **Empty SNI** (#17): `--sni ""` produces a SNI extension of length 0; many servers reject. Fix: validate at parse time.
+- **Help text vs validation drift** (#18): help says "required for IP targets" but `parse_target` accepts IP without `--sni`. Fix: align help to validator (or vice versa).
+- **Retry without backoff** (#19): `--retries 3 --retry-delay 0` is target-hostile. Fix: enforce minimum delay when retries > 0.
+- **`return_code = -1` magic value** (#21): collides with SIGHUP semantics (`subprocess` returns `-N` for signal N on POSIX). Fix: `None` + a distinct `PROBE_TIMEOUT` failure category.
+- **`pytest-rerunfailures` masking deterministic failures** (#15, #25): five hard-failing tests showed as "Rerun:" entries and the suite reported "192 passed." Run tests 3× with no `Rerun:` markers as the bar.
+- **Pydantic field defaults shared across instances** (general): `Field(default_factory=list)` is correct; `default=[]` is the trap (shared mutable). Fix: `default_factory`.
+- **Click `mix_stderr=True` defaults** (#25): tests that read `result.stderr` without `mix_stderr=False` crash with `ValueError: stderr not separately captured`. Fix: `CliRunner(mix_stderr=False)` or assert against `result.exception`.
+- **`urlparse` silent userinfo strip** (general): `https://user:pass@host` may be passed downstream with credentials gone. Fix: explicit handling at parse time.
+
+When reviewing a fix, scan for these patterns in the diff. If you spot one and it's not what the issue is fixing, flag it — it's a separate bug that needs its own issue.
