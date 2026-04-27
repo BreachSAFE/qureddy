@@ -12,7 +12,8 @@ from typer.testing import CliRunner
 
 import qureddy.cli as cli_module
 from qureddy import __version__
-from qureddy.cli import VERSION_BANNER, app, main
+from qureddy._branding import HEADER, VERSION_BANNER
+from qureddy.cli import app, main
 from qureddy.core import retry as retry_module
 
 FAKE_DIR = Path(__file__).parent / "fixtures" / "openssl" / "fake"
@@ -366,7 +367,7 @@ def test_rich_format_renders_header() -> None:
             str(FAKE_DIR / "openssl_too_old.sh"),
         ],
     )
-    assert "QuReddy 0.1.0 by BreachSAFE OSS" in result.stdout
+    assert HEADER in result.stdout
     assert "tls://example.com:443" in result.stdout
 
 

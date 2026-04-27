@@ -19,7 +19,10 @@ import click
 import structlog
 import typer
 
-from qureddy import __version__ as _qureddy_version
+from qureddy._branding import (
+    PROJECT_NAME,
+    VERSION_BANNER,
+)
 from qureddy.core.errors import (
     LocalOpenSSLLacksGroup,
     LocalOpenSSLMissing,
@@ -59,15 +62,6 @@ EXIT_USAGE = 4
 EXIT_INTERNAL_ERROR = 70  # BSD sysexits.h EX_SOFTWARE — distinct from EXIT_TARGET_FAILED
 
 _MAX_TIMEOUT_SECONDS = 300
-
-# Branding constants (issue #41 / ADR 0003 Pattern 0). Single source of
-# truth for --version output and any future help-banner placement. Use
-# `--` (double-hyphen) instead of em-dash per coding-rules §18.
-PROJECT_NAME = "BreachSAFE QuReddy"
-PROJECT_URL = "https://www.breachsafe.ai"
-SOURCE_URL = "https://github.com/paul007ex/qureddy"
-LICENSE_NAME = "Apache-2.0"
-VERSION_BANNER = f"{PROJECT_NAME} {_qureddy_version} -- {PROJECT_URL}"
 
 
 def _version_callback(value: bool) -> None:
