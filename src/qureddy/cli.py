@@ -2,11 +2,12 @@
 # SPDX-License-Identifier: Apache-2.0
 """Typer CLI entry point for the qureddy command.
 
-Per skill §"Exit codes":
+Per skill §"Exit codes" + issue #12:
 - 0: scan succeeded
 - 2: target scan failed
 - 3: local dependency missing or unsupported
 - 4: usage / configuration error
+- 70: internal qureddy error (BSD sysexits.h EX_SOFTWARE)
 """
 
 from __future__ import annotations
@@ -54,6 +55,7 @@ EXIT_OK = 0
 EXIT_TARGET_FAILED = 2
 EXIT_LOCAL_DEPENDENCY = 3
 EXIT_USAGE = 4
+EXIT_INTERNAL_ERROR = 70  # BSD sysexits.h EX_SOFTWARE — distinct from EXIT_TARGET_FAILED
 
 _MAX_TIMEOUT_SECONDS = 300
 
@@ -226,6 +228,9 @@ def main() -> None:
     except SystemExit:
         raise
     except Exception as exc:  # noqa: BLE001 -- last-resort top-level catch
+        # Internal qureddy bugs route to EX_SOFTWARE (70), not exit 2.
+        # CI scripts branching on `$? == 2` must be able to trust that
+        # 2 means "target scan failed", not "qureddy itself crashed".
         sys.stderr.write(f"qureddy: unexpected error: {exc}\n")
-        sys.exit(EXIT_TARGET_FAILED)
+        sys.exit(EXIT_INTERNAL_ERROR)
     sys.exit(EXIT_OK if exit_code is None else exit_code)

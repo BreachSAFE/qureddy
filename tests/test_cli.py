@@ -170,6 +170,41 @@ def test_retry_constants_are_canonical_in_core_retry() -> None:
     assert cli_module.MAX_RETRY_DELAY_SECONDS is retry_module.MAX_RETRY_DELAY_SECONDS
 
 
+def test_main_exits_70_on_internal_error(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Issue #12: an internal qureddy bug must not exit 2 (target failed).
+
+    BSD `sysexits.h` reserves 70 (`EX_SOFTWARE`) for "internal software
+    error". A CI script branching on \\$? == 2 should be able to trust
+    that 2 means "the target scan failed", not "qureddy crashed". Force
+    `scan_tls` to raise a non-QureddyError; the top-level `except
+    Exception` arm in `main()` must route to exit 70, not 2.
+    """
+
+    def _boom(*_args: object, **_kwargs: object) -> object:
+        raise RuntimeError("simulated internal qureddy bug")
+
+    # Patch parse_target — called early in scan_tls, before any exception
+    # handling. A non-QureddyError raised here flows up through main()'s
+    # last-resort `except Exception`, which is the path issue #12 fixes.
+    monkeypatch.setattr("qureddy.cli.parse_target", _boom)
+    monkeypatch.setattr(
+        "sys.argv",
+        ["qureddy", "scan", "tls", "example.com", "--format", "json"],
+    )
+    with pytest.raises(SystemExit) as exit_info:
+        main()
+    assert exit_info.value.code == 70, (
+        f"main() exited {exit_info.value.code}, expected 70 (EX_SOFTWARE) — "
+        "internal errors must not collide with target-scan-failed (2)"
+    )
+    captured = capsys.readouterr()
+    assert "unexpected error" in captured.err
+    assert "simulated internal qureddy bug" in captured.err
+
+
 def test_main_exits_3_on_capability_failure(monkeypatch: pytest.MonkeyPatch) -> None:
     fake = str(FAKE_DIR / "openssl_too_old.sh")
     monkeypatch.setattr(

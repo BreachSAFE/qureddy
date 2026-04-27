@@ -329,8 +329,17 @@ Restated from Rule 8.7 because of how often this gets violated.
 - 2: target scan failed
 - 3: local dependency missing or unsupported
 - 4: usage/configuration error
+- 70: internal qureddy error (BSD `sysexits.h` `EX_SOFTWARE`)
 
 The CLI must never exit with code 1 in MVP 0.1 (current policy max severity is `low`). Adding a new severity to policy may unblock exit 1.
+
+Code 70 is reserved for internal qureddy bugs (an unhandled exception
+escaping `main()`'s last-resort catch). It is distinct from code 2 so
+CI scripts branching on `$? == 2` can trust that 2 means "target scan
+failed", not "qureddy itself crashed". Per BSD `sysexits.h`,
+`EX_SOFTWARE = 70` is the canonical "internal software error" code.
+See [`docs/reference/exit-codes.md`](../reference/exit-codes.md) for
+the full table and worked CI examples.
 
 **Rule 11.4 — JSON output is machine-stable.**
 Field names, types, and structure are part of the API. Adding fields is okay. Removing or renaming fields is a breaking change requiring a `schema_version` bump. Current schema is `qureddy.scan.v1`.

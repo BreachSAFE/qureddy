@@ -15,6 +15,7 @@ OpenSSF Best Practices Badge target: passing tier by MVP 0.6, silver by v1.0.
 
 ### Added
 
+- Exit code **70** (`EXIT_INTERNAL_ERROR`, BSD `sysexits.h` `EX_SOFTWARE`) for internal qureddy bugs. CI scripts branching on `$? == 2` can now trust that 2 means "target scan failed", not "qureddy crashed". Closes [#12](https://github.com/paul007ex/qureddy/issues/12).
 - Diátaxis documentation structure: `docs/{tutorials,how-to,reference,explanation,contributors}/`. Standard recorded in [ADR 0002](docs/contributors/adr/0002-diataxis-documentation-standard.md).
 - Tutorial: `docs/tutorials/your-first-scan.md`.
 - How-to guides: `docs/how-to/scan-ip-with-sni.md`, `docs/how-to/json-output-for-ci.md`.
