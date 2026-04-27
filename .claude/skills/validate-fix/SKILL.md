@@ -154,6 +154,9 @@ Produce this exact structure for each validation run.
 - Hold — Question 2 partial; <what's missing>.
 - Block — regression introduced OR fix doesn't resolve <issue>; <one-line action>.
 - Re-run — transient failure; re-invoke validate-fix.
+
+### Advisory (optional, non-blocking)
+If the bug fits a recognizable class — `stale-stream-capture`, `parser-input-truncation`, `silent-fallback-without-log`, `validation-at-wrong-layer`, `signal-rc-collision`, `frozen-model-implicit-dep` — note the class here and suggest a property test that exercises the class, not just this instance. The fix may be mechanically correct AND leave the same bug class lurking in another module (e.g. `stale-stream-capture` recurs anywhere a module snapshots `sys.stdout`/`stderr` at import time). This is advisory only — does NOT change the verdict, does NOT block the merge. Bug-class taxonomy is informal; if no class fits, omit this section.
 ```
 
 End with the standard signature block (matches `python-oss-crypto-reviewer`):
