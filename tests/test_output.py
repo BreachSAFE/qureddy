@@ -10,6 +10,7 @@ from datetime import UTC, datetime
 
 import pytest
 
+from qureddy._branding import HEADER
 from qureddy.core.models import (
     Asset,
     Confidence,
@@ -268,9 +269,16 @@ class TestExistingContractStillHolds:
         assert "qureddy.scan.v1" in out
 
     def test_header_in_output(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """The canonical HEADER constant appears in output.
+
+        Pins via the imported `HEADER` (not a hardcoded literal) so a
+        version bump propagates without test churn. Pre-extraction
+        hardcoding `\"QuReddy 0.1.0 by BreachSAFE OSS\"` was the
+        version-drift bug the branding extraction fixed.
+        """
         monkeypatch.setenv("NO_COLOR", "1")
         out = _render_to_string(_build_result())
-        assert "QuReddy 0.1.0 by BreachSAFE OSS" in out
+        assert HEADER in out
 
 
 class TestFailureCategoryRow:

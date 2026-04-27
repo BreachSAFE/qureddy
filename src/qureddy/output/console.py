@@ -31,6 +31,7 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
+from qureddy._branding import HEADER
 from qureddy.core.models import Evidence, Readiness
 from qureddy.output._styles import (
     RECOMMENDATION_TEXT,
@@ -57,7 +58,6 @@ _style_severity = style_severity
 if TYPE_CHECKING:
     from qureddy.core.models import ScanResult
 
-HEADER = "QuReddy 0.1.0 by BreachSAFE OSS"
 
 _HYBRID_GROUP = "X25519MLKEM768"
 _CLASSICAL_GROUP = "X25519"
