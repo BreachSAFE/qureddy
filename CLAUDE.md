@@ -56,6 +56,7 @@ Operational workflows live under `.claude/skills/`. Read each skill's `SKILL.md`
 | `audit-pr` | Preparing or finalizing a pull request |
 | `run-quality-gates` | Running ruff/mypy/pytest/bandit and reporting results without modifying files |
 | `write-test-fixture` | Capturing a new OpenSSL output fixture |
+| `python-oss-crypto-reviewer` | Reviewing a proposed bug fix, PR diff, or another agent's code suggestion against correctness, security, and schema-stability standards |
 
 See `.claude/skills/README.md` for the catalog.
 
@@ -84,9 +85,12 @@ qureddy scan tls www.google.com
 qureddy scan tls 1.1.1.1:443 --sni one.one.one.one
 qureddy scan tls TARGET --format json
 
-# Tier 1 quality gates — verify-only, do not modify files
+# Tier 1 quality gates (full suite incl. pip-audit, deptry, reuse-lint)
+just gates
+
+# Or run individually — verify-only, do not modify files
 ruff check .
-ruff format --check .          # use --check, not bare format; see CODING_RULES §1.5
+ruff format --check .          # use --check, not bare format; see docs/contributors/coding-rules.md §1.5
 mypy src/qureddy --strict
 pytest                          # full suite, no skip markers; pytest-rerunfailures absorbs flakes
 pytest --cov=qureddy --cov-fail-under=80

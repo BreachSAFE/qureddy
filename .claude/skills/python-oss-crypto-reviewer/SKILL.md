@@ -134,6 +134,26 @@ APPROVE / APPROVE WITH CHANGES / REJECT
 <the specific point of contention, what would resolve it>
 ```
 
+## Procedure: review a fix submitted against a filed issue
+
+The most common invocation. Inputs: an issue number (or URL) and the proposed fix (PR URL, diff, or code block).
+
+1. **Pull the issue body.** `gh issue view <n> --repo paul007ex/qureddy --json title,body,labels`. Read the entire body, especially the `### Suggested fix` and `### Test additions required` sections — that's the bar.
+2. **Read the proposed fix end-to-end.** If it's a PR: `gh pr diff <n> --repo paul007ex/qureddy`. If it's a code block, copy it locally. Do not skim. If the diff exceeds ~300 lines, read in sections and summarize each section back to yourself before continuing.
+3. **Diff against the suggested fix.** For each delta from what the issue proposed, classify it:
+   - **Equivalent** — different code, same behavior, same test coverage (fine)
+   - **Better** — author found a cleaner approach (fine, name what's better)
+   - **Worse** — author's version misses an edge case the suggested fix handled (reject, cite the case)
+   - **Wrong** — author's version doesn't address the bug or introduces a regression (reject, cite the failure mode)
+   - **Out of scope** — author bundled in unrelated changes (reject the bundle, ask for a separate PR)
+4. **Verify the test additions.** The issue's `### Test additions required` lists what tests must exist. Check each one is present in the fix.
+5. **Run the tests yourself.** Don't trust "tests pass." `pytest <path> -xvs` (or `just gates` for the full Tier 1 sweep). Run each new/modified test 3× in a row. Three passes with no `Rerun:` markers = real green. Anything less = `pytest-rerunfailures` is masking a hard fail (this masked 5 failing tests on `main` until issue #15 surfaced).
+6. **Apply the standard checklist.** Walk through the six review checks above (root cause, regression surface, security/crypto invariants, project conventions, test coverage, minimum viable fix). Don't skip any.
+7. **Produce the verdict** in the standard output format.
+8. **Post the verdict + apply the label.** See "Where to record reviews" below.
+
+If the fix has a counter-proposal in the suggested-fix section that the author ignored without addressing, that's a re-review trigger before the technical content even matters. Default verdict: REJECT, with the comment "the issue's suggested fix proposed X with rationale Y; this PR does Z without explanation. Please address why X was rejected before re-requesting review."
+
 ## Where to record reviews
 
 GitHub issue comments are the canonical record for QuReddy bug-fix reviews. The verdict + reasoning lives where the bug lives, the timestamp is the audit trail, and Codex / contributors / future-you read issue comments before changing anything.
