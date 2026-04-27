@@ -88,6 +88,7 @@ Reject any of these without explicit ANTIPATTERN ACCEPTED + maintainer sign-off:
 - Exit codes from `cli.py` documented map; new codes need README + reference docs update
 - structlog event names follow `module.event_action` shape (e.g. `scan.local_dependency_unusable`, not `scan_warn` or `local_deps`)
 - Errors raised through the project hierarchy in `core/errors.py`, not bare `RuntimeError` / `ValueError`
+- **Input validation lives at the construction boundary.** A fix that adds validation in a CLI handler, request wrapper, or caller-side helper for what should be a Pydantic field validator on the model is at the wrong layer. Ask: "if a different caller constructs this model directly, do they pay the same validation?" If no, push the validation down to the model. Common shape this catches: `parse_target("...")` adding a string check on input, when `ScanTarget` itself should reject the malformed value via a `model_validator` or `field_validator`. The handler-level fix is correct for THAT call site; it leaves every other call site unguarded.
 
 ### 5. Test coverage
 

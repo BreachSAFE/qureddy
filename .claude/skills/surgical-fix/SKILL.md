@@ -56,6 +56,14 @@ Good: "`CliRunner` mixes stderr into `result.stdout` by default, so tests that a
 
 If you cannot state the root cause in one sentence, keep reading and reproducing.
 
+**Boundary / seam check.** If the bug sits at a seam between two systems — subprocess output and parser, library default and framework override, frozen model and serializer, two streams (stdout+stderr) being merged, capture-at-config-time vs use-at-call-time — name BOTH contracts explicitly:
+
+- *Whose contract is canonical?* (e.g. structlog says "logs go to the file you give me at config time" — that's canonical; `CliRunner.mix_stderr=True` rebinding `sys.stderr` is the other side, which canonical-side does not honor.)
+- *Which side should the fix go on?* Default: fix the canonical side. Adapt the other side to it. Don't just patch the friction point at the seam (e.g. adding a `\n` separator between stdout and stderr is patching the friction; the canonical fix is to not merge them at all, or to give each its own parser pass).
+- *Could the same bug class recur elsewhere?* Capture-at-config-time bugs aren't unique to logging — any module that snapshots `sys.stdout`/`stderr` at import time has the same shape. The fix should generalize to the class, not just the instance.
+
+When the seam can't be removed (cost too high, blast radius too wide), patching the friction is OK — but call it out in the Surgical Fix Report under "Architectural debt" so the next reader knows the canonical fix was deferred, not invisible.
+
 ### 3. Test First
 
 Add or tighten a deterministic regression test before changing production code.
