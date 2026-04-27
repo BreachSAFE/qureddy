@@ -542,3 +542,73 @@ Things this skill should explicitly check for, because they recur. Each entry re
 - **`urlparse` silent userinfo strip** (general): `https://user:pass@host` may be passed downstream with credentials gone. Fix: explicit handling at parse time.
 
 When reviewing a fix, scan for these patterns in the diff. If you spot one and it's not what the issue is fixing, flag it — it's a separate bug that needs its own issue.
+
+## Size-canary patterns — flag for refactor before they breach
+
+These patterns indicate code is approaching a hard ceiling and should be split *before* a future PR forces the split mid-feature. Flag these on review, file a follow-up refactor issue, do NOT block the PR being reviewed. They are forward-looking concerns, not regressions.
+
+The concrete thresholds come from `coding-rules.md` Rule 2.1 / 2.2 (file ≤ 400 lines hard ceiling, function ≤ 50 lines hard ceiling) and the project's empirical experience that:
+
+- A function 1-2 lines under its ceiling will breach in the next feature PR
+- A file 30 lines under its ceiling will breach within 2-3 feature PRs
+- Cyclomatic complexity B(9) in 2+ functions in the same file is the file-shape canary; it indicates the file is doing too many things even if individual functions are still under the line cap
+
+### Patterns to flag
+
+- **Function ≥ 45 LOC** (90% of the 50-line ceiling). Note in the review and file refactor follow-up.
+- **File ≥ 370 LOC** (92% of the 400-line ceiling). Flag for split into a package / sibling files.
+- **Two or more B(9) functions in the same file.** File needs a structural split, not just a per-function refactor.
+- **Three or more `<prefix>-{uuid.uuid4().hex[:N]}` patterns** across files. Centralize via `core/ids.py` or equivalent.
+- **The same N-field block in two or more Pydantic models.** Pylint's `R0801` will catch ≥4-line groups; flag ≥3-line shared groups visually.
+- **A 3-step `try/except/typer.Exit` ladder repeated 3+ times in cli.py.** Extract a `_fail(msg, code)` helper.
+- **8+ call sites of the same construction pattern** (regardless of LOC per site). The 8-site threshold is empirical: by then the duplication has propagated through enough modules that fixing one is fragile.
+
+### What NOT to flag
+
+- Function 30-44 LOC. Within norm; refactoring optional.
+- Cohesive duplication. If two N-line blocks differ in their middle by 1 line that's *meaningfully* different (different enum values, different policy semantics), that's not duplication — it's parallel code. Don't extract.
+- Two `subprocess.run(...)` invocations with the same kwargs but different except-block handling. The except blocks are the actual logic difference; extracting forces a unified error model.
+
+### Procedure on detection
+
+When a size-canary pattern surfaces while reviewing a PR:
+
+1. **Note in the review's "Concerns (not blocking)" section.** Cite file:line, current size/CC, and the threshold being approached.
+2. **File a `[refactor]` follow-up issue** with:
+   - Concrete metric (LOC, CC, occurrence count)
+   - Suggested split (named functions, file boundaries)
+   - Test additions required
+   - "Why now" — the size pressure rationale
+3. **Cross-link the follow-up issue from the PR review.** Don't block the PR.
+4. **Do NOT bundle the refactor into the PR being reviewed.** That violates "one thing per PR" — the PR is about its feature; the refactor is a separate concern.
+
+### Follow-up issue template (refactor flavor)
+
+```markdown
+## Summary
+<one sentence: what duplicates / what's near the ceiling>
+
+## Severity
+- [x] Type: refactor (no behavior change)
+- [x] Severity: low — code hygiene
+
+## Reproduction
+<grep / radon / pylint command that surfaces the metric>
+
+## Bad code
+<file:line of the duplicated/oversized code>
+
+## Suggested fix
+<concrete extraction with code>
+
+## Test additions required
+<minimal tests to pin the new boundary>
+
+## Estimate
+<minutes>
+
+## Why now
+<why this PR cycle, not a future one>
+```
+
+This pattern keeps the review focused on the feature while still capturing the structural debt for the next sprint. Lost-and-forgotten refactor concerns are the canonical OSS technical-debt source; capturing them at the moment of detection prevents accumulation.

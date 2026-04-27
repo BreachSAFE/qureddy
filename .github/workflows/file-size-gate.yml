@@ -1,0 +1,120 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# File-size gate — enforces docs/contributors/coding-rules.md §2.2 and
+# Rule 2.2.1's edge bands.
+#
+# - Red band (>400 LOC in src/qureddy/): blocks merge.
+# - Orange band (361-400): emits a warning, does not block.
+# - Yellow band (320-360): emits a notice, does not block.
+# - Green band (<=319): silent.
+#
+# The workflow runs on every push and pull-request that touches src/.
+# An ANTIPATTERN-ACCEPTED override is intentionally NOT supported here:
+# any file that breaches Red-band must either be refactored OR the PR
+# body must include the override token AND link a refactor follow-up
+# issue. The reviewer skill's check covers that case.
+
+name: file-size-gate
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - ".github/workflows/file-size-gate.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/**"
+      - ".github/workflows/file-size-gate.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: file-size-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compute per-file LOC for src/qureddy/**/*.py
+        id: loc
+        run: |
+          set -euo pipefail
+          # `wc -l` counts newlines; that's the file-LOC metric used by Rule 2.2.
+          # We exclude `__init__.py` files because they're commonly under 10 LOC
+          # and don't help anyone diagnose size pressure.
+          while IFS= read -r f; do
+            n=$(wc -l < "$f")
+            echo "$n $f"
+          done < <(find src/qureddy -name '*.py' -not -name '__init__.py' | sort) > /tmp/sizes.txt
+          echo "Per-file LOC:"
+          cat /tmp/sizes.txt
+
+      - name: Enforce edge bands
+        run: |
+          set -euo pipefail
+          red=()
+          orange=()
+          yellow=()
+          while read -r n f; do
+            if [ "$n" -gt 400 ]; then
+              red+=("$n $f")
+            elif [ "$n" -ge 361 ] && [ "$n" -le 400 ]; then
+              orange+=("$n $f")
+            elif [ "$n" -ge 320 ] && [ "$n" -le 360 ]; then
+              yellow+=("$n $f")
+            fi
+          done < /tmp/sizes.txt
+
+          if [ "${#yellow[@]}" -gt 0 ]; then
+            for entry in "${yellow[@]}"; do
+              echo "::notice file=${entry#* }::Yellow band ($entry LOC) — at edge of 400-line ceiling per coding-rules.md §2.2.1"
+            done
+          fi
+
+          if [ "${#orange[@]}" -gt 0 ]; then
+            for entry in "${orange[@]}"; do
+              echo "::warning file=${entry#* }::Orange band ($entry LOC) — imminent breach. File a refactor follow-up per coding-rules.md §2.2.1."
+            done
+          fi
+
+          if [ "${#red[@]}" -gt 0 ]; then
+            for entry in "${red[@]}"; do
+              echo "::error file=${entry#* }::Red band ($entry LOC) — over 400-line hard ceiling per coding-rules.md §2.2."
+            done
+            echo ""
+            echo "==============================================="
+            echo "FILE-SIZE GATE FAILED"
+            echo "==============================================="
+            echo ""
+            echo "${#red[@]} file(s) exceed the 400-line hard ceiling:"
+            for entry in "${red[@]}"; do
+              echo "  $entry"
+            done
+            echo ""
+            echo "Resolution per coding-rules.md §2.2.1:"
+            echo "  1. Refactor: split the file (see TLS scanner package as precedent)"
+            echo "  2. Or: add 'ANTIPATTERN ACCEPTED: file-size-ceiling, because <reason>'"
+            echo "     to the PR body AND link the refactor follow-up issue."
+            echo ""
+            exit 1
+          fi
+
+          echo ""
+          echo "==============================================="
+          echo "FILE-SIZE GATE PASSED"
+          echo "==============================================="
+          echo ""
+          echo "All src/qureddy/**/*.py files under 400-line hard ceiling."
+          [ "${#orange[@]}" -gt 0 ] && echo "${#orange[@]} file(s) in Orange band (361-400) — refactor recommended."
+          [ "${#yellow[@]}" -gt 0 ] && echo "${#yellow[@]} file(s) in Yellow band (320-360) — at edge."
