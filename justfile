@@ -72,6 +72,10 @@ reuse-lint:
 semgrep:
     uv run semgrep scan --config auto .
 
+# Run pre-commit hooks against all files (CI-equivalent local check).
+hooks:
+    uv run pre-commit run --all-files
+
 # Secret scan. Requires gitleaks installed externally; falls back to trufflehog.
 secrets:
     @if command -v gitleaks > /dev/null; then \

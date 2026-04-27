@@ -47,9 +47,13 @@ just setup
 uv venv
 uv pip install -e ".[dev]"
 
+# Install pre-commit hooks (one-time, per docs/contributors/coding-rules.md §23)
+uv run pre-commit install
+
 # Verify
 uv run qureddy --help    # works once MVP 0.1 implementation lands
 just gates               # runs the full Tier 1 gate suite
+just hooks               # runs pre-commit hooks against all files (CI-equivalent local check)
 ```
 
 You also need OpenSSL 3.5+ on your `PATH` for the TLS scanner to work end-to-end:
