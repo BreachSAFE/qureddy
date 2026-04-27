@@ -129,6 +129,9 @@ select = [
     "INP",  # implicit namespace package
     "BLE",  # flake8-blind-except (catches `except Exception:` without noqa)
     "SLF",  # flake8-self (private-member access from outside the class)
+    "D",    # pydocstyle — Google docstring convention per coding-rules.md Rule 5.
+            # PLR0915 (too-many-statements, default max=50) is already active via
+            # the PL selector and matches the Rule 2.2 function-size ceiling.
 ]
 ignore = [
     "E501",     # line-too-long, handled by formatter
@@ -159,11 +162,24 @@ ignore = [
     "PTH113",
 ]
 
+[tool.ruff.lint.pydocstyle]
+# coding-rules.md Rule 5 mandates Google-style docstrings.
+convention = "google"
+
+[tool.ruff.lint.pylint]
+# Matches coding-rules.md Rule 2.2: functions ≤ 30 lines norm, 50 ceiling.
+# PLR0915 counts statements (close proxy for non-comment lines); 50 is the
+# hard ceiling. Functions in the 31–50 band emit no warning here — those
+# are caught at PR review per Rule 2.1.1's edge bands.
+max-statements = 50
+
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = [
     "S101",     # asserts allowed in tests
     "PLR2004",  # magic numbers allowed in tests
     "ARG",      # unused args allowed in fixtures
+    "D",        # tests don't need Google docstrings — test names document intent,
+                # and tests have no public-API surface for downstream callers.
 ]
 "tests/fixtures/**" = ["E501"]  # fixture files may have long lines
 "scripts/**/*.py" = [
