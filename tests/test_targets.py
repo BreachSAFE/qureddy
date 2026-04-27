@@ -56,6 +56,11 @@ class TestParseTargetIP:
         assert result.host == "1.1.1.1"
         assert result.sni == "one.one.one.one"
 
+    def test_hostname_with_sni_override_uses_override(self) -> None:
+        result = parse_target("example.com", sni_override="other.example")
+        assert result.host == "example.com"
+        assert result.sni == "other.example"
+
     def test_ipv4_without_port_uses_443(self) -> None:
         result = parse_target("1.2.3.4")
         assert result.port == 443
@@ -94,3 +99,8 @@ class TestParseTargetInvalid:
     def test_invalid_inputs_raise(self, bad_input: str) -> None:
         with pytest.raises(TargetParseError):
             parse_target(bad_input)
+
+    @pytest.mark.parametrize("bad_sni", ["", " ", "   ", "\t", "\n"])
+    def test_empty_or_whitespace_sni_override_raises(self, bad_sni: str) -> None:
+        with pytest.raises(TargetParseError, match="empty or whitespace"):
+            parse_target("example.com", sni_override=bad_sni)

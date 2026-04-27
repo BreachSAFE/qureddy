@@ -49,6 +49,8 @@ def parse_target(input_str: str, sni_override: str | None = None) -> ScanTarget:
         raise TargetParseError(msg)
 
     if sni_override is not None:
+        if not sni_override.strip():
+            raise TargetParseError("--sni cannot be empty or whitespace-only")
         sni: str | None = sni_override
     elif is_ip:
         sni = None
