@@ -21,8 +21,8 @@ Open-source post-quantum cryptography readiness scanner. Find what's quantum-vul
 
 **MVP 0.1 shipped on 2026-04-26.** The TLS scanner is live:
 
-- `src/qureddy/` — 23 source modules: `cli.py`, `core/{models,errors,logging,policy,retry,status,targets}.py`, `output/{console,_styles,json}.py`, `scanners/tls/{openssl_probe,scanner,parse,_classify,_evidence,_summary}.py`.
-- `tests/` — 11 unit test files, 1 live test file, 6 fake openssl fixtures, 9 captured `s_client -brief` fixtures. 186 unit tests + 6 live tests, 86%+ coverage.
+- `src/qureddy/` — 24 source modules including `cli.py`, `_branding.py`, `core/{models,errors,logging,policy,retry,status,targets}.py`, `output/{console,_styles,json}.py`, `scanners/tls/{openssl_probe,scanner,parse,_classify,_evidence,_summary}.py`. Authoritative count: `find src/qureddy -name '*.py' | wc -l`.
+- `tests/` — 11 unit test files, 1 live test file, 10 fake openssl shims under `tests/fixtures/openssl/fake/`, 8 captured `s_client -brief` fixtures under `tests/fixtures/openssl/`. 237 unit tests + 6 live tests = 243 collected, 90%+ coverage. Authoritative counts: `pytest --collect-only -q` and `find tests/fixtures/openssl -maxdepth 2 -name '*.txt' -o -name '*.sh'`.
 - `pyproject.toml` is wired with the runtime + dev deps; `qureddy.cli:main` is the install-time entrypoint (translates Click usage errors to exit code 4 per the documented exit-code surface).
 - `docs/` follows [Diátaxis](https://diataxis.fr) — see `docs/README.md` for the structure; ADR 0002 is the decision record.
 - `scratch/` holds prior agent work and review artifacts. Gitignored. `scratch/claude-1`, `scratch/claude-2`, `scratch/claude-3-developer/`, `scratch/staging/claude-app/` are untrusted prior art — read for historical context only; do not import from them, do not edit them as part of normal work.
@@ -41,7 +41,7 @@ Read these in priority order. Skim only the first; the rest you read when releva
 | `docs/contributors/agent-antipatterns.md` | Before responding to any task. Pre-response audit checklist. |
 | `docs/contributors/oss-standards.md` | When making decisions about repo hygiene, releases, or community. |
 | `docs/contributors/examples.md` | Before writing the first file in a new module. Good vs bad code patterns for Pydantic models, tests, subprocess, logging, exceptions, docstrings, CLI, JSON output. |
-| `docs/contributors/adr/` | When making or reviewing a load-bearing decision. ADRs 0001 (`--trace`), 0002 (Diátaxis), 0003 (`--help` rewrite). |
+| `docs/contributors/adr/` | When making or reviewing a load-bearing decision. ADRs 0001 (`--trace`), 0002 (Diátaxis), 0003 (`--help` rewrite), 0004 (multi-scanner architecture), 0005 (splitting oversized files). |
 | `docs/reference/milestones.md` | When asked "what's shipped" or "what's next". |
 | `.claude/skills/<skill>/SKILL.md` | When the active task matches a skill. Skills are loaded lazily. |
 | `tests/fixtures/openssl/TARGETS.md` | When writing or extending TLS scanner tests. |
@@ -58,6 +58,8 @@ Operational workflows live under `.claude/skills/`. Read each skill's `SKILL.md`
 | `run-quality-gates` | Running ruff/mypy/pytest/bandit and reporting results without modifying files |
 | `write-test-fixture` | Capturing a new OpenSSL output fixture |
 | `python-oss-crypto-reviewer` | Reviewing a proposed bug fix, PR diff, or another agent's code suggestion against correctness, security, and schema-stability standards |
+| `validate-fix` | Verifying a PR actually resolves the linked issue (separate question from "do gates pass"); applies a `validation:claude:<verdict>` label |
+| `audit-docs` | Auditing docs for drift against the working tree (stale ADR statuses, dangling refs, drifted counts, catalog mismatches). Read-only; produces a findings report. |
 
 See `.claude/skills/README.md` for the catalog.
 
