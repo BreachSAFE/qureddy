@@ -251,6 +251,20 @@ def _render(result: ScanResult, output_format: OutputFormat, verbose: int) -> No
         render_rich(result, sys.stdout, verbosity=verbose)
 
 
+def _is_version_misplacement(exc: click.exceptions.UsageError) -> bool:
+    """Detect the `--version` / `-V` on a subcommand UsageError shape.
+
+    Click's default error reads `No such option: --version Did you mean
+    --verbose?` which is unhelpful — `--version` lives at the root and
+    works fine; the user just put it in the wrong position. Catch this
+    specific shape so we can replace with an actionable hint.
+    """
+    msg = str(exc.message) if exc.message else ""
+    if "No such option" not in msg:
+        return False
+    return "--version" in msg or "'-V'" in msg or " -V " in msg
+
+
 def main() -> None:
     """Entry point that maps Click usage errors to project exit code 4.
 
@@ -259,10 +273,22 @@ def main() -> None:
     project's documented exit-code surface uses 2 for *target scan
     failure*, so usage errors must surface as 4. This wrapper catches
     `click.UsageError` and `click.BadParameter` and re-exits with 4.
+
+    Special case: `--version` on a subcommand fires a Click "No such
+    option" error because the flag is registered at the root callback
+    only (matches git/docker/gh convention). Default Click error
+    suggests `--verbose` which is wrong — replace with a hint at the
+    root-level form.
     """
     try:
         exit_code = app(standalone_mode=False)
     except click.exceptions.UsageError as exc:
+        if _is_version_misplacement(exc):
+            sys.stderr.write(
+                "qureddy: --version is a top-level flag. "
+                "Try `qureddy --version` (without a subcommand).\n"
+            )
+            sys.exit(EXIT_USAGE)
         exc.show(file=sys.stderr)
         sys.exit(EXIT_USAGE)
     except click.exceptions.Exit as exc:
