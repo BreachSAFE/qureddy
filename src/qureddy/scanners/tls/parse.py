@@ -27,20 +27,23 @@ from dataclasses import dataclass
 from qureddy.core.models import FailureCategory
 
 NEGOTIATED_LINE = re.compile(
-    r"^\s*Negotiated\s+TLS1\.3\s+group:\s*(?P<group>[A-Za-z0-9_]+)\s*$",
+    r"^[^\S\r\n]*Negotiated[^\S\r\n]+TLS1\.3[^\S\r\n]+group:"
+    r"[^\S\r\n]*(?P<group>[A-Za-z0-9_]+)[^\S\r\n]*$",
     re.MULTILINE,
 )
 PEER_OR_SERVER_TEMP_KEY = re.compile(
-    r"^\s*(?:Peer|Server)\s+Temp\s+Key:\s*(?P<group>[A-Za-z0-9_]+)",
+    r"^[^\S\r\n]*(?:Peer|Server)[^\S\r\n]+Temp[^\S\r\n]+Key:"
+    r"[^\S\r\n]*(?P<group>[A-Za-z0-9_]+)",
     re.MULTILINE,
 )
 CLIENTHELLO_LINE = re.compile(r"^\s*ClientHello\b.*$", re.MULTILINE)
 PROTOCOL_VERSION = re.compile(
-    r"^\s*Protocol\s+version:\s*(?P<protocol>TLSv\d+(?:\.\d+)?)\s*$",
+    r"^[^\S\r\n]*Protocol[^\S\r\n]+version:"
+    r"[^\S\r\n]*(?P<protocol>TLSv\d+(?:\.\d+)?)[^\S\r\n]*$",
     re.MULTILINE,
 )
 CIPHERSUITE = re.compile(
-    r"^\s*Ciphersuite:\s*(?P<cipher>[A-Z0-9_]+)\s*$",
+    r"^[^\S\r\n]*Ciphersuite:[^\S\r\n]*(?P<cipher>[A-Z0-9_]+)[^\S\r\n]*$",
     re.MULTILINE,
 )
 

@@ -117,6 +117,7 @@ class ProbeResult(BaseModel):
     return_code: int
     stdout_sha256: str
     stderr_sha256: str
+    parser_input: str = Field(default="", exclude=True, repr=False)
     stdout_excerpt: str = ""
     stderr_excerpt: str = ""
     duration_ms: int

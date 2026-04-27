@@ -48,7 +48,9 @@ def evidence_from_probe(
     """
     if probe.failure_category is not None or probe.return_code != 0:
         return _evidence_for_probe_failure(asset, probe, expected_group)
-    parsed = parse_brief_output(probe.stdout_excerpt, expected_group=expected_group)
+    parsed = parse_brief_output(
+        probe.parser_input or probe.stdout_excerpt, expected_group=expected_group
+    )
     if parsed.failure_category is not None:
         return _evidence_for_parse_failure(asset, probe, parsed)
     return _evidence_for_negotiation(asset, probe, parsed)
