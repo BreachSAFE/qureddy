@@ -568,6 +568,27 @@ def test_local_openssl_missing_exits_3() -> None:
     assert payload["summary"]["failure_category"] == "local_openssl_missing"
 
 
+def test_local_openssl_broken_exits_3() -> None:
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        [
+            "scan",
+            "tls",
+            "example.com",
+            "--openssl",
+            str(FAKE_DIR / "openssl_broken_returncode.sh"),
+            "--format",
+            "json",
+        ],
+    )
+    assert result.exit_code == 3
+    payload = json.loads(result.stdout)
+    assert payload["scan"]["status"] == "local_openssl_broken"
+    assert payload["dependencies"][0]["failure_category"] == "local_openssl_broken"
+    assert payload["summary"]["failure_category"] == "local_openssl_broken"
+
+
 def test_json_output_top_level_keys_in_locked_order() -> None:
     runner = CliRunner()
     result = runner.invoke(

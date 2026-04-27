@@ -12,7 +12,7 @@ The `FailureCategory` enum is QuReddy's typed failure surface. Every probe, pars
 flowchart LR
     fail([Failure]) --> kind{Detected where?}
 
-    kind -->|capability check| local["LOCAL_OPENSSL_MISSING<br/>LOCAL_OPENSSL_TOO_OLD<br/>LOCAL_OPENSSL_LACKS_GROUP"]
+    kind -->|capability check| local["LOCAL_OPENSSL_MISSING<br/>LOCAL_OPENSSL_BROKEN<br/>LOCAL_OPENSSL_TOO_OLD<br/>LOCAL_OPENSSL_LACKS_GROUP"]
     kind -->|probe<br/>(subprocess + stderr)| probe_cat["TARGET_CONNECT_FAILED<br/>TLS_HANDSHAKE_FAILED<br/>SNI_REQUIRED_OR_WRONG<br/>MIDDLEBOX_OR_MTU_FAILURE"]
     kind -->|parser| parse_cat["PARSE_NO_GROUP<br/>PARSE_AMBIGUOUS<br/>UNEXPECTED_GROUP"]
 
@@ -32,6 +32,7 @@ flowchart LR
 | Category | Source | Triggers exit | Retryable | Meaning |
 |---|---|---|---|---|
 | `local_openssl_missing` | capability check | 3 | no | `openssl` binary not found at any expected path. Resolution: `--openssl PATH` → `QUREDDY_OPENSSL` env var → `openssl` on PATH. |
+| `local_openssl_broken` | capability check | 3 | no | OpenSSL exists and is executable, but exits nonzero during capability detection. The binary or its linked libraries are unusable. |
 | `local_openssl_too_old` | capability check | 3 | no | OpenSSL is below 3.5.0. Hybrid PQ groups landed in 3.5. |
 | `local_openssl_lacks_group` | capability check | 3 | no | OpenSSL 3.5+ is present but doesn't list `X25519MLKEM768` as a TLS 1.3 group. The build was compiled without PQ support. |
 | `target_connect_failed` | probe | 2 | **yes** | TCP-level failure: connection refused, DNS lookup failed, network unreachable, no route to host, operation timed out. |
@@ -53,7 +54,7 @@ middlebox_or_mtu_failure
 parse_no_group
 ```
 
-`--retry-on local_openssl_missing` raises an error and exits 4.
+`--retry-on local_openssl_missing` and `--retry-on local_openssl_broken` raise an error and exit 4.
 
 ## Local vs probe vs parser
 

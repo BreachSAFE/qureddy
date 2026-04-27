@@ -19,6 +19,7 @@ from datetime import UTC, datetime
 from packaging.version import InvalidVersion, Version
 
 from qureddy.core.errors import (
+    LocalOpenSSLBroken,
     LocalOpenSSLLacksGroup,
     LocalOpenSSLMissing,
     LocalOpenSSLTooOld,
@@ -127,6 +128,9 @@ def raise_if_unusable(dep: OpenSSLDependency) -> None:
     so callers (e.g. the CLI) can build a capability-failure result
     without re-running capability detection.
     """
+    if dep.failure_category is FailureCategory.LOCAL_OPENSSL_BROKEN:
+        msg = f"OpenSSL at {dep.path} exited nonzero during capability detection"
+        raise LocalOpenSSLBroken(msg, dependency=dep)
     if dep.failure_category is FailureCategory.LOCAL_OPENSSL_TOO_OLD:
         msg = f"OpenSSL {dep.version} is below required {MIN_OPENSSL_VERSION}"
         raise LocalOpenSSLTooOld(msg, dependency=dep)
@@ -353,6 +357,17 @@ def _run_openssl(args: list[str], *, timeout_seconds: int) -> str:
     except subprocess.TimeoutExpired as exc:
         msg = f"openssl capability check timed out: {args}"
         raise LocalOpenSSLMissing(msg) from exc
+    if completed.returncode != 0:
+        stderr = completed.stderr.strip() or "(no stderr)"
+        snippet = stderr[:200]
+        msg = f"openssl exited with code {completed.returncode}: {snippet}"
+        raise LocalOpenSSLBroken(
+            msg,
+            dependency=OpenSSLDependency(
+                path=args[0],
+                failure_category=FailureCategory.LOCAL_OPENSSL_BROKEN,
+            ),
+        )
     return completed.stdout
 
 
