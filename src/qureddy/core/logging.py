@@ -7,21 +7,38 @@ from __future__ import annotations
 import logging
 import os
 import sys
-from typing import Any
+from typing import Any, TextIO
 
 import structlog
 
 
-def configure_logging(*, verbosity: int = 0, json_logs: bool = False, quiet: bool = False) -> None:
+def _open_stderr_fd() -> TextIO:
+    """Return a text stream bound to the original process stderr fd."""
+    fd = os.dup(2)
+    return os.fdopen(fd, "w", buffering=1)
+
+
+_STDERR = _open_stderr_fd()
+
+
+def configure_logging(
+    *,
+    verbosity: int = 0,
+    json_logs: bool = False,
+    quiet: bool = False,
+    log_stream: TextIO | None = None,
+) -> None:
     """Configure structlog. Logs go to stderr; never to stdout.
 
     Args:
         verbosity: 0=WARNING, 1=INFO, 2/3=DEBUG.
         json_logs: When True, emit JSON-formatted logs.
         quiet: When True, raise the level to ERROR.
+        log_stream: Optional stream for tests that need to inspect log output.
     """
     level = _level_for(verbosity, quiet=quiet)
-    logging.basicConfig(stream=sys.stderr, level=level, format="%(message)s", force=True)
+    stream = _STDERR if log_stream is None else log_stream
+    logging.basicConfig(stream=stream, level=level, format="%(message)s", force=True)
     logging.getLogger().setLevel(level)
     processors: list[Any] = [
         structlog.contextvars.merge_contextvars,
@@ -42,7 +59,7 @@ def configure_logging(*, verbosity: int = 0, json_logs: bool = False, quiet: boo
     structlog.configure(
         processors=processors,
         wrapper_class=structlog.make_filtering_bound_logger(level),
-        logger_factory=structlog.PrintLoggerFactory(file=sys.stderr),
+        logger_factory=structlog.PrintLoggerFactory(file=stream),
         cache_logger_on_first_use=True,
     )
 

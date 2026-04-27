@@ -43,7 +43,7 @@ def test_quiet_overrides_verbosity() -> None:
 def test_json_logs_emit_valid_json(monkeypatch: pytest.MonkeyPatch) -> None:
     fake_stderr = io.StringIO()
     monkeypatch.setattr("sys.stderr", fake_stderr)
-    configure_logging(verbosity=1, json_logs=True)
+    configure_logging(verbosity=1, json_logs=True, log_stream=fake_stderr)
     log = get_logger("test")
     log.info("scan.start", target="tls://example.com:443")
     output = fake_stderr.getvalue().strip()
@@ -64,7 +64,7 @@ def test_context_vars_propagate_to_nested_loggers(
     """
     fake_stderr = io.StringIO()
     monkeypatch.setattr("sys.stderr", fake_stderr)
-    configure_logging(verbosity=1, json_logs=True)
+    configure_logging(verbosity=1, json_logs=True, log_stream=fake_stderr)
 
     structlog.contextvars.clear_contextvars()
     structlog.contextvars.bind_contextvars(
@@ -88,6 +88,20 @@ def test_context_vars_propagate_to_nested_loggers(
     events = {entry["event"] for entry in lines}
     assert "scan.start" in events
     assert "probe.start" in events
+
+
+def test_logger_binds_to_kernel_stderr_not_sys_stderr(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Default logging must ignore later Python-level stderr rebinding."""
+    fake_stderr = io.StringIO()
+    monkeypatch.setattr("sys.stderr", fake_stderr)
+    configure_logging(verbosity=1, json_logs=True)
+
+    log = get_logger("test")
+    log.info("scan.start", target="tls://example.com:443")
+
+    assert fake_stderr.getvalue() == ""
 
 
 def test_console_renderer_color_honors_tty_and_no_color(

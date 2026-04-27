@@ -152,6 +152,27 @@ def test_local_openssl_too_old_exits_3() -> None:
     assert payload["summary"]["readiness"] == "unknown"
 
 
+def test_json_output_clean_when_stderr_redirected_to_stdout() -> None:
+    """JSON stdout stays parseable when CliRunner merges stderr into stdout."""
+    runner = CliRunner(mix_stderr=True)
+    result = runner.invoke(
+        app,
+        [
+            "scan",
+            "tls",
+            "example.com",
+            "--openssl",
+            str(FAKE_DIR / "openssl_too_old.sh"),
+            "--format",
+            "json",
+        ],
+    )
+    assert result.exit_code == 3
+    payload = json.loads(result.stdout)
+    assert payload["summary"]["failure_category"] == "local_openssl_too_old"
+    assert "scan.local_dependency_unusable" not in result.stdout
+
+
 def test_local_openssl_lacks_group_exits_3() -> None:
     runner = CliRunner()
     result = runner.invoke(
