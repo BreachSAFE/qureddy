@@ -21,6 +21,7 @@ import typer
 
 from qureddy._branding import (
     PROJECT_NAME,
+    PROJECT_URL,
     VERSION_BANNER,
 )
 from qureddy.core.errors import (
@@ -93,8 +94,18 @@ app = typer.Typer(
     help=f"{PROJECT_NAME} -- post-quantum TLS readiness scanner.",
     no_args_is_help=True,
     add_completion=False,
+    # rich_markup_mode=None disables Typer's Rich-based formatter for help
+    # output; falls back to Click's classic formatter which respects literal
+    # newlines + the `\b` form-feed convention. Required for the multi-line
+    # epilog blocks (EXAMPLES, EXIT CODES, ENVIRONMENT) to render one item
+    # per line. See issue #71 for the full investigation.
+    rich_markup_mode=None,
 )
-scan_app = typer.Typer(help="Run scans.", no_args_is_help=True)
+scan_app = typer.Typer(
+    help="Run scans.",
+    no_args_is_help=True,
+    rich_markup_mode=None,
+)
 app.add_typer(scan_app, name="scan")
 
 
@@ -155,7 +166,60 @@ JsonLogsOpt = Annotated[bool, typer.Option("--json-logs", help="Emit JSON-format
 QuietOpt = Annotated[bool, typer.Option("-q", "--quiet", help="Suppress non-error logs.")]
 
 
-@scan_app.command("tls")
+# Tier-2 epilog for `qureddy scan tls --help` (issue #41 / ADR 0003 patterns 3-4).
+#
+# Exit-code lines reference the EXIT_* constants so a contract change there
+# (e.g. issue #12's exit 70) doesn't drift the help text — single source of
+# truth per agent-antipatterns "Copy-paste duplication" rule.
+#
+# Why `\b\n` markers wrap each block:
+#   Typer renders `epilog=` through Rich which collapses single `\n`
+#   into spaces (issue #71). The Click formatter convention `\b\n` (a
+#   form-feed character followed by newline) tells the underlying
+#   formatter to preserve literal whitespace until the next blank line.
+#   Wrapping each block (EXAMPLES body, EXIT CODES body, ENVIRONMENT
+#   body) preserves one-per-line layout. Blank lines between blocks
+#   survive on their own as paragraph breaks.
+_SCAN_TLS_EPILOG = f"""\
+EXAMPLES:
+
+\b
+# Most common: scan a hostname with rich console output.
+qureddy scan tls google.com
+
+# Machine-readable JSON for CI pipelines.
+qureddy scan tls pq.cloudflareresearch.com --format json
+
+# Scan an IP target (SNI override required).
+qureddy scan tls 1.1.1.1:443 --sni one.one.one.one
+
+# Tolerate transient network hiccups (3 retries, 2s apart).
+qureddy scan tls flaky.example.com --retry-on tls_handshake_failed --retries 3 --retry-delay 2
+\b
+
+EXIT CODES:
+
+\b
+{EXIT_OK}   scan succeeded
+{EXIT_TARGET_FAILED}   target scan failed (handshake, parse, etc.)
+{EXIT_LOCAL_DEPENDENCY}   local dependency missing or unsupported (OpenSSL <3.5)
+{EXIT_USAGE}   usage / configuration error
+{EXIT_INTERNAL_ERROR}  internal qureddy error (BSD sysexits.h EX_SOFTWARE)
+\b
+
+ENVIRONMENT:
+
+\b
+NO_COLOR         Disable ANSI color (https://no-color.org).
+QUREDDY_OPENSSL  Override path to the OpenSSL 3.5+ binary
+                 (precedence: --openssl > $QUREDDY_OPENSSL > $PATH).
+\b
+
+Project: {PROJECT_URL}
+"""
+
+
+@scan_app.command("tls", epilog=_SCAN_TLS_EPILOG)
 def scan_tls(
     target: TargetArg,
     sni: SniOpt = None,
