@@ -19,6 +19,7 @@ import click
 import structlog
 import typer
 
+from qureddy import __version__ as _qureddy_version
 from qureddy.core.errors import (
     LocalOpenSSLLacksGroup,
     LocalOpenSSLMissing,
@@ -59,14 +60,61 @@ EXIT_INTERNAL_ERROR = 70  # BSD sysexits.h EX_SOFTWARE — distinct from EXIT_TA
 
 _MAX_TIMEOUT_SECONDS = 300
 
+# Branding constants (issue #41 / ADR 0003 Pattern 0). Single source of
+# truth for --version output and any future help-banner placement. Use
+# `--` (double-hyphen) instead of em-dash per coding-rules §18.
+PROJECT_NAME = "BreachSAFE QuReddy"
+PROJECT_URL = "https://www.breachsafe.ai"
+SOURCE_URL = "https://github.com/paul007ex/qureddy"
+LICENSE_NAME = "Apache-2.0"
+VERSION_BANNER = f"{PROJECT_NAME} {_qureddy_version} -- {PROJECT_URL}"
+
+
+def _version_callback(value: bool) -> None:
+    """Eager --version callback: print banner, exit 0.
+
+    `is_eager=True` runs this during option parsing, before any
+    subcommand resolution — without it Typer would try to dispatch a
+    (missing) command before the callback fires.
+    """
+    if value:
+        typer.echo(VERSION_BANNER)
+        raise typer.Exit(code=EXIT_OK)
+
+
+VersionOpt = Annotated[
+    bool | None,
+    typer.Option(
+        "--version",
+        "-V",
+        callback=_version_callback,
+        is_eager=True,
+        help="Show version and exit.",
+    ),
+]
+
+
 app = typer.Typer(
     name="qureddy",
-    help="QuReddy — post-quantum TLS readiness scanner.",
+    help=f"{PROJECT_NAME} -- post-quantum TLS readiness scanner.",
     no_args_is_help=True,
     add_completion=False,
 )
 scan_app = typer.Typer(help="Run scans.", no_args_is_help=True)
 app.add_typer(scan_app, name="scan")
+
+
+@app.callback()
+def _root(
+    version: VersionOpt = None,
+) -> None:
+    """BreachSAFE QuReddy -- post-quantum TLS readiness scanner.
+
+    Root callback exists so `--version` can be wired at the app level
+    (visible from `qureddy --version` without a subcommand). The body
+    is empty because `_version_callback` short-circuits via
+    `is_eager=True`.
+    """
 
 
 # Module-level Annotated aliases compress the Typer option surface so
