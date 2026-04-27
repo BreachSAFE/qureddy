@@ -26,8 +26,10 @@ This skill operates in one of two modes. The standards (hats, checklist, output 
 
 | Mode | Who runs it | Verdict means | Labels applied |
 |---|---|---|---|
-| **Reviewer** (default) | Any reviewer (Claude, other agents, humans) | Recommendation — non-binding | `review:<name>:<verdict>` |
+| **Reviewer** (default) | Any reviewer (Claude, other agents, humans) | Recommendation — non-binding | `review:<role>-<instance>:<verdict>` (see naming below) |
 | **Arbiter** | Codex (per `CLAUDE.md` Governance: "Architect / reviewer") | Binding decision, gates merge | `arbiter:codex:<verdict>` + `decision:<outcome>` |
+
+**Label naming convention** — when running as a Claude session, your reviewer label must include an instance suffix: `review:claude-1:<verdict>`, `review:claude-2:<verdict>`, etc. Codex stays bare (`review:codex:<verdict>`); humans stay bare (`review:human:<verdict>`); only Claude needs the suffix because multiple Claude sessions run concurrently in this repo. Bare `review:claude:*` labels are deprecated — see [`docs/contributors/review-process.md`](../../docs/contributors/review-process.md#roleinstance-naming-convention) for the full convention.
 
 **Reviewer mode** is the common case. Multiple reviewers can run on the same issue/PR concurrently — each posts an independent verdict. None of them gate merge.
 
