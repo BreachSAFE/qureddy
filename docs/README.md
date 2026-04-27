@@ -53,6 +53,8 @@ Conceptual discussion. Why we made the choices we did.
 The rules and conventions for working *on* QuReddy (not *with* it) live separately from user-facing docs:
 
 - [`contributors/`](contributors/) — engineering rules, anti-patterns, examples, OSS standards
+- [`contributors/coding-rules.md`](contributors/coding-rules.md) — Python authoring standards (size, types, security, structlog, exceptions). Source of truth for *how the code is written*.
+- [`contributors/cli-design-rules.md`](contributors/cli-design-rules.md) — CLI conventions (flags, exit codes, help, stdout/stderr contract, NO_COLOR). Source of truth for *how the CLI behaves*.
 - [`contributors/review-process.md`](contributors/review-process.md) — how a fix lands: reviewer / validator / arbiter pipeline + label tiers
 - [`contributors/agents/`](contributors/agents/) — agent role specifications and bootstrap prompts
 
