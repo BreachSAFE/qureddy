@@ -139,8 +139,14 @@ These come from the reviewer and validator skills:
 
 ## When the apparatus doesn't apply
 
-- **Docs-only PRs** can skip the validator (nothing to validate against an issue's reproduction).
-- **Solo work** by the project lead can self-merge per [coding-rules §27.4](coding-rules.md), but the PR record is still required.
+- **Docs-only PRs** can skip the validator (nothing to validate against an issue's reproduction). **A reviewer pass (Reviewer mode, non-binding) is still required** — at minimum a `## Review:` comment with verdict and signature block, even when the verdict is `approve` and the diff is one line. Issue #48 documents the canonical failure: PRs #26, #36, #40 self-merged with zero reviews, and the apparatus that was *defining itself* in those PRs got bypassed by its own definitions.
+- **Solo work** by the project lead can self-merge per [coding-rules §27.4](coding-rules.md), but the PR record is still required, including at least one reviewer comment. "Self-merged with no review" is acceptable — "merged with no record" is not. The audit trail must distinguish "reviewed and approved" from "self-merged knowingly" from "merged without thinking."
 - **CI/dependency bumps** from Dependabot follow GitHub's standard auto-merge rules, not this apparatus.
 
 For everything else — bug fixes, feature work, architecture changes — the full pipeline applies.
+
+### On enforcement
+
+Today this is honor-system. Branch protection that mechanically requires `decision:approved` is **deferred until the repo goes public** (see commit `ea2c042`); enabling it on a private repo costs more than it saves while only the project lead and a small set of agents merge. When the repo flips public, the deferred `scripts/enable-branch-protection.sh` lands and turns this into a hard gate.
+
+Until then: the rules above are followed because they are written down, and PRs that violate them are flagged in retrospective audit (e.g., issue #48). The cost of following them — one `## Review:` comment per docs PR — is small enough that the absence of CI enforcement is not a license to skip.
