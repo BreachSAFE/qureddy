@@ -35,6 +35,8 @@ from qureddy.core.models import (
     ScanTarget,
 )
 from qureddy.core.retry import (
+    MAX_RETRIES,
+    MAX_RETRY_DELAY_SECONDS,
     parse_retry_on,
     validate_retry_args,
 )
@@ -53,8 +55,6 @@ EXIT_TARGET_FAILED = 2
 EXIT_LOCAL_DEPENDENCY = 3
 EXIT_USAGE = 4
 
-_MAX_RETRIES = 3
-_MAX_RETRY_DELAY_SECONDS = 10.0
 _MAX_TIMEOUT_SECONDS = 300
 
 app = typer.Typer(
@@ -93,7 +93,7 @@ RetryOnOpt = Annotated[
 ]
 RetriesOpt = Annotated[
     int,
-    typer.Option("--retries", help="Additional retry attempts (max 3).", min=0, max=_MAX_RETRIES),
+    typer.Option("--retries", help="Additional retry attempts (max 3).", min=0, max=MAX_RETRIES),
 ]
 RetryDelayOpt = Annotated[
     float,
@@ -101,7 +101,7 @@ RetryDelayOpt = Annotated[
         "--retry-delay",
         help="Seconds between retries (max 10).",
         min=0.0,
-        max=_MAX_RETRY_DELAY_SECONDS,
+        max=MAX_RETRY_DELAY_SECONDS,
     ),
 ]
 VerboseOpt = Annotated[
