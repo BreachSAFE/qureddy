@@ -278,7 +278,7 @@ def test_invalid_format_value_is_rejected() -> None:
     )
     # Click rejects the invalid enum value before the command body runs.
     assert result.exit_code != 0
-    output = (result.stdout or "") + (result.stderr or "") + str(result.exception or "")
+    output = (result.stdout or "") + str(result.exception or "")
     assert "yaml" in output.lower() or "format" in output.lower()
 
 
