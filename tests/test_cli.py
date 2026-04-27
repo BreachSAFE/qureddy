@@ -139,6 +139,17 @@ def test_retry_delay_above_max_exits_4(monkeypatch: pytest.MonkeyPatch) -> None:
     assert exit_info.value.code == 4
 
 
+def test_main_exits_3_on_capability_failure(monkeypatch: pytest.MonkeyPatch) -> None:
+    fake = str(FAKE_DIR / "openssl_too_old.sh")
+    monkeypatch.setattr(
+        "sys.argv",
+        ["qureddy", "scan", "tls", "example.com", "--openssl", fake, "--format", "json"],
+    )
+    with pytest.raises(SystemExit) as exit_info:
+        main()
+    assert exit_info.value.code == 3
+
+
 def test_local_openssl_too_old_exits_3() -> None:
     """UC4: Detect Unsupported Local OpenSSL — exit 3."""
     runner = CliRunner()
