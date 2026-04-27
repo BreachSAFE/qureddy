@@ -52,6 +52,7 @@ dev = [
     "deptry>=0.20",
     "reuse>=4.0",
     "semgrep>=1.80",
+    "pre-commit>=3.5",
     # defusedxml is used by scripts/audit_phase.py to parse coverage.xml
     # and junit.xml safely. CODING_RULES §26 forbids stdlib xml.etree on
     # any input; defusedxml is the project-mandated alternative.

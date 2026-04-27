@@ -1,0 +1,35 @@
+# SPDX-FileCopyrightText: 2026 BreachSAFE
+# SPDX-License-Identifier: Apache-2.0
+# Pre-commit hooks per docs/contributors/coding-rules.md Section 23.
+# Install once: pre-commit install
+# Run manually: pre-commit run --all-files
+# Update pins: pre-commit autoupdate (deliberate, in a PR)
+
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    # Pin must match the ruff version in pyproject.toml [dev] to avoid format
+    # drift between pre-commit and `just gates`. Bump both together; ruff's
+    # formatter changes line-joining heuristics across minor versions, so
+    # mixing 0.6 vs 0.15 produces churn diffs even on already-formatted code.
+    # Per Section 23, autoupdate is deliberate — run `pre-commit autoupdate`
+    # in a PR alongside any pyproject.toml ruff bump.
+    rev: v0.15.12
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-added-large-files
+        args: [--maxkb=500]
+      - id: check-merge-conflict
+      - id: detect-private-key
+
+# mypy is intentionally NOT here per coding-rules.md Section 23:
+# slow, shares state poorly with the IDE daemon. CI catches it.
