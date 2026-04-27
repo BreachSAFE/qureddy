@@ -53,6 +53,7 @@ Operational workflows live under `.claude/skills/`. Read each skill's `SKILL.md`
 | Skill | Use when |
 |---|---|
 | `mvp-implement` | Implementing or extending MVP 0.1 scanner code |
+| `surgical-fix` | Fixing one Python bug with a narrow test-first patch, coding-rules compliance, and anti-pattern audit |
 | `audit-pr` | Preparing or finalizing a pull request |
 | `run-quality-gates` | Running ruff/mypy/pytest/bandit and reporting results without modifying files |
 | `write-test-fixture` | Capturing a new OpenSSL output fixture |

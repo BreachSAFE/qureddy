@@ -9,9 +9,11 @@ Skills are **lazily loaded**: the agent reads each skill's description (the YAML
 | Skill | When the agent invokes it |
 |---|---|
 | `mvp-implement` | Implementing or extending MVP 0.1 (TLS scanner). Self-contained operational authority for the current milestone. |
+| `surgical-fix` | Fixing one Python bug, regression, failing test, parser/CLI/output/subprocess defect, or security-sensitive behavior issue with a narrow test-first patch and anti-pattern audit. |
 | `audit-pr` | Before opening or finalizing a pull request. Walks the diff against `docs/contributors/coding-rules.md` and produces the PR-template output. |
 | `write-test-fixture` | Adding a new captured OpenSSL fixture under `tests/fixtures/openssl/`. |
 | `run-quality-gates` | Pre-final-response check on any code-touching task. Runs the Tier 1 enterprise-grade gates (ruff, mypy, pytest+coverage, bandit, pip-audit, deptry, reuse, semgrep, secret scan) and produces structured PASS/FAIL/NOT RUN output. |
+| `python-oss-crypto-reviewer` | Reviewing a proposed bug fix, PR diff, or another agent's code suggestion. Produces APPROVE / APPROVE WITH CHANGES / REJECT verdict against correctness, security, and schema-stability standards. |
 
 ## For human contributors
 
