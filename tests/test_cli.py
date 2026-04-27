@@ -40,6 +40,14 @@ def test_invalid_target_exits_4() -> None:
     assert result.exit_code == 4
 
 
+@pytest.mark.parametrize("bad_sni", ["", " ", "   ", "\t", "\n"])
+def test_empty_or_whitespace_sni_exits_4(bad_sni: str) -> None:
+    runner = CliRunner()
+    result = runner.invoke(app, ["scan", "tls", "example.com", "--sni", bad_sni])
+    assert result.exit_code == 4
+    assert "sni" in result.stdout.lower()
+
+
 def test_unknown_retry_category_exits_4() -> None:
     runner = CliRunner()
     result = runner.invoke(
