@@ -1,6 +1,6 @@
 # ADR 0003 — CLI `--help` rewrite per best-practice patterns
 
-**Status:** Proposed
+**Status:** Implementing — slices 1–3 of 4 shipped (#41); slice 4 in progress
 **Date:** 2026-04-26
 **Deciders:** Paul Volosen, project lead
 **Consulted:** Claude (review)
