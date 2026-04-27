@@ -38,10 +38,25 @@ flowchart LR
 
 | Tier | Prefix | Who applies | Count per issue | What it means |
 |---|---|---|---|---|
-| **Reviewer** | `review:<name>:<verdict>` | Each individual reviewer | 0..N | Recommendation; informational |
+| **Reviewer** | `review:<role>-<instance>:<verdict>` | Each individual reviewer | 0..N | Recommendation; informational |
 | **Arbiter** | `arbiter:codex:<verdict>` | Only the arbiter | 0 or 1 | Arbiter's verdict, mirrors reviewer namespace for filterability |
-| **Validator** | `validation:claude:<verdict>` | The validator | 0 or 1 | Mechanical: bug confirmed pre-patch, gone post-patch |
+| **Validator** | `validation:claude-<instance>:<verdict>` | The validator | 0..N | Mechanical: bug confirmed pre-patch, gone post-patch |
 | **Decision** | `decision:<outcome>` | Only the arbiter | 0 or 1 | **Binding.** The merge gate reads this and nothing else. |
+
+### `<role>-<instance>` naming convention
+
+Each Claude session adds an instance suffix so concurrent sessions don't collide. The convention is:
+
+- `review:claude-1:<verdict>` — first Claude session
+- `review:claude-2:<verdict>` — second Claude session
+- `review:claude-N:<verdict>` — Nth Claude session
+- `review:codex:<verdict>` — Codex (single-instance role; no suffix needed)
+- `review:human:<verdict>` — human reviewer (single-instance role; no suffix needed)
+- `validation:claude-N:<verdict>` — same shape for validator labels
+
+**Rule:** when a Claude session applies a reviewer or validator label, the session must include an instance suffix. **Bare `review:claude:*` and `validation:claude:*` labels are deprecated** — they predate this convention and exist on prior issues (#7, #8, #9, #11, #13, #14, #18, #19, #21, #23 and similar) for audit-trail purposes only.
+
+**Why instance-suffixed:** concurrent sessions are real here. The 2026-04-27 audit caught two sessions committing on each other's branches. Race-prone label semantics ("the latest applier wins") is the wrong default; multiple labels coexisting on the same issue is the correct audit trail.
 
 Verdicts: `approve`, `approve-with-changes`, `reject`.
 Decision outcomes: `approved`, `needs-changes`, `rejected`.
