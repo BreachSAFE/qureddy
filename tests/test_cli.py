@@ -66,6 +66,48 @@ def test_version_banner_includes_breachsafe_name_and_url() -> None:
     assert " -- " in VERSION_BANNER, "expected '--' separator (not em-dash)"
 
 
+def test_version_on_subcommand_suggests_root_form(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """`qureddy scan tls TARGET --version` errors helpfully, not cryptically.
+
+    Click's default error is `No such option: --version` because the
+    flag is registered at the root callback only (matches git/docker/gh
+    convention). That default is unhelpful — replace with a hint that
+    points at `qureddy --version`.
+    """
+    monkeypatch.setattr(
+        "sys.argv",
+        ["qureddy", "scan", "tls", "example.com", "--version"],
+    )
+    with pytest.raises(SystemExit) as exit_info:
+        main()
+    assert exit_info.value.code == 4
+    captured = capsys.readouterr()
+    combined = captured.out + captured.err
+    # The hint must reference the root-level flag explicitly so the user
+    # knows where it lives, not just that the current placement is wrong.
+    assert "qureddy --version" in combined, f"expected 'qureddy --version' hint, got: {combined!r}"
+
+
+def test_version_on_scan_subcommand_only_also_suggests_root_form(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Same hint when --version lands on `qureddy scan` (no subsubcommand)."""
+    monkeypatch.setattr(
+        "sys.argv",
+        ["qureddy", "scan", "--version"],
+    )
+    with pytest.raises(SystemExit) as exit_info:
+        main()
+    assert exit_info.value.code == 4
+    captured = capsys.readouterr()
+    combined = captured.out + captured.err
+    assert "qureddy --version" in combined
+
+
 def test_invalid_target_exits_4() -> None:
     runner = CliRunner()
     result = runner.invoke(app, ["scan", "tls", ""])
