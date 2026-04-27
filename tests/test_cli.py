@@ -11,7 +11,8 @@ import pytest
 from typer.testing import CliRunner
 
 import qureddy.cli as cli_module
-from qureddy.cli import app, main
+from qureddy import __version__
+from qureddy.cli import VERSION_BANNER, app, main
 from qureddy.core import retry as retry_module
 
 FAKE_DIR = Path(__file__).parent / "fixtures" / "openssl" / "fake"
@@ -34,6 +35,35 @@ def test_scan_help_lists_documented_options() -> None:
     assert "--retries" in result.stdout
     assert "--retry-delay" in result.stdout
     assert "--json-logs" in result.stdout
+
+
+def test_version_flag_emits_banner() -> None:
+    """Issue #41: --version prints `<name> <version> -- <url>` and exits 0."""
+    runner = CliRunner()
+    result = runner.invoke(app, ["--version"])
+    assert result.exit_code == 0
+    assert result.stdout.strip() == VERSION_BANNER
+
+
+def test_short_v_flag_also_works() -> None:
+    """Issue #41: -V is parity with --version."""
+    runner = CliRunner()
+    result = runner.invoke(app, ["-V"])
+    assert result.exit_code == 0
+    assert result.stdout.strip() == VERSION_BANNER
+
+
+def test_version_banner_includes_breachsafe_name_and_url() -> None:
+    """Issue #41: banner format is `BreachSAFE QuReddy <version> -- <url>`.
+
+    Locks the format so a future refactor can't drop the project name
+    or URL without breaking this test. Uses `--` (double-hyphen) per
+    coding-rules §18 (no em-dashes in source).
+    """
+    assert "BreachSAFE QuReddy" in VERSION_BANNER
+    assert __version__ in VERSION_BANNER
+    assert "https://www.breachsafe.ai" in VERSION_BANNER
+    assert " -- " in VERSION_BANNER, "expected '--' separator (not em-dash)"
 
 
 def test_invalid_target_exits_4() -> None:
