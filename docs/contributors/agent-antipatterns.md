@@ -254,11 +254,19 @@ Comments that restate obvious code, describe old behavior, or claim an invariant
 
 ### Copy-paste duplication
 
-The same logic appears in three places with small variations.
+The same logic, function, constant, or string appears in two or more places with small variations.
 
-**Why it's bad:** Bugs get fixed in two places and survive in the third.
+**Why it's bad:** Bugs get fixed in one place and survive in the other. Strings that name the project, the URL, the version, or other identity-of-the-product values especially — they drift silently and the help/output/docs disagree about what the product is called.
 
-**Instead:** Tolerate two copies if the abstraction is not clear. Extract after the third copy or when shared behavior is already obvious.
+**Instead:** Before you write the same function, constant, or stringly-typed value a second time, **stop and consider extracting**. Three checks before you commit a duplicate:
+
+1. **Does the value already exist somewhere in the codebase?** (`grep -rn "<value>" src/`). If yes, import it instead of re-typing it.
+2. **Will the next reader assume the two copies are the same?** If yes, drift will hurt them. Extract.
+3. **Are the two copies in different layers** (e.g. CLI ↔ output adapter, scanner ↔ core)? If yes, the right home is a shared module both can import — not a copy in each layer.
+
+The "tolerate two copies, extract on the third" rule applies to **logic** (parsing routines, validation flows) where the abstraction is genuinely unclear until a third use case arrives. It does **not** apply to identity values (project name, URL, version banner, license string) — those should be defined once and imported wherever needed.
+
+When the right home for a shared value is unclear, prefer a small focused module (`src/qureddy/_branding.py`, not `src/qureddy/utils.py`) over the temptation to dump it in an existing module that "looks close enough."
 
 ---
 
