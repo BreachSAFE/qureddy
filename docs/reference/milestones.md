@@ -13,6 +13,7 @@ This page is the canonical record of what's shipped, what's planned, and which s
 | MVP 0.5 | Planned | Local crypto config scanner. | TBD |
 | MVP 0.6 | Planned | Source-code scanner. OpenSSF Best Practices passing tier target. | TBD |
 | v1.0 | Planned | Full OSS release. PyPI publish. Docker image at `ghcr.io/breachsafe/qureddy`. Signed artifacts. OpenSSF Best Practices silver tier target. | TBD |
+| **P2** | Planned | **BreachSAFE QuReddy Enterprise** — separate commercial product. Cloud scanners, fleet/batch operation, SaaS dashboard, SIEM integrations, compliance attestation reports, support contracts. Capability split documented in [`editions.md`](editions.md); design locked in [ADR 0006](../contributors/adr/0006-oss-vs-enterprise-split.md). | TBD |
 
 ## Active skill
 
@@ -26,12 +27,11 @@ When MVP 0.2 work begins, the current skill moves to `.claude/skills/done/mvp-0.
 
 ## Out of scope (explicit non-goals)
 
-These never ship:
+These never ship in either OSS or Enterprise — see [`editions.md`](editions.md) "Never shipped" section for the full canonical list:
 
-- Binary scanning
+- Binary scanning (`.exe` / `.dll` / `.jar` / firmware)
 - Remediation (QuReddy reads, never writes)
-- Continuous monitoring (cron is the answer)
-- Multi-tenant SaaS
+- Continuous monitoring as an always-on agent (cron is the answer)
 - AI / NHI inventory (different product)
 - Telemetry, ever
 - EOL platforms (Windows XP/7/8.1, RHEL 6, Ubuntu 16.04 and earlier)
@@ -44,9 +44,14 @@ These never ship:
 
 ## Related
 
+- [`editions.md`](editions.md) — capability matrix for OSS vs Enterprise (canonical answer for "what's in each tier")
+- [Explanation: Why QuReddy is open-core](../explanation/oss-vs-enterprise.md) — the reasoning behind the P2 split
 - [`.claude/skills/mvp-implement/SKILL.md`](../../.claude/skills/mvp-implement/SKILL.md) — current skill
 - [`docs/contributors/coding-rules.md`](../contributors/coding-rules.md) — engineering standards
 - [`docs/contributors/oss-standards.md`](../contributors/oss-standards.md) — OSS conventions
 - [ADR 0001 — `--trace` flag](../contributors/adr/0001-trace-and-verbosity.md) — accepted, not yet implemented
 - [ADR 0002 — Diátaxis docs standard](../contributors/adr/0002-diataxis-documentation-standard.md)
 - [ADR 0003 — CLI `--help` rewrite](../contributors/adr/0003-cli-help-rewrite.md) — proposed
+- [ADR 0004 — Multi-scanner architecture](../contributors/adr/0004-multi-scanner-architecture.md)
+- [ADR 0005 — Splitting oversized files](../contributors/adr/0005-splitting-oversized-files.md)
+- [ADR 0006 — OSS vs Enterprise split](../contributors/adr/0006-oss-vs-enterprise-split.md) — locks the P2 design

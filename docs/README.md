@@ -39,6 +39,7 @@ Look-it-up information. Comprehensive, accurate, dry.
 - [JSON output schema](reference/json-schema.md) — the locked top-level keys, every field type
 - [Failure categories](reference/failure-categories.md) — the `FailureCategory` enum, what each value means, retry eligibility
 - [Project milestones](reference/milestones.md) — what's shipped, what's planned
+- [Editions](reference/editions.md) — capability matrix: OSS vs BreachSAFE QuReddy Enterprise (planned, P2)
 
 ### [Explanation](explanation/)
 Conceptual discussion. Why we made the choices we did.
@@ -47,6 +48,7 @@ Conceptual discussion. Why we made the choices we did.
 - [Why hybrid post-quantum?](explanation/why-hybrid-pq.md) — the X25519MLKEM768 design call
 - [Harvest now, decrypt later (HNDL)](explanation/hndl.md) — the threat model that drives the timeline
 - [Threat model and scope](explanation/threat-model.md) — what QuReddy assumes, what it doesn't try to defend against
+- [Why QuReddy is open-core](explanation/oss-vs-enterprise.md) — what stays in OSS vs Enterprise (P2), and why
 
 ## Contributor docs
 
