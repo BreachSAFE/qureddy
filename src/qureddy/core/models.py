@@ -21,6 +21,14 @@ FROZEN = ConfigDict(frozen=True, extra="forbid")
 
 
 class ObservationType(str, Enum):
+    """How a piece of evidence was obtained.
+
+    `negotiated` and `offered` come from observed TLS handshakes;
+    `observed` from passive probe output; `inferred` from policy
+    rules without direct measurement; `not_testable` when the local
+    capability check prevented probing the target.
+    """
+
     NEGOTIATED = "negotiated"
     OFFERED = "offered"
     OBSERVED = "observed"
@@ -29,6 +37,13 @@ class ObservationType(str, Enum):
 
 
 class Severity(str, Enum):
+    """Severity of a finding.
+
+    `info` for routine readiness signals (e.g. transitional_hybrid
+    negotiated). `critical`/`high`/`medium`/`low` reserved for active
+    risk findings. CycloneDX-aligned vocabulary for forward CBOM compat.
+    """
+
     CRITICAL = "critical"
     HIGH = "high"
     MEDIUM = "medium"
@@ -37,6 +52,15 @@ class Severity(str, Enum):
 
 
 class Readiness(str, Enum):
+    """Quantum-safe readiness verdict for a scanned asset.
+
+    `quantum_safe` reserved for future pure-PQ deployments;
+    `transitional_hybrid` is the current best-practice posture
+    (hybrid PQ + classical key exchange); `quantum_vulnerable` for
+    classical-only; `classically_weak` for broken primitives;
+    `unknown`/`not_applicable` for failed probes or scope misfit.
+    """
+
     QUANTUM_VULNERABLE = "quantum_vulnerable"
     CLASSICALLY_WEAK = "classically_weak"
     TRANSITIONAL_HYBRID = "transitional_hybrid"
@@ -46,12 +70,22 @@ class Readiness(str, Enum):
 
 
 class Confidence(str, Enum):
+    """Confidence level for a finding's evidence chain."""
+
     HIGH = "high"
     MEDIUM = "medium"
     LOW = "low"
 
 
 class FailureCategory(str, Enum):
+    """Typed reason a scan or probe did not produce a clean finding.
+
+    Local-prefixed categories indicate problems with the operator's
+    environment (exit 3); target/TLS/parse categories indicate
+    problems with the target or its responses (exit 2). Drives both
+    the exit-code surface and the `--retry-on` allowlist.
+    """
+
     LOCAL_OPENSSL_MISSING = "local_openssl_missing"
     LOCAL_OPENSSL_BROKEN = "local_openssl_broken"
     LOCAL_OPENSSL_VERSION_UNREADABLE = "local_openssl_version_unreadable"
@@ -67,6 +101,8 @@ class FailureCategory(str, Enum):
 
 
 class OutputFormat(str, Enum):
+    """CLI `--format` choices: terminal-rendered `rich` or machine-readable `json`."""
+
     RICH = "rich"
     JSON = "json"
 

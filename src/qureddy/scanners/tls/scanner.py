@@ -74,6 +74,13 @@ class TLSScanner:
         openssl_path: str | None = None,
         retry: RetryConfig | None = None,
     ) -> None:
+        """Initialize the scanner with optional OpenSSL path + retry config.
+
+        `openssl_path` is the override the CLI passes via `--openssl`; when
+        None the probe module resolves via `QUREDDY_OPENSSL` env var then
+        PATH. `retry` defaults to no retries; CLI passes its parsed
+        `RetryConfig` for `--retry-on / --retries / --retry-delay`.
+        """
         self._openssl_path_override = openssl_path
         self._retry = retry or RetryConfig()
 

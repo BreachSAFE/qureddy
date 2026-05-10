@@ -66,16 +66,20 @@ class AuditResult:
     pre_mvp_soft_pass: bool = False
 
     def ok(self, msg: str) -> None:
+        """Record a passing audit check."""
         self.passed.append(msg)
 
     def fail(self, msg: str) -> None:
+        """Record a failing audit check."""
         self.failed.append(msg)
 
     def note(self, msg: str) -> None:
+        """Record an informational audit note (neither pass nor fail)."""
         self.notes.append(msg)
 
     @property
     def has_failures(self) -> bool:
+        """True iff at least one audit check failed."""
         return len(self.failed) > 0
 
 
