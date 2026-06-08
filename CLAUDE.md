@@ -10,8 +10,9 @@ Auto-loaded into every Claude Code session. Tight on purpose. Use it to orient f
 |---|---|
 | **Name** | BreachSAFE QuReddy OSS |
 | **CLI** | `qureddy` |
-| **Repo** | `github.com/paul007ex/qureddy` (will move to `github.com/breachsafe/qureddy` at v1.0) |
-| **PyPI** | `breachsafe-qureddy` |
+| **Staging repo** (this one) | `github.com/paul007ex/qureddy` — full history, all branches, all issues, internal docs/skills/ADRs |
+| **Public repo** | `github.com/breachsafe/qureddy` — curated v0.1.0 release. Lean root, no internal scaffolding. Tagged `v0.1.0` (commit `9eda5e6`) |
+| **PyPI** | `breachsafe-qureddy` (first publish pending) |
 | **License** | Apache 2.0 |
 | **Tagline** | QuReddy 0.1.0 — BreachSAFE OSS |
 
@@ -19,13 +20,15 @@ Open-source post-quantum cryptography readiness scanner. Find what's quantum-vul
 
 ## Repo state (read this first)
 
-**MVP 0.1 shipped on 2026-04-26.** The TLS scanner is live:
+**MVP 0.1 shipped on 2026-04-26. Public release v0.1.0 pushed to `breachsafe/qureddy` on 2026-05-11 (still private; flip-public timing is a maintainer call).** The TLS scanner is live:
 
 - `src/qureddy/` — 24 source modules including `cli.py`, `_branding.py`, `core/{models,errors,logging,policy,retry,status,targets}.py`, `output/{console,_styles,json}.py`, `scanners/tls/{openssl_probe,scanner,parse,_classify,_evidence,_summary}.py`. Authoritative count: `find src/qureddy -name '*.py' | wc -l`.
 - `tests/` — 12 unit test files, 1 live test file, 10 fake openssl shims under `tests/fixtures/openssl/fake/`, 8 captured `s_client -brief` fixtures under `tests/fixtures/openssl/`. 237 unit tests + 6 live tests = 243 collected, 90%+ coverage. Authoritative counts: `pytest --collect-only -q` and `find tests/fixtures/openssl -maxdepth 2 -name '*.txt' -o -name '*.sh'`.
 - `pyproject.toml` is wired with the runtime + dev deps; `qureddy.cli:main` is the install-time entrypoint (translates Click usage errors to exit code 4 per the documented exit-code surface).
 - `docs/` follows [Diátaxis](https://diataxis.fr) — see `docs/README.md` for the structure; ADR 0002 is the decision record.
 - `scratch/` holds prior agent work and review artifacts. Gitignored. `scratch/claude-1`, `scratch/claude-2`, `scratch/claude-3-developer/`, `scratch/staging/claude-app/` are untrusted prior art — read for historical context only; do not import from them, do not edit them as part of normal work.
+
+This is the **staging repo**. Develop here; curate clean commits to `breachsafe/qureddy` for public releases. See [`docs/contributors/plans/0002-mvp-0.1-to-0.2-sequencing.md`](docs/contributors/plans/) and `release/v0.1.0-public-prep` branch for the precedent flow. The lean public root (allow-list of files that ship to `breachsafe/qureddy`) is documented in the same plan; **never** push `.claude/`, `CLAUDE.md`, `AGENTS.md`, `scratch/`, `memory/`, `docs/contributors/`, `LICENSES/`, or `REUSE.toml` to the public repo.
 
 The next milestone is **MVP 0.2 — certificate scanner**. See `docs/reference/milestones.md` for the planned scope and `.claude/skills/mvp-implement/SKILL.md` for the implementation authority.
 
@@ -67,12 +70,12 @@ See `.claude/skills/README.md` for the catalog.
 
 | Version | Scope |
 |---|---|
-| **MVP 0.1 (now)** | TLS scanner only. Python via `uv`/`pipx`. Mac/Linux/Windows. No Docker. |
+| **0.1.0 (shipped)** | TLS scanner. Pushed to `breachsafe/qureddy` (currently private). PyPI publish pending. Python via `uv`/`pipx`. Mac/Linux/Windows. No Docker. |
 | **MVP 0.2 - 0.6** | Cert (0.2), CBOM (0.3), SSH (0.4), config (0.5), source-code (0.6) scanners. |
-| **v1.0** | Full OSS release: PyPI publish, Docker image at `ghcr.io/breachsafe/qureddy`, signed artifacts, full docs, community-ready. |
+| **v1.0** | Full OSS release: PyPI publish (if not earlier), Docker image at `ghcr.io/breachsafe/qureddy`, signed artifacts (Sigstore + SLSA), full docs, community-ready. |
 | **P2** | Enterprise tier (cloud scanners, SaaS, SIEM integrations, RBAC). Docker is not the differentiator. |
 
-OpenSSF Best Practices Badge target: passing by MVP 0.6, silver by v1.0.
+OpenSSF Best Practices Badge target: passing by MVP 0.6, silver by v1.0. The Best Practices form requires a public repo, so the badge work is gated on flipping `breachsafe/qureddy` from private to public.
 
 ## Commands
 
@@ -169,6 +172,10 @@ If you are Claude Code starting a fresh session:
 5. Begin work. Audit your output against `docs/contributors/agent-antipatterns.md` before each response.
 
 If asked for an MVP 0.1 implementation task, the **only** operational authority is `.claude/skills/mvp-implement/SKILL.md`. The skill is self-contained — every use case, locked model, retry rule, JSON shape, and exit code lives inside it. The earlier monolithic prompt was removed from the public tree; if you genuinely need to see the original verbose draft for historical context, it is at `scratch/MVP-0.1-CLAUDE-PROMPT.md` (gitignored, local only).
+
+## Two-repo discipline
+
+Work here on `paul007ex/qureddy` (staging). When a release is ready, curate a clean tree and push to `breachsafe/qureddy` (public). The orphan-commit precedent — single squashed commit, fresh tag, no PR/issue history carried over — is in `release/v0.1.0-public-prep` and commit `9eda5e6` on the public side. Tag matching the version on both sides.
 
 ## License
 
