@@ -41,7 +41,7 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0  # gitleaks needs history
 
@@ -108,7 +108,7 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
@@ -157,7 +157,7 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
@@ -230,7 +230,7 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
@@ -292,7 +292,7 @@ jobs:
     needs: phase-4-live
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
@@ -355,7 +355,7 @@ jobs:
     needs: phase-5-self-scan
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
@@ -407,7 +407,7 @@ jobs:
     if: always()  # always run even if prior phases failed; audit reports the gaps
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
