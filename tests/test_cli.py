@@ -5,9 +5,11 @@
 from __future__ import annotations
 
 import json
+import tomllib
 from pathlib import Path
 
 import pytest
+from packaging.requirements import Requirement
 from typer.testing import CliRunner
 
 import qureddy.cli as cli_module
@@ -716,6 +718,51 @@ def test_invalid_retries_via_main_exits_4(
     with pytest.raises(SystemExit) as exit_info:
         main()
     assert exit_info.value.code == 4
+
+
+def test_typer_requirement_excludes_vendored_click_versions() -> None:
+    """typer must carry a `<0.24` upper bound to preserve the exit-4 contract.
+
+    From typer 0.24 onward, Click is vendored into `typer._click`;
+    parameter/usage errors are then raised as
+    `typer._click.exceptions.UsageError` (and subclasses), which are NOT
+    instances of `click.exceptions.UsageError`. The `except
+    click.exceptions.UsageError` arm in `main()` misses them, so usage
+    errors fall through to the last-resort handler and exit 70
+    (EX_SOFTWARE) instead of the documented 4 (usage error, see
+    docs/reference/exit-codes.md). CI installs from uv.lock (typer
+    0.23.1) and stays green either way -- only a fresh resolve (what
+    every PyPI user gets) hits the bug, which is why the bound is locked
+    by this test instead of being left to the CI matrix.
+
+    Before relaxing the bound: make `main()` catch typer's vendored
+    exception types (or modernize the entrypoint), then re-verify the
+    exit-4 usage-error tests in this file against a FRESH resolve of the
+    new typer line -- not against the lockfile pin.
+    """
+    pyproject = Path(__file__).parent.parent / "pyproject.toml"
+    with pyproject.open("rb") as fh:
+        dependencies = tomllib.load(fh)["project"]["dependencies"]
+    typer_requirements = [
+        requirement
+        for requirement in (Requirement(dep) for dep in dependencies)
+        if requirement.name == "typer"
+    ]
+    assert len(typer_requirements) == 1, (
+        f"expected exactly one typer requirement, got: {typer_requirements}"
+    )
+    specifier = typer_requirements[0].specifier
+    # The locked version (0.23.x, last pre-vendoring line) must satisfy
+    # the requirement...
+    assert specifier.contains("0.23.1"), (
+        f"locked typer 0.23.1 no longer satisfies the declared specifier {specifier!r}"
+    )
+    # ...and the first vendored-Click version must be excluded.
+    assert not specifier.contains("0.24.0"), (
+        f"typer specifier {specifier!r} admits 0.24+ -- vendored-Click typer "
+        "breaks the usage-error exit-4 contract; see this test's docstring "
+        "before relaxing the bound"
+    )
 
 
 class TestCapabilityFailureNoDoubleProbe:
