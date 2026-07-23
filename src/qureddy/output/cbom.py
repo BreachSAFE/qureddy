@@ -18,6 +18,7 @@ import sys
 from typing import IO, TYPE_CHECKING
 
 from cyclonedx.model.bom import Bom
+from cyclonedx.model.bom_ref import BomRef
 from cyclonedx.model.component import Component, ComponentType
 from cyclonedx.model.crypto import (
     CryptoAssetType,
@@ -79,7 +80,7 @@ def render_cbom(result: ScanResult, stream: IO[str] = sys.stdout) -> None:
             cipher_suites = [
                 ProtocolPropertiesCipherSuite(
                     name=f"{finding.protocol_version} negotiated groups",
-                    algorithms=group_refs,
+                    algorithms=[BomRef(value=ref) for ref in group_refs],
                 )
             ]
 
