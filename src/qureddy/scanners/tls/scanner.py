@@ -26,6 +26,7 @@ from qureddy.core.models import (
     ObservationType,
     OpenSSLDependency,
     ProbeResult,
+    ProbeRole,
     ScanMetadata,
     ScanResult,
     ScanTarget,
@@ -212,11 +213,21 @@ class TLSScanner:
             timeout_seconds=timeout_seconds,
         )
         evidence = [
-            evidence_from_probe(asset=asset, probe=r, expected_group=HYBRID_GROUP)
+            evidence_from_probe(
+                asset=asset,
+                probe=r,
+                expected_group=HYBRID_GROUP,
+                probe_role=ProbeRole.HYBRID_READINESS,
+            )
             for r in hybrid_results
         ]
         evidence.extend(
-            evidence_from_probe(asset=asset, probe=r, expected_group=CLASSICAL_GROUP)
+            evidence_from_probe(
+                asset=asset,
+                probe=r,
+                expected_group=CLASSICAL_GROUP,
+                probe_role=ProbeRole.CLASSICAL_CONTROL,
+            )
             for r in classical_results
         )
         return evidence, len(hybrid_results) + len(classical_results)

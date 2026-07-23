@@ -18,6 +18,7 @@ from qureddy.core.models import (
     FailureCategory,
     ObservationType,
     ProbeResult,
+    ProbeRole,
     ScanTarget,
 )
 from qureddy.scanners.tls.parse import ParsedNegotiation, parse_brief_output
@@ -38,6 +39,7 @@ def evidence_from_probe(
     asset: Asset,
     probe: ProbeResult,
     expected_group: str,
+    probe_role: ProbeRole,
 ) -> Evidence:
     """Turn a `ProbeResult` into the appropriate `Evidence` record.
 
@@ -45,21 +47,27 @@ def evidence_from_probe(
     but parser couldn't classify, or probe succeeded and parser found
     a clean negotiation. Each branch builds an `Evidence` with the
     field set that matches the verdict shape.
+
+    Issue #232: `probe_role` records whether this evidence is testing
+    hybrid PQ readiness or is a classical-fallback diagnostic control —
+    a failure in the latter role is not evidence the former failed, and
+    `core/policy.py` needs this to attribute failures correctly.
     """
     if probe.failure_category is not None or probe.return_code != 0:
-        return _evidence_for_probe_failure(asset, probe, expected_group)
+        return _evidence_for_probe_failure(asset, probe, expected_group, probe_role)
     parsed = parse_brief_output(
         probe.parser_input or probe.stdout_excerpt, expected_group=expected_group
     )
     if parsed.failure_category is not None:
-        return _evidence_for_parse_failure(asset, probe, parsed)
-    return _evidence_for_negotiation(asset, probe, parsed)
+        return _evidence_for_parse_failure(asset, probe, parsed, expected_group, probe_role)
+    return _evidence_for_negotiation(asset, probe, parsed, expected_group, probe_role)
 
 
 def _evidence_for_probe_failure(
     asset: Asset,
     probe: ProbeResult,
     expected_group: str,
+    probe_role: ProbeRole,
 ) -> Evidence:
     # Trust the probe module's stderr-based classification verbatim.
     # Falling back to TLS_HANDSHAKE_FAILED here would erase
@@ -72,6 +80,8 @@ def _evidence_for_probe_failure(
         evidence_type="tls.probe.failure",
         observation_type=ObservationType.OBSERVED,
         source="qureddy.openssl_probe",
+        probe_role=probe_role,
+        expected_group=expected_group,
         probe_result=probe,
         failure_category=category,
         notes=(f"probe for {expected_group} failed", probe.stderr_excerpt[:200]),
@@ -82,6 +92,8 @@ def _evidence_for_parse_failure(
     asset: Asset,
     probe: ProbeResult,
     parsed: ParsedNegotiation,
+    expected_group: str,
+    probe_role: ProbeRole,
 ) -> Evidence:
     return Evidence(
         id=f"ev-{uuid.uuid4().hex[:12]}",
@@ -92,6 +104,8 @@ def _evidence_for_parse_failure(
         protocol_version=parsed.protocol_version,
         cipher_suite=parsed.cipher_suite,
         negotiated_group=parsed.negotiated_group,
+        probe_role=probe_role,
+        expected_group=expected_group,
         probe_result=probe,
         failure_category=parsed.failure_category,
         notes=parsed.notes,
@@ -102,6 +116,8 @@ def _evidence_for_negotiation(
     asset: Asset,
     probe: ProbeResult,
     parsed: ParsedNegotiation,
+    expected_group: str,
+    probe_role: ProbeRole,
 ) -> Evidence:
     return Evidence(
         id=f"ev-{uuid.uuid4().hex[:12]}",
@@ -112,6 +128,8 @@ def _evidence_for_negotiation(
         protocol_version=parsed.protocol_version,
         cipher_suite=parsed.cipher_suite,
         negotiated_group=parsed.negotiated_group,
+        probe_role=probe_role,
+        expected_group=expected_group,
         probe_result=probe,
         notes=parsed.notes,
     )

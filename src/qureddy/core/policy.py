@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
 # SPDX-License-Identifier: Apache-2.0
-"""Hardcoded MVP 0.1 policy. Four rules, no YAML loading."""
+"""Hardcoded MVP 0.1 policy. Seven rules, no YAML loading."""
 
 from __future__ import annotations
 
@@ -18,6 +18,7 @@ from qureddy.core.models import (
     FailureCategory,
     Finding,
     ObservationType,
+    ProbeRole,
     Readiness,
     Severity,
 )
@@ -29,6 +30,7 @@ class RuleField(str, Enum):
     NEGOTIATED_GROUP = "negotiated_group"
     OBSERVATION_TYPE = "observation_type"
     FAILURE_CATEGORY = "failure_category"
+    PROBE_ROLE = "probe_role"
 
 
 class RuleCondition(BaseModel):
@@ -41,6 +43,7 @@ class RuleCondition(BaseModel):
     failure_category: FailureCategory | None = None
     observation_type: ObservationType | None = None
     failure_category_in: tuple[FailureCategory, ...] | None = None
+    probe_role: ProbeRole | None = None
 
 
 class PolicyRule(BaseModel):
@@ -114,6 +117,17 @@ MVP_POLICY: tuple[PolicyRule, ...] = (
         readiness=Readiness.UNKNOWN,
         confidence=Confidence.MEDIUM,
         conditions=(
+            # Issue #232: scoped to the hybrid-readiness probe specifically.
+            # Without this, a classical control probe's failure (which is
+            # not evidence the hybrid probe failed — a hybrid-only server
+            # is *expected* to reject pure classical) fired this exact
+            # rule, turning a correct transitional_hybrid scan into a
+            # reported "probe failed" / exit 2. Live-verified: a real
+            # hybrid-only OpenSSL 3.6 server (accepts X25519MLKEM768,
+            # rejects X25519) negotiated hybrid cleanly while its classical
+            # control failed with TLS_HANDSHAKE_FAILED — that failure must
+            # not attribute to the hybrid probe.
+            RuleCondition(field=RuleField.PROBE_ROLE, probe_role=ProbeRole.HYBRID_READINESS),
             RuleCondition(
                 field=RuleField.FAILURE_CATEGORY,
                 failure_category_in=_PROBE_FAILED,
@@ -133,6 +147,12 @@ MVP_POLICY: tuple[PolicyRule, ...] = (
         readiness=Readiness.QUANTUM_VULNERABLE,
         confidence=Confidence.MEDIUM,
         conditions=(
+            # Issue #232 follow-through on #235's own documented caveat:
+            # scoped to the hybrid probe so a classical-control probe that
+            # (rarely, but possibly) reports UNEXPECTED_GROUP is not read
+            # as "the PQC candidate is unsupported" — that claim only
+            # makes sense for the probe that was actually requesting it.
+            RuleCondition(field=RuleField.PROBE_ROLE, probe_role=ProbeRole.HYBRID_READINESS),
             RuleCondition(
                 field=RuleField.FAILURE_CATEGORY,
                 failure_category=FailureCategory.UNEXPECTED_GROUP,
@@ -159,6 +179,32 @@ MVP_POLICY: tuple[PolicyRule, ...] = (
             RuleCondition(
                 field=RuleField.OBSERVATION_TYPE,
                 observation_type=ObservationType.NEGOTIATED,
+            ),
+        ),
+    ),
+    PolicyRule(
+        id="tls.classical.control_rejected",
+        finding_type="tls.kex.classical_control_rejected",
+        title="Classical control probe rejected — no pure-classical fallback accepted",
+        description=(
+            "The forced classical-only control probe did not negotiate. When "
+            "the hybrid probe succeeded, this is a positive hardening signal: "
+            "the server offers no pure-classical downgrade path. Readiness is "
+            "deliberately NOT_APPLICABLE — it never overrides the hybrid or "
+            "legacy-protocol axes, which are the actual readiness signal; this "
+            "finding only records that the control probe itself was rejected "
+            "(issue #232 — this was previously misattributed to "
+            "tls.hybrid.probe_failed, incorrectly turning a successful hybrid "
+            "scan into a reported failure)."
+        ),
+        severity=Severity.INFO,
+        readiness=Readiness.NOT_APPLICABLE,
+        confidence=Confidence.HIGH,
+        conditions=(
+            RuleCondition(field=RuleField.PROBE_ROLE, probe_role=ProbeRole.CLASSICAL_CONTROL),
+            RuleCondition(
+                field=RuleField.FAILURE_CATEGORY,
+                failure_category_in=_PROBE_FAILED,
             ),
         ),
     ),
@@ -194,6 +240,8 @@ def _condition_matches(condition: RuleCondition, evidence: Evidence) -> bool:
             return evidence.failure_category is condition.failure_category
         if condition.failure_category_in is not None:
             return evidence.failure_category in condition.failure_category_in
+    if condition.field is RuleField.PROBE_ROLE:
+        return evidence.probe_role is condition.probe_role
     return False
 
 

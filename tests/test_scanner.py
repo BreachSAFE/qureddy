@@ -16,6 +16,7 @@ from qureddy.core.models import (
     OpenSSLDependency,
     ProbeCommand,
     ProbeResult,
+    ProbeRole,
     Readiness,
     ScanMetadata,
     ScanResult,
@@ -206,8 +207,18 @@ class TestSummaryFailureCategorySupersededByRetrySuccess:
             failure_category=None,
         )
 
-        ev1 = evidence_from_probe(asset=asset, probe=attempt1, expected_group=HYBRID_GROUP)
-        ev2 = evidence_from_probe(asset=asset, probe=attempt2, expected_group=HYBRID_GROUP)
+        ev1 = evidence_from_probe(
+            asset=asset,
+            probe=attempt1,
+            expected_group=HYBRID_GROUP,
+            probe_role=ProbeRole.HYBRID_READINESS,
+        )
+        ev2 = evidence_from_probe(
+            asset=asset,
+            probe=attempt2,
+            expected_group=HYBRID_GROUP,
+            probe_role=ProbeRole.HYBRID_READINESS,
+        )
         evidence = [ev1, ev2]
         findings = classify_evidence(asset, evidence)
         summary = _build_summary(target, findings, evidence)

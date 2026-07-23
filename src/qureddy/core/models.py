@@ -101,6 +101,23 @@ class Confidence(str, Enum):
     LOW = "low"
 
 
+class ProbeRole(str, Enum):
+    """Which purpose a TLS 1.3 key-exchange probe served — issue #232.
+
+    Distinguishes "this evidence is testing whether PQ hybrid negotiation
+    works" from "this evidence is a diagnostic control testing whether the
+    server still accepts pure classical fallback". A failure in the second
+    role is not evidence that the first role failed — confirmed live: a
+    real hybrid-only server (accepts X25519MLKEM768, rejects pure X25519)
+    correctly negotiates hybrid while its classical control is rejected by
+    design, and that rejection was previously misattributed to
+    `tls.hybrid.probe_failed`.
+    """
+
+    HYBRID_READINESS = "hybrid_readiness"
+    CLASSICAL_CONTROL = "classical_control"
+
+
 class FailureCategory(str, Enum):
     """Typed reason a scan or probe did not produce a clean finding.
 
@@ -272,7 +289,14 @@ class Asset(BaseModel):
 
 
 class Evidence(BaseModel):
-    """Observation supporting a finding."""
+    """Observation supporting a finding.
+
+    Issue #232: `probe_role`/`expected_group` are new, optional (default
+    None) fields — added to `qureddy.scan.v1` with explicit maintainer
+    authorization, not silently. They let policy distinguish a hybrid
+    readiness probe's failure from a classical control probe's failure,
+    which are not the same fact.
+    """
 
     model_config = FROZEN
 
@@ -285,6 +309,8 @@ class Evidence(BaseModel):
     protocol_version: str | None = None
     cipher_suite: str | None = None
     negotiated_group: str | None = None
+    probe_role: ProbeRole | None = None
+    expected_group: str | None = None
     probe_result: ProbeResult | None = None
     failure_category: FailureCategory | None = None
     confidence: Confidence = Confidence.HIGH
