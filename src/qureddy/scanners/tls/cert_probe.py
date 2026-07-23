@@ -35,6 +35,7 @@ from dataclasses import dataclass
 
 from qureddy.core.errors import LocalOpenSSLMissing
 from qureddy.core.logging import get_logger
+from qureddy.scanners.tls._net import build_connect_target
 
 _log = get_logger(__name__)
 
@@ -53,21 +54,6 @@ class CertificateInfo:
     signature_algorithm: str
     public_key_summary: str
     is_self_signed: bool
-
-
-def _build_connect_target(host: str, port: int) -> str:
-    """Build the `host:port` string for `-connect`, bracketing IPv6 literals.
-
-    `ScanTarget` stores IPv6 hosts unbracketed (see core/targets.py
-    `_parse_bracketed_ipv6`), so `192.0.2.1:443` needs no change but
-    `::1` needs to become `[::1]:443` — an unbracketed IPv6 host:port is
-    ambiguous (which colon is the port separator?). A bare colon count
-    is a sufficient IPv6 heuristic here: no valid hostname or IPv4
-    literal ever contains one.
-    """
-    if ":" in host:
-        return f"[{host}]:{port}"
-    return f"{host}:{port}"
 
 
 def _run_openssl(
@@ -131,7 +117,7 @@ def fetch_certificate_pem(
     On timeout, returns "" (same as "no certificate observed") — see
     `_run_openssl`.
     """
-    args = [openssl_path, "s_client", "-connect", _build_connect_target(host, port), "-showcerts"]
+    args = [openssl_path, "s_client", "-connect", build_connect_target(host, port), "-showcerts"]
     if sni is not None and sni.strip():
         args.extend(["-servername", sni])
     stdout = _run_openssl(args, event_prefix="cert_probe.fetch", timeout_seconds=timeout_seconds)

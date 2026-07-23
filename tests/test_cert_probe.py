@@ -17,8 +17,8 @@ from unittest.mock import patch
 import pytest
 
 from qureddy.core.errors import LocalOpenSSLMissing
+from qureddy.scanners.tls._net import build_connect_target
 from qureddy.scanners.tls.cert_probe import (
-    _build_connect_target,
     fetch_certificate_pem,
     parse_certificate,
 )
@@ -80,14 +80,14 @@ class TestBuildConnectTarget:
     applied to this module until this test."""
 
     def test_ipv4_host_unbracketed(self) -> None:
-        assert _build_connect_target("192.0.2.1", 443) == "192.0.2.1:443"
+        assert build_connect_target("192.0.2.1", 443) == "192.0.2.1:443"
 
     def test_hostname_unbracketed(self) -> None:
-        assert _build_connect_target("example.invalid", 443) == "example.invalid:443"
+        assert build_connect_target("example.invalid", 443) == "example.invalid:443"
 
     def test_ipv6_host_bracketed(self) -> None:
-        assert _build_connect_target("::1", 443) == "[::1]:443"
-        assert _build_connect_target("2001:db8::1", 443) == "[2001:db8::1]:443"
+        assert build_connect_target("::1", 443) == "[::1]:443"
+        assert build_connect_target("2001:db8::1", 443) == "[2001:db8::1]:443"
 
 
 class TestEmptySniGuard:

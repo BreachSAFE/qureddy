@@ -34,6 +34,7 @@ from qureddy.core.models import (
     ProbeResult,
 )
 from qureddy.scanners.tls._classify import classify_failure
+from qureddy.scanners.tls._net import build_connect_target
 
 _log = get_logger(__name__)
 
@@ -220,7 +221,7 @@ def _build_probe_args(
         openssl_path,
         "s_client",
         "-connect",
-        f"{host}:{port}",
+        build_connect_target(host, port),
         "-tls1_3",
         "-groups",
         group,

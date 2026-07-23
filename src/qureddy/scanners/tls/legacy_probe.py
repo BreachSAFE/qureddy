@@ -70,6 +70,7 @@ from dataclasses import dataclass
 
 from qureddy.core.errors import LocalOpenSSLMissing
 from qureddy.core.logging import get_logger
+from qureddy.scanners.tls._net import build_connect_target
 
 _log = get_logger(__name__)
 
@@ -186,20 +187,6 @@ def _candidate_ciphers(openssl_path: str, protocol_flag: str, *, timeout_seconds
     return completed.stdout.strip().split(":")
 
 
-def _build_connect_target(host: str, port: int) -> str:
-    """Build `host:port` for `-connect`, bracketing IPv6 literals.
-
-    Same fix as cert_probe.py's helper of the same name (issue #187's
-    class of bug) — an unbracketed IPv6 host:port is ambiguous about
-    which colon is the port separator. Duplicated rather than imported:
-    both are single-purpose private helpers in separate probe modules,
-    not a shared library boundary.
-    """
-    if ":" in host:
-        return f"[{host}]:{port}"
-    return f"{host}:{port}"
-
-
 def _handshake_with_cipher_list(
     openssl_path: str,
     host: str,
@@ -215,7 +202,7 @@ def _handshake_with_cipher_list(
         openssl_path,
         "s_client",
         "-connect",
-        _build_connect_target(host, port),
+        build_connect_target(host, port),
         protocol_flag,
         "-cipher",
         ":".join([*cipher_list, _SECLEVEL_OVERRIDE]),
