@@ -228,5 +228,10 @@ def parse_certificate(
         signature_algorithm=sig_alg,
         public_key_summary=pubkey_summary,
         is_post_quantum_signature=cert_sig.is_post_quantum,
-        is_self_signed=subject == issuer,
+        # Issue #217: `subject == issuer` alone is also true when BOTH are
+        # independently empty (a partial `_x509` sub-call timeout/failure
+        # on just -subject/-issuer, not the whole-PEM-empty case the
+        # docstring above already guards). A real self-signed cert has a
+        # genuinely matching *non-empty* subject/issuer; require that.
+        is_self_signed=bool(subject) and subject == issuer,
     )
