@@ -137,6 +137,13 @@ class LegacyProtocolResult:
     protocol_version: str
     offered: bool
     accepted_ciphers: tuple[str, ...]
+    probe_incomplete: bool = False
+    """True when a subprocess timeout cut the sweep short — issue #246.
+
+    Distinct from a genuine, complete "server rejects every candidate"
+    result: `offered=False` alone doesn't distinguish "we asked and the
+    answer was no" from "we don't know, the probe never finished."
+    """
 
 
 def has_weak_cipher(accepted_ciphers: tuple[str, ...]) -> bool:
@@ -175,13 +182,21 @@ def _run_openssl(
     return completed
 
 
-def _candidate_ciphers(openssl_path: str, protocol_flag: str, *, timeout_seconds: int) -> list[str]:
+def _candidate_ciphers(
+    openssl_path: str, protocol_flag: str, *, timeout_seconds: int
+) -> tuple[list[str], bool]:
     """List every cipher name this OpenSSL build knows for `protocol_flag`.
 
     Seeds the candidate set from the local binary's own knowledge
     (`openssl ciphers -s <flag> ...`) rather than a hand-maintained
     table — avoids drifting from whatever names this specific OpenSSL
     build actually uses.
+
+    Returns `(candidates, timed_out)`. Issue #246: a subprocess timeout
+    (`completed is None`) is a "we don't know" outcome, not the same
+    thing as this OpenSSL build genuinely listing zero ciphers for the
+    protocol (which never happens in practice) — the caller must be
+    able to tell these apart instead of both collapsing to `[]`.
     """
     args = [
         openssl_path,
@@ -193,9 +208,11 @@ def _candidate_ciphers(openssl_path: str, protocol_flag: str, *, timeout_seconds
     completed = _run_openssl(
         args, event_prefix="legacy_probe.candidates", timeout_seconds=timeout_seconds
     )
-    if completed is None or completed.returncode != 0 or not completed.stdout.strip():
-        return []
-    return completed.stdout.strip().split(":")
+    if completed is None:
+        return [], True
+    if completed.returncode != 0 or not completed.stdout.strip():
+        return [], False
+    return completed.stdout.strip().split(":"), False
 
 
 def _handshake_with_cipher_list(
@@ -207,8 +224,14 @@ def _handshake_with_cipher_list(
     cipher_list: list[str],
     *,
     timeout_seconds: int,
-) -> str | None:
-    """One handshake offering `cipher_list`; returns the negotiated cipher name or None."""
+) -> tuple[str | None, bool]:
+    """One handshake offering `cipher_list`.
+
+    Returns `(negotiated_cipher_or_None, timed_out)` — issue #246, same
+    distinction as `_candidate_ciphers`: a timeout mid-sweep must not
+    look identical to the server cleanly rejecting every remaining
+    candidate.
+    """
     args = [
         openssl_path,
         "s_client",
@@ -224,8 +247,10 @@ def _handshake_with_cipher_list(
     completed = _run_openssl(
         args, event_prefix="legacy_probe.handshake", timeout_seconds=timeout_seconds
     )
-    if completed is None or completed.returncode != 0:
-        return None
+    if completed is None:
+        return None, True
+    if completed.returncode != 0:
+        return None, False
     # `-brief` output lands on stderr, not stdout, for some handshake
     # outcomes (confirmed live) — same quirk openssl_probe.py's
     # `_combined_probe_output` already handles. Joined with `\n`, not
@@ -234,7 +259,7 @@ def _handshake_with_cipher_list(
     # MULTILINE regex across what were two genuinely separate streams.
     combined = f"{completed.stdout}\n{completed.stderr}"
     match = _LEGACY_CIPHERSUITE.search(combined)
-    return match.group("cipher") if match else None
+    return (match.group("cipher") if match else None), False
 
 
 def probe_legacy_protocol(
@@ -253,10 +278,12 @@ def probe_legacy_protocol(
     picked cipher is removed before the next round, so this terminates
     in accepted-cipher-count rounds, not candidate-count rounds.
     """
-    remaining = _candidate_ciphers(openssl_path, protocol_flag, timeout_seconds=timeout_seconds)
+    remaining, incomplete = _candidate_ciphers(
+        openssl_path, protocol_flag, timeout_seconds=timeout_seconds
+    )
     accepted: list[str] = []
     while remaining:
-        cipher = _handshake_with_cipher_list(
+        cipher, timed_out = _handshake_with_cipher_list(
             openssl_path,
             host,
             port,
@@ -265,6 +292,9 @@ def probe_legacy_protocol(
             remaining,
             timeout_seconds=timeout_seconds,
         )
+        if timed_out:
+            incomplete = True
+            break
         if cipher is None or cipher not in remaining:
             break
         accepted.append(cipher)
@@ -274,6 +304,7 @@ def probe_legacy_protocol(
         protocol_version=protocol_version,
         offered=bool(accepted),
         accepted_ciphers=tuple(accepted),
+        probe_incomplete=incomplete,
     )
 
 
