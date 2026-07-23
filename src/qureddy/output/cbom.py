@@ -62,10 +62,16 @@ _LIBRARY_REF = "crypto-library/openssl"
 
 def render_cbom(
     result: ScanResult,
-    stream: IO[str] = sys.stdout,
+    stream: IO[str] | None = None,
     certificate: CertificateInfo | None = None,
 ) -> None:
-    """Render a ScanResult (+ optional fetched certificate) as a CycloneDX 1.6 CBOM."""
+    """Render a ScanResult (+ optional fetched certificate) as a CycloneDX 1.6 CBOM.
+
+    Issue #239: `stream: IO[str] = sys.stdout` as a default is resolved
+    once at function-definition time, not per call — same root cause as
+    #237/#238. Resolve at call time instead.
+    """
+    target_stream = stream if stream is not None else sys.stdout
     bom = Bom()
     provides_edges: dict[str, list[str]] = {}
 
@@ -101,7 +107,7 @@ def render_cbom(
         bom.register_dependency(endpoint, [library])
         provides_edges[_LIBRARY_REF] = list(provides_edges.get(_LIBRARY_REF, []))
 
-    _write_with_provides(bom, provides_edges, stream)
+    _write_with_provides(bom, provides_edges, target_stream)
 
 
 def _add_scan_status_properties(bom: Bom, result: ScanResult) -> None:

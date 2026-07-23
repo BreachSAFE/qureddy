@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import logging
 import os
-import sys
 from typing import Any, TextIO
 
 import structlog
@@ -53,7 +52,15 @@ def configure_logging(
         # `colors=False`, which suppressed structlog's color output even
         # on real TTYs and was inconsistent with the Rich adapter's
         # NO_COLOR handling. Reviewer-flagged correctness fix.
-        honor_color = sys.stderr.isatty() and "NO_COLOR" not in os.environ
+        #
+        # Issue #231: the color decision must be based on the actual
+        # destination `stream` (which is `log_stream` when the caller
+        # passes one), not `sys.stderr` — those diverge whenever
+        # `log_stream` is set, and a non-tty log_stream (e.g. a test's
+        # io.StringIO) got polluted with ANSI codes whenever the real
+        # process stderr happened to be a terminal. `getattr` guards
+        # test doubles that don't implement `isatty` at all.
+        honor_color = getattr(stream, "isatty", lambda: False)() and "NO_COLOR" not in os.environ
         processors.append(structlog.dev.ConsoleRenderer(colors=honor_color))
 
     structlog.configure(
