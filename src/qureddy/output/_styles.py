@@ -95,6 +95,22 @@ RECOMMENDATION_TEXT: dict[Readiness, str] = {
     Readiness.NOT_APPLICABLE: "No applicable check for this target.",
 }
 
+# Format-string template for CLASSICALLY_WEAK when a hybrid PQ group was
+# ALSO negotiated (issue found scrutinizing scan tls: google.com genuinely
+# holds both postures — PQ hybrid working AND legacy TLS 1.0/1.1 still
+# accepted for old-client compat, confirmed live, independent of qureddy's
+# own code). The old blanket "PQ readiness is moot" text (below, still
+# used when no hybrid group was negotiated) is factually wrong in that
+# case. Named here alongside RECOMMENDATION_TEXT rather than inlined in
+# console.py, matching the existing "message copy lives in _styles.py"
+# convention — filled in by console.py with hybrid_group/protocols.
+CLASSICALLY_WEAK_WITH_PQC_TEMPLATE: str = (
+    "PQ hybrid ({hybrid_group}) is negotiated and working — that's real, keep it. "
+    "Separately, this target also still accepts {protocols}, exploitable today "
+    "regardless of the PQ posture. Disable the legacy protocol(s) when the client "
+    "compatibility need allows; the two facts don't cancel out."
+)
+
 LOCAL_CAPABILITY_CATEGORIES: frozenset[FailureCategory] = frozenset(
     {
         FailureCategory.LOCAL_OPENSSL_MISSING,

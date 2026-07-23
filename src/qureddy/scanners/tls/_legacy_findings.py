@@ -26,6 +26,12 @@ from qureddy.core.models import (
 )
 from qureddy.scanners.tls.legacy_probe import LegacyProtocolResult, has_weak_cipher
 
+# Named once here (the module that owns this finding_type value) so
+# console.py's lookup imports it instead of re-typing the literal
+# string in a second place — same pattern as _cert_findings.py's
+# FINDING_TYPE_PQ_SIGNATURE/FINDING_TYPE_CLASSICAL_SIGNATURE.
+FINDING_TYPE_LEGACY_PROTOCOL_OFFERED = "tls.legacy.protocol_offered"
+
 
 def evidence_from_legacy_result(asset: Asset, result: LegacyProtocolResult) -> Evidence:
     """One Evidence record per legacy-protocol sweep, offered or not.
@@ -96,7 +102,7 @@ def finding_from_legacy_result(
         asset_id=asset.id,
         evidence_ids=(evidence.id,),
         rule_id="tls.legacy.protocol_offered",
-        finding_type="tls.legacy.protocol_offered",
+        finding_type=FINDING_TYPE_LEGACY_PROTOCOL_OFFERED,
         title=f"{result.protocol_version} offered" + (" with a known-weak cipher" if weak else ""),
         description=f"{reason}. Accepted ciphers: {cipher_list}.",
         severity=severity,
