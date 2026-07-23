@@ -277,7 +277,7 @@ def scan_tls(
             retry=RetryConfig(retries=retries, retry_delay=retry_delay, retry_on=retry_set),
         )
         result, exit_code = _execute_scan(scanner, scan_target, timeout)
-        _render(result, output_format, verbose)
+        _render(result, output_format, verbose, timeout)
         raise typer.Exit(code=exit_code)
     finally:
         structlog.contextvars.clear_contextvars()
@@ -347,18 +347,27 @@ def _execute_scan(
     return result, exit_code
 
 
-def _render(result: ScanResult, output_format: OutputFormat, verbose: int) -> None:
+def _render(
+    result: ScanResult, output_format: OutputFormat, verbose: int, timeout_seconds: int
+) -> None:
     """Dispatch to the JSON, CBOM, or Rich renderer."""
     if output_format is OutputFormat.JSON:
         render_json(result, sys.stdout)
     elif output_format is OutputFormat.CBOM:
-        render_cbom(result, sys.stdout, certificate=_fetch_cert_for_cbom(result))
+        render_cbom(result, sys.stdout, certificate=_fetch_cert_for_cbom(result, timeout_seconds))
     else:
         render_rich(result, sys.stdout, verbosity=verbose)
 
 
-def _fetch_cert_for_cbom(result: ScanResult) -> CertificateInfo | None:
+def _fetch_cert_for_cbom(result: ScanResult, timeout_seconds: int) -> CertificateInfo | None:
     """Best-effort certificate fetch for CBOM output.
+
+    Issue #225: this redundant fetch (see docstring below) previously
+    ignored the user's --timeout entirely, hardcoding cert_probe's
+    30-second default regardless of what was requested. Now threads the
+    same timeout_seconds the scan itself used. Eliminating the redundant
+    fetch entirely (reusing the scan's own already-fetched certificate)
+    is a separate, larger design change — tracked in #252, not done here.
 
     Reviewer-flagged bug: this call path did not exist, so cbom.py's
     certificate-component code was dead — render_cbom was always called
@@ -395,11 +404,20 @@ def _fetch_cert_for_cbom(result: ScanResult) -> CertificateInfo | None:
     openssl_path = result.dependencies[0].path
     try:
         pem = fetch_certificate_pem(
-            openssl_path, result.target.host, result.target.port, result.target.sni
+            openssl_path,
+            result.target.host,
+            result.target.port,
+            result.target.sni,
+            timeout_seconds=timeout_seconds,
         )
-        return parse_certificate(openssl_path, pem) if pem else None
+        return (
+            parse_certificate(openssl_path, pem, timeout_seconds=timeout_seconds) if pem else None
+        )
     except (LocalOpenSSLMissing, ValueError):
         return None
+
+
+_DASH_V_TOKEN_RE = re.compile(r"(?<![\w-])-V(?![\w-])")
 
 
 def _is_version_misplacement(exc: Exception) -> bool:
@@ -409,11 +427,20 @@ def _is_version_misplacement(exc: Exception) -> bool:
     --verbose?` which is unhelpful — `--version` lives at the root and
     works fine; the user just put it in the wrong position. Catch this
     specific shape so we can replace with an actionable hint.
+
+    Issue #227: the real Click message for the short form is exactly
+    `"No such option: -V"` — no quotes, no trailing space after `-V`
+    (confirmed live via CliRunner). The old `"'-V'" in msg or " -V " in
+    msg` checks both required characters that aren't actually there, so
+    the short form fell through to Click's generic error while the
+    docstring claimed both forms were handled. Match `-V` as a token
+    (not preceded/followed by a word char or hyphen) instead of
+    depending on specific surrounding punctuation.
     """
     msg = str(getattr(exc, "message", "") or "")
     if "No such option" not in msg:
         return False
-    return "--version" in msg or "'-V'" in msg or " -V " in msg
+    return "--version" in msg or bool(_DASH_V_TOKEN_RE.search(msg))
 
 
 # `--v` / `--vv` / `--vvv` etc — double-dash followed by 1+ `v`s as a
