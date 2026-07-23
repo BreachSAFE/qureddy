@@ -417,6 +417,9 @@ def _fetch_cert_for_cbom(result: ScanResult, timeout_seconds: int) -> Certificat
         return None
 
 
+_DASH_V_TOKEN_RE = re.compile(r"(?<![\w-])-V(?![\w-])")
+
+
 def _is_version_misplacement(exc: Exception) -> bool:
     """Detect the `--version` / `-V` on a subcommand UsageError shape.
 
@@ -424,11 +427,20 @@ def _is_version_misplacement(exc: Exception) -> bool:
     --verbose?` which is unhelpful — `--version` lives at the root and
     works fine; the user just put it in the wrong position. Catch this
     specific shape so we can replace with an actionable hint.
+
+    Issue #227: the real Click message for the short form is exactly
+    `"No such option: -V"` — no quotes, no trailing space after `-V`
+    (confirmed live via CliRunner). The old `"'-V'" in msg or " -V " in
+    msg` checks both required characters that aren't actually there, so
+    the short form fell through to Click's generic error while the
+    docstring claimed both forms were handled. Match `-V` as a token
+    (not preceded/followed by a word char or hyphen) instead of
+    depending on specific surrounding punctuation.
     """
     msg = str(getattr(exc, "message", "") or "")
     if "No such option" not in msg:
         return False
-    return "--version" in msg or "'-V'" in msg or " -V " in msg
+    return "--version" in msg or bool(_DASH_V_TOKEN_RE.search(msg))
 
 
 # `--v` / `--vv` / `--vvv` etc — double-dash followed by 1+ `v`s as a
