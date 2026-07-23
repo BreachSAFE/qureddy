@@ -19,6 +19,17 @@ HOSTNAME_PATTERN = re.compile(
 MIN_PORT = 1
 MAX_PORT = 65535
 
+# Issue #255: HOSTNAME_PATTERN's dotted-label grammar happens to also
+# accept legacy/noncanonical numeric IPv4 forms (decimal "2130706433",
+# short "127.1", zero-padded "127.000.000.001") that ipaddress.ip_address
+# correctly rejects as not-strictly-canonical. The OS resolver still
+# canonicalizes these to a real (different-looking) address, so QuReddy
+# would report scanning one string while the subprocess actually connects
+# to another. Reject anything that reads as "digits and dots only" and
+# isn't already a strict IP literal, rather than silently accepting it as
+# a DNS hostname.
+_NUMERIC_HOST = re.compile(r"^[0-9.]+$")
+
 
 def parse_target(input_str: str, sni_override: str | None = None) -> ScanTarget:
     """Parse a user-supplied target string into a normalized ScanTarget.
@@ -43,6 +54,13 @@ def parse_target(input_str: str, sni_override: str | None = None) -> ScanTarget:
 
     host, port = _extract_host_port(cleaned)
     is_ip = _is_ip_literal(host)
+
+    if not is_ip and _NUMERIC_HOST.fullmatch(host):
+        msg = (
+            f"noncanonical numeric IP target {host!r}; "
+            "use canonical dotted-decimal IPv4 (for example 127.0.0.1)"
+        )
+        raise TargetParseError(msg)
 
     if not is_ip and not HOSTNAME_PATTERN.match(host):
         msg = f"target host is not a valid hostname or IP: {host!r}"
