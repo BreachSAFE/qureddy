@@ -121,3 +121,35 @@ class TestNonMatchingEvidence:
     def test_unrecognized_group_does_not_fire_any_rule(self) -> None:
         ev = _evidence(negotiated_group="secp256r1")
         assert classify_evidence(_asset(), [ev]) == []
+
+
+class TestUnexpectedGroupRule:
+    """Issue #235: UNEXPECTED_GROUP evidence must not be silently dropped."""
+
+    def test_unexpected_group_evidence_produces_a_finding_not_silently_dropped(self) -> None:
+        ev = _evidence(
+            observation_type=ObservationType.OBSERVED,
+            negotiated_group="X25519",
+            failure_category=FailureCategory.UNEXPECTED_GROUP,
+        )
+        findings = classify_evidence(_asset(), [ev])
+        assert len(findings) == 1
+        assert findings[0].rule_id == "tls.hybrid.downgraded_to_classical"
+        assert findings[0].readiness is Readiness.QUANTUM_VULNERABLE
+        assert findings[0].confidence is Confidence.MEDIUM
+
+    def test_classical_only_server_with_non_x25519_group_reports_quantum_vulnerable_not_unknown(
+        self,
+    ) -> None:
+        """A server negotiating a non-X25519 classical group (P-256 etc.) must
+        still resolve to a quantum_vulnerable finding, not silently drop to
+        the generic UNKNOWN probe_failed rule with no readiness signal.
+        """
+        ev = _evidence(
+            observation_type=ObservationType.OBSERVED,
+            negotiated_group="ECDH",
+            failure_category=FailureCategory.UNEXPECTED_GROUP,
+        )
+        findings = classify_evidence(_asset(), [ev])
+        assert len(findings) == 1
+        assert findings[0].readiness is Readiness.QUANTUM_VULNERABLE
