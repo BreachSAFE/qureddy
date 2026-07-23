@@ -27,6 +27,7 @@ from qureddy._branding import (
 )
 from qureddy.core.errors import (
     LocalOpenSSLBroken,
+    LocalOpenSSLIsLibreSSL,
     LocalOpenSSLLacksGroup,
     LocalOpenSSLMissing,
     LocalOpenSSLTooOld,
@@ -50,8 +51,14 @@ from qureddy.core.retry import (
     validate_retry_args,
 )
 from qureddy.core.targets import parse_target
+from qureddy.output.cbom import render_cbom
 from qureddy.output.console import render_rich
 from qureddy.output.json import render_json
+from qureddy.scanners.tls.cert_probe import (
+    CertificateInfo,
+    fetch_certificate_pem,
+    parse_certificate,
+)
 from qureddy.scanners.tls.openssl_probe import DEFAULT_TIMEOUT_SECONDS
 from qureddy.scanners.tls.scanner import (
     RetryConfig,
@@ -249,7 +256,18 @@ def scan_tls(
     quiet: QuietOpt = False,
 ) -> None:
     """Scan a TLS endpoint for post-quantum readiness."""
-    configure_logging(verbosity=verbose, json_logs=json_logs, quiet=quiet)
+    # JSON/CBOM stdout is a single machine-parsed document. The #15 fd-snapshot
+    # fix only protects against in-process stream rebinding (CliRunner, etc.);
+    # it cannot protect real shell `2>&1` (the OS has already merged fd 1/2
+    # before Python starts — see issue #194). A WARNING+ log line during the
+    # scan silently corrupts that document for any real `| jq`-style consumer.
+    # Default to quiet in these formats so the common case is safe by
+    # default; an explicit -v/-vv/-vvv still wins, since that's the user
+    # asking for diagnostics and accepting they must keep stdout/stderr
+    # genuinely separate (not `2>&1`) to still get clean JSON.
+    machine_format = output_format in (OutputFormat.JSON, OutputFormat.CBOM)
+    effective_quiet = quiet or (machine_format and verbose == 0)
+    configure_logging(verbosity=verbose, json_logs=json_logs, quiet=effective_quiet)
     retry_set = _parse_retry_args(retry_on, retries, retry_delay)
     scan_target = _parse_cli_target(target, sni)
     structlog.contextvars.bind_contextvars(target=scan_target.locator)
@@ -308,6 +326,7 @@ def _execute_scan(
         LocalOpenSSLMissing,
         LocalOpenSSLTooOld,
         LocalOpenSSLVersionUnreadable,
+        LocalOpenSSLIsLibreSSL,
         LocalOpenSSLLacksGroup,
     ) as exc:
         log.warning("scan.local_dependency_unusable", error=str(exc))
@@ -329,14 +348,61 @@ def _execute_scan(
 
 
 def _render(result: ScanResult, output_format: OutputFormat, verbose: int) -> None:
-    """Dispatch to the JSON or Rich renderer."""
+    """Dispatch to the JSON, CBOM, or Rich renderer."""
     if output_format is OutputFormat.JSON:
         render_json(result, sys.stdout)
+    elif output_format is OutputFormat.CBOM:
+        render_cbom(result, sys.stdout, certificate=_fetch_cert_for_cbom(result))
     else:
         render_rich(result, sys.stdout, verbosity=verbose)
 
 
-def _is_version_misplacement(exc: click.exceptions.UsageError) -> bool:
+def _fetch_cert_for_cbom(result: ScanResult) -> CertificateInfo | None:
+    """Best-effort certificate fetch for CBOM output.
+
+    Reviewer-flagged bug: this call path did not exist, so cbom.py's
+    certificate-component code was dead — render_cbom was always called
+    with certificate=None.
+
+    Uses the already-resolved OpenSSL path from the scan's own dependency
+    check (`result.dependencies[0].path`) rather than re-resolving —
+    avoids a second capability probe and stays consistent with whatever
+    binary the scan itself used. Swallows fetch/parse failures: a missing
+    certificate must not turn a successful TLS scan into a CBOM-export
+    failure, since the CBOM is still valid (just certificate-less) without
+    one.
+
+    Raises AssertionError (not a bare `assert`, which `python -O` strips)
+    if more than one dependency is present: every `TLSScanner` call site
+    (`scanner.py` lines 125, 229) constructs `dependencies=(dependency,)`
+    as a single-element tuple — this is a real MVP 0.1 invariant (one
+    scanner, one OpenSSL dependency), not a coincidence. Enforcing it
+    here means a future second-scanner change that breaks the invariant
+    fails loudly at this call site instead of this function silently
+    picking `[0]` and reporting the wrong binary's certificate.
+    """
+    if not result.dependencies:
+        return None
+    if len(result.dependencies) != 1:
+        msg = (
+            f"expected exactly one OpenSSL dependency, got {len(result.dependencies)} "
+            "— _fetch_cert_for_cbom's use of dependencies[0] assumes the MVP 0.1 "
+            "single-scanner invariant"
+        )
+        raise AssertionError(msg)
+    if not result.dependencies[0].path:
+        return None
+    openssl_path = result.dependencies[0].path
+    try:
+        pem = fetch_certificate_pem(
+            openssl_path, result.target.host, result.target.port, result.target.sni
+        )
+        return parse_certificate(openssl_path, pem) if pem else None
+    except (LocalOpenSSLMissing, ValueError):
+        return None
+
+
+def _is_version_misplacement(exc: Exception) -> bool:
     """Detect the `--version` / `-V` on a subcommand UsageError shape.
 
     Click's default error reads `No such option: --version Did you mean
@@ -344,7 +410,7 @@ def _is_version_misplacement(exc: click.exceptions.UsageError) -> bool:
     works fine; the user just put it in the wrong position. Catch this
     specific shape so we can replace with an actionable hint.
     """
-    msg = str(exc.message) if exc.message else ""
+    msg = str(getattr(exc, "message", "") or "")
     if "No such option" not in msg:
         return False
     return "--version" in msg or "'-V'" in msg or " -V " in msg
@@ -355,7 +421,7 @@ def _is_version_misplacement(exc: click.exceptions.UsageError) -> bool:
 _VERBOSITY_DASH_CONFUSION_RE = re.compile(r"--v+(?:\s|$|'|\")")
 
 
-def _is_verbosity_dash_confusion(exc: click.exceptions.UsageError) -> bool:
+def _is_verbosity_dash_confusion(exc: Exception) -> bool:
     """Detect `--v`, `--vv`, `--vvv`, `--vvvv` and `--verbos*` typos (#74).
 
     Click's default error for these reads `No such option: --vvv` with
@@ -371,7 +437,7 @@ def _is_verbosity_dash_confusion(exc: click.exceptions.UsageError) -> bool:
       `--version` (handled by `_is_version_misplacement`)
       `--view`, `--variable`, etc. (legitimate words starting with v)
     """
-    msg = str(exc.message) if exc.message else ""
+    msg = str(getattr(exc, "message", "") or "")
     if "No such option" not in msg:
         return False
     # `--version` already handled upstream; if we somehow get here for it,
@@ -383,14 +449,34 @@ def _is_verbosity_dash_confusion(exc: click.exceptions.UsageError) -> bool:
     return "--verbos" in msg
 
 
+def _is_usage_error(exc: BaseException) -> bool:
+    """True for a Click/Typer usage error, real or vendored.
+
+    Regardless of whether it's the real `click` package's exception or
+    Typer's internally vendored fork (`typer._click.exceptions.*` as of
+    Typer 0.27, issue #186).
+
+    Both name their base class `UsageError` but are not the same class
+    object, so `isinstance(exc, click.exceptions.UsageError)` silently
+    stops matching across that boundary. Matching by name in the MRO
+    survives either fork — and any future one, without another
+    import-path chase (name-matching was preferred over importing
+    `typer._click.exceptions` directly for exactly this reason: it
+    doesn't need to know Typer's internal module layout, only that
+    *some* class in the hierarchy is spelled `UsageError`).
+    """
+    return any(cls.__name__ == "UsageError" for cls in type(exc).__mro__)
+
+
 def main() -> None:
     """Entry point that maps Click usage errors to project exit code 4.
 
     Typer/Click default to exit code 2 for invalid options (e.g. an
     unknown `--format` value or a malformed `--retries` integer). The
     project's documented exit-code surface uses 2 for *target scan
-    failure*, so usage errors must surface as 4. This wrapper catches
-    `click.UsageError` and `click.BadParameter` and re-exits with 4.
+    failure*, so usage errors must surface as 4. This wrapper detects
+    usage errors by shape (`_is_usage_error`, issue #186) and re-exits
+    with 4.
 
     Special case: `--version` on a subcommand fires a Click "No such
     option" error because the flag is registered at the root callback
@@ -400,27 +486,31 @@ def main() -> None:
     """
     try:
         exit_code = app(standalone_mode=False)
-    except click.exceptions.UsageError as exc:
-        if _is_version_misplacement(exc):
-            sys.stderr.write(
-                "qureddy: --version is a top-level flag. "
-                "Try `qureddy --version` (without a subcommand).\n"
-            )
-            sys.exit(EXIT_USAGE)
-        if _is_verbosity_dash_confusion(exc):
-            sys.stderr.write(
-                "qureddy: did you mean -v / -vv / -vvv (single-dash)? "
-                "Verbosity uses single-dash short flags per POSIX; "
-                "--vvv is not a long flag. Use --verbose for the long form.\n"
-            )
-            sys.exit(EXIT_USAGE)
-        exc.show(file=sys.stderr)
-        sys.exit(EXIT_USAGE)
     except click.exceptions.Exit as exc:
         sys.exit(exc.exit_code)
     except SystemExit:
         raise
-    except Exception as exc:  # noqa: BLE001 -- last-resort top-level catch
+    except Exception as exc:  # noqa: BLE001 -- dispatch by shape (_is_usage_error), not isinstance
+        if _is_usage_error(exc):
+            if _is_version_misplacement(exc):
+                sys.stderr.write(
+                    "qureddy: --version is a top-level flag. "
+                    "Try `qureddy --version` (without a subcommand).\n"
+                )
+                sys.exit(EXIT_USAGE)
+            if _is_verbosity_dash_confusion(exc):
+                sys.stderr.write(
+                    "qureddy: did you mean -v / -vv / -vvv (single-dash)? "
+                    "Verbosity uses single-dash short flags per POSIX; "
+                    "--vvv is not a long flag. Use --verbose for the long form.\n"
+                )
+                sys.exit(EXIT_USAGE)
+            # ClickException.show() exists on both the real click hierarchy
+            # and Typer's vendored fork (issue #186) — mypy can't verify
+            # this across the two unrelated class hierarchies, same
+            # reasoning as _is_usage_error's name-based MRO check above.
+            exc.show(file=sys.stderr)  # type: ignore[attr-defined]
+            sys.exit(EXIT_USAGE)
         # Internal qureddy bugs route to EX_SOFTWARE (70), not exit 2.
         # CI scripts branching on `$? == 2` must be able to trust that
         # 2 means "target scan failed", not "qureddy itself crashed".

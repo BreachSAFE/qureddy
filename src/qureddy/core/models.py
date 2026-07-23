@@ -89,6 +89,7 @@ class FailureCategory(str, Enum):
     LOCAL_OPENSSL_MISSING = "local_openssl_missing"
     LOCAL_OPENSSL_BROKEN = "local_openssl_broken"
     LOCAL_OPENSSL_VERSION_UNREADABLE = "local_openssl_version_unreadable"
+    LOCAL_OPENSSL_IS_LIBRESSL = "local_openssl_is_libressl"
     LOCAL_OPENSSL_TOO_OLD = "local_openssl_too_old"
     LOCAL_OPENSSL_LACKS_GROUP = "local_openssl_lacks_group"
     TARGET_CONNECT_FAILED = "target_connect_failed"
@@ -100,11 +101,31 @@ class FailureCategory(str, Enum):
     UNEXPECTED_GROUP = "unexpected_group"
 
 
+# The six "operator's environment is the problem" categories, defined once
+# so policy.py, _summary.py, and _styles.py import the same set instead of
+# each hand-typing an identical copy (issue #209) — confirmed live: adding
+# LOCAL_OPENSSL_IS_LIBRESSL required editing all three copies in the same
+# commit, with nothing enforcing they stay in sync.
+LOCAL_CAPABILITY_CATEGORIES: frozenset[FailureCategory] = frozenset(
+    {
+        FailureCategory.LOCAL_OPENSSL_MISSING,
+        FailureCategory.LOCAL_OPENSSL_BROKEN,
+        FailureCategory.LOCAL_OPENSSL_VERSION_UNREADABLE,
+        FailureCategory.LOCAL_OPENSSL_IS_LIBRESSL,
+        FailureCategory.LOCAL_OPENSSL_TOO_OLD,
+        FailureCategory.LOCAL_OPENSSL_LACKS_GROUP,
+    }
+)
+
+
 class OutputFormat(str, Enum):
     """CLI `--format` choices: terminal-rendered `rich` or machine-readable `json`."""
 
     RICH = "rich"
     JSON = "json"
+    CBOM = "cbom"
+    """Rapid-prototype CycloneDX 1.6 CBOM export — see qureddy.output.cbom
+    module docstring. Not the tracked MVP 0.3 implementation (issue #61)."""
 
 
 class ScanTarget(BaseModel):

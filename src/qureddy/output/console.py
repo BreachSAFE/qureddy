@@ -34,6 +34,7 @@ from rich.text import Text
 from qureddy._branding import HEADER
 from qureddy.core.models import Evidence, Readiness
 from qureddy.output._styles import (
+    CLASSICALLY_WEAK_WITH_PQC_TEMPLATE,
     RECOMMENDATION_TEXT,
     compose_status,
     style_capability,
@@ -46,6 +47,11 @@ from qureddy.output._styles import (
     unknown_recommendation,
     verdict_border_style,
 )
+from qureddy.scanners.tls._cert_findings import (
+    FINDING_TYPE_CLASSICAL_SIGNATURE,
+    FINDING_TYPE_PQ_SIGNATURE,
+)
+from qureddy.scanners.tls._legacy_findings import FINDING_TYPE_LEGACY_PROTOCOL_OFFERED
 
 # Tests import these underscore-prefixed names from the renderer module
 # (legacy convention). They're re-exported here so the test surface is
@@ -260,17 +266,77 @@ def _summary_headline_and_recommendation(result: ScanResult) -> tuple[Text, Text
         headline = compose_status("NOT READY", " — classical only (", group=classical_group)
         headline.append(")")
     elif readiness is Readiness.CLASSICALLY_WEAK:
-        headline = compose_status("FAIL", " — weak classical primitive")
+        if hybrid_group is not None:
+            headline = compose_status(
+                "FAIL", " — weak legacy fallback (PQ hybrid ", group=hybrid_group
+            )
+            headline.append(" also negotiated)")
+        else:
+            headline = compose_status("FAIL", " — weak classical primitive")
     elif readiness is Readiness.NOT_APPLICABLE:
         headline = compose_status("UNKNOWN", " — scan not applicable")
     else:
         headline = unknown_headline(failure)
 
-    if readiness in RECOMMENDATION_TEXT:
+    if readiness is Readiness.TRANSITIONAL_HYBRID:
+        recommendation = Text(_cert_axis_recommendation(result))
+    elif readiness is Readiness.CLASSICALLY_WEAK and hybrid_group is not None:
+        recommendation = Text(_classically_weak_with_pqc_recommendation(result, hybrid_group))
+    elif readiness in RECOMMENDATION_TEXT:
         recommendation = Text(RECOMMENDATION_TEXT[readiness])
     else:
         recommendation = Text(unknown_recommendation(failure))
     return headline, recommendation
+
+
+def _classically_weak_with_pqc_recommendation(result: ScanResult, hybrid_group: str) -> str:
+    """Recommendation for a target that supports PQ hybrid AND legacy protocols.
+
+    Confirmed live against google.com — a large-scale service can
+    genuinely hold both postures simultaneously for a long time, and
+    the old one-sided "PQ readiness is moot" message was factually
+    wrong in that case: PQ readiness is NOT moot, it's already working,
+    alongside a real legacy exposure. Both facts get said, not one
+    hiding the other.
+    """
+    legacy_protocols = sorted(
+        {
+            f.protocol_version
+            for f in result.findings
+            if f.finding_type == FINDING_TYPE_LEGACY_PROTOCOL_OFFERED and f.protocol_version
+        }
+    )
+    protocols = ", ".join(legacy_protocols) or "a legacy protocol"
+    return CLASSICALLY_WEAK_WITH_PQC_TEMPLATE.format(hybrid_group=hybrid_group, protocols=protocols)
+
+
+def _cert_axis_recommendation(result: ScanResult) -> str:
+    """Recommendation text for TRANSITIONAL_HYBRID, driven by the actual finding.
+
+    Issue #183: replaces a hardcoded "remain classical" claim that was
+    false whenever a PQC cert was actually served. Three real states,
+    not two: PQ cert, classical cert, or not inspected (cert fetch
+    failed/timed out) — the issue's own guidance is to never assert
+    "classical" in that third case.
+    """
+    cert_finding = next((f for f in result.findings if f.finding_type in _CERT_FINDING_TYPES), None)
+    if cert_finding is None:
+        return (
+            "Monitor; certificate signature not yet inspected "
+            "(fetch failed, timed out, or was skipped)."
+        )
+    if cert_finding.finding_type == FINDING_TYPE_PQ_SIGNATURE:
+        return (
+            f"Both axes are post-quantum: hybrid key exchange and a "
+            f"{cert_finding.algorithm} certificate signature (FIPS 204)."
+        )
+    return (
+        f"Monitor; key exchange is PQ-hybrid but the certificate signature "
+        f"({cert_finding.algorithm}) remains classical."
+    )
+
+
+_CERT_FINDING_TYPES = frozenset({FINDING_TYPE_PQ_SIGNATURE, FINDING_TYPE_CLASSICAL_SIGNATURE})
 
 
 def _findings_table(result: ScanResult) -> Table:

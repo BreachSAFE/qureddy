@@ -16,11 +16,13 @@ from datetime import UTC, datetime
 
 import structlog
 
+from qureddy.core.errors import LocalOpenSSLMissing
 from qureddy.core.logging import get_logger
 from qureddy.core.models import (
     Asset,
     Evidence,
     FailureCategory,
+    Finding,
     ObservationType,
     OpenSSLDependency,
     ProbeResult,
@@ -31,12 +33,22 @@ from qureddy.core.models import (
 from qureddy.core.policy import classify_evidence
 from qureddy.core.retry import run_with_retries
 from qureddy.core.status import STATUS_COMPLETED
+from qureddy.scanners.tls._cert_findings import (
+    evidence_from_certificate,
+    finding_from_certificate,
+)
 from qureddy.scanners.tls._evidence import build_asset, evidence_from_probe
+from qureddy.scanners.tls._legacy_findings import (
+    evidence_from_legacy_result,
+    finding_from_legacy_result,
+)
 from qureddy.scanners.tls._summary import (
     build_summary,
     scan_readiness,
     summary_failure_category,
 )
+from qureddy.scanners.tls.cert_probe import fetch_certificate_pem, parse_certificate
+from qureddy.scanners.tls.legacy_probe import probe_all_legacy_protocols
 from qureddy.scanners.tls.openssl_probe import (
     CLASSICAL_GROUP,
     DEFAULT_TIMEOUT_SECONDS,
@@ -103,6 +115,39 @@ class TLSScanner:
             timeout_seconds=timeout_seconds,
         )
         findings = classify_evidence(asset, evidence)
+        if _target_appears_unreachable(evidence):
+            # Issue #192/#183 follow-up: the legacy-protocol sweep (3
+            # protocols) and cert fetch each open their own connection
+            # with their own timeout_seconds budget. Against a target
+            # that silently drops packets (not an immediate TCP
+            # refuse), that's 4 more full timeout windows stacked onto
+            # the 2 the hybrid/classical probes already spent — verified
+            # live: 18s at --timeout 3 (6x), ~180s at the default 30s.
+            # If the main probes already both failed to even complete a
+            # handshake, more attempts against the same host with
+            # different flags are extremely unlikely to succeed and
+            # only multiply the wait.
+            log.info("scan.legacy_and_cert_probes_skipped", reason="target_appears_unreachable")
+        else:
+            legacy_evidence, legacy_findings = self._collect_legacy_evidence(
+                target=target,
+                asset=asset,
+                openssl_path=openssl_path,
+                timeout_seconds=timeout_seconds,
+            )
+            evidence.extend(legacy_evidence)
+            findings.extend(legacy_findings)
+            total_attempts += len(legacy_evidence)
+            cert_evidence, cert_finding = self._collect_cert_evidence(
+                target=target,
+                asset=asset,
+                openssl_path=openssl_path,
+                timeout_seconds=timeout_seconds,
+            )
+            evidence.append(cert_evidence)
+            if cert_finding is not None:
+                findings.append(cert_finding)
+            total_attempts += 1
         completed = datetime.now(UTC)
         summary = build_summary(target, findings, evidence)
         log.info(
@@ -176,6 +221,66 @@ class TLSScanner:
         )
         return evidence, len(hybrid_results) + len(classical_results)
 
+    @staticmethod
+    def _collect_legacy_evidence(
+        *,
+        target: ScanTarget,
+        asset: Asset,
+        openssl_path: str,
+        timeout_seconds: int,
+    ) -> tuple[list[Evidence], list[Finding]]:
+        """Legacy TLS 1.0/1.1/1.2 protocol + cipher enumeration (issue #192).
+
+        No retries: unlike the hybrid/classical probes (single handshake,
+        worth retrying on a flaky connection), this is already a multi
+        -handshake sweep per protocol — retrying the whole sweep on any
+        transient failure would multiply an already-slower path.
+        """
+        results = probe_all_legacy_protocols(
+            openssl_path,
+            target.host,
+            target.port,
+            target.sni,
+            timeout_seconds=timeout_seconds,
+        )
+        evidence = [evidence_from_legacy_result(asset, r) for r in results]
+        findings = [
+            f
+            for ev, r in zip(evidence, results, strict=True)
+            if (f := finding_from_legacy_result(asset, ev, r)) is not None
+        ]
+        return evidence, findings
+
+    @staticmethod
+    def _collect_cert_evidence(
+        *,
+        target: ScanTarget,
+        asset: Asset,
+        openssl_path: str,
+        timeout_seconds: int,
+    ) -> tuple[Evidence, Finding | None]:
+        """Certificate/authentication axis (issue #183): PQ vs classical signature.
+
+        Independent of the key-exchange probes above — same pattern as
+        cli.py's _fetch_cert_for_cbom, now also run for the live scan
+        path, not just --format cbom. Swallows fetch/parse failures the
+        same way: a missing certificate must not fail the whole scan,
+        since the key-exchange axis is still a complete, valid result
+        without it. LocalOpenSSLMissing is not swallowed — same openssl
+        binary the rest of the scan already required, so if it's
+        missing the capability check above would already have failed.
+        """
+        try:
+            pem = fetch_certificate_pem(
+                openssl_path, target.host, target.port, target.sni, timeout_seconds=timeout_seconds
+            )
+            certificate = parse_certificate(openssl_path, pem) if pem else None
+        except (LocalOpenSSLMissing, ValueError):
+            certificate = None
+        evidence = evidence_from_certificate(asset, certificate)
+        finding = finding_from_certificate(asset, evidence, certificate)
+        return evidence, finding
+
     def _probe_with_retries(
         self,
         probe_fn: Callable[..., ProbeResult],
@@ -232,6 +337,27 @@ def build_capability_failure_result(
         findings=tuple(findings),
         summary=build_summary(target, list(findings), [evidence]),
     )
+
+
+_UNREACHABLE_FAILURE_CATEGORIES = frozenset(
+    {FailureCategory.TARGET_CONNECT_FAILED, FailureCategory.TLS_HANDSHAKE_FAILED}
+)
+
+
+def _target_appears_unreachable(evidence: list[Evidence]) -> bool:
+    """True when every hybrid/classical probe attempt failed to connect at all.
+
+    Deliberately conservative: only these two categories (not
+    SNI_REQUIRED_OR_WRONG, MIDDLEBOX_OR_MTU_FAILURE, etc.) — those mean
+    the target IS responding, just not in the expected shape, and the
+    legacy/cert probes (different flags, no forced group) have a real
+    chance of succeeding where the forced-group probe didn't. Requires
+    ALL evidence records to match, not just one, so a single flaky
+    attempt among successful retries doesn't trigger a skip.
+    """
+    if not evidence:
+        return False
+    return all(ev.failure_category in _UNREACHABLE_FAILURE_CATEGORIES for ev in evidence)
 
 
 __all__ = [

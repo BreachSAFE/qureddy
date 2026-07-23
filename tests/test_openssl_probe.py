@@ -13,6 +13,7 @@ import pytest
 
 from qureddy.core.errors import (
     LocalOpenSSLBroken,
+    LocalOpenSSLIsLibreSSL,
     LocalOpenSSLLacksGroup,
     LocalOpenSSLMissing,
     LocalOpenSSLTooOld,
@@ -81,6 +82,19 @@ class TestProbeCapability:
         assert dep.supports_x25519mlkem768 is True
         assert dep.failure_category is FailureCategory.LOCAL_OPENSSL_VERSION_UNREADABLE
 
+    def test_libressl_flagged_distinctly_not_as_unparseable(self) -> None:
+        """Issue #188: macOS ships LibreSSL as /usr/bin/openssl by default.
+
+        `OPENSSL_VERSION_PATTERN` never matches "LibreSSL 3.3.6" (it
+        requires the literal "OpenSSL" prefix), so before this fix
+        LibreSSL fell into the generic LOCAL_OPENSSL_VERSION_UNREADABLE
+        bucket with no actionable fix-it message. It must instead be
+        recognized as LibreSSL specifically.
+        """
+        dep = probe_capability(str(FAKE_DIR / "openssl_libressl.sh"))
+        assert dep.failure_category is FailureCategory.LOCAL_OPENSSL_IS_LIBRESSL
+        assert dep.version == "3.3.6"
+
 
 class TestRaiseIfUnusable:
     def test_too_old_raises(self) -> None:
@@ -101,6 +115,19 @@ class TestRaiseIfUnusable:
         dep = probe_capability(str(FAKE_DIR / "openssl_lacks_group.sh"))
         with pytest.raises(LocalOpenSSLLacksGroup):
             raise_if_unusable(dep)
+
+    def test_libressl_message_names_libressl_and_the_fix(self) -> None:
+        """The whole point of #188: the message must say *why* (this is
+        LibreSSL, not old/broken OpenSSL) and *how to fix it*
+        (--openssl / QUREDDY_OPENSSL), not just "unparseable version"."""
+        dep = probe_capability(str(FAKE_DIR / "openssl_libressl.sh"))
+        with pytest.raises(LocalOpenSSLIsLibreSSL) as exc_info:
+            raise_if_unusable(dep)
+        message = str(exc_info.value)
+        assert "LibreSSL" in message
+        assert "3.3.6" in message
+        assert "--openssl" in message
+        assert "QUREDDY_OPENSSL" in message
 
     def test_ok_does_not_raise(self) -> None:
         dep = probe_capability(str(FAKE_DIR / "openssl_ok.sh"))

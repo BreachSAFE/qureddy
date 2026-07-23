@@ -25,6 +25,7 @@ from __future__ import annotations
 from rich.text import Text
 
 from qureddy.core.models import (
+    LOCAL_CAPABILITY_CATEGORIES,
     FailureCategory,
     OpenSSLDependency,
     Readiness,
@@ -79,10 +80,10 @@ VERDICT_BORDER: dict[Readiness, str] = {
 # advice points at standards and capabilities, not products.
 RECOMMENDATION_TEXT: dict[Readiness, str] = {
     Readiness.QUANTUM_SAFE: "No action required.",
-    Readiness.TRANSITIONAL_HYBRID: (
-        "Monitor; certificate and signature chain remain classical "
-        "(cert scanning lands at MVP 0.2)."
-    ),
+    # TRANSITIONAL_HYBRID intentionally absent: this used to be a static,
+    # always-"remain classical" string — false whenever a PQC cert was
+    # actually served (issue #183). console.py's _cert_axis_recommendation
+    # now derives this from the real tls.cert.* finding instead.
     Readiness.QUANTUM_VULNERABLE: (
         "Plan PQ migration. Move TLS termination behind an edge that "
         "supports X25519MLKEM768, or upgrade to OpenSSL 3.5+ with PQ "
@@ -95,14 +96,20 @@ RECOMMENDATION_TEXT: dict[Readiness, str] = {
     Readiness.NOT_APPLICABLE: "No applicable check for this target.",
 }
 
-LOCAL_CAPABILITY_CATEGORIES: frozenset[FailureCategory] = frozenset(
-    {
-        FailureCategory.LOCAL_OPENSSL_MISSING,
-        FailureCategory.LOCAL_OPENSSL_BROKEN,
-        FailureCategory.LOCAL_OPENSSL_VERSION_UNREADABLE,
-        FailureCategory.LOCAL_OPENSSL_TOO_OLD,
-        FailureCategory.LOCAL_OPENSSL_LACKS_GROUP,
-    },
+# Format-string template for CLASSICALLY_WEAK when a hybrid PQ group was
+# ALSO negotiated (issue found scrutinizing scan tls: google.com genuinely
+# holds both postures — PQ hybrid working AND legacy TLS 1.0/1.1 still
+# accepted for old-client compat, confirmed live, independent of qureddy's
+# own code). The old blanket "PQ readiness is moot" text (below, still
+# used when no hybrid group was negotiated) is factually wrong in that
+# case. Named here alongside RECOMMENDATION_TEXT rather than inlined in
+# console.py, matching the existing "message copy lives in _styles.py"
+# convention — filled in by console.py with hybrid_group/protocols.
+CLASSICALLY_WEAK_WITH_PQC_TEMPLATE: str = (
+    "PQ hybrid ({hybrid_group}) is negotiated and working — that's real, keep it. "
+    "Separately, this target also still accepts {protocols}, exploitable today "
+    "regardless of the PQ posture. Disable the legacy protocol(s) when the client "
+    "compatibility need allows; the two facts don't cancel out."
 )
 
 
@@ -193,6 +200,14 @@ def unknown_recommendation(failure: FailureCategory | None) -> str:
     """
     if failure is None:
         return "Re-run the scan with -v for diagnostics."
+    if failure is FailureCategory.LOCAL_OPENSSL_IS_LIBRESSL:
+        return (
+            "The openssl on this machine is LibreSSL, not OpenSSL — macOS ships "
+            "LibreSSL as /usr/bin/openssl by default. Install real OpenSSL and "
+            "point at it: brew install openssl@3, then pass "
+            "--openssl $(brew --prefix openssl@3)/bin/openssl or export "
+            "QUREDDY_OPENSSL to the same path."
+        )
     if failure in LOCAL_CAPABILITY_CATEGORIES:
         return (
             "Install OpenSSL 3.5+ with PQ group support and re-run. "
