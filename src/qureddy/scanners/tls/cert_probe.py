@@ -70,7 +70,12 @@ def _build_connect_target(host: str, port: int) -> str:
 
 
 def fetch_certificate_pem(
-    openssl_path: str, host: str, port: int, sni: str | None, *, timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS
+    openssl_path: str,
+    host: str,
+    port: int,
+    sni: str | None,
+    *,
+    timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS,
 ) -> str:
     """Fetch the leaf certificate as PEM text via `openssl s_client`. Analysis mode: no -verify flags are set, so s_client will not abort the handshake over an invalid chain (expired/self-signed/untrusted certs are still captured via -showcerts).
 
@@ -110,7 +115,9 @@ def fetch_certificate_pem(
     return completed.stdout[pem_start : pem_end + len("-----END CERTIFICATE-----")]
 
 
-def _x509(openssl_path: str, pem: str, *args: str, timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS) -> str:
+def _x509(
+    openssl_path: str, pem: str, *args: str, timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS
+) -> str:
     """One `openssl x509 -noout <args>` call against in-memory PEM text.
 
     Raises:
@@ -159,11 +166,27 @@ def parse_certificate(openssl_path: str, pem: str) -> CertificateInfo:
     subject = _x509(openssl_path, pem, "-subject").removeprefix("subject=").strip()
     issuer = _x509(openssl_path, pem, "-issuer").removeprefix("issuer=").strip()
     dates = _x509(openssl_path, pem, "-dates")
-    not_before = next((line.removeprefix("notBefore=") for line in dates.splitlines() if line.startswith("notBefore=")), "")
-    not_after = next((line.removeprefix("notAfter=") for line in dates.splitlines() if line.startswith("notAfter=")), "")
+    not_before = next(
+        (
+            line.removeprefix("notBefore=")
+            for line in dates.splitlines()
+            if line.startswith("notBefore=")
+        ),
+        "",
+    )
+    not_after = next(
+        (
+            line.removeprefix("notAfter=")
+            for line in dates.splitlines()
+            if line.startswith("notAfter=")
+        ),
+        "",
+    )
     serial = _x509(openssl_path, pem, "-serial").removeprefix("serial=").strip()
     pubkey_text = _x509(openssl_path, pem, "-text")
-    sig_line = next((line for line in pubkey_text.splitlines() if "Signature Algorithm" in line), "")
+    sig_line = next(
+        (line for line in pubkey_text.splitlines() if "Signature Algorithm" in line), ""
+    )
     sig_alg = sig_line.split(":", 1)[-1].strip() if sig_line else "UNKNOWN"
     pubkey_line = next((line for line in pubkey_text.splitlines() if "Public-Key:" in line), "")
     pubkey_summary = pubkey_line.strip() or "UNKNOWN"
