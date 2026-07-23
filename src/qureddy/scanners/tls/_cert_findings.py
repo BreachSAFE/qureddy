@@ -1,12 +1,14 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
 # SPDX-License-Identifier: Apache-2.0
-"""Evidence/Finding builders for the certificate/authentication axis (issue #183).
+"""Evidence/Finding builders for the certificate issuer-signature axis (issue #183).
 
-QuReddy judges TLS on two independent axes (key exchange vs. certificate
-signature — see cert_sig.py). This module closes the wiring gap: the
-detection logic (cert_sig.py, issue #7) existed but nothing called it,
-so the scan never reported this axis and output hardcoded a false
-"remain classical" assertion regardless of what the cert actually used.
+Issue #226 correction: this is the certificate's *issuer* signature axis
+(chain-of-trust), not a live-handshake authentication claim — see cert_sig.py's
+docstring for why those are different operations that can use different
+algorithms. This module closes the wiring gap: the detection logic
+(cert_sig.py, issue #7) existed but nothing called it, so the scan never
+reported this axis and output hardcoded a false "remain classical" assertion
+regardless of what the cert actually used.
 
 Readiness is deliberately Readiness.NOT_APPLICABLE for both outcomes
 (NOT_APPLICABLE is the lowest-precedence tier in _summary.py's
@@ -87,17 +89,22 @@ def finding_from_certificate(
         rule_id="tls.cert.signature_algorithm",
         finding_type=FINDING_TYPE_PQ_SIGNATURE if pq else FINDING_TYPE_CLASSICAL_SIGNATURE,
         title=(
-            f"Certificate signed with {certificate.signature_algorithm}"
+            f"Certificate issuer signature: {certificate.signature_algorithm}"
             + (" (post-quantum)" if pq else " (classical)")
         ),
         description=(
-            f"Leaf certificate subject={certificate.subject!r} uses "
-            f"{certificate.signature_algorithm} for its signature. "
+            f"Leaf certificate subject={certificate.subject!r} was issued using "
+            f"{certificate.signature_algorithm} as the CA/issuer signature over "
+            "the certificate. "
             + (
-                "This is a NIST-standardized post-quantum signature algorithm (FIPS 204)."
+                "This is a NIST-standardized post-quantum signature algorithm (FIPS 204). "
                 if pq
-                else "This is a classical (non-post-quantum) signature algorithm."
+                else "This is a classical (non-post-quantum) signature algorithm. "
             )
+            + "This describes the certificate's chain-of-trust signature only — "
+            "it is NOT the live TLS handshake's authentication signature "
+            "(CertificateVerify), which uses the leaf's own key and can use a "
+            "different algorithm (issue #226)."
         ),
         severity=Severity.INFO,
         readiness=Readiness.NOT_APPLICABLE,

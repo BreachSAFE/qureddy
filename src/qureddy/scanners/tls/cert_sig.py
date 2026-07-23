@@ -1,14 +1,23 @@
 # SPDX-FileCopyrightText: 2026 Paul Volosen <paulvolosen@gmail.com>
 # SPDX-License-Identifier: Apache-2.0
-"""Detect the leaf certificate's signature algorithm (PQC vs classical).
+"""Detect the leaf certificate's issuer signature algorithm (PQC vs classical).
 
-QuReddy judges TLS on two independent axes:
+Issue #226 correction: this module reads the CA/issuer's signature *over the
+certificate* (``openssl x509 -text``'s ``Signature Algorithm:`` line) — this is
+NOT the same operation as the live TLS 1.3 handshake's server authentication.
+That's a distinct signature (OpenSSL calls it ``Signature type:`` in
+``s_client -brief`` output, over the leaf's own private key via
+``CertificateVerify``) that can use a different algorithm than the issuer's
+signature over the certificate. A previous revision of this docstring called
+this module's output "the authentication axis" — wrong: do not treat what
+this module reports as a claim about live-handshake authentication. It is a
+statement about the certificate's chain-of-trust (issuer) signature only.
+Confirmed live: a real ML-DSA-65-issued certificate with an ECDSA leaf key
+negotiates a classical ECDSA `CertificateVerify` — this module correctly
+reports "ML-DSA-65", which is true of the issuer signature and would be
+false if read as "this connection authenticated with a PQ signature."
 
-  - confidentiality  -> the negotiated key-exchange group (parse.py)
-  - authentication   -> the server CERTIFICATE's signature algorithm (this module)
-
-A server can be post-quantum on one axis and not the other. This module closes the
-certificate axis: it reads the leaf cert's ``Signature Algorithm`` (as printed by
+This module reads the leaf cert's ``Signature Algorithm`` (as printed by
 ``openssl x509 -text``) and classifies it as ML-DSA (post-quantum, FIPS 204 / RFC 9881)
 or classical.
 

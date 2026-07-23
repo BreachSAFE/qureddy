@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
 # SPDX-License-Identifier: Apache-2.0
-"""Tests for the four locked MVP 0.1 policy rules."""
+"""Tests for the MVP 0.1 policy rules."""
 
 from __future__ import annotations
 
@@ -10,6 +10,7 @@ from qureddy.core.models import (
     Evidence,
     FailureCategory,
     ObservationType,
+    ProbeRole,
     Readiness,
     Severity,
 )
@@ -101,6 +102,7 @@ class TestProbeFailedRule:
         ev = _evidence(
             observation_type=ObservationType.OBSERVED,
             failure_category=FailureCategory.TARGET_CONNECT_FAILED,
+            probe_role=ProbeRole.HYBRID_READINESS,
         )
         findings = classify_evidence(_asset(), [ev])
         assert len(findings) == 1
@@ -112,9 +114,25 @@ class TestProbeFailedRule:
         ev = _evidence(
             observation_type=ObservationType.OBSERVED,
             failure_category=FailureCategory.TLS_HANDSHAKE_FAILED,
+            probe_role=ProbeRole.HYBRID_READINESS,
         )
         findings = classify_evidence(_asset(), [ev])
         assert findings[0].rule_id == "tls.hybrid.probe_failed"
+
+    def test_classical_control_failure_does_not_fire_hybrid_probe_failed_rule(self) -> None:
+        """Issue #232: a classical-control probe failure must not attribute
+        to the hybrid probe — a hybrid-only server is expected to reject
+        pure classical fallback, so this is not evidence hybrid failed.
+        """
+        ev = _evidence(
+            observation_type=ObservationType.OBSERVED,
+            failure_category=FailureCategory.TLS_HANDSHAKE_FAILED,
+            probe_role=ProbeRole.CLASSICAL_CONTROL,
+        )
+        findings = classify_evidence(_asset(), [ev])
+        assert len(findings) == 1
+        assert findings[0].rule_id == "tls.classical.control_rejected"
+        assert findings[0].readiness is Readiness.NOT_APPLICABLE
 
 
 class TestNonMatchingEvidence:
@@ -131,6 +149,7 @@ class TestUnexpectedGroupRule:
             observation_type=ObservationType.OBSERVED,
             negotiated_group="X25519",
             failure_category=FailureCategory.UNEXPECTED_GROUP,
+            probe_role=ProbeRole.HYBRID_READINESS,
         )
         findings = classify_evidence(_asset(), [ev])
         assert len(findings) == 1
@@ -149,6 +168,7 @@ class TestUnexpectedGroupRule:
             observation_type=ObservationType.OBSERVED,
             negotiated_group="ECDH",
             failure_category=FailureCategory.UNEXPECTED_GROUP,
+            probe_role=ProbeRole.HYBRID_READINESS,
         )
         findings = classify_evidence(_asset(), [ev])
         assert len(findings) == 1

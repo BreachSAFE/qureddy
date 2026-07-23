@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from qureddy.core.models import FailureCategory, ScanTarget
+from qureddy.core.models import FailureCategory, ProbeRole, ScanTarget
 from qureddy.scanners.tls._evidence import build_asset, evidence_from_probe
 from qureddy.scanners.tls.openssl_probe import HYBRID_GROUP, run_hybrid_probe
 
@@ -35,6 +35,7 @@ def test_evidence_parser_uses_full_probe_output_not_excerpt() -> None:
         asset=build_asset(_target()),
         probe=probe,
         expected_group=HYBRID_GROUP,
+        probe_role=ProbeRole.HYBRID_READINESS,
     )
 
     assert probe.stdout_excerpt
@@ -55,6 +56,7 @@ def test_evidence_parser_does_not_match_across_stream_boundary() -> None:
         asset=build_asset(_target()),
         probe=probe,
         expected_group=HYBRID_GROUP,
+        probe_role=ProbeRole.HYBRID_READINESS,
     )
 
     assert evidence.negotiated_group is None

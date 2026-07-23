@@ -26,6 +26,7 @@ from qureddy.core.models import (
     ObservationType,
     OpenSSLDependency,
     ProbeResult,
+    ProbeRole,
     ScanMetadata,
     ScanResult,
     ScanTarget,
@@ -212,11 +213,21 @@ class TLSScanner:
             timeout_seconds=timeout_seconds,
         )
         evidence = [
-            evidence_from_probe(asset=asset, probe=r, expected_group=HYBRID_GROUP)
+            evidence_from_probe(
+                asset=asset,
+                probe=r,
+                expected_group=HYBRID_GROUP,
+                probe_role=ProbeRole.HYBRID_READINESS,
+            )
             for r in hybrid_results
         ]
         evidence.extend(
-            evidence_from_probe(asset=asset, probe=r, expected_group=CLASSICAL_GROUP)
+            evidence_from_probe(
+                asset=asset,
+                probe=r,
+                expected_group=CLASSICAL_GROUP,
+                probe_role=ProbeRole.CLASSICAL_CONTROL,
+            )
             for r in classical_results
         )
         return evidence, len(hybrid_results) + len(classical_results)
@@ -259,7 +270,11 @@ class TLSScanner:
         openssl_path: str,
         timeout_seconds: int,
     ) -> tuple[Evidence, Finding | None]:
-        """Certificate/authentication axis (issue #183): PQ vs classical signature.
+        """Certificate issuer-signature axis (issue #183): PQ vs classical signature.
+
+        Issue #226: this is the certificate's issuer/chain-of-trust signature,
+        not a claim about the live handshake's authentication signature —
+        see cert_sig.py's docstring for why those are different operations.
 
         Independent of the key-exchange probes above — same pattern as
         cli.py's _fetch_cert_for_cbom, now also run for the live scan
