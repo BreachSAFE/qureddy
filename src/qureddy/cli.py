@@ -410,7 +410,9 @@ def _fetch_cert_for_cbom(result: ScanResult, timeout_seconds: int) -> Certificat
             result.target.sni,
             timeout_seconds=timeout_seconds,
         )
-        return parse_certificate(openssl_path, pem) if pem else None
+        return (
+            parse_certificate(openssl_path, pem, timeout_seconds=timeout_seconds) if pem else None
+        )
     except (LocalOpenSSLMissing, ValueError):
         return None
 

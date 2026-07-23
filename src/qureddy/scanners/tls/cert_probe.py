@@ -155,7 +155,9 @@ def _x509(
     return stdout.strip()
 
 
-def parse_certificate(openssl_path: str, pem: str) -> CertificateInfo:
+def parse_certificate(
+    openssl_path: str, pem: str, *, timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS
+) -> CertificateInfo:
     """Parse a PEM certificate using single-purpose `openssl x509` flags only — no `-text` full-dump parsing except the one field (signature algorithm) with no dedicated flag, same as testssl.sh.
 
     Raises:
@@ -166,13 +168,27 @@ def parse_certificate(openssl_path: str, pem: str) -> CertificateInfo:
             Callers check `if pem:` before calling this (see cli.py); this
             guard exists so the function is correct even if a future
             caller doesn't.
+
+    Issue #253: each of the five `_x509` calls below defaulted to its own
+    30-second timeout regardless of what the caller's own `--timeout`
+    requested (`fetch_certificate_pem` threaded it correctly; this
+    function didn't) — up to 150s in this stage alone on a slow/hanging
+    local OpenSSL. `timeout_seconds` is now threaded through every call.
     """
     if not pem.strip():
         msg = "cannot parse empty certificate PEM"
         raise ValueError(msg)
-    subject = _x509(openssl_path, pem, "-subject").removeprefix("subject=").strip()
-    issuer = _x509(openssl_path, pem, "-issuer").removeprefix("issuer=").strip()
-    dates = _x509(openssl_path, pem, "-dates")
+    subject = (
+        _x509(openssl_path, pem, "-subject", timeout_seconds=timeout_seconds)
+        .removeprefix("subject=")
+        .strip()
+    )
+    issuer = (
+        _x509(openssl_path, pem, "-issuer", timeout_seconds=timeout_seconds)
+        .removeprefix("issuer=")
+        .strip()
+    )
+    dates = _x509(openssl_path, pem, "-dates", timeout_seconds=timeout_seconds)
     not_before = next(
         (
             line.removeprefix("notBefore=")
@@ -189,8 +205,12 @@ def parse_certificate(openssl_path: str, pem: str) -> CertificateInfo:
         ),
         "",
     )
-    serial = _x509(openssl_path, pem, "-serial").removeprefix("serial=").strip()
-    pubkey_text = _x509(openssl_path, pem, "-text")
+    serial = (
+        _x509(openssl_path, pem, "-serial", timeout_seconds=timeout_seconds)
+        .removeprefix("serial=")
+        .strip()
+    )
+    pubkey_text = _x509(openssl_path, pem, "-text", timeout_seconds=timeout_seconds)
     # cert_sig.py's regex replaces the previous hand-rolled substring search
     # ("Signature Algorithm" in line) — same source text, but anchored
     # (^...$, MULTILINE) rather than a loose substring match, and it also

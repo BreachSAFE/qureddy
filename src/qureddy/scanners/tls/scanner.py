@@ -274,7 +274,11 @@ class TLSScanner:
             pem = fetch_certificate_pem(
                 openssl_path, target.host, target.port, target.sni, timeout_seconds=timeout_seconds
             )
-            certificate = parse_certificate(openssl_path, pem) if pem else None
+            certificate = (
+                parse_certificate(openssl_path, pem, timeout_seconds=timeout_seconds)
+                if pem
+                else None
+            )
         except (LocalOpenSSLMissing, ValueError):
             certificate = None
         evidence = evidence_from_certificate(asset, certificate)
