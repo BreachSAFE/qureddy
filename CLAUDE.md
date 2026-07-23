@@ -10,7 +10,7 @@ Auto-loaded into every Claude Code session. Tight on purpose. Use it to orient f
 |---|---|
 | **Name** | BreachSAFE QuReddy OSS |
 | **CLI** | `qureddy` |
-| **Repo** | `github.com/paul007ex/qureddy` (will move to `github.com/breachsafe/qureddy` at v1.0) |
+| **Repo** | `github.com/breachsafe/qureddy` (will move to `github.com/breachsafe/qureddy` at v1.0) |
 | **PyPI** | `breachsafe-qureddy` |
 | **License** | Apache 2.0 |
 | **Tagline** | QuReddy 0.1.0 — BreachSAFE OSS |

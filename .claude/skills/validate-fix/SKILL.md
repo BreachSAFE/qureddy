@@ -197,20 +197,20 @@ GitHub PR comments, not issue comments. Validations live on the PR being validat
 
 ```bash
 # 1. Post the validation as a PR comment in the structured format above
-gh pr comment <n> --repo paul007ex/qureddy --body-file /tmp/validation.md
+gh pr comment <n> --repo breachsafe/qureddy --body-file /tmp/validation.md
 
 # 2. Apply the matching label
-gh pr edit <n> --repo paul007ex/qureddy --add-label "validation:claude:<verdict>"
+gh pr edit <n> --repo breachsafe/qureddy --add-label "validation:claude:<verdict>"
 ```
 
 If the labels don't exist on the repo yet, create them:
 
 ```bash
-gh label create "validation:claude:validated" --repo paul007ex/qureddy --color "0e8a16" --description "Validate-fix verdict: VALIDATED"
-gh label create "validation:claude:partial" --repo paul007ex/qureddy --color "fbca04" --description "Validate-fix verdict: PARTIAL"
-gh label create "validation:claude:failed" --repo paul007ex/qureddy --color "b60205" --description "Validate-fix verdict: FAILED"
-gh label create "validation:claude:needs-clarification" --repo paul007ex/qureddy --color "5319e7" --description "Validate-fix: needs maintainer clarification"
-gh label create "validation:claude:needs-rerun" --repo paul007ex/qureddy --color "cccccc" --description "Validate-fix: transient failure, re-invoke"
+gh label create "validation:claude:validated" --repo breachsafe/qureddy --color "0e8a16" --description "Validate-fix verdict: VALIDATED"
+gh label create "validation:claude:partial" --repo breachsafe/qureddy --color "fbca04" --description "Validate-fix verdict: PARTIAL"
+gh label create "validation:claude:failed" --repo breachsafe/qureddy --color "b60205" --description "Validate-fix verdict: FAILED"
+gh label create "validation:claude:needs-clarification" --repo breachsafe/qureddy --color "5319e7" --description "Validate-fix: needs maintainer clarification"
+gh label create "validation:claude:needs-rerun" --repo breachsafe/qureddy --color "cccccc" --description "Validate-fix: transient failure, re-invoke"
 ```
 
 When swapping a label (e.g. `failed` → `validated` after the author pushed a fix), use:

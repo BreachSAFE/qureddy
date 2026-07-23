@@ -19,7 +19,7 @@ You don't need to know post-quantum cryptography — the [Why hybrid post-quantu
 ## Step 1 — Install QuReddy from source
 
 ```bash
-git clone https://github.com/paul007ex/qureddy.git
+git clone https://github.com/breachsafe/qureddy.git
 cd qureddy
 uv venv
 source .venv/bin/activate

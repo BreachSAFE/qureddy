@@ -9,7 +9,7 @@
 **Informed:** future MVP 0.2 contributors
 **Supersedes:** none
 **Superseded by:** none
-**Tracking issue:** [#39](https://github.com/paul007ex/qureddy/issues/39)
+**Tracking issue:** [#39](https://github.com/breachsafe/qureddy/issues/39)
 
 ---
 
@@ -132,7 +132,7 @@ The `bom_ref`, `oid`, `nist_quantum_security_level`, `algorithm`, `primitive`, `
 
 ## Adoption checklist
 
-The implementing PR (MVP 0.2's first) closes [issue #39](https://github.com/paul007ex/qureddy/issues/39) when it merges and updates this ADR's status from `Proposed` to `Accepted`.
+The implementing PR (MVP 0.2's first) closes [issue #39](https://github.com/breachsafe/qureddy/issues/39) when it merges and updates this ADR's status from `Proposed` to `Accepted`.
 
 The PR must:
 
@@ -148,7 +148,7 @@ The PR must:
 
 ## Open questions for the implementing PR
 
-These were left open by the ADR author and discussion in [issue #39](https://github.com/paul007ex/qureddy/issues/39):
+These were left open by the ADR author and discussion in [issue #39](https://github.com/breachsafe/qureddy/issues/39):
 
 1. **Scanner protocol shape:** is `Scanner(Protocol)` enough, or do we need a richer base class with default `scan_id` generation, retry wiring, etc.?
 2. **Failure-category string format:** dotted (`tls.handshake_failed`) is proposed. Slash (`tls/handshake_failed`) is the alternative. Either works; lock one before code lands.
@@ -161,4 +161,4 @@ These were left open by the ADR author and discussion in [issue #39](https://git
 - [`docs/contributors/coding-rules.md`](../coding-rules.md) §1 — minimum viable abstraction
 - [`.claude/skills/mvp-implement/SKILL.md`](../../../.claude/skills/mvp-implement/SKILL.md) — operational authority for the current milestone
 - [ADR 0002](0002-diataxis-documentation-standard.md) — template followed by this ADR
-- [Issue #39](https://github.com/paul007ex/qureddy/issues/39) — the GitHub-side tracking artifact for this ADR
+- [Issue #39](https://github.com/breachsafe/qureddy/issues/39) — the GitHub-side tracking artifact for this ADR

@@ -9,8 +9,8 @@
 **Informed:** MVP 0.2+ contributors
 **Supersedes:** none
 **Superseded by:** none
-**Tracking issues:** [#60](https://github.com/paul007ex/qureddy/issues/60) (cli.py), [#82](https://github.com/paul007ex/qureddy/issues/82) (openssl_probe.py), [#69](https://github.com/paul007ex/qureddy/issues/69) (tests/test_cli.py)
-**Related:** [ADR 0003](0003-cli-help-rewrite.md), [ADR 0004](0004-multi-scanner-architecture.md), [#41](https://github.com/paul007ex/qureddy/issues/41), [#42](https://github.com/paul007ex/qureddy/issues/42)-[#45](https://github.com/paul007ex/qureddy/issues/45), [#79](https://github.com/paul007ex/qureddy/issues/79)
+**Tracking issues:** [#60](https://github.com/breachsafe/qureddy/issues/60) (cli.py), [#82](https://github.com/breachsafe/qureddy/issues/82) (openssl_probe.py), [#69](https://github.com/breachsafe/qureddy/issues/69) (tests/test_cli.py)
+**Related:** [ADR 0003](0003-cli-help-rewrite.md), [ADR 0004](0004-multi-scanner-architecture.md), [#41](https://github.com/breachsafe/qureddy/issues/41), [#42](https://github.com/breachsafe/qureddy/issues/42)-[#45](https://github.com/breachsafe/qureddy/issues/45), [#79](https://github.com/breachsafe/qureddy/issues/79)
 
 ---
 
@@ -20,10 +20,10 @@ Three production files have crossed or are within 30 LOC of `coding-rules.md` Ru
 
 | File | LOC | Status | Tracking issue |
 |---|---|---|---|
-| `src/qureddy/cli.py` | **429** | Over by 29 | [#60](https://github.com/paul007ex/qureddy/issues/60) |
-| `src/qureddy/scanners/tls/openssl_probe.py` | **424** | Over by 24 | [#82](https://github.com/paul007ex/qureddy/issues/82) |
-| `src/qureddy/output/console.py` | 370 | 30 LOC under (canary zone) | [#79](https://github.com/paul007ex/qureddy/issues/79) (function-level split) |
-| `tests/test_cli.py` | **774** | Almost double the ceiling | [#69](https://github.com/paul007ex/qureddy/issues/69) |
+| `src/qureddy/cli.py` | **429** | Over by 29 | [#60](https://github.com/breachsafe/qureddy/issues/60) |
+| `src/qureddy/scanners/tls/openssl_probe.py` | **424** | Over by 24 | [#82](https://github.com/breachsafe/qureddy/issues/82) |
+| `src/qureddy/output/console.py` | 370 | 30 LOC under (canary zone) | [#79](https://github.com/breachsafe/qureddy/issues/79) (function-level split) |
+| `tests/test_cli.py` | **774** | Almost double the ceiling | [#69](https://github.com/breachsafe/qureddy/issues/69) |
 
 Three of these breaches happened in the last week of MVP 0.1 work. None of them are new features — they are the natural cost of doing bug fixes correctly (PR #81's `LOCAL_OPENSSL_BROKEN` category, ADR 0003's help-rewrite work, etc.). The size pressure is the consequence of doing the work right; the structural split is the standard response.
 
@@ -251,10 +251,10 @@ The same logic applies recursively. When `openssl_probe.py` itself crosses the c
 - `.github/workflows/file-size-gate.yml` — enforces Rule 2.1 in CI (recently merged)
 - ADR 0003 — CLI `--help` rewrite (work that lands in the new `cli/` package)
 - ADR 0004 — Multi-scanner architecture (motivates the per-subcommand-file shape in `cli/`)
-- Issues [#60](https://github.com/paul007ex/qureddy/issues/60), [#82](https://github.com/paul007ex/qureddy/issues/82) — implementation tracking (one PR per file)
-- Issues [#41](https://github.com/paul007ex/qureddy/issues/41), [#42](https://github.com/paul007ex/qureddy/issues/42), [#43](https://github.com/paul007ex/qureddy/issues/43), [#44](https://github.com/paul007ex/qureddy/issues/44), [#45](https://github.com/paul007ex/qureddy/issues/45) — ADR 0003 follow-ups that land in the new `cli/` package
-- Issue [#79](https://github.com/paul007ex/qureddy/issues/79) — `output/console.py:_commands_panel` function split (independent)
-- Issue [#69](https://github.com/paul007ex/qureddy/issues/69) — `tests/test_cli.py` size violation (deferred per Rule H)
+- Issues [#60](https://github.com/breachsafe/qureddy/issues/60), [#82](https://github.com/breachsafe/qureddy/issues/82) — implementation tracking (one PR per file)
+- Issues [#41](https://github.com/breachsafe/qureddy/issues/41), [#42](https://github.com/breachsafe/qureddy/issues/42), [#43](https://github.com/breachsafe/qureddy/issues/43), [#44](https://github.com/breachsafe/qureddy/issues/44), [#45](https://github.com/breachsafe/qureddy/issues/45) — ADR 0003 follow-ups that land in the new `cli/` package
+- Issue [#79](https://github.com/breachsafe/qureddy/issues/79) — `output/console.py:_commands_panel` function split (independent)
+- Issue [#69](https://github.com/breachsafe/qureddy/issues/69) — `tests/test_cli.py` size violation (deferred per Rule H)
 
 ---
 

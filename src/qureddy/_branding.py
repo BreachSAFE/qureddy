@@ -25,7 +25,7 @@ Notes on the format:
   text instead of an em-dash per `docs/contributors/coding-rules.md`
   §18 (no em-dashes in source).
 - `SOURCE_URL` points at `breachsafe/qureddy`, the canonical public
-  repository (org cutover from the `paul007ex/qureddy` staging repo
+  repository (org cutover from the `breachsafe/qureddy` staging repo
   org-migration target is documented in CLAUDE.md but the repo lives
   at `breachsafe/qureddy` until org cutover).
 """

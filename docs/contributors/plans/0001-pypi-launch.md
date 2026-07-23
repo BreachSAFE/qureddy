@@ -48,7 +48,7 @@ Instead of an API token sitting in a GitHub secret, PyPI lets you authorize publ
 | Step | What |
 |---|---|
 | 2.1 | On pypi.org, navigate to the project (after first publish or use "pending publisher" pre-publish) |
-| 2.2 | Add a Trusted Publisher: GitHub \| owner: paul007ex \| repo: qureddy \| workflow: release.yml \| environment: pypi |
+| 2.2 | Add a Trusted Publisher: GitHub \| owner: breachsafe \| repo: qureddy \| workflow: release.yml \| environment: pypi |
 | 2.3 | Repeat on test.pypi.org for the testpypi environment |
 | 2.4 | Documentation: https://docs.pypi.org/trusted-publishers/ |
 
