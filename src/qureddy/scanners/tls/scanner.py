@@ -259,7 +259,11 @@ class TLSScanner:
         openssl_path: str,
         timeout_seconds: int,
     ) -> tuple[Evidence, Finding | None]:
-        """Certificate/authentication axis (issue #183): PQ vs classical signature.
+        """Certificate issuer-signature axis (issue #183): PQ vs classical signature.
+
+        Issue #226: this is the certificate's issuer/chain-of-trust signature,
+        not a claim about the live handshake's authentication signature —
+        see cert_sig.py's docstring for why those are different operations.
 
         Independent of the key-exchange probes above — same pattern as
         cli.py's _fetch_cert_for_cbom, now also run for the live scan
