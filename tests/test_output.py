@@ -28,6 +28,7 @@ from qureddy.core.models import (
     ScanTarget,
     Severity,
 )
+from qureddy.output._styles import unknown_headline, unknown_recommendation
 from qureddy.output.console import (
     _style_group,
     _style_readiness,
@@ -351,3 +352,25 @@ class TestColorStyleRules:
     def test_severity_info_is_dim_cyan(self) -> None:
 
         assert _style_severity(Severity.INFO).style == "dim cyan"
+
+
+class TestUnknownRecommendationLibreSSL:
+    """Issue #10: the UNKNOWN-readiness recommendation must be LibreSSL-
+    specific and actionable, not the generic "install OpenSSL 3.5+" copy
+    every other local-capability failure gets."""
+
+    def test_headline_names_libressl_category(self) -> None:
+        headline = unknown_headline(FailureCategory.LOCAL_OPENSSL_IS_LIBRESSL)
+        assert "local_openssl_is_libressl" in str(headline)
+
+    def test_recommendation_names_the_fix(self) -> None:
+        recommendation = unknown_recommendation(FailureCategory.LOCAL_OPENSSL_IS_LIBRESSL)
+        assert "LibreSSL" in recommendation
+        assert "--openssl" in recommendation
+        assert "QUREDDY_OPENSSL" in recommendation
+
+    def test_other_local_categories_keep_generic_message(self) -> None:
+        """Regression guard: the new branch must not swallow the existing
+        generic message for the other four local-capability categories."""
+        recommendation = unknown_recommendation(FailureCategory.LOCAL_OPENSSL_TOO_OLD)
+        assert "Install OpenSSL 3.5+" in recommendation
