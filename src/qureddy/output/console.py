@@ -296,7 +296,12 @@ def _verdict_panel(result: ScanResult) -> Panel:
         body,
         title=f"QuReddy scan: {result.summary.target}",
         border_style=_verdict_panel_border(result),
-        box=box.HEAVY,
+        # Issue #7: box.HEAVY + default expand=True stretched a full-width
+        # rectangle around a short verdict. HORIZONTALS draws only top/bottom
+        # rules (title on top, verdict color preserved, no side borders), and
+        # expand=False sizes it to the content instead of the terminal.
+        box=box.HORIZONTALS,
+        expand=False,
         padding=(0, 1),
     )
 
