@@ -21,6 +21,7 @@ from qureddy.core.models import (
     Asset,
     Evidence,
     FailureCategory,
+    Finding,
     ObservationType,
     OpenSSLDependency,
     ProbeResult,
@@ -32,11 +33,16 @@ from qureddy.core.policy import classify_evidence
 from qureddy.core.retry import run_with_retries
 from qureddy.core.status import STATUS_COMPLETED
 from qureddy.scanners.tls._evidence import build_asset, evidence_from_probe
+from qureddy.scanners.tls._legacy_findings import (
+    evidence_from_legacy_result,
+    finding_from_legacy_result,
+)
 from qureddy.scanners.tls._summary import (
     build_summary,
     scan_readiness,
     summary_failure_category,
 )
+from qureddy.scanners.tls.legacy_probe import probe_all_legacy_protocols
 from qureddy.scanners.tls.openssl_probe import (
     CLASSICAL_GROUP,
     DEFAULT_TIMEOUT_SECONDS,
@@ -103,6 +109,15 @@ class TLSScanner:
             timeout_seconds=timeout_seconds,
         )
         findings = classify_evidence(asset, evidence)
+        legacy_evidence, legacy_findings = self._collect_legacy_evidence(
+            target=target,
+            asset=asset,
+            openssl_path=openssl_path,
+            timeout_seconds=timeout_seconds,
+        )
+        evidence.extend(legacy_evidence)
+        findings.extend(legacy_findings)
+        total_attempts += len(legacy_evidence)
         completed = datetime.now(UTC)
         summary = build_summary(target, findings, evidence)
         log.info(
@@ -175,6 +190,36 @@ class TLSScanner:
             for r in classical_results
         )
         return evidence, len(hybrid_results) + len(classical_results)
+
+    @staticmethod
+    def _collect_legacy_evidence(
+        *,
+        target: ScanTarget,
+        asset: Asset,
+        openssl_path: str,
+        timeout_seconds: int,
+    ) -> tuple[list[Evidence], list[Finding]]:
+        """Legacy TLS 1.0/1.1/1.2 protocol + cipher enumeration (issue #192).
+
+        No retries: unlike the hybrid/classical probes (single handshake,
+        worth retrying on a flaky connection), this is already a multi
+        -handshake sweep per protocol — retrying the whole sweep on any
+        transient failure would multiply an already-slower path.
+        """
+        results = probe_all_legacy_protocols(
+            openssl_path,
+            target.host,
+            target.port,
+            target.sni,
+            timeout_seconds=timeout_seconds,
+        )
+        evidence = [evidence_from_legacy_result(asset, r) for r in results]
+        findings = [
+            f
+            for ev, r in zip(evidence, results, strict=True)
+            if (f := finding_from_legacy_result(asset, ev, r)) is not None
+        ]
+        return evidence, findings
 
     def _probe_with_retries(
         self,
