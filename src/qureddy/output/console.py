@@ -302,7 +302,7 @@ def _verdict_panel(result: ScanResult) -> Panel:
         # expand=False sizes it to the content instead of the terminal.
         box=box.HORIZONTALS,
         expand=False,
-        padding=(0, 1),
+        padding=(0, 0),
     )
 
 
