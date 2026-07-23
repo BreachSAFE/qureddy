@@ -115,25 +115,39 @@ class TLSScanner:
             timeout_seconds=timeout_seconds,
         )
         findings = classify_evidence(asset, evidence)
-        legacy_evidence, legacy_findings = self._collect_legacy_evidence(
-            target=target,
-            asset=asset,
-            openssl_path=openssl_path,
-            timeout_seconds=timeout_seconds,
-        )
-        evidence.extend(legacy_evidence)
-        findings.extend(legacy_findings)
-        total_attempts += len(legacy_evidence)
-        cert_evidence, cert_finding = self._collect_cert_evidence(
-            target=target,
-            asset=asset,
-            openssl_path=openssl_path,
-            timeout_seconds=timeout_seconds,
-        )
-        evidence.append(cert_evidence)
-        if cert_finding is not None:
-            findings.append(cert_finding)
-        total_attempts += 1
+        if _target_appears_unreachable(evidence):
+            # Issue #192/#183 follow-up: the legacy-protocol sweep (3
+            # protocols) and cert fetch each open their own connection
+            # with their own timeout_seconds budget. Against a target
+            # that silently drops packets (not an immediate TCP
+            # refuse), that's 4 more full timeout windows stacked onto
+            # the 2 the hybrid/classical probes already spent — verified
+            # live: 18s at --timeout 3 (6x), ~180s at the default 30s.
+            # If the main probes already both failed to even complete a
+            # handshake, more attempts against the same host with
+            # different flags are extremely unlikely to succeed and
+            # only multiply the wait.
+            log.info("scan.legacy_and_cert_probes_skipped", reason="target_appears_unreachable")
+        else:
+            legacy_evidence, legacy_findings = self._collect_legacy_evidence(
+                target=target,
+                asset=asset,
+                openssl_path=openssl_path,
+                timeout_seconds=timeout_seconds,
+            )
+            evidence.extend(legacy_evidence)
+            findings.extend(legacy_findings)
+            total_attempts += len(legacy_evidence)
+            cert_evidence, cert_finding = self._collect_cert_evidence(
+                target=target,
+                asset=asset,
+                openssl_path=openssl_path,
+                timeout_seconds=timeout_seconds,
+            )
+            evidence.append(cert_evidence)
+            if cert_finding is not None:
+                findings.append(cert_finding)
+            total_attempts += 1
         completed = datetime.now(UTC)
         summary = build_summary(target, findings, evidence)
         log.info(
@@ -323,6 +337,27 @@ def build_capability_failure_result(
         findings=tuple(findings),
         summary=build_summary(target, list(findings), [evidence]),
     )
+
+
+_UNREACHABLE_FAILURE_CATEGORIES = frozenset(
+    {FailureCategory.TARGET_CONNECT_FAILED, FailureCategory.TLS_HANDSHAKE_FAILED}
+)
+
+
+def _target_appears_unreachable(evidence: list[Evidence]) -> bool:
+    """True when every hybrid/classical probe attempt failed to connect at all.
+
+    Deliberately conservative: only these two categories (not
+    SNI_REQUIRED_OR_WRONG, MIDDLEBOX_OR_MTU_FAILURE, etc.) — those mean
+    the target IS responding, just not in the expected shape, and the
+    legacy/cert probes (different flags, no forced group) have a real
+    chance of succeeding where the forced-group probe didn't. Requires
+    ALL evidence records to match, not just one, so a single flaky
+    attempt among successful retries doesn't trigger a skip.
+    """
+    if not evidence:
+        return False
+    return all(ev.failure_category in _UNREACHABLE_FAILURE_CATEGORIES for ev in evidence)
 
 
 __all__ = [
