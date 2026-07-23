@@ -1,9 +1,10 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
 # SPDX-License-Identifier: Apache-2.0
-"""Certificate fetch + parse via OpenSSL subprocess only (rapid prototype).
+"""Certificate fetch + parse via OpenSSL subprocess only — MVP 0.2.
 
-NOT the tracked MVP 0.2 implementation. Read-only — no minting, no key
-generation, no private key material ever touched.
+Promoted from prototype status by ADR 0005
+(docs/contributors/adr/0005-cbom-schema-source-of-truth.md). Read-only — no
+minting, no key generation, no private key material ever touched.
 
 Rejected approach: the `cryptography` library. Per coding-rules.md §13.1 a
 new dependency must replace 50+ lines we'd otherwise write; single-purpose

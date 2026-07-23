@@ -1,11 +1,13 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
 # SPDX-License-Identifier: Apache-2.0
-"""CycloneDX 1.6 CBOM output adapter (rapid prototype).
+"""CycloneDX 1.6 CBOM output adapter — MVP 0.3.
 
-NOT the tracked MVP 0.3 implementation (qureddy#61, which explicitly
-requires an ADR before code). This is a local, unmerged prototype on the
-`prowler-rapid-prototype` branch to validate the shape of QuReddy-to-CBOM
-mapping before that ADR is written.
+Schema decision locked in ADR 0005 (docs/contributors/adr/0005-cbom-schema-source-of-truth.md,
+qureddy#61): emit CycloneDX 1.6 verbatim via `cyclonedx-python-lib`'s native model
+classes, never a hand-rolled or forked dialect. A CBOM emitted by this module has
+been independently validated against the official CycloneDX 1.6 JSON Schema with
+zero violations (ADR 0005's Evidence section) and round-trips through Qurum's real
+parser, not just this repo's own tests.
 
 Closes the two gaps found when this output was piped through Qurum
 (qurum cbom --knowledge): every asset came back with crypto_library_name
