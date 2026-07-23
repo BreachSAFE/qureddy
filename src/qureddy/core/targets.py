@@ -97,7 +97,30 @@ def _extract_host_port(cleaned: str) -> tuple[str, int]:
             raise TargetParseError(msg) from exc
         return host, _validate_port(port)
 
+    _reject_ambiguous_unbracketed_ipv6(cleaned)
     return cleaned, DEFAULT_PORT
+
+
+def _reject_ambiguous_unbracketed_ipv6(cleaned: str) -> None:
+    """Reject a colon-heavy target that reads as two different valid answers.
+
+    An unbracketed string like ``::1:8443`` is itself a syntactically valid
+    IPv6 address (RFC 4291) *and* could plausibly mean host ``::1`` port
+    ``8443`` — genuinely ambiguous, not merely unusual. Plain colon-counting
+    (`>1`) is not sufficient: an ordinary bare IPv6 literal like ``::1`` also
+    has two colons but is unambiguous, because its rpartition prefix (``:``)
+    is not itself a valid IP. Only reject when *both* readings are valid.
+    """
+    if not _is_ip_literal(cleaned):
+        return
+    prefix, _, suffix = cleaned.rpartition(":")
+    if prefix and suffix.isdigit() and _is_ip_literal(prefix):
+        msg = (
+            f"ambiguous IPv6 target {cleaned!r} -- bracket it: "
+            f"use [{prefix}]:{suffix} if you meant host {prefix!r} port {suffix}, "
+            f"or [{cleaned}] if you meant the literal address {cleaned!r}"
+        )
+        raise TargetParseError(msg)
 
 
 def _parse_bracketed_ipv6(cleaned: str) -> tuple[str, int]:
