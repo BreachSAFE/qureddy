@@ -409,8 +409,24 @@ def _run_openssl(args: list[str], *, timeout_seconds: int) -> str:
     except FileNotFoundError as exc:
         raise LocalOpenSSLMissing(str(exc)) from exc
     except subprocess.TimeoutExpired as exc:
-        msg = f"openssl capability check timed out: {args}"
-        raise LocalOpenSSLMissing(msg) from exc
+        # Issue #249: resolve_openssl_path already confirmed this binary
+        # exists and is executable before this ever runs — a timeout here
+        # means it's unresponsive (e.g. blocked on /dev/random entropy in
+        # a minimal/newly-booted container), not missing. LocalOpenSSLMissing's
+        # downstream recommendation text ("Install OpenSSL 3.5+...") is
+        # actively wrong advice for a present-but-hung binary.
+        msg = (
+            f"openssl did not respond within {timeout_seconds}s during capability "
+            f"check ({args}); the binary exists but appears unresponsive — check "
+            f"for entropy exhaustion or a hung process, or increase --timeout"
+        )
+        raise LocalOpenSSLBroken(
+            msg,
+            dependency=OpenSSLDependency(
+                path=args[0],
+                failure_category=FailureCategory.LOCAL_OPENSSL_BROKEN,
+            ),
+        ) from exc
     if completed.returncode != 0:
         stderr = completed.stderr.strip() or "(no stderr)"
         snippet = stderr[:200]

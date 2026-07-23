@@ -41,12 +41,32 @@ def evidence_from_legacy_result(asset: Asset, result: LegacyProtocolResult) -> E
     scan's evidence list is a complete audit trail: "we checked TLS 1.0
     and confirmed it is not offered" is itself a real, positive signal,
     not noise to discard.
+
+    Issue #246: that claim is only true when the sweep actually
+    completed. `result.probe_incomplete` means a subprocess timeout cut
+    it short with zero ciphers accepted — "not offered" would be a false
+    negative in that case, not a real observation. Recorded as
+    NOT_TESTABLE instead. A timeout *after* some ciphers were already
+    accepted still reports OFFERED — those acceptances are real,
+    positive observations regardless of whether the sweep finished.
     """
-    notes = (
+    if result.probe_incomplete and not result.accepted_ciphers:
+        return Evidence(
+            id=f"ev-{uuid.uuid4().hex[:12]}",
+            asset_id=asset.id,
+            evidence_type="tls.legacy.protocol",
+            observation_type=ObservationType.NOT_TESTABLE,
+            source="qureddy.scanners.tls.legacy_probe",
+            protocol_version=result.protocol_version,
+            notes=("probe did not complete (timeout) — protocol support undetermined",),
+        )
+    notes: tuple[str, ...] = (
         (f"accepted ciphers: {', '.join(result.accepted_ciphers)}",)
         if result.accepted_ciphers
         else ("not offered",)
     )
+    if result.probe_incomplete:
+        notes = (*notes, "sweep incomplete — timed out before checking remaining candidates")
     return Evidence(
         id=f"ev-{uuid.uuid4().hex[:12]}",
         asset_id=asset.id,
