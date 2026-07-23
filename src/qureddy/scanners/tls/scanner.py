@@ -339,21 +339,25 @@ def build_capability_failure_result(
     )
 
 
-_UNREACHABLE_FAILURE_CATEGORIES = frozenset(
-    {FailureCategory.TARGET_CONNECT_FAILED, FailureCategory.TLS_HANDSHAKE_FAILED}
-)
+_UNREACHABLE_FAILURE_CATEGORIES = frozenset({FailureCategory.TARGET_CONNECT_FAILED})
 
 
 def _target_appears_unreachable(evidence: list[Evidence]) -> bool:
-    """True when every hybrid/classical probe attempt failed to connect at all.
+    """True when every hybrid/classical probe attempt never even connected.
 
-    Deliberately conservative: only these two categories (not
-    SNI_REQUIRED_OR_WRONG, MIDDLEBOX_OR_MTU_FAILURE, etc.) — those mean
-    the target IS responding, just not in the expected shape, and the
-    legacy/cert probes (different flags, no forced group) have a real
-    chance of succeeding where the forced-group probe didn't. Requires
-    ALL evidence records to match, not just one, so a single flaky
-    attempt among successful retries doesn't trigger a skip.
+    Issue #216: TLS_HANDSHAKE_FAILED used to be in this set too, on the
+    theory that it meant the target couldn't be talked to. Wrong —
+    confirmed live against badssl.com: the *forced-group* TLS 1.3
+    handshake fails with TLS_HANDSHAKE_FAILED both when a target is
+    genuinely dead AND when it's alive, responding, and simply doesn't
+    support that specific forced group — exactly the servers #192's
+    legacy-protocol sweep exists to catch (badssl.com genuinely
+    negotiates TLS 1.0/1.2 with different flags, confirmed independently
+    with raw openssl). TARGET_CONNECT_FAILED is the only category that's
+    unambiguous: the TCP connection itself never completed, so no
+    OpenSSL flag combination would help. Requires ALL evidence records
+    to match, not just one, so a single flaky attempt among successful
+    retries doesn't trigger a skip.
     """
     if not evidence:
         return False
