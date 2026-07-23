@@ -426,9 +426,19 @@ def _summary_headline_and_recommendation(result: ScanResult) -> tuple[Text, Text
     """
     readiness = result.summary.readiness
     failure = result.summary.failure_category
-    hybrid_evidence = _pick_evidence(result, group=_HYBRID_GROUP)
+    # Derive the hybrid group from the finding, not a hardcoded TLS group name,
+    # so SSH (sntrup761x25519-sha512) shows its group in the headline too. The
+    # old TLS-only _HYBRID_GROUP lookup returned None for SSH, leaving
+    # "PQ hybrid  negotiated" with a blank group and a double space.
+    hybrid_group = next(
+        (
+            f.negotiated_group
+            for f in result.findings
+            if f.readiness is Readiness.TRANSITIONAL_HYBRID and f.negotiated_group
+        ),
+        None,
+    )
     classical_evidence = _pick_evidence(result, group=_CLASSICAL_GROUP)
-    hybrid_group = hybrid_evidence.negotiated_group if hybrid_evidence else None
     classical_group = classical_evidence.negotiated_group if classical_evidence else None
 
     if readiness is Readiness.QUANTUM_SAFE:
