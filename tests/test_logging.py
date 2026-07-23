@@ -104,20 +104,37 @@ def test_logger_binds_to_kernel_stderr_not_sys_stderr(
     assert fake_stderr.getvalue() == ""
 
 
+class _FakeStream(io.StringIO):
+    """A StringIO with a settable `isatty()` — the actual destination
+    stream a caller controls via `log_stream`, independent of whatever
+    the real process's `sys.stderr` happens to be."""
+
+    def __init__(self, *, tty: bool) -> None:
+        super().__init__()
+        self._tty = tty
+
+    def isatty(self) -> bool:
+        return self._tty
+
+
 def test_console_renderer_color_honors_tty_and_no_color(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """ConsoleRenderer color is on iff stderr is a TTY and NO_COLOR is unset.
+    """ConsoleRenderer color is on iff the destination stream is a TTY and NO_COLOR is unset.
 
     Reviewer-flagged regression: a previous revision hardcoded
-    `colors=False`, suppressing color even on real terminals. The fix
-    threads `sys.stderr.isatty() and "NO_COLOR" not in os.environ`
-    into the ConsoleRenderer. This test exercises both inputs of that
-    expression by capturing the configured structlog processor list.
+    `colors=False`, suppressing color even on real terminals.
+
+    Issue #231: the color decision must read the actual destination
+    `stream` (`log_stream` when the caller passes one), not `sys.stderr`
+    — those can diverge. This test passes a controllable `log_stream`
+    rather than monkeypatching `sys.stderr`, which is exactly the
+    divergence #231 is about: monkeypatching `sys.stderr.isatty` must
+    have *no* effect on the color decision once a `log_stream` is given.
     """
 
-    def _renderer_color_flag() -> bool:
-        configure_logging(verbosity=1, json_logs=False)
+    def _renderer_color_flag(*, stream_is_tty: bool) -> bool:
+        configure_logging(verbosity=1, json_logs=False, log_stream=_FakeStream(tty=stream_is_tty))
         # The last processor is the ConsoleRenderer (we passed
         # json_logs=False). `_colors` mirrors the constructor arg.
         config = structlog.get_config()
@@ -125,17 +142,25 @@ def test_console_renderer_color_honors_tty_and_no_color(
         assert isinstance(renderer, structlog.dev.ConsoleRenderer)
         return renderer._colors  # noqa: SLF001 -- intentional probe
 
+    # sys.stderr.isatty is deliberately mocked to the *opposite* of the
+    # log_stream's tty-ness in every case below, proving the decision
+    # tracks log_stream, not sys.stderr.
+
     # NO_COLOR set → color disabled regardless of TTY.
     monkeypatch.setenv("NO_COLOR", "1")
     monkeypatch.setattr(sys.stderr, "isatty", lambda: True)
-    assert _renderer_color_flag() is False, "NO_COLOR=1 should disable color"
+    assert _renderer_color_flag(stream_is_tty=True) is False, "NO_COLOR=1 should disable color"
 
-    # Non-TTY → color disabled regardless of NO_COLOR.
-    monkeypatch.delenv("NO_COLOR", raising=False)
-    monkeypatch.setattr(sys.stderr, "isatty", lambda: False)
-    assert _renderer_color_flag() is False, "non-TTY should disable color"
-
-    # Real TTY + no NO_COLOR → color enabled.
+    # Non-TTY destination stream → color disabled regardless of NO_COLOR
+    # or what sys.stderr.isatty() claims.
     monkeypatch.delenv("NO_COLOR", raising=False)
     monkeypatch.setattr(sys.stderr, "isatty", lambda: True)
-    assert _renderer_color_flag() is True, "TTY without NO_COLOR should enable color"
+    assert _renderer_color_flag(stream_is_tty=False) is False, "non-TTY stream should disable color"
+
+    # TTY destination stream + no NO_COLOR → color enabled, even though
+    # sys.stderr.isatty() claims False.
+    monkeypatch.delenv("NO_COLOR", raising=False)
+    monkeypatch.setattr(sys.stderr, "isatty", lambda: False)
+    assert _renderer_color_flag(stream_is_tty=True) is True, (
+        "TTY stream without NO_COLOR should enable color"
+    )

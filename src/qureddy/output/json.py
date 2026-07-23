@@ -12,14 +12,21 @@ if TYPE_CHECKING:
     from qureddy.core.models import ScanResult
 
 
-def render_json(result: ScanResult, stream: IO[str] = sys.stdout) -> None:
-    """Render a ScanResult as JSON to the given stream.
+def render_json(result: ScanResult, stream: IO[str] | None = None) -> None:
+    """Render a ScanResult as JSON to the given stream (default: current sys.stdout).
 
     Uses Pydantic's `model_dump(mode="json")` for stable serialization.
     Top-level keys appear in the order defined by the ScanResult model
     (`schema_version`, `scan`, `target`, `dependencies`, `assets`,
     `evidence`, `findings`, `summary`).
+
+    Issue #237: `stream: IO[str] = sys.stdout` as a default is resolved
+    once at function-definition time, not per call — a caller relying on
+    the default after `sys.stdout` is reassigned (`contextlib.redirect_stdout`,
+    pytest capture, console wrappers) silently writes to the stale
+    original object. Resolve at call time instead.
     """
+    target_stream = stream if stream is not None else sys.stdout
     payload = result.model_dump(mode="json")
-    json.dump(payload, stream, indent=2, sort_keys=False)
-    stream.write("\n")
+    json.dump(payload, target_stream, indent=2, sort_keys=False)
+    target_stream.write("\n")

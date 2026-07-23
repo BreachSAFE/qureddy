@@ -19,6 +19,17 @@ HOSTNAME_PATTERN = re.compile(
 MIN_PORT = 1
 MAX_PORT = 65535
 
+# Issue #255: HOSTNAME_PATTERN's dotted-label grammar happens to also
+# accept legacy/noncanonical numeric IPv4 forms (decimal "2130706433",
+# short "127.1", zero-padded "127.000.000.001") that ipaddress.ip_address
+# correctly rejects as not-strictly-canonical. The OS resolver still
+# canonicalizes these to a real (different-looking) address, so QuReddy
+# would report scanning one string while the subprocess actually connects
+# to another. Reject anything that reads as "digits and dots only" and
+# isn't already a strict IP literal, rather than silently accepting it as
+# a DNS hostname.
+_NUMERIC_HOST = re.compile(r"^[0-9.]+$")
+
 
 def parse_target(input_str: str, sni_override: str | None = None) -> ScanTarget:
     """Parse a user-supplied target string into a normalized ScanTarget.
@@ -44,6 +55,13 @@ def parse_target(input_str: str, sni_override: str | None = None) -> ScanTarget:
     host, port = _extract_host_port(cleaned)
     is_ip = _is_ip_literal(host)
 
+    if not is_ip and _NUMERIC_HOST.fullmatch(host):
+        msg = (
+            f"noncanonical numeric IP target {host!r}; "
+            "use canonical dotted-decimal IPv4 (for example 127.0.0.1)"
+        )
+        raise TargetParseError(msg)
+
     if not is_ip and not HOSTNAME_PATTERN.match(host):
         msg = f"target host is not a valid hostname or IP: {host!r}"
         raise TargetParseError(msg)
@@ -57,12 +75,17 @@ def parse_target(input_str: str, sni_override: str | None = None) -> ScanTarget:
     else:
         sni = host
 
+    # Issue #236: an unbracketed IPv6 host glued directly to ":{port}" in
+    # the locator is the same ambiguous shape #223 rejects on the input
+    # side — ScanTarget's own locator_matches_endpoint validator now
+    # requires the bracketed form, which this was silently not producing.
+    rendered_host = f"[{host}]" if ":" in host else host
     return ScanTarget(
         original_input=input_str,
         host=host,
         port=port,
         sni=sni,
-        locator=f"tls://{host}:{port}",
+        locator=f"tls://{rendered_host}:{port}",
     )
 
 
@@ -97,7 +120,30 @@ def _extract_host_port(cleaned: str) -> tuple[str, int]:
             raise TargetParseError(msg) from exc
         return host, _validate_port(port)
 
+    _reject_ambiguous_unbracketed_ipv6(cleaned)
     return cleaned, DEFAULT_PORT
+
+
+def _reject_ambiguous_unbracketed_ipv6(cleaned: str) -> None:
+    """Reject a colon-heavy target that reads as two different valid answers.
+
+    An unbracketed string like ``::1:8443`` is itself a syntactically valid
+    IPv6 address (RFC 4291) *and* could plausibly mean host ``::1`` port
+    ``8443`` — genuinely ambiguous, not merely unusual. Plain colon-counting
+    (`>1`) is not sufficient: an ordinary bare IPv6 literal like ``::1`` also
+    has two colons but is unambiguous, because its rpartition prefix (``:``)
+    is not itself a valid IP. Only reject when *both* readings are valid.
+    """
+    if not _is_ip_literal(cleaned):
+        return
+    prefix, _, suffix = cleaned.rpartition(":")
+    if prefix and suffix.isdigit() and _is_ip_literal(prefix):
+        msg = (
+            f"ambiguous IPv6 target {cleaned!r} -- bracket it: "
+            f"use [{prefix}]:{suffix} if you meant host {prefix!r} port {suffix}, "
+            f"or [{cleaned}] if you meant the literal address {cleaned!r}"
+        )
+        raise TargetParseError(msg)
 
 
 def _parse_bracketed_ipv6(cleaned: str) -> tuple[str, int]:

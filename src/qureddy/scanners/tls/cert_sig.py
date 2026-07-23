@@ -1,19 +1,31 @@
 # SPDX-FileCopyrightText: 2026 Paul Volosen <paulvolosen@gmail.com>
 # SPDX-License-Identifier: Apache-2.0
-"""Detect the leaf certificate's signature algorithm (PQC vs classical).
+"""Detect the leaf certificate's issuer signature algorithm (PQC vs classical).
 
-QuReddy judges TLS on two independent axes:
+Issue #226 correction: this module reads the CA/issuer's signature *over the
+certificate* (``openssl x509 -text``'s ``Signature Algorithm:`` line) — this is
+NOT the same operation as the live TLS 1.3 handshake's server authentication.
+That's a distinct signature (OpenSSL calls it ``Signature type:`` in
+``s_client -brief`` output, over the leaf's own private key via
+``CertificateVerify``) that can use a different algorithm than the issuer's
+signature over the certificate. A previous revision of this docstring called
+this module's output "the authentication axis" — wrong: do not treat what
+this module reports as a claim about live-handshake authentication. It is a
+statement about the certificate's chain-of-trust (issuer) signature only.
+Confirmed live: a real ML-DSA-65-issued certificate with an ECDSA leaf key
+negotiates a classical ECDSA `CertificateVerify` — this module correctly
+reports "ML-DSA-65", which is true of the issuer signature and would be
+false if read as "this connection authenticated with a PQ signature."
 
-  - confidentiality  -> the negotiated key-exchange group (parse.py)
-  - authentication   -> the server CERTIFICATE's signature algorithm (this module)
-
-A server can be post-quantum on one axis and not the other. This module closes the
-certificate axis: it reads the leaf cert's ``Signature Algorithm`` (as printed by
+This module reads the leaf cert's ``Signature Algorithm`` (as printed by
 ``openssl x509 -text``) and classifies it as ML-DSA (post-quantum, FIPS 204 / RFC 9881)
 or classical.
 
 Consistent with the rest of the scanner, this parses OpenSSL text output rather than
 adding a crypto dependency. Detection only — this does NOT validate trust or the chain.
+
+Pulled in from `feat/7-cert-detect-clean` (issue #7) and wired into the live scan path
+per issue #183 — previously existed but was never called by `scanner.py`.
 """
 
 from __future__ import annotations
@@ -21,10 +33,11 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-# ``openssl x509 -text`` prints the cert's outer signature algorithm as e.g.
-#   "    Signature Algorithm: ML-DSA-87"
-# (it appears for both the TBS signature field and the outer signatureAlgorithm; we take
-# the first match, which is the TBSCertificate.signature — identical value for a valid cert).
+# ``openssl x509 -text`` prints the cert's outer signature algorithm as a
+# "Signature Algorithm:" line followed by the algorithm name (e.g. ML-DSA-87).
+# It appears for both the TBS signature field and the outer signatureAlgorithm;
+# we take the first match, which is the TBSCertificate.signature — identical
+# value for a valid cert.
 SIGNATURE_ALGORITHM = re.compile(
     r"^[^\S\r\n]*Signature Algorithm:[^\S\r\n]*(?P<alg>[A-Za-z0-9._-]+)[^\S\r\n]*$",
     re.MULTILINE,

@@ -7,11 +7,9 @@ from __future__ import annotations
 import json
 import shutil
 import subprocess
-import tomllib
 from pathlib import Path
 
 import pytest
-from packaging.requirements import Requirement
 from typer.testing import CliRunner
 
 import qureddy.cli as cli_module
@@ -326,7 +324,7 @@ def test_invalid_target_exits_4() -> None:
 def test_empty_or_whitespace_sni_exits_4(bad_sni: str) -> None:
     """typer.testing.CliRunner no longer merges stderr into stdout (no
     mix_stderr option, unlike click.testing.CliRunner) — the error text
-    lands on result.stderr, not result.stdout. See issue #16."""
+    lands on result.stderr, not result.stdout. See issue #189."""
     runner = CliRunner()
     result = runner.invoke(app, ["scan", "tls", "example.com", "--sni", bad_sni])
     assert result.exit_code == 4
@@ -523,13 +521,19 @@ def test_local_openssl_too_old_exits_3() -> None:
 def test_json_output_clean_when_stderr_redirected_to_stdout() -> None:
     """JSON stdout stays parseable under real OS-level `2>&1`, with --quiet.
 
-    typer.testing.CliRunner dropped `mix_stderr` (see #16) and, more
+    typer.testing.CliRunner dropped `mix_stderr` (see #189) and, more
     importantly, could never exercise genuine shell-level `2>&1` anyway —
     that redirection happens via dup2() on the real file descriptor table
     before the process starts, which CliRunner's in-process stream
     capture cannot simulate. This invokes the actual installed console
     entrypoint via subprocess with stderr=STDOUT, the only way to test
     real fd-level merging.
+
+    Only --quiet is asserted clean here: without it, this currently FAILS
+    against production (see #194) because the kernel-fd-snapshot fix in
+    core/logging.py solves in-process stream mixing, not genuine shell
+    2>&1 (dup2() already merges the fds before Python even starts, so
+    there is no longer a separate "original stderr" left to snapshot).
     """
     result = subprocess.run(  # noqa: S603 -- list-form, shell=False, resolved full path
         [
@@ -554,12 +558,12 @@ def test_json_output_clean_when_stderr_redirected_to_stdout() -> None:
 
 
 def test_json_output_clean_under_2and1_without_quiet() -> None:
-    """#15 fix: --format json now defaults to quiet-equivalent (ERROR-level)
-    logging unless -v/-vv/-vvv is explicitly passed, so a WARNING-level
-    log never lands on stdout under real shell `2>&1` — not just
-    in-process stream mixing (CliRunner), which the #15-precursor
-    fd-snapshot fix already covered but which cannot protect real `2>&1`
-    (the OS has already merged fd 1/2 before Python starts)."""
+    """#194 fix: --format json/cbom now default to quiet-equivalent
+    (ERROR-level) logging unless -v/-vv/-vvv is explicitly passed, so a
+    WARNING-level log never lands on stdout under real shell `2>&1` —
+    not just in-process stream mixing (CliRunner), which the #15 fix
+    already covered but which cannot protect real `2>&1` (the OS has
+    already merged fd 1/2 before Python starts)."""
     result = subprocess.run(  # noqa: S603 -- list-form, shell=False, resolved full path
         [
             _QUREDDY_BIN,
@@ -727,7 +731,7 @@ def test_invalid_format_value_is_rejected() -> None:
     )
     # Click rejects the invalid enum value before the command body runs.
     # typer.testing.CliRunner no longer merges stderr into stdout (no
-    # mix_stderr option) — the error text lands on result.stderr. See #16.
+    # mix_stderr option) — the error text lands on result.stderr. See #189.
     assert result.exit_code != 0
     output = (result.stdout or "") + (result.stderr or "")
     assert "yaml" in output.lower() or "format" in output.lower()
@@ -768,51 +772,6 @@ def test_invalid_retries_via_main_exits_4(
     with pytest.raises(SystemExit) as exit_info:
         main()
     assert exit_info.value.code == 4
-
-
-def test_typer_requirement_excludes_vendored_click_versions() -> None:
-    """typer must carry a `<0.24` upper bound to preserve the exit-4 contract.
-
-    From typer 0.24 onward, Click is vendored into `typer._click`;
-    parameter/usage errors are then raised as
-    `typer._click.exceptions.UsageError` (and subclasses), which are NOT
-    instances of `click.exceptions.UsageError`. The `except
-    click.exceptions.UsageError` arm in `main()` misses them, so usage
-    errors fall through to the last-resort handler and exit 70
-    (EX_SOFTWARE) instead of the documented 4 (usage error, see
-    docs/reference/exit-codes.md). CI installs from uv.lock (typer
-    0.23.1) and stays green either way -- only a fresh resolve (what
-    every PyPI user gets) hits the bug, which is why the bound is locked
-    by this test instead of being left to the CI matrix.
-
-    Before relaxing the bound: make `main()` catch typer's vendored
-    exception types (or modernize the entrypoint), then re-verify the
-    exit-4 usage-error tests in this file against a FRESH resolve of the
-    new typer line -- not against the lockfile pin.
-    """
-    pyproject = Path(__file__).parent.parent / "pyproject.toml"
-    with pyproject.open("rb") as fh:
-        dependencies = tomllib.load(fh)["project"]["dependencies"]
-    typer_requirements = [
-        requirement
-        for requirement in (Requirement(dep) for dep in dependencies)
-        if requirement.name == "typer"
-    ]
-    assert len(typer_requirements) == 1, (
-        f"expected exactly one typer requirement, got: {typer_requirements}"
-    )
-    specifier = typer_requirements[0].specifier
-    # The locked version (0.23.x, last pre-vendoring line) must satisfy
-    # the requirement...
-    assert specifier.contains("0.23.1"), (
-        f"locked typer 0.23.1 no longer satisfies the declared specifier {specifier!r}"
-    )
-    # ...and the first vendored-Click version must be excluded.
-    assert not specifier.contains("0.24.0"), (
-        f"typer specifier {specifier!r} admits 0.24+ -- vendored-Click typer "
-        "breaks the usage-error exit-4 contract; see this test's docstring "
-        "before relaxing the bound"
-    )
 
 
 class TestCapabilityFailureNoDoubleProbe:
@@ -869,3 +828,78 @@ class TestCapabilityFailureNoDoubleProbe:
             f"CLI is re-probing instead of consuming exc.dependency. "
             f"calls: {invocations}"
         )
+
+
+def test_cbom_capability_failure_never_fetches_cert_with_rejected_binary(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Issue #274: a rejected local OpenSSL must not be used for the CBOM cert fetch.
+
+    The capability check rejects LibreSSL (exit 3), but `_fetch_cert_for_cbom`
+    previously guarded only on `dependencies[0].path` — which a *rejected*
+    dependency still has — so the CBOM path shelled out to the rejected
+    binary anyway and emitted a plausible certificate component (with
+    LibreSSL's divergent slash-separated DN serialization). The fetch must
+    never be attempted once `failure_category` is set.
+    """
+
+    def _must_not_be_called(*args: object, **kwargs: object) -> str:
+        msg = "fetch_certificate_pem called despite rejected capability check"
+        raise AssertionError(msg)
+
+    monkeypatch.setattr("qureddy.cli.fetch_certificate_pem", _must_not_be_called)
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        [
+            "scan",
+            "tls",
+            "example.com",
+            "--openssl",
+            str(FAKE_DIR / "openssl_libressl.sh"),
+            "--format",
+            "cbom",
+        ],
+    )
+    assert result.exception is None or isinstance(result.exception, SystemExit), (
+        f"cert fetch ran against the rejected binary: {result.exception!r}"
+    )
+    assert result.exit_code == 3
+    payload = json.loads(result.stdout)
+    cert_components = [
+        c
+        for c in payload.get("components", [])
+        if c.get("cryptoProperties", {}).get("assetType") == "certificate"
+    ]
+    assert cert_components == [], "capability-failure CBOM must not contain a certificate component"
+
+
+@pytest.mark.parametrize("output_format", ["json", "cbom"])
+def test_machine_formats_emit_stderr_hint_on_capability_failure(
+    output_format: str,
+) -> None:
+    """Issue #274: exit 3 must explain itself on stderr even in machine formats.
+
+    `--format json/cbom` defaults to quiet logging so stdout stays a clean
+    machine document — but that suppressed the only user-facing report of
+    the capability failure (`log.warning`), leaving exit 3 with an empty
+    stderr. The actionable message must be a direct stderr echo, exempt
+    from the machine-format quiet default, like the exit-2/exit-4 paths.
+    """
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        [
+            "scan",
+            "tls",
+            "example.com",
+            "--openssl",
+            str(FAKE_DIR / "openssl_libressl.sh"),
+            "--format",
+            output_format,
+        ],
+    )
+    assert result.exit_code == 3
+    assert "LibreSSL" in result.stderr, (
+        f"exit 3 with empty/unhelpful stderr in --format {output_format}: {result.stderr!r}"
+    )

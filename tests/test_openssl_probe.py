@@ -83,7 +83,7 @@ class TestProbeCapability:
         assert dep.failure_category is FailureCategory.LOCAL_OPENSSL_VERSION_UNREADABLE
 
     def test_libressl_flagged_distinctly_not_as_unparseable(self) -> None:
-        """Issue #10: macOS ships LibreSSL as /usr/bin/openssl by default.
+        """Issue #188: macOS ships LibreSSL as /usr/bin/openssl by default.
 
         `OPENSSL_VERSION_PATTERN` never matches "LibreSSL 3.3.6" (it
         requires the literal "OpenSSL" prefix), so before this fix
@@ -117,7 +117,7 @@ class TestRaiseIfUnusable:
             raise_if_unusable(dep)
 
     def test_libressl_message_names_libressl_and_the_fix(self) -> None:
-        """The whole point of #10: the message must say *why* (this is
+        """The whole point of #188: the message must say *why* (this is
         LibreSSL, not old/broken OpenSSL) and *how to fix it*
         (--openssl / QUREDDY_OPENSSL), not just "unparseable version"."""
         dep = probe_capability(str(FAKE_DIR / "openssl_libressl.sh"))

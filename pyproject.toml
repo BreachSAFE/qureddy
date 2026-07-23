@@ -8,7 +8,7 @@
 [project]
 name = "breachsafe-qureddy"
 version = "0.1.0"
-description = "Open-source post-quantum cryptography readiness scanner."
+description = "Open-source PQC readiness scanner -- live OpenSSL handshakes against the target."
 readme = "README.md"
 requires-python = ">=3.12"
 license = {text = "Apache-2.0"}
@@ -29,19 +29,31 @@ classifiers = [
 # Runtime dependencies. click is pulled transitively by typer but
 # imported directly in cli.py for the UsageError → exit-4 remap, so
 # it is declared explicitly to satisfy deptry.
-# typer is capped below 0.24: from 0.24 typer vendors Click into
-# typer._click, so usage errors are no longer click.exceptions.UsageError
-# instances and main()'s exit-4 remap misses them (usage errors would
-# exit 70 instead of the documented 4). Guarded by
-# tests/test_cli.py::test_typer_requirement_excludes_vendored_click_versions;
-# read that test's docstring before relaxing the bound.
+#
+# typer upper bound (issue #186): 0.16+ vendors its own internal
+# exception module instead of re-raising real click exceptions, which
+# silently broke the exit-code-4 usage-error contract in cli.py. Code
+# now handles this explicitly up to the currently-tested version; an
+# upper bound forces a deliberate re-verification on the next bump
+# instead of silent drift.
+#
+# cyclonedx-python-lib: used unconditionally by output/cbom.py, wired into
+# the CLI's --format cbom (prowler-rapid-prototype branch). Was missing
+# here entirely — it only "worked" because it's a transitive dependency
+# of pip-audit (a dev-only tool), so a clean prod install without [dev]
+# would hit ModuleNotFoundError the moment --format cbom is used. Pinned
+# to the version already verified working (11.11.0) rather than the
+# lowest version that happens to expose CryptoAssetType/JsonV1Dot6, since
+# this is prototype code, not yet the tracked MVP 0.3 implementation
+# (qureddy#61) — revisit the floor when that lands.
 dependencies = [
-    "typer>=0.12,<0.24",
+    "typer>=0.12,<0.28",
     "click>=8.1",
     "rich>=13.7",
     "pydantic>=2.7",
     "structlog>=24.1",
     "packaging>=24.0",
+    "cyclonedx-python-lib>=11.11",
 ]
 
 [project.optional-dependencies]
@@ -87,20 +99,25 @@ build-backend = "hatchling.build"
 packages = ["src/qureddy"]
 
 [tool.hatch.build.targets.sdist]
-# Explicitly exclude developer scratch — venvs, caches, scratch agent
-# trees, and the local `dist/` from prior builds. `.gitignore` already
-# excludes most of these from VCS, but hatch's sdist builder by default
-# includes the working tree, so it would pick up `.venv-merge/` (a
-# local test rig). Listing them explicitly here keeps `uv build` clean
-# regardless of what's in the working tree.
-exclude = [
-    ".venv*",
-    ".coverage",
-    ".mypy_cache",
-    ".pytest_cache",
-    ".ruff_cache",
-    "scratch",
-    "dist",
+# Issue #159: an exclude-blocklist can only omit what it names, so every
+# internal directory added later (`.claude/`, `.github/`, `AGENTS.md`,
+# `CLAUDE.md`, the agent scaffolding) shipped into the public sdist by
+# default — 51 internal files on the PyPI source view. Use an
+# include-allowlist instead: the sdist ships only what a source consumer
+# needs to build, install, test, and satisfy the license, and any new
+# internal file is excluded by default rather than leaked by default.
+include = [
+    "/src/qureddy",
+    "/tests",
+    "/README.md",
+    "/CHANGELOG.md",
+    "/CONTRIBUTING.md",
+    "/SECURITY.md",
+    "/CODE_OF_CONDUCT.md",
+    "/LICENSE",
+    "/LICENSES",
+    "/REUSE.toml",
+    "/pyproject.toml",
 ]
 
 # ============================================================================

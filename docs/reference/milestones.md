@@ -6,9 +6,9 @@ This page is the canonical record of what's shipped, what's planned, and which s
 
 | Milestone | Status | Scope | Released |
 |---|---|---|---|
-| **MVP 0.1** | **Shipped** | TLS scanner only. Hybrid + classical probes against `X25519MLKEM768` / `X25519` via `openssl s_client -brief`. Rich + JSON output. Exit codes 0/2/3/4. Capability detection. | 2026-04-26 |
-| MVP 0.2 | Planned | Certificate scanner (cert chain, signature algorithms, key sizes). | TBD |
-| MVP 0.3 | Planned | CBOM emission (CycloneDX 1.6). Activates the CycloneDX-flavored fields locked into the schema since MVP 0.1. | TBD |
+| **MVP 0.1** | **Shipped** | TLS scanner. Hybrid + classical probes against `X25519MLKEM768` / `X25519` via `openssl s_client -brief`. Rich, JSON, and CBOM output. Exit codes 0/2/3/4/70. Capability detection. | 2026-04-26 |
+| MVP 0.2 | **Shipped (initial)** | Certificate signature-algorithm detection (classical vs post-quantum) and a legacy-protocol sweep (TLS 1.0/1.1/1.2 with per-protocol cipher enumeration), both wired into the default scan. Full cert-chain and key-size analysis still to come. | 2026-07 |
+| MVP 0.3 | **Shipped (prototype)** | CBOM emission via `--format cbom` — CycloneDX 1.6 through `cyclonedx-python-lib`, validated against the official schema and Qurum's parser. Hardening (deterministic bom-refs, graph direction, full protocol inventory) tracked in open issues. | 2026-07 |
 | MVP 0.4 | Planned | SSH scanner (host keys, KEX algorithms). | TBD |
 | MVP 0.5 | Planned | Local crypto config scanner. | TBD |
 | MVP 0.6 | Planned | Source-code scanner. OpenSSF Best Practices passing tier target. | TBD |

@@ -38,6 +38,7 @@ PROJECT_NAME = "BreachSAFE QuReddy"
 PROJECT_URL = "https://www.breachsafe.ai"
 SOURCE_URL = "https://github.com/paul007ex/qureddy"
 LICENSE_NAME = "Apache-2.0"
+PROJECT_VERSION = _qureddy_version
 
 # Used by `qureddy --version` / `qureddy -V`. Single line, branded.
 VERSION_BANNER = f"{PROJECT_NAME} {_qureddy_version} -- {PROJECT_URL}"

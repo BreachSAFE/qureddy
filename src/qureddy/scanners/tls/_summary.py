@@ -10,6 +10,7 @@ a `ScanSummary`. Extracted from `scanner.py` to keep that file under the
 from __future__ import annotations
 
 from qureddy.core.models import (
+    LOCAL_CAPABILITY_CATEGORIES,
     Evidence,
     FailureCategory,
     Finding,
@@ -39,17 +40,6 @@ _READINESS_PRECEDENCE: tuple[Readiness, ...] = (
     Readiness.UNKNOWN,
     Readiness.QUANTUM_SAFE,
     Readiness.NOT_APPLICABLE,
-)
-
-_LOCAL_CATEGORIES: frozenset[FailureCategory] = frozenset(
-    {
-        FailureCategory.LOCAL_OPENSSL_MISSING,
-        FailureCategory.LOCAL_OPENSSL_BROKEN,
-        FailureCategory.LOCAL_OPENSSL_VERSION_UNREADABLE,
-        FailureCategory.LOCAL_OPENSSL_IS_LIBRESSL,
-        FailureCategory.LOCAL_OPENSSL_TOO_OLD,
-        FailureCategory.LOCAL_OPENSSL_LACKS_GROUP,
-    },
 )
 
 
@@ -91,6 +81,18 @@ def scan_readiness(findings: list[Finding]) -> Readiness:
     return Readiness.UNKNOWN
 
 
+# Issue #241: retry attempts accumulate rather than replace, so an earlier
+# failed attempt's Finding survives in the list alongside a later attempt's
+# success. A failure category must not outlive proof that the probe it
+# describes eventually succeeded.
+_SUCCESS_RULE_IDS: frozenset[str] = frozenset(
+    {
+        "tls.hybrid.negotiated_x25519mlkem768",
+        "tls.classical.negotiated_x25519",
+    }
+)
+
+
 def summary_failure_category(
     findings: list[Finding],
     evidence: list[Evidence],
@@ -101,16 +103,21 @@ def summary_failure_category(
     failures so consumers can distinguish "your openssl is broken" from
     "the server isn't reachable". Within each tier, the first matching
     evidence record wins.
+
+    A successful negotiation finding (e.g. from a later retry attempt)
+    supersedes an earlier attempt's failure category — see #241.
     """
     evidence_by_id = {e.id: e for e in evidence}
     local_match = _first_matching_category(
         findings,
         evidence_by_id,
         "tls.hybrid.not_testable",
-        allowed=_LOCAL_CATEGORIES,
+        allowed=LOCAL_CAPABILITY_CATEGORIES,
     )
     if local_match is not None:
         return local_match
+    if any(f.rule_id in _SUCCESS_RULE_IDS for f in findings):
+        return None
     return _first_matching_category(
         findings,
         evidence_by_id,

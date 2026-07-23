@@ -25,6 +25,7 @@ from __future__ import annotations
 from rich.text import Text
 
 from qureddy.core.models import (
+    LOCAL_CAPABILITY_CATEGORIES,
     FailureCategory,
     OpenSSLDependency,
     Readiness,
@@ -51,14 +52,16 @@ READINESS_STYLE: dict[Readiness, str] = {
 
 SEVERITY_STYLE: dict[Severity, str] = {
     Severity.CRITICAL: "bold red",
-    Severity.HIGH: "red",
-    Severity.MEDIUM: "bold yellow",
-    Severity.LOW: "yellow",
-    Severity.INFO: "dim cyan",
+    Severity.HIGH: "dark_orange",
+    Severity.MEDIUM: "yellow",
+    Severity.LOW: "cyan",
+    Severity.INFO: "dim",
 }
 
 STATUS_STYLE: dict[str, str] = {
     "READY": "bold green",
+    "ACCEPTABLE": "bold green",
+    "ACTION NEEDED": "bold yellow",
     "NOT READY": "bold yellow",
     "FAIL": "bold red",
     "UNKNOWN": "dim",
@@ -79,14 +82,13 @@ VERDICT_BORDER: dict[Readiness, str] = {
 # advice points at standards and capabilities, not products.
 RECOMMENDATION_TEXT: dict[Readiness, str] = {
     Readiness.QUANTUM_SAFE: "No action required.",
-    Readiness.TRANSITIONAL_HYBRID: (
-        "Monitor; certificate and signature chain remain classical "
-        "(cert scanning lands at MVP 0.2)."
-    ),
+    # TRANSITIONAL_HYBRID intentionally absent: this used to be a static,
+    # always-"remain classical" string — false whenever a PQC cert was
+    # actually served (issue #183). console.py's _cert_axis_recommendation
+    # now derives this from the real tls.cert.* finding instead.
     Readiness.QUANTUM_VULNERABLE: (
-        "Plan PQ migration. Move TLS termination behind an edge that "
-        "supports X25519MLKEM768, or upgrade to OpenSSL 3.5+ with PQ "
-        "groups enabled."
+        "Plan PQ migration. Enable X25519MLKEM768 on the target TLS "
+        "terminator, then re-run the scan."
     ),
     Readiness.CLASSICALLY_WEAK: (
         "Migrate immediately. Weak classical crypto is exploitable "
@@ -95,15 +97,18 @@ RECOMMENDATION_TEXT: dict[Readiness, str] = {
     Readiness.NOT_APPLICABLE: "No applicable check for this target.",
 }
 
-LOCAL_CAPABILITY_CATEGORIES: frozenset[FailureCategory] = frozenset(
-    {
-        FailureCategory.LOCAL_OPENSSL_MISSING,
-        FailureCategory.LOCAL_OPENSSL_BROKEN,
-        FailureCategory.LOCAL_OPENSSL_VERSION_UNREADABLE,
-        FailureCategory.LOCAL_OPENSSL_IS_LIBRESSL,
-        FailureCategory.LOCAL_OPENSSL_TOO_OLD,
-        FailureCategory.LOCAL_OPENSSL_LACKS_GROUP,
-    },
+# Format-string template for CLASSICALLY_WEAK when a hybrid PQ group was
+# ALSO negotiated (issue found scrutinizing scan tls: google.com genuinely
+# holds both postures — PQ hybrid working AND legacy TLS 1.0/1.1 still
+# accepted for old-client compat, confirmed live, independent of qureddy's
+# own code). The old blanket "PQ readiness is moot" text (below, still
+# used when no hybrid group was negotiated) is factually wrong in that
+# case. Named here alongside RECOMMENDATION_TEXT rather than inlined in
+# console.py, matching the existing "message copy lives in _styles.py"
+# convention — filled in by console.py with hybrid_group/protocols.
+CLASSICALLY_WEAK_WITH_PQC_TEMPLATE: str = (
+    "PQ hybrid {hybrid_group} works. Legacy {protocols} remain enabled; "
+    "disable them when client compatibility allows."
 )
 
 
@@ -201,6 +206,19 @@ def unknown_recommendation(failure: FailureCategory | None) -> str:
             "point at it: brew install openssl@3, then pass "
             "--openssl $(brew --prefix openssl@3)/bin/openssl or export "
             "QUREDDY_OPENSSL to the same path."
+        )
+    if failure is FailureCategory.LOCAL_OPENSSL_BROKEN:
+        # Issue #249: this category now also covers a capability check
+        # that timed out (binary present and executable, just
+        # unresponsive) as well as one that exited nonzero — "Install
+        # OpenSSL 3.5+" is actively wrong for the first case (there's
+        # nothing to install) and unhelpfully vague for the second.
+        return (
+            "OpenSSL failed the capability check — it either exited with an "
+            "error or did not respond in time. Re-run with -v for the exact "
+            "error, check --openssl points at a working binary, or increase "
+            "--timeout if it may just be slow to respond (e.g. entropy "
+            "exhaustion in a minimal/newly-booted environment)."
         )
     if failure in LOCAL_CAPABILITY_CATEGORIES:
         return (

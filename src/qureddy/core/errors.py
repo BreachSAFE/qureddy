@@ -60,7 +60,7 @@ class LocalOpenSSLIsLibreSSL(_LocalOpenSSLProblem):
     Distinct from LocalOpenSSLVersionUnreadable: LibreSSL's version string
     parses fine, it's just a different product that doesn't support the
     PQC groups this scanner requires. Apple ships it as /usr/bin/openssl
-    on every macOS install by default (issue #10).
+    on every macOS install by default (issue #188).
     """
 
 

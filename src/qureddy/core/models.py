@@ -12,12 +12,36 @@ adopters. Mirrored verbatim from the skill's "Model notes" section.
 
 from __future__ import annotations
 
+import ipaddress
+import re
 from datetime import datetime
 from enum import Enum
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 FROZEN = ConfigDict(frozen=True, extra="forbid")
+
+MIN_PORT = 1
+MAX_PORT = 65535
+
+# Mirrors core/targets.py::HOSTNAME_PATTERN. Cannot import it directly:
+# targets.py imports ScanTarget from this module, so the reverse import
+# would be circular. Two copies of one small regex is the tolerated case
+# per docs/contributors/agent-antipatterns.md's "tolerate two copies,
+# extract on the third" rule — extract to a shared low-level module if
+# a third caller needs this pattern.
+_HOSTNAME_PATTERN = re.compile(
+    r"^(?=.{1,253}$)(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)*"
+    r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?$",
+)
+
+
+def _is_ip_literal(value: str) -> bool:
+    try:
+        ipaddress.ip_address(value)
+    except ValueError:
+        return False
+    return True
 
 
 class ObservationType(str, Enum):
@@ -77,6 +101,23 @@ class Confidence(str, Enum):
     LOW = "low"
 
 
+class ProbeRole(str, Enum):
+    """Which purpose a TLS 1.3 key-exchange probe served — issue #232.
+
+    Distinguishes "this evidence is testing whether PQ hybrid negotiation
+    works" from "this evidence is a diagnostic control testing whether the
+    server still accepts pure classical fallback". A failure in the second
+    role is not evidence that the first role failed — confirmed live: a
+    real hybrid-only server (accepts X25519MLKEM768, rejects pure X25519)
+    correctly negotiates hybrid while its classical control is rejected by
+    design, and that rejection was previously misattributed to
+    `tls.hybrid.probe_failed`.
+    """
+
+    HYBRID_READINESS = "hybrid_readiness"
+    CLASSICAL_CONTROL = "classical_control"
+
+
 class FailureCategory(str, Enum):
     """Typed reason a scan or probe did not produce a clean finding.
 
@@ -101,24 +142,88 @@ class FailureCategory(str, Enum):
     UNEXPECTED_GROUP = "unexpected_group"
 
 
+# The six "operator's environment is the problem" categories, defined once
+# so policy.py, _summary.py, and _styles.py import the same set instead of
+# each hand-typing an identical copy (issue #209) — confirmed live: adding
+# LOCAL_OPENSSL_IS_LIBRESSL required editing all three copies in the same
+# commit, with nothing enforcing they stay in sync.
+LOCAL_CAPABILITY_CATEGORIES: frozenset[FailureCategory] = frozenset(
+    {
+        FailureCategory.LOCAL_OPENSSL_MISSING,
+        FailureCategory.LOCAL_OPENSSL_BROKEN,
+        FailureCategory.LOCAL_OPENSSL_VERSION_UNREADABLE,
+        FailureCategory.LOCAL_OPENSSL_IS_LIBRESSL,
+        FailureCategory.LOCAL_OPENSSL_TOO_OLD,
+        FailureCategory.LOCAL_OPENSSL_LACKS_GROUP,
+    }
+)
+
+
 class OutputFormat(str, Enum):
     """CLI `--format` choices: terminal-rendered `rich` or machine-readable `json`."""
 
     RICH = "rich"
     JSON = "json"
+    CBOM = "cbom"
+    """Rapid-prototype CycloneDX 1.6 CBOM export — see qureddy.output.cbom
+    module docstring. Not the tracked MVP 0.3 implementation (issue #61)."""
 
 
 class ScanTarget(BaseModel):
-    """A normalized scan target."""
+    """A normalized scan target.
+
+    Issue #236: enforces its own invariants at the construction boundary
+    so a caller building this model directly (or deserializing external
+    JSON via `model_validate`) cannot supply a `locator` that names a
+    different endpoint than `host`/`port`/`sni` — the scanner would
+    connect to the latter but attribute evidence to the former.
+    """
 
     model_config = FROZEN
 
     original_input: str
     host: str
-    port: int
+    port: int = Field(ge=MIN_PORT, le=MAX_PORT)
     sni: str | None
     scheme: str = "tls"
     locator: str
+
+    @field_validator("host")
+    @classmethod
+    def _host_must_be_valid(cls, value: str) -> str:
+        if not value or not value.strip():
+            msg = "host cannot be empty"
+            raise ValueError(msg)
+        if "[" in value or "]" in value:
+            # scanners/tls/_net.py::build_connect_target brackets IPv6
+            # hosts itself and assumes `host` is stored unbracketed
+            # (confirmed live: a pre-bracketed host produces a
+            # double-bracketed, malformed `-connect` argv). Reject at
+            # the source instead of letting that corruption happen
+            # downstream in a different module.
+            msg = f"host must not contain brackets, store IPv6 unbracketed: {value!r}"
+            raise ValueError(msg)
+        if not _is_ip_literal(value) and not _HOSTNAME_PATTERN.match(value):
+            msg = f"host is not a valid hostname or IP: {value!r}"
+            raise ValueError(msg)
+        return value
+
+    @field_validator("sni")
+    @classmethod
+    def _sni_must_be_valid(cls, value: str | None) -> str | None:
+        if value is not None and not value.strip():
+            msg = "sni cannot be empty or whitespace-only"
+            raise ValueError(msg)
+        return value
+
+    @model_validator(mode="after")
+    def _locator_matches_endpoint(self) -> ScanTarget:
+        rendered_host = f"[{self.host}]" if ":" in self.host else self.host
+        expected = f"{self.scheme}://{rendered_host}:{self.port}"
+        if self.locator != expected:
+            msg = f"locator {self.locator!r} does not match host/port/scheme {expected!r}"
+            raise ValueError(msg)
+        return self
 
 
 class OpenSSLDependency(BaseModel):
@@ -184,7 +289,14 @@ class Asset(BaseModel):
 
 
 class Evidence(BaseModel):
-    """Observation supporting a finding."""
+    """Observation supporting a finding.
+
+    Issue #232: `probe_role`/`expected_group` are new, optional (default
+    None) fields — added to `qureddy.scan.v1` with explicit maintainer
+    authorization, not silently. They let policy distinguish a hybrid
+    readiness probe's failure from a classical control probe's failure,
+    which are not the same fact.
+    """
 
     model_config = FROZEN
 
@@ -197,6 +309,8 @@ class Evidence(BaseModel):
     protocol_version: str | None = None
     cipher_suite: str | None = None
     negotiated_group: str | None = None
+    probe_role: ProbeRole | None = None
+    expected_group: str | None = None
     probe_result: ProbeResult | None = None
     failure_category: FailureCategory | None = None
     confidence: Confidence = Confidence.HIGH

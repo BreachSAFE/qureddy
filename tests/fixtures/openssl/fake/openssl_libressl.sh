@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Fake openssl reproducing real macOS /usr/bin/openssl (LibreSSL 3.3.6),
 # captured via `/usr/bin/openssl version` and
-# `/usr/bin/openssl list -tls1_3 -tls-groups` on macOS 26 (issue #10).
+# `/usr/bin/openssl list -tls1_3 -tls-groups` on macOS 26 (issue #188).
 # Used to test FailureCategory.LOCAL_OPENSSL_IS_LIBRESSL.
 case "$1" in
     version)
