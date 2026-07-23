@@ -208,6 +208,19 @@ def unknown_recommendation(failure: FailureCategory | None) -> str:
             "--openssl $(brew --prefix openssl@3)/bin/openssl or export "
             "QUREDDY_OPENSSL to the same path."
         )
+    if failure is FailureCategory.LOCAL_OPENSSL_BROKEN:
+        # Issue #249: this category now also covers a capability check
+        # that timed out (binary present and executable, just
+        # unresponsive) as well as one that exited nonzero — "Install
+        # OpenSSL 3.5+" is actively wrong for the first case (there's
+        # nothing to install) and unhelpfully vague for the second.
+        return (
+            "OpenSSL failed the capability check — it either exited with an "
+            "error or did not respond in time. Re-run with -v for the exact "
+            "error, check --openssl points at a working binary, or increase "
+            "--timeout if it may just be slow to respond (e.g. entropy "
+            "exhaustion in a minimal/newly-booted environment)."
+        )
     if failure in LOCAL_CAPABILITY_CATEGORIES:
         return (
             "Install OpenSSL 3.5+ with PQ group support and re-run. "
