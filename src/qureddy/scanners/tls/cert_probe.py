@@ -31,7 +31,10 @@ downstream treats an unverified cert as verified.
 from __future__ import annotations
 
 import subprocess
+import tempfile
+from contextlib import suppress
 from dataclasses import dataclass
+from pathlib import Path
 
 from qureddy.core.errors import LocalOpenSSLMissing
 from qureddy.core.logging import get_logger
@@ -155,6 +158,63 @@ def _x509(
     return stdout.strip()
 
 
+def _is_self_signed(
+    openssl_path: str,
+    pem: str,
+    subject: str,
+    issuer: str,
+    *,
+    timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS,
+) -> bool:
+    """True iff the certificate is both self-issued AND self-signed — issue #224.
+
+    Equal subject/issuer DNs prove only "self-issued" — a certificate can have
+    a matching subject and issuer while being signed by a completely different
+    key (confirmed live: a real cert with subject==issuer=='CN=Same Name' whose
+    signature was created by a separate issuer key; `openssl verify
+    -check_ss_sig` correctly rejects it, exit code 2, "certificate signature
+    failure"). DN equality is used here only as a cheap precondition to decide
+    whether the expensive cryptographic check below is worth running — the
+    verdict comes from the check, never from the DN comparison alone.
+
+    `openssl verify -check_ss_sig` needs the cert as a real file (both
+    `-CAfile` and the cert-to-verify argument), not stdin, unlike `_x509`'s
+    pattern — a securely-created temp file is written and removed in `finally`.
+
+    Any ambiguity (subprocess timeout, nonzero exit for any reason, missing
+    subject/issuer) resolves to `False`, never `True` — this field asserts a
+    positive cryptographic claim, so absence of proof must not read as proof.
+    A three-state true/false/undetermined model is the more complete answer
+    but changes this project's public `CertificateInfo`/`Evidence` shape,
+    which needs the same maintainer-authority schema decision as #226/#230 —
+    out of scope for this bounded fix.
+    """
+    if not subject or subject != issuer:
+        return False
+    cert_path: str | None = None
+    try:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".pem", delete=False) as f:
+            f.write(pem)
+            cert_path = f.name
+        args = [openssl_path, "verify", "-check_ss_sig", "-CAfile", cert_path, cert_path]
+        completed = subprocess.run(  # noqa: S603 -- list-form, shell=False, validated args
+            args,
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            text=True,
+            timeout=timeout_seconds,
+            check=False,
+            shell=False,
+        )
+    except (subprocess.TimeoutExpired, OSError):
+        return False
+    finally:
+        if cert_path is not None:
+            with suppress(OSError):
+                Path(cert_path).unlink()
+    return completed.returncode == 0
+
+
 def parse_certificate(
     openssl_path: str, pem: str, *, timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS
 ) -> CertificateInfo:
@@ -228,10 +288,12 @@ def parse_certificate(
         signature_algorithm=sig_alg,
         public_key_summary=pubkey_summary,
         is_post_quantum_signature=cert_sig.is_post_quantum,
-        # Issue #217: `subject == issuer` alone is also true when BOTH are
-        # independently empty (a partial `_x509` sub-call timeout/failure
-        # on just -subject/-issuer, not the whole-PEM-empty case the
-        # docstring above already guards). A real self-signed cert has a
-        # genuinely matching *non-empty* subject/issuer; require that.
-        is_self_signed=bool(subject) and subject == issuer,
+        # Issue #224: subject==issuer proves only "self-issued" — a real
+        # cryptographic signature check (_is_self_signed) is required to
+        # tell that apart from "self-issued but signed by a different key".
+        # #217's empty-subject/issuer guard is now subsumed by
+        # _is_self_signed's own `if not subject` precondition.
+        is_self_signed=_is_self_signed(
+            openssl_path, pem, subject, issuer, timeout_seconds=timeout_seconds
+        ),
     )
