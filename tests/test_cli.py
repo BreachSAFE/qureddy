@@ -5,6 +5,8 @@
 from __future__ import annotations
 
 import json
+import shutil
+import subprocess
 import tomllib
 from pathlib import Path
 
@@ -19,6 +21,10 @@ from qureddy.cli import app, main
 from qureddy.core import retry as retry_module
 
 FAKE_DIR = Path(__file__).parent / "fixtures" / "openssl" / "fake"
+# Resolved once to a full path so subprocess calls below satisfy Bandit's
+# S607 (partial executable path) the same way openssl_probe.py's own
+# subprocess calls do — via an already-resolved path, not a bare name.
+_QUREDDY_BIN = shutil.which("qureddy") or "qureddy"
 
 
 def test_help_lists_scan_subcommand() -> None:
@@ -318,10 +324,13 @@ def test_invalid_target_exits_4() -> None:
 
 @pytest.mark.parametrize("bad_sni", ["", " ", "   ", "\t", "\n"])
 def test_empty_or_whitespace_sni_exits_4(bad_sni: str) -> None:
+    """typer.testing.CliRunner no longer merges stderr into stdout (no
+    mix_stderr option, unlike click.testing.CliRunner) — the error text
+    lands on result.stderr, not result.stdout. See issue #16."""
     runner = CliRunner()
     result = runner.invoke(app, ["scan", "tls", "example.com", "--sni", bad_sni])
     assert result.exit_code == 4
-    assert "sni" in result.stdout.lower()
+    assert "sni" in result.stderr.lower()
 
 
 def test_unknown_retry_category_exits_4() -> None:
@@ -512,11 +521,48 @@ def test_local_openssl_too_old_exits_3() -> None:
 
 
 def test_json_output_clean_when_stderr_redirected_to_stdout() -> None:
-    """JSON stdout stays parseable when CliRunner merges stderr into stdout."""
-    runner = CliRunner(mix_stderr=True)
-    result = runner.invoke(
-        app,
+    """JSON stdout stays parseable under real OS-level `2>&1`, with --quiet.
+
+    typer.testing.CliRunner dropped `mix_stderr` (see #16) and, more
+    importantly, could never exercise genuine shell-level `2>&1` anyway —
+    that redirection happens via dup2() on the real file descriptor table
+    before the process starts, which CliRunner's in-process stream
+    capture cannot simulate. This invokes the actual installed console
+    entrypoint via subprocess with stderr=STDOUT, the only way to test
+    real fd-level merging.
+    """
+    result = subprocess.run(  # noqa: S603 -- list-form, shell=False, resolved full path
         [
+            _QUREDDY_BIN,
+            "scan",
+            "tls",
+            "example.com",
+            "--openssl",
+            str(FAKE_DIR / "openssl_too_old.sh"),
+            "--format",
+            "json",
+            "--quiet",
+        ],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 3
+    payload = json.loads(result.stdout)
+    assert payload["summary"]["failure_category"] == "local_openssl_too_old"
+
+
+def test_json_output_clean_under_2and1_without_quiet() -> None:
+    """#15 fix: --format json now defaults to quiet-equivalent (ERROR-level)
+    logging unless -v/-vv/-vvv is explicitly passed, so a WARNING-level
+    log never lands on stdout under real shell `2>&1` — not just
+    in-process stream mixing (CliRunner), which the #15-precursor
+    fd-snapshot fix already covered but which cannot protect real `2>&1`
+    (the OS has already merged fd 1/2 before Python starts)."""
+    result = subprocess.run(  # noqa: S603 -- list-form, shell=False, resolved full path
+        [
+            _QUREDDY_BIN,
             "scan",
             "tls",
             "example.com",
@@ -525,11 +571,13 @@ def test_json_output_clean_when_stderr_redirected_to_stdout() -> None:
             "--format",
             "json",
         ],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        check=False,
     )
-    assert result.exit_code == 3
-    payload = json.loads(result.stdout)
-    assert payload["summary"]["failure_category"] == "local_openssl_too_old"
-    assert "scan.local_dependency_unusable" not in result.stdout
+    assert result.returncode == 3
+    json.loads(result.stdout)
 
 
 def test_local_openssl_lacks_group_exits_3() -> None:
@@ -678,8 +726,10 @@ def test_invalid_format_value_is_rejected() -> None:
         ],
     )
     # Click rejects the invalid enum value before the command body runs.
+    # typer.testing.CliRunner no longer merges stderr into stdout (no
+    # mix_stderr option) — the error text lands on result.stderr. See #16.
     assert result.exit_code != 0
-    output = (result.stdout or "") + str(result.exception or "")
+    output = (result.stdout or "") + (result.stderr or "")
     assert "yaml" in output.lower() or "format" in output.lower()
 
 
