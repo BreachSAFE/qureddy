@@ -36,6 +36,16 @@ classifiers = [
 # now handles this explicitly up to the currently-tested version; an
 # upper bound forces a deliberate re-verification on the next bump
 # instead of silent drift.
+#
+# cyclonedx-python-lib: used unconditionally by output/cbom.py, wired into
+# the CLI's --format cbom (prowler-rapid-prototype branch). Was missing
+# here entirely — it only "worked" because it's a transitive dependency
+# of pip-audit (a dev-only tool), so a clean prod install without [dev]
+# would hit ModuleNotFoundError the moment --format cbom is used. Pinned
+# to the version already verified working (11.11.0) rather than the
+# lowest version that happens to expose CryptoAssetType/JsonV1Dot6, since
+# this is prototype code, not yet the tracked MVP 0.3 implementation
+# (qureddy#61) — revisit the floor when that lands.
 dependencies = [
     "typer>=0.12,<0.28",
     "click>=8.1",
@@ -43,6 +53,7 @@ dependencies = [
     "pydantic>=2.7",
     "structlog>=24.1",
     "packaging>=24.0",
+    "cyclonedx-python-lib>=11.11",
 ]
 
 [project.optional-dependencies]
