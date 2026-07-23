@@ -34,6 +34,13 @@ from qureddy.core.models import (
 
 DASH = "—"
 
+# BreachSAFE brand palette (from the app's --color-bs-* tokens).
+# BRAND_CYAN is the QuReddy wordmark / link color; BODY_TEXT is a soft
+# slate for value/body text so it reads calmer than harsh pure white on a
+# dark terminal.
+BRAND_CYAN = "#3ae7f4"
+BODY_TEXT = "#cbd5e1"
+
 PQ_GROUPS: frozenset[str] = frozenset(
     {"X25519MLKEM768", "SecP256r1MLKEM768", "SecP384r1MLKEM1024"},
 )

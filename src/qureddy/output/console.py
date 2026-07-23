@@ -43,6 +43,8 @@ from qureddy.core.models import (
     Severity,
 )
 from qureddy.output._styles import (
+    BODY_TEXT,
+    BRAND_CYAN,
     CLASSICALLY_WEAK_WITH_PQC_TEMPLATE,
     RECOMMENDATION_TEXT,
     compose_status,
@@ -143,18 +145,21 @@ def render_rich(
 
 
 def _header_text() -> Text:
-    """Color the top-of-output header: brand name green, website cyan.
+    """Color the top-of-output header in the brand palette.
 
-    HEADER is `QuReddy <ver> by BreachSAFE OSS · <url>`. Split on the middot
-    so the site reads as a distinct (cyan) element next to the green brand
-    line, instead of one flat bold row.
+    HEADER is `QuReddy <ver> by BreachSAFE OSS · <url>`. The `QuReddy`
+    wordmark and the site render in the brand cyan; the rest of the name
+    line is green. Split on the middot so the site stays a distinct element.
     """
     name_part, sep, url_part = HEADER.partition(" · ")
     header = Text()
-    header.append(name_part, style="bold green")
+    # "QuReddy" in the brand cyan, the rest of the name line in green.
+    word, gap, rest = name_part.partition(" ")
+    header.append(word, style=f"bold {BRAND_CYAN}")
+    header.append(gap + rest, style="green")
     if sep:
         header.append(sep)  # keep the " · " separator so HEADER renders verbatim
-        header.append(url_part, style="cyan")
+        header.append(url_part, style=BRAND_CYAN)
     return header
 
 
@@ -264,7 +269,7 @@ def _run_details_table(result: ScanResult) -> Table:
         pad_edge=False,
     )
     table.add_column("Field", style="bold cyan", no_wrap=True)
-    table.add_column("Value")
+    table.add_column("Value", style=BODY_TEXT)
     table.add_row("scan_id", Text(result.scan.scan_id))
     table.add_row("scanner", Text(result.scan.scanner_name))
     table.add_row("version", Text(result.scan.scanner_version))
@@ -318,7 +323,7 @@ def _summary_table(result: ScanResult) -> Table:
         pad_edge=False,
     )
     table.add_column("Field", style="bold cyan", no_wrap=True)
-    table.add_column("Value")
+    table.add_column("Value", style=BODY_TEXT)
 
     summary = result.summary
     scan = result.scan
