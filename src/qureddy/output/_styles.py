@@ -107,8 +107,9 @@ RECOMMENDATION_TEXT: dict[Readiness, str] = {
 # console.py, matching the existing "message copy lives in _styles.py"
 # convention — filled in by console.py with hybrid_group/protocols.
 CLASSICALLY_WEAK_WITH_PQC_TEMPLATE: str = (
-    "PQ hybrid {hybrid_group} works. Legacy {protocols} remain enabled; "
-    "disable them when client compatibility allows."
+    "PQ hybrid {hybrid_group} works.\n"
+    "Legacy {protocols} remain enabled.\n"
+    "Disable them when client compatibility allows."
 )
 
 
