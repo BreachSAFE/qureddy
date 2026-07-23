@@ -174,3 +174,43 @@ def _validate_port(port: int) -> int:
         msg = f"port out of range [1, 65535]: {port}"
         raise TargetParseError(msg)
     return port
+
+
+DEFAULT_SSH_PORT = 22
+
+
+def parse_ssh_target(input_str: str) -> ScanTarget:
+    """Parse an SSH target (host, host:port, or bracketed IPv6) into a ScanTarget.
+
+    Reuses the hardened host/port extraction from parse_target (IPv6 bracketing
+    #223, noncanonical-IPv4 rejection #255), but defaults to port 22 and the
+    "ssh" scheme instead of TLS's 443/tls.
+    """
+    cleaned = input_str.strip()
+    if not cleaned:
+        msg = "empty target"
+        raise TargetParseError(msg)
+    if "://" in cleaned:
+        cleaned = cleaned.split("://", 1)[1]
+    host, port = _extract_host_port(cleaned)
+    if port == DEFAULT_PORT:  # _extract_host_port used the TLS default; SSH wants 22
+        # only override when the user did NOT specify a port
+        if ":" not in cleaned or cleaned.startswith("["):
+            has_explicit = "]" in cleaned and cleaned.rsplit("]", 1)[1].startswith(":")
+        else:
+            has_explicit = cleaned.count(":") == 1
+        if not has_explicit:
+            port = DEFAULT_SSH_PORT
+    is_ip = _is_ip_literal(host)
+    if not is_ip and not HOSTNAME_PATTERN.match(host):
+        msg = f"invalid SSH host: {host!r}"
+        raise TargetParseError(msg)
+    rendered = f"[{host}]" if ":" in host else host
+    return ScanTarget(
+        original_input=input_str,
+        host=host,
+        port=port,
+        sni=None,
+        scheme="ssh",
+        locator=f"ssh://{rendered}:{port}",
+    )

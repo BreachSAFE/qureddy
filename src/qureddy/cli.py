@@ -38,6 +38,9 @@ from qureddy.core.errors import (
     RetryConfigError,
     TargetParseError,
 )
+from qureddy.core.errors import (
+    SSHProbeError as _SSHProbeError,
+)
 from qureddy.core.logging import configure_logging, get_logger
 from qureddy.core.models import (
     FailureCategory,
@@ -52,10 +55,11 @@ from qureddy.core.retry import (
     parse_retry_on,
     validate_retry_args,
 )
-from qureddy.core.targets import parse_target
+from qureddy.core.targets import parse_ssh_target, parse_target
 from qureddy.output.cbom import render_cbom
 from qureddy.output.console import render_rich
 from qureddy.output.json import render_json
+from qureddy.scanners.ssh.scanner import scan_ssh as _scan_ssh
 from qureddy.scanners.tls.cert_probe import (
     CertificateInfo,
     fetch_certificate_pem,
@@ -774,3 +778,34 @@ def main() -> None:
         sys.stderr.write(f"qureddy: unexpected error: {exc}\n")
         sys.exit(EXIT_INTERNAL_ERROR)
     sys.exit(EXIT_OK if exit_code is None else exit_code)
+
+
+# ---- SSH scanner command (issue #278) ----
+
+
+@scan_app.command("ssh", context_settings=_NO_WRAP_CONTEXT_SETTINGS)
+def scan_ssh_cmd(
+    target: TargetArg,
+    fmt: FormatOpt = OutputFormat.RICH,
+    timeout: TimeoutOpt = 8,
+    quiet: QuietOpt = False,
+) -> None:
+    """Scan an SSH endpoint for post-quantum readiness."""
+    configure_logging(verbosity=0, quiet=quiet or fmt is not OutputFormat.RICH)
+    try:
+        scan_target = parse_ssh_target(target)
+    except TargetParseError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(code=EXIT_USAGE) from None
+    try:
+        result = _scan_ssh(scan_target, timeout_seconds=timeout)
+    except _SSHProbeError as exc:
+        typer.echo(f"ssh scan failed: {exc}", err=True)
+        raise typer.Exit(code=EXIT_TARGET_FAILED) from None
+    if fmt is OutputFormat.JSON:
+        render_json(result, sys.stdout)
+    elif fmt is OutputFormat.CBOM:
+        render_cbom(result, sys.stdout, certificate=None)
+    else:
+        render_rich(result, sys.stdout, verbosity=0)
+
