@@ -120,7 +120,7 @@ def render_rich(
     """
     target_stream = stream if stream is not None else sys.stdout
     console = _make_console(target_stream)
-    console.print(HEADER, style="bold")
+    console.print(_header_text())
     console.print()
 
     console.print(_verdict_panel(result))
@@ -140,6 +140,22 @@ def render_rich(
         if commands_panel is not None:
             console.print()
             console.print(commands_panel)
+
+
+def _header_text() -> Text:
+    """Color the top-of-output header: brand name green, website cyan.
+
+    HEADER is `QuReddy <ver> by BreachSAFE OSS · <url>`. Split on the middot
+    so the site reads as a distinct (cyan) element next to the green brand
+    line, instead of one flat bold row.
+    """
+    name_part, sep, url_part = HEADER.partition(" · ")
+    header = Text()
+    header.append(name_part, style="bold green")
+    if sep:
+        header.append(sep)  # keep the " · " separator so HEADER renders verbatim
+        header.append(url_part, style="cyan")
+    return header
 
 
 def _make_console(stream: IO[str]) -> Console:
@@ -440,8 +456,9 @@ def _summary_headline_and_recommendation(result: ScanResult) -> tuple[Text, Text
 
 
 _SSH_HYBRID_RECOMMENDATION = (
-    "SSH key exchange is post-quantum hybrid. Host-key signatures remain "
-    "classical (no PQ SSH signature type exists yet); monitor for one."
+    "SSH key exchange is post-quantum hybrid.\n"
+    "Host-key signatures remain classical.\n"
+    "Note: no PQ SSH signature type exists yet."
 )
 
 
