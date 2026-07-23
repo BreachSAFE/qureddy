@@ -69,6 +69,51 @@ def _build_connect_target(host: str, port: int) -> str:
     return f"{host}:{port}"
 
 
+def _run_openssl(
+    args: list[str],
+    *,
+    event_prefix: str,
+    timeout_seconds: int,
+    input_text: str | None = None,
+) -> str:
+    """Shared subprocess.run + exception-mapping for both call shapes below.
+
+    `fetch_certificate_pem` (no stdin, reads a live handshake) and `_x509`
+    (PEM piped in via stdin) had identical timeout/missing-binary handling
+    duplicated between them — same two exception branches, same log shape,
+    only the args and stdin source differed. `event_prefix` keeps each call
+    site's log event names distinct ("cert_probe.fetch.*" / "cert_probe.x509.*").
+
+    Raises:
+        LocalOpenSSLMissing: `args[0]` does not resolve to an executable.
+
+    On timeout, returns "" rather than raising — a hung connection is not
+    a local-dependency problem, it's a target-side condition the caller
+    already has failure categories for.
+    """
+    _log.info(f"{event_prefix}.start", args=args, timeout_seconds=timeout_seconds)
+    try:
+        completed = subprocess.run(  # noqa: S603 -- list-form, shell=False
+            args,
+            input=input_text,
+            stdin=subprocess.DEVNULL if input_text is None else None,
+            capture_output=True,
+            text=True,
+            timeout=timeout_seconds,
+            check=False,
+            shell=False,
+        )
+    except subprocess.TimeoutExpired:
+        _log.warning(f"{event_prefix}.timeout", args=args, timeout_seconds=timeout_seconds)
+        return ""
+    except FileNotFoundError as exc:
+        _log.error(f"{event_prefix}.openssl_missing", openssl_path=args[0])
+        raise LocalOpenSSLMissing(str(exc)) from exc
+
+    _log.info(f"{event_prefix}.complete", return_code=completed.returncode)
+    return completed.stdout
+
+
 def fetch_certificate_pem(
     openssl_path: str,
     host: str,
@@ -82,37 +127,18 @@ def fetch_certificate_pem(
     Raises:
         LocalOpenSSLMissing: `openssl_path` does not resolve to an executable.
 
-    On timeout, returns "" (same as "no certificate observed") rather than
-    raising — a hung connection is not a local-dependency problem, it's a
-    target-side condition the caller already has failure categories for.
+    On timeout, returns "" (same as "no certificate observed") — see
+    `_run_openssl`.
     """
     args = [openssl_path, "s_client", "-connect", _build_connect_target(host, port), "-showcerts"]
     if sni is not None and sni.strip():
         args.extend(["-servername", sni])
-    _log.info("cert_probe.fetch.start", args=args, timeout_seconds=timeout_seconds)
-    try:
-        completed = subprocess.run(  # noqa: S603 -- list-form, shell=False
-            args,
-            stdin=subprocess.DEVNULL,
-            capture_output=True,
-            text=True,
-            timeout=timeout_seconds,
-            check=False,
-            shell=False,
-        )
-    except subprocess.TimeoutExpired:
-        _log.warning("cert_probe.fetch.timeout", args=args, timeout_seconds=timeout_seconds)
-        return ""
-    except FileNotFoundError as exc:
-        _log.error("cert_probe.fetch.openssl_missing", openssl_path=openssl_path)
-        raise LocalOpenSSLMissing(str(exc)) from exc
-
-    _log.info("cert_probe.fetch.complete", return_code=completed.returncode)
-    pem_start = completed.stdout.find("-----BEGIN CERTIFICATE-----")
-    pem_end = completed.stdout.find("-----END CERTIFICATE-----")
+    stdout = _run_openssl(args, event_prefix="cert_probe.fetch", timeout_seconds=timeout_seconds)
+    pem_start = stdout.find("-----BEGIN CERTIFICATE-----")
+    pem_end = stdout.find("-----END CERTIFICATE-----")
     if pem_start == -1 or pem_end == -1:
         return ""
-    return completed.stdout[pem_start : pem_end + len("-----END CERTIFICATE-----")]
+    return stdout[pem_start : pem_end + len("-----END CERTIFICATE-----")]
 
 
 def _x509(
@@ -123,29 +149,13 @@ def _x509(
     Raises:
         LocalOpenSSLMissing: `openssl_path` does not resolve to an executable.
 
-    On timeout, returns "" — same degrade-gracefully rule as fetch_certificate_pem.
+    On timeout, returns "" — see `_run_openssl`.
     """
     full_args = [openssl_path, "x509", "-noout", *args]
-    _log.info("cert_probe.x509.start", args=full_args, timeout_seconds=timeout_seconds)
-    try:
-        completed = subprocess.run(  # noqa: S603 -- list-form, shell=False
-            full_args,
-            input=pem,
-            capture_output=True,
-            text=True,
-            timeout=timeout_seconds,
-            check=False,
-            shell=False,
-        )
-    except subprocess.TimeoutExpired:
-        _log.warning("cert_probe.x509.timeout", args=full_args, timeout_seconds=timeout_seconds)
-        return ""
-    except FileNotFoundError as exc:
-        _log.error("cert_probe.x509.openssl_missing", openssl_path=openssl_path)
-        raise LocalOpenSSLMissing(str(exc)) from exc
-
-    _log.info("cert_probe.x509.complete", return_code=completed.returncode)
-    return completed.stdout.strip()
+    stdout = _run_openssl(
+        full_args, event_prefix="cert_probe.x509", timeout_seconds=timeout_seconds, input_text=pem
+    )
+    return stdout.strip()
 
 
 def parse_certificate(openssl_path: str, pem: str) -> CertificateInfo:

@@ -360,8 +360,26 @@ def _fetch_cert_for_cbom(result: ScanResult) -> CertificateInfo | None:
     certificate must not turn a successful TLS scan into a CBOM-export
     failure, since the CBOM is still valid (just certificate-less) without
     one.
+
+    Raises AssertionError (not a bare `assert`, which `python -O` strips)
+    if more than one dependency is present: every `TLSScanner` call site
+    (`scanner.py` lines 125, 229) constructs `dependencies=(dependency,)`
+    as a single-element tuple — this is a real MVP 0.1 invariant (one
+    scanner, one OpenSSL dependency), not a coincidence. Enforcing it
+    here means a future second-scanner change that breaks the invariant
+    fails loudly at this call site instead of this function silently
+    picking `[0]` and reporting the wrong binary's certificate.
     """
-    if not result.dependencies or not result.dependencies[0].path:
+    if not result.dependencies:
+        return None
+    if len(result.dependencies) != 1:
+        msg = (
+            f"expected exactly one OpenSSL dependency, got {len(result.dependencies)} "
+            "— _fetch_cert_for_cbom's use of dependencies[0] assumes the MVP 0.1 "
+            "single-scanner invariant"
+        )
+        raise AssertionError(msg)
+    if not result.dependencies[0].path:
         return None
     openssl_path = result.dependencies[0].path
     try:
