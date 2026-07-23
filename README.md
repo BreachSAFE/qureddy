@@ -56,7 +56,7 @@ group) instead of a generic "try again."
 ## Install
 
 ```bash
-git clone https://github.com/paul007ex/qureddy.git
+git clone https://github.com/breachsafe/qureddy.git
 cd qureddy
 uv venv && source .venv/bin/activate
 uv pip install -e ".[dev]"
@@ -172,7 +172,7 @@ mypy `--strict`, bandit, and pytest; the engineering standards are in
 [`docs/contributors/coding-rules.md`](docs/contributors/coding-rules.md).
 
 Report bugs and request features through
-[GitHub Issues](https://github.com/paul007ex/qureddy/issues). Security reports
+[GitHub Issues](https://github.com/breachsafe/qureddy/issues). Security reports
 go through [`SECURITY.md`](SECURITY.md).
 
 ## License

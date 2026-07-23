@@ -34,9 +34,9 @@ def test_project_url_is_breachsafe_dot_ai() -> None:
     assert PROJECT_URL == "https://www.breachsafe.ai"
 
 
-def test_source_url_is_paul007ex_qureddy() -> None:
+def test_source_url_is_breachsafe_qureddy() -> None:
     """Maintainer-locked URL per #41 comment thread (not breachsafe/qureddy)."""
-    assert SOURCE_URL == "https://github.com/paul007ex/qureddy"
+    assert SOURCE_URL == "https://github.com/breachsafe/qureddy"
 
 
 def test_license_is_apache_2() -> None:

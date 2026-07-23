@@ -86,8 +86,8 @@ PR body contains `Closes #N` (or multiple — codex bundles coupled fixes per th
 Each reviewer runs the `python-oss-crypto-reviewer` skill, posts a `## Review:` comment ending with the standard signature block, and applies the matching `review:<name>:<verdict>` label.
 
 ```bash
-gh pr comment <n> --repo paul007ex/qureddy --body "$(cat review.md)"
-gh pr edit <n> --repo paul007ex/qureddy --add-label "review:claude-1:approve"
+gh pr comment <n> --repo breachsafe/qureddy --body "$(cat review.md)"
+gh pr edit <n> --repo breachsafe/qureddy --add-label "review:claude-1:approve"
 ```
 
 Multiple reviewers can run concurrently. None of them gate merge — they're recommendations.
@@ -97,8 +97,8 @@ Multiple reviewers can run concurrently. None of them gate merge — they're rec
 The `validate-fix` skill (or its manual procedure if not yet auto-loaded) runs the issue's reproduction at base and at HEAD, runs the new tests 3× to defeat `pytest-rerunfailures` masking, runs the full suite for regression, and runs the Tier 1 quality gates.
 
 ```bash
-gh pr comment <n> --repo paul007ex/qureddy --body "$(cat validation.md)"
-gh pr edit <n> --repo paul007ex/qureddy --add-label "validation:claude:validated"
+gh pr comment <n> --repo breachsafe/qureddy --body "$(cat validation.md)"
+gh pr edit <n> --repo breachsafe/qureddy --add-label "validation:claude:validated"
 ```
 
 ### 4. Arbiter (codex) decides
@@ -106,8 +106,8 @@ gh pr edit <n> --repo paul007ex/qureddy --add-label "validation:claude:validated
 Codex reads every reviewer comment and the validator's verdict, settles disagreements explicitly with rule citations, runs tests one more time, and posts the binding decision.
 
 ```bash
-gh pr comment <n> --repo paul007ex/qureddy --body "$(cat arbitration.md)"
-gh pr edit <n> --repo paul007ex/qureddy \
+gh pr comment <n> --repo breachsafe/qureddy --body "$(cat arbitration.md)"
+gh pr edit <n> --repo breachsafe/qureddy \
     --add-label "arbiter:codex:approve" \
     --add-label "decision:approved"
 ```
@@ -117,27 +117,27 @@ gh pr edit <n> --repo paul007ex/qureddy \
 Squash-merge per [coding-rules §27.3](coding-rules.md). The `Closes #N` reference auto-closes referenced issues.
 
 ```bash
-gh pr merge <n> --repo paul007ex/qureddy --squash --delete-branch
+gh pr merge <n> --repo breachsafe/qureddy --squash --delete-branch
 ```
 
 ## Filterable views
 
 ```bash
 # Ready to merge
-gh issue list --repo paul007ex/qureddy --label "decision:approved"
+gh issue list --repo breachsafe/qureddy --label "decision:approved"
 
 # Reviewed by Claude session 1, awaiting arbiter
-gh issue list --repo paul007ex/qureddy \
+gh issue list --repo breachsafe/qureddy \
   --label "review:claude-1:approve" \
   -- -l "arbiter:codex:*"
 
 # Disagreement between two reviewers
-gh issue list --repo paul007ex/qureddy \
+gh issue list --repo breachsafe/qureddy \
   --label "review:claude-1:approve" \
   --label "review:claude:reject"
 
 # New PRs needing first review
-gh pr list --repo paul007ex/qureddy --state open \
+gh pr list --repo breachsafe/qureddy --state open \
   --json number,labels | jq '[.[] | select(.labels | length == 0) | .number]'
 ```
 
@@ -149,7 +149,7 @@ These come from the reviewer and validator skills:
 2. **Arbiter must read all reviewer comments before deciding.** Arbiter doesn't shortcut.
 3. **Do not edit prior review comments.** Re-review = new comment + label swap. Audit trail is append-only.
 4. **No merge without binding decision.** The `decision:*` label is the merge gate. Without it, no merge.
-5. **Tests must pass 3× without `Rerun:` markers.** `pytest-rerunfailures` cannot mask deterministic failures. See the cautionary tale in [issue #15](https://github.com/paul007ex/qureddy/issues/15) where 5 hard-failing tests showed as "192 passed."
+5. **Tests must pass 3× without `Rerun:` markers.** `pytest-rerunfailures` cannot mask deterministic failures. See the cautionary tale in [issue #15](https://github.com/breachsafe/qureddy/issues/15) where 5 hard-failing tests showed as "192 passed."
 6. **Reviewer disagreement triggers escalation, not loops.** Per the reviewer skill: "If you can't tell whether you or they are right, propose the test that would settle it. Then run it."
 
 ## When the apparatus doesn't apply

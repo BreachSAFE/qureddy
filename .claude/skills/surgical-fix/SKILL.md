@@ -22,7 +22,7 @@ Before editing, read only the relevant parts of these files:
 If the bug is tied to a GitHub issue, read the full issue body and comments before editing:
 
 ```bash
-gh issue view <number> --repo paul007ex/qureddy --comments
+gh issue view <number> --repo breachsafe/qureddy --comments
 ```
 
 ## Use This Skill When

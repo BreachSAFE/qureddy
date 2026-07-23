@@ -44,7 +44,7 @@ case $? in
     exit 1
     ;;
   70)
-    echo "Internal qureddy bug — open an issue at github.com/paul007ex/qureddy"
+    echo "Internal qureddy bug — open an issue at github.com/breachsafe/qureddy"
     exit 1
     ;;
 esac

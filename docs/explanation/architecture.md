@@ -175,7 +175,7 @@ flowchart LR
 - **stderr = everything else.** Logs, progress, warnings, errors, capability messages, retry signals.
 - **`2>&1` merges them** at the OS level, after our process has written. Tools that combine streams will see logs interleaved with output — that's expected.
 
-**Bug class this prevents:** if a logger inadvertently binds `sys.stdout` (or if structlog's writer is captured at the wrong moment, as in [issue #15](https://github.com/paul007ex/qureddy/issues/15)), JSON consumers downstream get `JSONDecodeError`. The contract is "no log line ever lands on stdout, period." Reviewers reject any change that violates this.
+**Bug class this prevents:** if a logger inadvertently binds `sys.stdout` (or if structlog's writer is captured at the wrong moment, as in [issue #15](https://github.com/breachsafe/qureddy/issues/15)), JSON consumers downstream get `JSONDecodeError`. The contract is "no log line ever lands on stdout, period." Reviewers reject any change that violates this.
 
 ## Failure category routing
 

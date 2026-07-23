@@ -10,7 +10,7 @@
 #
 # Run this script after either:
 #   - Flipping the repo public:
-#       gh repo edit paul007ex/qureddy --visibility public \
+#       gh repo edit breachsafe/qureddy --visibility public \
 #         --accept-visibility-change-consequences
 #   - Upgrading to GitHub Pro
 #
@@ -19,7 +19,7 @@
 
 set -euo pipefail
 
-REPO="${1:-paul007ex/qureddy}"
+REPO="${1:-breachsafe/qureddy}"
 BRANCH="${2:-main}"
 
 echo "Applying branch protection to ${REPO} branch ${BRANCH}..."

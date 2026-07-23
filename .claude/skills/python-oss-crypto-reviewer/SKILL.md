@@ -51,7 +51,7 @@ If you're invoked without explicit mode, default to **Reviewer**. To run as Arbi
 - Python 3.12+, Pydantic v2 with `model_config = FROZEN` (`frozen=True, extra="forbid"`)
 - CLI: Typer + Rich + structlog
 - TLS scanner: OpenSSL 3.5+ subprocess (single-call discipline — only `scanners/tls/openssl_probe.py` calls subprocess)
-- Repo: `github.com/paul007ex/qureddy`
+- Repo: `github.com/breachsafe/qureddy`
 - Authoritative docs: `docs/contributors/coding-rules.md`, `docs/contributors/agent-antipatterns.md`
 - The skill `.claude/skills/mvp-implement/SKILL.md` has model field locks — fields cannot be added/removed without updating the skill first
 - ANTIPATTERN ACCEPTED markers exist for deliberate rule violations (e.g. CycloneDX-flavored fields on `Asset`/`Finding`)
@@ -158,8 +158,8 @@ APPROVE / APPROVE WITH CHANGES / REJECT
 
 The most common invocation. Inputs: an issue number (or URL) and the proposed fix (PR URL, diff, or code block).
 
-1. **Pull the issue body.** `gh issue view <n> --repo paul007ex/qureddy --json title,body,labels`. Read the entire body, especially the `### Suggested fix` and `### Test additions required` sections — that's the bar.
-2. **Read the proposed fix end-to-end.** If it's a PR: `gh pr diff <n> --repo paul007ex/qureddy`. If it's a code block, copy it locally. Do not skim. If the diff exceeds ~300 lines, read in sections and summarize each section back to yourself before continuing.
+1. **Pull the issue body.** `gh issue view <n> --repo breachsafe/qureddy --json title,body,labels`. Read the entire body, especially the `### Suggested fix` and `### Test additions required` sections — that's the bar.
+2. **Read the proposed fix end-to-end.** If it's a PR: `gh pr diff <n> --repo breachsafe/qureddy`. If it's a code block, copy it locally. Do not skim. If the diff exceeds ~300 lines, read in sections and summarize each section back to yourself before continuing.
 3. **Diff against the suggested fix.** For each delta from what the issue proposed, classify it:
    - **Equivalent** — different code, same behavior, same test coverage (fine)
    - **Better** — author found a cleaner approach (fine, name what's better)
@@ -178,7 +178,7 @@ If the fix has a counter-proposal in the suggested-fix section that the author i
 
 Inputs: an issue or PR number where one or more reviewers have already posted verdicts. Default arbiter is Codex per `CLAUDE.md` Governance.
 
-1. **Read every prior reviewer comment in full.** `gh issue view <n> --repo paul007ex/qureddy --comments` or `gh pr view <n> --comments`. Look for any comment ending in the standard signature block (see "Comment signature" below). Do not skim. Do not skip a reviewer because their verdict matches yours — read the *reasoning* in case it surfaces a constraint you missed.
+1. **Read every prior reviewer comment in full.** `gh issue view <n> --repo breachsafe/qureddy --comments` or `gh pr view <n> --comments`. Look for any comment ending in the standard signature block (see "Comment signature" below). Do not skim. Do not skip a reviewer because their verdict matches yours — read the *reasoning* in case it surfaces a constraint you missed.
 2. **Read the proposed fix end-to-end yourself.** Same procedure as Reviewer mode steps 2–5. Do not delegate the read to "the other reviewers already covered this." Arbiter is responsible for the binding decision.
 3. **Tabulate reviewer verdicts.** For each reviewer, record: name, verdict, key citations from their comment. Use a 2-column table in your eventual arbiter comment.
 4. **Settle disagreements explicitly.** For each point where reviewers diverged:
@@ -219,7 +219,7 @@ Skipping the block is a re-review trigger — without it the labels and comments
 
 GitHub issue comments are the canonical record for QuReddy bug-fix reviews. The verdict + reasoning lives where the bug lives, the timestamp is the audit trail, and Codex / contributors / future-you read issue comments before changing anything.
 
-Repo: `paul007ex/qureddy` (will move to `breachsafe/qureddy` at v1.0).
+Repo: `breachsafe/qureddy` (will move to `breachsafe/qureddy` at v1.0).
 
 Layered approach:
 
@@ -246,22 +246,22 @@ If the labels don't exist on the repo yet, create them:
 
 ```bash
 # Per-reviewer verdicts (multiple per issue, informational)
-gh label create "review:claude:approve"               --repo paul007ex/qureddy --color "c2e0c6" --description "Reviewed by Claude — approve"
-gh label create "review:claude:approve-with-changes"  --repo paul007ex/qureddy --color "fef2c0" --description "Reviewed by Claude — approve with changes"
-gh label create "review:claude:reject"                --repo paul007ex/qureddy --color "f9d0c4" --description "Reviewed by Claude — reject"
-gh label create "review:other:approve"                --repo paul007ex/qureddy --color "c2e0c6" --description "Reviewed by other agent — approve"
-gh label create "review:other:approve-with-changes"  --repo paul007ex/qureddy --color "fef2c0" --description "Reviewed by other agent — approve with changes"
-gh label create "review:other:reject"                --repo paul007ex/qureddy --color "f9d0c4" --description "Reviewed by other agent — reject"
+gh label create "review:claude:approve"               --repo breachsafe/qureddy --color "c2e0c6" --description "Reviewed by Claude — approve"
+gh label create "review:claude:approve-with-changes"  --repo breachsafe/qureddy --color "fef2c0" --description "Reviewed by Claude — approve with changes"
+gh label create "review:claude:reject"                --repo breachsafe/qureddy --color "f9d0c4" --description "Reviewed by Claude — reject"
+gh label create "review:other:approve"                --repo breachsafe/qureddy --color "c2e0c6" --description "Reviewed by other agent — approve"
+gh label create "review:other:approve-with-changes"  --repo breachsafe/qureddy --color "fef2c0" --description "Reviewed by other agent — approve with changes"
+gh label create "review:other:reject"                --repo breachsafe/qureddy --color "f9d0c4" --description "Reviewed by other agent — reject"
 
 # Arbiter verdict (one per issue, by Codex)
-gh label create "arbiter:codex:approve"               --repo paul007ex/qureddy --color "0e8a16" --description "Arbiter (Codex) verdict — approve"
-gh label create "arbiter:codex:approve-with-changes"  --repo paul007ex/qureddy --color "fbca04" --description "Arbiter (Codex) verdict — approve with changes"
-gh label create "arbiter:codex:reject"                --repo paul007ex/qureddy --color "b60205" --description "Arbiter (Codex) verdict — reject"
+gh label create "arbiter:codex:approve"               --repo breachsafe/qureddy --color "0e8a16" --description "Arbiter (Codex) verdict — approve"
+gh label create "arbiter:codex:approve-with-changes"  --repo breachsafe/qureddy --color "fbca04" --description "Arbiter (Codex) verdict — approve with changes"
+gh label create "arbiter:codex:reject"                --repo breachsafe/qureddy --color "b60205" --description "Arbiter (Codex) verdict — reject"
 
 # Binding decision (the merge gate reads this)
-gh label create "decision:approved"                   --repo paul007ex/qureddy --color "0e8a16" --description "BINDING — fix approved, ready to merge"
-gh label create "decision:needs-changes"              --repo paul007ex/qureddy --color "fbca04" --description "BINDING — fix needs changes before merge"
-gh label create "decision:rejected"                   --repo paul007ex/qureddy --color "b60205" --description "BINDING — fix rejected, do not merge"
+gh label create "decision:approved"                   --repo breachsafe/qureddy --color "0e8a16" --description "BINDING — fix approved, ready to merge"
+gh label create "decision:needs-changes"              --repo breachsafe/qureddy --color "fbca04" --description "BINDING — fix needs changes before merge"
+gh label create "decision:rejected"                   --repo breachsafe/qureddy --color "b60205" --description "BINDING — fix rejected, do not merge"
 ```
 
 ### Filterable views
@@ -278,7 +278,7 @@ gh label create "decision:rejected"                   --repo paul007ex/qureddy -
 
 ```bash
 # 1. Post the review as a comment in the structured format above, ending with the signature block
-gh issue comment <n> --repo paul007ex/qureddy --body "$(cat <<'EOF'
+gh issue comment <n> --repo breachsafe/qureddy --body "$(cat <<'EOF'
 ## Review: <issue title>
 
 ### Verdict
@@ -302,18 +302,18 @@ EOF
 )"
 
 # 2. Apply the matching reviewer-tier label
-gh issue edit <n> --repo paul007ex/qureddy --add-label "review:claude:<verdict>"
+gh issue edit <n> --repo breachsafe/qureddy --add-label "review:claude:<verdict>"
 ```
 
 ### Standard workflow per arbitration (Arbiter mode)
 
 ```bash
 # 1. Read prior reviewer comments
-gh issue view <n> --repo paul007ex/qureddy --comments
+gh issue view <n> --repo breachsafe/qureddy --comments
 
 # 2. Post arbiter verdict in the standard output format with the additional sections
 #    (Reviewers consulted, Disagreements settled, Binding decision)
-gh issue comment <n> --repo paul007ex/qureddy --body "$(cat <<'EOF'
+gh issue comment <n> --repo breachsafe/qureddy --body "$(cat <<'EOF'
 ## Arbitration: <issue title>
 
 ### Reviewers consulted
@@ -341,7 +341,7 @@ EOF
 )"
 
 # 3. Apply both arbiter-tier labels (do NOT remove reviewer labels)
-gh issue edit <n> --repo paul007ex/qureddy \
+gh issue edit <n> --repo breachsafe/qureddy \
     --add-label "arbiter:codex:<verdict>" \
     --add-label "decision:<outcome>"
 ```
@@ -378,7 +378,7 @@ The skill produces a verdict per fix, but some questions are above the reviewer'
 
 | Situation | Why escalate | What to write in the verdict |
 |---|---|---|
-| The fix author insists their version is right after one round of disagreement | A second back-and-forth becomes a debate, not a review | `### Disagreement` block + tag `@paul007ex` in the issue comment, label `reviewed:needs-maintainer` |
+| The fix author insists their version is right after one round of disagreement | A second back-and-forth becomes a debate, not a review | `### Disagreement` block + tag `@breachsafe` in the issue comment, label `reviewed:needs-maintainer` |
 | Schema bump required (`ScanResult.schema_version` → `qureddy.scan.v2`) | Maintainer call — affects every downstream consumer | Verdict: `APPROVE WITH CHANGES`, but the change is "open ADR + bump schema_version, do not merge fix until decided" |
 | Fix would close issue #N but breaks issue #M's planned fix | Cross-issue conflict; only the maintainer knows priority | List both issues in `### Out-of-scope items`, recommend sequencing (which lands first) |
 | The fix introduces a new exit code, or changes the meaning of an existing one (`cli.py` exit-code surface) | Contract change visible to every CI integration | Verdict: `REJECT`, counter-proposal: "open ADR before changing exit-code surface" |
@@ -391,7 +391,7 @@ The escalation pattern is always the same: **state the verdict, name the questio
 If `reviewed:needs-maintainer` doesn't exist as a label, create it:
 
 ```bash
-gh label create "reviewed:needs-maintainer" --repo paul007ex/qureddy --color "5319e7" --description "Reviewer escalated — needs maintainer decision"
+gh label create "reviewed:needs-maintainer" --repo breachsafe/qureddy --color "5319e7" --description "Reviewer escalated — needs maintainer decision"
 ```
 
 ## Worked example: reviewing a fix for issue #15
@@ -489,8 +489,8 @@ None — issue body's analysis is correct, this PR did not engage with it.
 Followed by:
 
 ```bash
-gh issue comment 15 --repo paul007ex/qureddy --body "$(cat review.md)"
-gh issue edit 15 --repo paul007ex/qureddy --add-label "reviewed:reject"
+gh issue comment 15 --repo breachsafe/qureddy --body "$(cat review.md)"
+gh issue edit 15 --repo breachsafe/qureddy --add-label "reviewed:reject"
 ```
 
 What this example demonstrates:
