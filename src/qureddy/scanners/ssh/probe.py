@@ -15,6 +15,9 @@ import struct
 from dataclasses import dataclass
 
 from qureddy.core.errors import SSHProbeError
+from qureddy.core.logging import get_logger
+
+_log = get_logger(__name__)
 
 _SSH_MSG_KEXINIT = 20
 _CLIENT_BANNER = b"SSH-2.0-qureddy\r\n"
@@ -40,17 +43,31 @@ def read_kexinit_offer(host: str, port: int, *, timeout_seconds: int) -> SSHOffe
     negotiates (client-dependent). Raises SSHProbeError on connect failure,
     timeout, or malformed/oversized response.
     """
+    # Debug logging mirrors the TLS probe's subprocess.start/complete events
+    # (structlog, visible at -vv/-vvv on stderr) so an operator can see the
+    # socket exchange — and, on a slow/black-holed multi-homed host, see that
+    # the connect is progressing rather than a silently frozen terminal.
+    _log.debug("ssh_probe.connect", host=host, port=port, timeout_seconds=timeout_seconds)
     try:
         with socket.create_connection((host, port), timeout=timeout_seconds) as sock:
             sock.settimeout(timeout_seconds)
             banner = _read_banner(sock)
+            _log.debug("ssh_probe.banner", banner=banner)
             sock.sendall(_CLIENT_BANNER)
             payload = _read_packet_payload(sock)
             kex, host_keys = _parse_kexinit(payload)
     except (OSError, TimeoutError) as exc:
+        _log.debug("ssh_probe.failed", host=host, port=port, error=str(exc))
         msg = f"ssh probe of {host}:{port} failed: {exc}"
         raise SSHProbeError(msg) from exc
     real_kex = tuple(a for a in kex if a not in _PSEUDO_KEX)
+    _log.debug(
+        "ssh_probe.kexinit",
+        kex_count=len(real_kex),
+        host_key_count=len(host_keys),
+        kex_algorithms=real_kex,
+        host_key_algorithms=tuple(host_keys),
+    )
     return SSHOffer(
         server_banner=banner, kex_algorithms=real_kex, host_key_algorithms=tuple(host_keys)
     )
