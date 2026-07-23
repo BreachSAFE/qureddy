@@ -35,6 +35,7 @@ import json
 import sys
 from typing import IO, TYPE_CHECKING
 
+from cyclonedx.model import Property
 from cyclonedx.model.bom import Bom
 from cyclonedx.model.bom_ref import BomRef
 from cyclonedx.model.component import Component, ComponentType
@@ -78,6 +79,7 @@ def render_cbom(
     )
     bom.components.add(endpoint)
     bom.metadata.component = endpoint
+    _add_scan_status_properties(bom, result)
 
     algorithm_refs = _add_algorithm_components(bom, result, provides_edges)
     _add_protocol_components(bom, result, algorithm_refs, provides_edges)
@@ -97,6 +99,29 @@ def render_cbom(
         provides_edges[_LIBRARY_REF] = list(provides_edges.get(_LIBRARY_REF, []))
 
     _write_with_provides(bom, provides_edges, stream)
+
+
+def _add_scan_status_properties(bom: Bom, result: ScanResult) -> None:
+    """Mirror scan.status/summary.failure_category onto bom.metadata.properties.
+
+    `bom.metadata.properties` is the standard CycloneDX extension point.
+    Without this, a CBOM from a hard-failed scan (e.g. tls_handshake_failed)
+    is structurally indistinguishable from a successful-but-sparse one —
+    both can contain a real, valid certificate component (the certificate
+    probe in cli.py runs independently of the main scan's forced-group
+    probes and can succeed even when they fail), and there was previously
+    no field anywhere in the CBOM itself recording that the scan failed.
+    A consumer that stores/forwards only the CBOM JSON (no external exit
+    code) had no way to tell these apart (issue #195).
+    """
+    bom.metadata.properties.add(Property(name="qureddy:scan.status", value=result.scan.status))
+    if result.summary.failure_category is not None:
+        bom.metadata.properties.add(
+            Property(
+                name="qureddy:scan.failure_category",
+                value=result.summary.failure_category.value,
+            )
+        )
 
 
 def _add_algorithm_components(
