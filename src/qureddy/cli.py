@@ -277,7 +277,7 @@ def scan_tls(
             retry=RetryConfig(retries=retries, retry_delay=retry_delay, retry_on=retry_set),
         )
         result, exit_code = _execute_scan(scanner, scan_target, timeout)
-        _render(result, output_format, verbose)
+        _render(result, output_format, verbose, timeout)
         raise typer.Exit(code=exit_code)
     finally:
         structlog.contextvars.clear_contextvars()
@@ -347,18 +347,27 @@ def _execute_scan(
     return result, exit_code
 
 
-def _render(result: ScanResult, output_format: OutputFormat, verbose: int) -> None:
+def _render(
+    result: ScanResult, output_format: OutputFormat, verbose: int, timeout_seconds: int
+) -> None:
     """Dispatch to the JSON, CBOM, or Rich renderer."""
     if output_format is OutputFormat.JSON:
         render_json(result, sys.stdout)
     elif output_format is OutputFormat.CBOM:
-        render_cbom(result, sys.stdout, certificate=_fetch_cert_for_cbom(result))
+        render_cbom(result, sys.stdout, certificate=_fetch_cert_for_cbom(result, timeout_seconds))
     else:
         render_rich(result, sys.stdout, verbosity=verbose)
 
 
-def _fetch_cert_for_cbom(result: ScanResult) -> CertificateInfo | None:
+def _fetch_cert_for_cbom(result: ScanResult, timeout_seconds: int) -> CertificateInfo | None:
     """Best-effort certificate fetch for CBOM output.
+
+    Issue #225: this redundant fetch (see docstring below) previously
+    ignored the user's --timeout entirely, hardcoding cert_probe's
+    30-second default regardless of what was requested. Now threads the
+    same timeout_seconds the scan itself used. Eliminating the redundant
+    fetch entirely (reusing the scan's own already-fetched certificate)
+    is a separate, larger design change — tracked in #252, not done here.
 
     Reviewer-flagged bug: this call path did not exist, so cbom.py's
     certificate-component code was dead — render_cbom was always called
@@ -395,7 +404,11 @@ def _fetch_cert_for_cbom(result: ScanResult) -> CertificateInfo | None:
     openssl_path = result.dependencies[0].path
     try:
         pem = fetch_certificate_pem(
-            openssl_path, result.target.host, result.target.port, result.target.sni
+            openssl_path,
+            result.target.host,
+            result.target.port,
+            result.target.sni,
+            timeout_seconds=timeout_seconds,
         )
         return parse_certificate(openssl_path, pem) if pem else None
     except (LocalOpenSSLMissing, ValueError):
