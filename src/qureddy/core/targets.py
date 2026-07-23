@@ -57,12 +57,17 @@ def parse_target(input_str: str, sni_override: str | None = None) -> ScanTarget:
     else:
         sni = host
 
+    # Issue #236: an unbracketed IPv6 host glued directly to ":{port}" in
+    # the locator is the same ambiguous shape #223 rejects on the input
+    # side — ScanTarget's own locator_matches_endpoint validator now
+    # requires the bracketed form, which this was silently not producing.
+    rendered_host = f"[{host}]" if ":" in host else host
     return ScanTarget(
         original_input=input_str,
         host=host,
         port=port,
         sni=sni,
-        locator=f"tls://{host}:{port}",
+        locator=f"tls://{rendered_host}:{port}",
     )
 
 
