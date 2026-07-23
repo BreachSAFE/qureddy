@@ -35,7 +35,7 @@ The current milestone is named in [`docs/reference/milestones.md`](docs/referenc
 
 ```bash
 # Clone
-git clone https://github.com/paul007ex/qureddy.git
+git clone https://github.com/breachsafe/qureddy.git
 cd qureddy
 
 # Install uv if you don't have it

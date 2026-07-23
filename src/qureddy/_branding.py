@@ -24,10 +24,10 @@ Notes on the format:
 - `--` (double-hyphen) is used in `VERSION_BANNER` and visible help
   text instead of an em-dash per `docs/contributors/coding-rules.md`
   §18 (no em-dashes in source).
-- `SOURCE_URL` points at `paul007ex/qureddy` per the maintainer's
-  locked decision in issue #41 (not `breachsafe/qureddy` — that
+- `SOURCE_URL` points at `breachsafe/qureddy`, the canonical public
+  repository (org cutover from the `paul007ex/qureddy` staging repo
   org-migration target is documented in CLAUDE.md but the repo lives
-  at `paul007ex/qureddy` until org cutover).
+  at `breachsafe/qureddy` until org cutover).
 """
 
 from __future__ import annotations
@@ -36,7 +36,7 @@ from qureddy import __version__ as _qureddy_version
 
 PROJECT_NAME = "BreachSAFE QuReddy"
 PROJECT_URL = "https://www.breachsafe.ai"
-SOURCE_URL = "https://github.com/paul007ex/qureddy"
+SOURCE_URL = "https://github.com/breachsafe/qureddy"
 LICENSE_NAME = "Apache-2.0"
 PROJECT_VERSION = _qureddy_version
 

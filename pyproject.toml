@@ -86,10 +86,10 @@ dev = [
 qureddy = "qureddy.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/paul007ex/qureddy"
-Repository = "https://github.com/paul007ex/qureddy"
-Issues = "https://github.com/paul007ex/qureddy/issues"
-Changelog = "https://github.com/paul007ex/qureddy/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/breachsafe/qureddy"
+Repository = "https://github.com/breachsafe/qureddy"
+Issues = "https://github.com/breachsafe/qureddy/issues"
+Changelog = "https://github.com/breachsafe/qureddy/blob/main/CHANGELOG.md"
 
 [build-system]
 requires = ["hatchling>=1.25"]

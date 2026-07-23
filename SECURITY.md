@@ -25,7 +25,7 @@ We do not backport security fixes to prior tagged releases. Upgrade to the lates
 
 **Do not file a public GitHub issue for vulnerabilities.**
 
-Use **GitHub Security Advisories** at https://github.com/paul007ex/qureddy/security/advisories/new to report privately. The repository maintainer is automatically notified.
+Use **GitHub Security Advisories** at https://github.com/breachsafe/qureddy/security/advisories/new to report privately. The repository maintainer is automatically notified.
 
 If you cannot use GitHub Security Advisories, email the maintainer; the contact is in the GitHub profile of the project owner.
 
