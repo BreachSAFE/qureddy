@@ -12,7 +12,6 @@ Per skill §"Exit codes" + issue #12:
 
 from __future__ import annotations
 
-import re
 import sys
 from typing import Annotated
 
@@ -24,6 +23,10 @@ from qureddy._branding import (
     PROJECT_NAME,
     PROJECT_URL,
     VERSION_BANNER,
+)
+from qureddy.cli_usage_errors import (
+    is_verbosity_dash_confusion,
+    is_version_misplacement,
 )
 from qureddy.core.errors import (
     LocalOpenSSLBroken,
@@ -336,53 +339,6 @@ def _render(result: ScanResult, output_format: OutputFormat, verbose: int) -> No
         render_rich(result, sys.stdout, verbosity=verbose)
 
 
-def _is_version_misplacement(exc: click.exceptions.UsageError) -> bool:
-    """Detect the `--version` / `-V` on a subcommand UsageError shape.
-
-    Click's default error reads `No such option: --version Did you mean
-    --verbose?` which is unhelpful — `--version` lives at the root and
-    works fine; the user just put it in the wrong position. Catch this
-    specific shape so we can replace with an actionable hint.
-    """
-    msg = str(exc.message) if exc.message else ""
-    if "No such option" not in msg:
-        return False
-    return "--version" in msg or "'-V'" in msg or " -V " in msg
-
-
-# `--v` / `--vv` / `--vvv` etc — double-dash followed by 1+ `v`s as a
-# whole token. Excludes `--version` (longer match, has trailing chars).
-_VERBOSITY_DASH_CONFUSION_RE = re.compile(r"--v+(?:\s|$|'|\")")
-
-
-def _is_verbosity_dash_confusion(exc: click.exceptions.UsageError) -> bool:
-    """Detect `--v`, `--vv`, `--vvv`, `--vvvv` and `--verbos*` typos (#74).
-
-    Click's default error for these reads `No such option: --vvv` with
-    no hint that the correct invocation is `-vvv` (single-dash, stackable
-    per POSIX). This detector matches the dash-confusion error shape so
-    the wrapper can substitute an actionable hint.
-
-    Matches:
-      `--v`, `--vv`, `--vvv`, `--vvvv` (any count of v's, as whole tokens)
-      `--verbos`, `--verbose<typo>` (typo'd long form)
-
-    Does NOT match:
-      `--version` (handled by `_is_version_misplacement`)
-      `--view`, `--variable`, etc. (legitimate words starting with v)
-    """
-    msg = str(exc.message) if exc.message else ""
-    if "No such option" not in msg:
-        return False
-    # `--version` already handled upstream; if we somehow get here for it,
-    # don't claim it's a verbosity-confusion shape.
-    if "--version" in msg:
-        return False
-    if _VERBOSITY_DASH_CONFUSION_RE.search(msg):
-        return True
-    return "--verbos" in msg
-
-
 def main() -> None:
     """Entry point that maps Click usage errors to project exit code 4.
 
@@ -401,13 +357,13 @@ def main() -> None:
     try:
         exit_code = app(standalone_mode=False)
     except click.exceptions.UsageError as exc:
-        if _is_version_misplacement(exc):
+        if is_version_misplacement(exc):
             sys.stderr.write(
                 "qureddy: --version is a top-level flag. "
                 "Try `qureddy --version` (without a subcommand).\n"
             )
             sys.exit(EXIT_USAGE)
-        if _is_verbosity_dash_confusion(exc):
+        if is_verbosity_dash_confusion(exc):
             sys.stderr.write(
                 "qureddy: did you mean -v / -vv / -vvv (single-dash)? "
                 "Verbosity uses single-dash short flags per POSIX; "
