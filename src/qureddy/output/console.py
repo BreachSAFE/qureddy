@@ -77,11 +77,15 @@ _VERBOSITY_SHOW_COMMANDS = 3
 
 def render_rich(
     result: ScanResult,
-    stream: IO[str] = sys.stdout,
+    stream: IO[str] | None = None,
     *,
     verbosity: int = 0,
 ) -> None:
-    """Render a ScanResult to the given stream.
+    """Render a ScanResult to the given stream (default: current sys.stdout).
+
+    Issue #238: `stream: IO[str] = sys.stdout` as a default is resolved
+    once at function-definition time, not per call — same root cause as
+    #237/#239. Resolve at call time instead.
 
     Layout:
       1. The QuReddy header line.
@@ -98,7 +102,8 @@ def render_rich(
 
     Honors NO_COLOR per https://no-color.org.
     """
-    console = _make_console(stream)
+    target_stream = stream if stream is not None else sys.stdout
+    console = _make_console(target_stream)
     console.print(HEADER, style="bold")
     console.print()
 
