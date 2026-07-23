@@ -99,20 +99,25 @@ build-backend = "hatchling.build"
 packages = ["src/qureddy"]
 
 [tool.hatch.build.targets.sdist]
-# Explicitly exclude developer scratch — venvs, caches, scratch agent
-# trees, and the local `dist/` from prior builds. `.gitignore` already
-# excludes most of these from VCS, but hatch's sdist builder by default
-# includes the working tree, so it would pick up `.venv-merge/` (a
-# local test rig). Listing them explicitly here keeps `uv build` clean
-# regardless of what's in the working tree.
-exclude = [
-    ".venv*",
-    ".coverage",
-    ".mypy_cache",
-    ".pytest_cache",
-    ".ruff_cache",
-    "scratch",
-    "dist",
+# Issue #159: an exclude-blocklist can only omit what it names, so every
+# internal directory added later (`.claude/`, `.github/`, `AGENTS.md`,
+# `CLAUDE.md`, the agent scaffolding) shipped into the public sdist by
+# default — 51 internal files on the PyPI source view. Use an
+# include-allowlist instead: the sdist ships only what a source consumer
+# needs to build, install, test, and satisfy the license, and any new
+# internal file is excluded by default rather than leaked by default.
+include = [
+    "/src/qureddy",
+    "/tests",
+    "/README.md",
+    "/CHANGELOG.md",
+    "/CONTRIBUTING.md",
+    "/SECURITY.md",
+    "/CODE_OF_CONDUCT.md",
+    "/LICENSE",
+    "/LICENSES",
+    "/REUSE.toml",
+    "/pyproject.toml",
 ]
 
 # ============================================================================
