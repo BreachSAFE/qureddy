@@ -256,7 +256,18 @@ def scan_tls(
     quiet: QuietOpt = False,
 ) -> None:
     """Scan a TLS endpoint for post-quantum readiness."""
-    configure_logging(verbosity=verbose, json_logs=json_logs, quiet=quiet)
+    # JSON/CBOM stdout is a single machine-parsed document. The #15 fd-snapshot
+    # fix only protects against in-process stream rebinding (CliRunner, etc.);
+    # it cannot protect real shell `2>&1` (the OS has already merged fd 1/2
+    # before Python starts — see issue #194). A WARNING+ log line during the
+    # scan silently corrupts that document for any real `| jq`-style consumer.
+    # Default to quiet in these formats so the common case is safe by
+    # default; an explicit -v/-vv/-vvv still wins, since that's the user
+    # asking for diagnostics and accepting they must keep stdout/stderr
+    # genuinely separate (not `2>&1`) to still get clean JSON.
+    machine_format = output_format in (OutputFormat.JSON, OutputFormat.CBOM)
+    effective_quiet = quiet or (machine_format and verbose == 0)
+    configure_logging(verbosity=verbose, json_logs=json_logs, quiet=effective_quiet)
     retry_set = _parse_retry_args(retry_on, retries, retry_delay)
     scan_target = _parse_cli_target(target, sni)
     structlog.contextvars.bind_contextvars(target=scan_target.locator)
