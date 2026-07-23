@@ -8,7 +8,7 @@
 [project]
 name = "breachsafe-qureddy"
 version = "0.2.0"
-description = "Open-source PQC readiness scanner -- live OpenSSL handshakes against the target."
+description = "Open-source post-quantum readiness scanner for TLS and SSH endpoints."
 readme = "README.md"
 requires-python = ">=3.12"
 license = {text = "Apache-2.0"}

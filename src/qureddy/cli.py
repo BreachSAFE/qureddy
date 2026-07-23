@@ -22,6 +22,7 @@ import structlog
 import typer
 
 from qureddy._branding import (
+    DESCRIPTION,
     PROJECT_NAME,
     PROJECT_URL,
     PROJECT_VERSION,
@@ -218,6 +219,10 @@ QUICK START:
 qureddy scan tls google.com
 
 \b
+# Scan an SSH endpoint.
+qureddy scan ssh github.com
+
+\b
 # Machine-readable, for CI pipelines (real PQ hybrid endpoint).
 qureddy scan tls pq.cloudflareresearch.com --format json
 
@@ -252,20 +257,21 @@ Project: {PROJECT_URL}
 # planned per the roadmap (ssh, config, source-code) — this epilog says so,
 # rather than leaving a user to wonder why there's an extra level at all.
 _SCAN_EPILOG = _colorize_help_text("""\
-qureddy currently has one scan type; more (ssh, config, source-code) are
-planned per the roadmap, which is why "scan" is a group rather than a
-single command.
+qureddy scans TLS and SSH endpoints; more scan types (config, source-code)
+are on the roadmap, which is why "scan" is a group rather than a single
+command.
 
 \b
-qureddy scan tls <target>            # the only scan type today
+qureddy scan tls <target>            # TLS endpoint (OpenSSL handshakes)
+qureddy scan ssh <target>            # SSH endpoint (reads the KEXINIT offer)
 qureddy scan tls --help              # full options, examples, exit codes
+qureddy scan ssh --help              # SSH options and examples
 """)
 
 app = typer.Typer(
     name="qureddy",
     help=(
-        f"{PROJECT_NAME} {PROJECT_VERSION} -- post-quantum TLS readiness scanner. "
-        "Live OpenSSL handshakes against the target."
+        f"{PROJECT_NAME} {PROJECT_VERSION} -- {DESCRIPTION}."
     ),
     epilog=_ROOT_EPILOG,
     no_args_is_help=True,
@@ -283,7 +289,7 @@ scan_app = typer.Typer(
     # group, and the only line a user who doesn't read the epilog ever
     # sees on `qureddy --help`'s "Commands:" table. Now self-sufficient
     # without requiring the epilog below to explain what's being scanned.
-    help="Scan a target for post-quantum TLS readiness.",
+    help="Scan a TLS or SSH endpoint for post-quantum readiness.",
     epilog=_SCAN_EPILOG,
     no_args_is_help=True,
     rich_markup_mode=None,
@@ -294,8 +300,7 @@ app.add_typer(scan_app, name="scan")
 
 @app.callback(
     help=(
-        f"{PROJECT_NAME} {PROJECT_VERSION} -- post-quantum TLS readiness scanner. "
-        "Live OpenSSL handshakes against the target."
+        f"{PROJECT_NAME} {PROJECT_VERSION} -- {DESCRIPTION}."
     ),
 )
 def _root(
