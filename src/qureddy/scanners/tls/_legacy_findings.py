@@ -31,6 +31,7 @@ from qureddy.scanners.tls.legacy_probe import LegacyProtocolResult, has_weak_cip
 # string in a second place — same pattern as _cert_findings.py's
 # FINDING_TYPE_PQ_SIGNATURE/FINDING_TYPE_CLASSICAL_SIGNATURE.
 FINDING_TYPE_LEGACY_PROTOCOL_OFFERED = "tls.legacy.protocol_offered"
+FINDING_TYPE_CLASSICAL_PROTOCOL = "tls.kex.classical_protocol"
 
 
 def evidence_from_legacy_result(asset: Asset, result: LegacyProtocolResult) -> Evidence:
@@ -63,7 +64,7 @@ _DEPRECATED_PROTOCOLS = frozenset({"TLSv1", "TLSv1.1"})
 def finding_from_legacy_result(
     asset: Asset, evidence: Evidence, result: LegacyProtocolResult
 ) -> Finding | None:
-    """A Finding when the protocol is deprecated, or a weak cipher was found.
+    """A Finding when the protocol is deprecated, weak, or purely classical.
 
     TLS 1.0/1.1 are themselves deprecated (PCI-DSS/NIST SP 800-52) —
     always a finding when offered, regardless of cipher.
@@ -74,24 +75,47 @@ def finding_from_legacy_result(
     offers TLS 1.2 alongside a clean PQC-hybrid TLS 1.3 config) — a
     naive "any legacy protocol = classically_weak" rule made that
     ordinary, common case look identical to a genuinely deprecated
-    TLS 1.0 server, both in severity and in readiness rollup. TLS 1.2
-    alone (no weak cipher) returns None here — "should TLS 1.2 be
-    flagged when TLS 1.3 is also available" is issue #171's scope
-    (downgrade detection), not this one's.
+    TLS 1.0 server, both in severity and in readiness rollup.
+
+    Issue #240: a TLS-1.2-only server with no deprecated protocol and no
+    weak cipher is not "classically broken" (correct for a generic
+    vulnerability scanner) but IS quantum_vulnerable for a PQ-readiness
+    scanner: ECDHE/RSA key establishment provides no PQ confidentiality
+    regardless of whether it's broken by today's classical attacks.
+    `_summary.py`'s readiness precedence already ranks TRANSITIONAL_HYBRID
+    above QUANTUM_VULNERABLE, so this finding is correctly superseded
+    when a hybrid TLS 1.3 finding is also present — it only becomes the
+    scan's verdict when TLS 1.2 is the only protocol actually offered.
 
     Severity: HIGH when the accepted-cipher list contains a known-weak
     marker (see legacy_probe.WEAK_CIPHER_MARKERS and its documented gap
     for RC4/3DES/DES on the required OpenSSL 3.5+ build), MEDIUM
-    otherwise.
+    otherwise. The classical-protocol-only case is LOW: it is expected,
+    common behavior, not a defect being flagged.
     """
     if not result.offered:
         return None
     weak = has_weak_cipher(result.accepted_ciphers)
     deprecated_protocol = result.protocol_version in _DEPRECATED_PROTOCOLS
-    if not deprecated_protocol and not weak:
-        return None
-    severity = Severity.HIGH if weak else Severity.MEDIUM
     cipher_list = ", ".join(result.accepted_ciphers)
+    if not deprecated_protocol and not weak:
+        return Finding(
+            id=f"finding-{uuid.uuid4().hex[:12]}",
+            asset_id=asset.id,
+            evidence_ids=(evidence.id,),
+            rule_id="tls.classical.protocol_offered",
+            finding_type=FINDING_TYPE_CLASSICAL_PROTOCOL,
+            title=f"{result.protocol_version} offers classical key establishment",
+            description=(
+                f"{result.protocol_version} negotiated classical cipher suites "
+                f"({cipher_list}); this provides no post-quantum confidentiality."
+            ),
+            severity=Severity.LOW,
+            readiness=Readiness.QUANTUM_VULNERABLE,
+            confidence=Confidence.HIGH,
+            protocol_version=result.protocol_version,
+        )
+    severity = Severity.HIGH if weak else Severity.MEDIUM
     reason = (
         f"{result.protocol_version} is deprecated per PCI-DSS/NIST SP 800-52"
         if deprecated_protocol
