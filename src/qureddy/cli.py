@@ -50,6 +50,7 @@ from qureddy.core.retry import (
     validate_retry_args,
 )
 from qureddy.core.targets import parse_target
+from qureddy.output.cbom import render_cbom
 from qureddy.output.console import render_rich
 from qureddy.output.json import render_json
 from qureddy.scanners.tls.openssl_probe import DEFAULT_TIMEOUT_SECONDS
@@ -329,9 +330,11 @@ def _execute_scan(
 
 
 def _render(result: ScanResult, output_format: OutputFormat, verbose: int) -> None:
-    """Dispatch to the JSON or Rich renderer."""
+    """Dispatch to the JSON, CBOM, or Rich renderer."""
     if output_format is OutputFormat.JSON:
         render_json(result, sys.stdout)
+    elif output_format is OutputFormat.CBOM:
+        render_cbom(result, sys.stdout)
     else:
         render_rich(result, sys.stdout, verbosity=verbose)
 

@@ -105,6 +105,9 @@ class OutputFormat(str, Enum):
 
     RICH = "rich"
     JSON = "json"
+    CBOM = "cbom"
+    """Rapid-prototype CycloneDX 1.6 CBOM export — see qureddy.output.cbom
+    module docstring. Not the tracked MVP 0.3 implementation (issue #61)."""
 
 
 class ScanTarget(BaseModel):
