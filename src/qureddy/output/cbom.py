@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import json
 import sys
+import warnings
 from datetime import UTC, datetime
 from typing import IO, TYPE_CHECKING
 
@@ -291,7 +292,17 @@ def _add_certificate_component(
 
 def _write_with_provides(bom: Bom, provides_edges: dict[str, list[str]], stream: IO[str]) -> None:
     """Serialize via the library, then patch in `provides` edges the Python API doesn't expose. Documented gap, not a silent hack: see module docstring."""
-    payload = json.loads(JsonV1Dot6(bom).output_as_string(indent=2))
+    # cyclonedx-python-lib warns on serialization when the described root
+    # component has no dependency edges — true for the SSH scanner, which
+    # has no library-dependency graph (TLS depends on the openssl library;
+    # SSH is a plain socket). The CBOM is still valid; suppress the specific
+    # warning so it doesn't pollute stderr for `--format cbom | jq` consumers.
+    # (The real fix — model the endpoint as providing its own crypto — is the
+    # graph-direction rework tracked in #221.)
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message=".*no defined dependencies.*")
+        serialized = JsonV1Dot6(bom).output_as_string(indent=2)
+    payload = json.loads(serialized)
     for dependency in payload.get("dependencies", []):
         ref = dependency.get("ref")
         if ref in provides_edges:

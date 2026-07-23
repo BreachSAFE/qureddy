@@ -81,6 +81,10 @@ def scan_ssh(target: ScanTarget, *, timeout_seconds: int = 8) -> ScanResult:
                 readiness=Readiness.TRANSITIONAL_HYBRID,
                 confidence=Confidence.HIGH,
                 algorithm=pq[0],
+                # negotiated_group is what output/cbom.py reads to emit a
+                # cryptographic-asset component; without it the SSH KEX
+                # (e.g. sntrup761x25519-sha512) was absent from --format cbom.
+                negotiated_group=pq[0],
                 protocol="ssh",
             )
         )
