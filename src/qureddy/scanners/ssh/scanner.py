@@ -151,7 +151,6 @@ def scan_ssh(target: ScanTarget, *, timeout_seconds: int = 8) -> ScanResult:
             started_at=started,
             completed_at=completed,
             scanner_name="ssh",
-            scanner_version="0.1.0",
             status="completed",
             total_attempts=1,
         ),
