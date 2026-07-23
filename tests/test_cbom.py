@@ -133,5 +133,7 @@ class TestLibraryLinkage:
     def test_real_cipher_suite_name_used_not_synthetic_placeholder(self) -> None:
         payload = _render(_build_result())
         protocol = next(c for c in payload["components"] if c["name"] == "TLSv1.3")
-        cipher_suite_name = protocol["cryptoProperties"]["protocolProperties"]["cipherSuites"][0]["name"]
+        cipher_suite_name = protocol["cryptoProperties"]["protocolProperties"]["cipherSuites"][0][
+            "name"
+        ]
         assert cipher_suite_name == "TLS_AES_256_GCM_SHA384"
