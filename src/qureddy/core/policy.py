@@ -121,6 +121,25 @@ MVP_POLICY: tuple[PolicyRule, ...] = (
         ),
     ),
     PolicyRule(
+        id="tls.hybrid.downgraded_to_classical",
+        finding_type="tls.kex.unexpected_group",
+        title="Server rejected requested TLS 1.3 group and negotiated a different one",
+        description=(
+            "The probe requested a specific TLS 1.3 group but the server "
+            "negotiated a different group instead, indicating the requested "
+            "group (often the PQC hybrid candidate) is unsupported."
+        ),
+        severity=Severity.LOW,
+        readiness=Readiness.QUANTUM_VULNERABLE,
+        confidence=Confidence.MEDIUM,
+        conditions=(
+            RuleCondition(
+                field=RuleField.FAILURE_CATEGORY,
+                failure_category=FailureCategory.UNEXPECTED_GROUP,
+            ),
+        ),
+    ),
+    PolicyRule(
         id="tls.classical.negotiated_x25519",
         finding_type="tls.kex.classical",
         title="Classical X25519 available on TLS 1.3 control probe",

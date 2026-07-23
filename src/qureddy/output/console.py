@@ -388,20 +388,27 @@ def _dependencies_table(result: ScanResult) -> Table:
 
 
 def _pick_evidence(result: ScanResult, *, group: str) -> Evidence | None:
-    """Find the evidence record produced by a probe targeting `group`.
+    """Find the evidence record produced by the latest probe attempt targeting `group`.
 
     Disambiguates hybrid vs classical by inspecting the probe command
     args rather than evidence IDs. (The scanner currently generates
     UUID-based evidence IDs; an `ev-classical-x25519` convention was
     proposed in an earlier draft but not adopted.)
+
+    Issue #250: retries accumulate one Evidence per attempt in
+    chronological order, so the first match is the oldest attempt, not
+    the effective outcome. Picking the highest `attempt_number` mirrors
+    #241's fix in `_summary.py` — a later successful retry must
+    supersede an earlier failed attempt's evidence, not the reverse.
     """
-    for ev in result.evidence:
-        probe = ev.probe_result
-        if probe is None:
-            continue
-        if group in probe.command.args:
-            return ev
-    return None
+    matches = [
+        ev
+        for ev in result.evidence
+        if ev.probe_result is not None and group in ev.probe_result.command.args
+    ]
+    if not matches:
+        return None
+    return max(matches, key=lambda ev: ev.probe_result.attempt_number)  # type: ignore[union-attr]
 
 
 def _first_protocol_version(evidence: tuple[Evidence, ...]) -> str | None:

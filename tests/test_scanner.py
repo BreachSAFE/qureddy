@@ -22,7 +22,10 @@ from qureddy.core.models import (
     ScanTarget,
     Severity,
 )
+from qureddy.core.policy import classify_evidence
+from qureddy.scanners.tls._evidence import build_asset, evidence_from_probe
 from qureddy.scanners.tls._summary import highest_severity
+from qureddy.scanners.tls.openssl_probe import HYBRID_GROUP
 from qureddy.scanners.tls.scanner import _build_summary, _scan_readiness
 
 
@@ -157,6 +160,60 @@ class TestSummaryFailureCategoryPreservation:
             assert summary.failure_category is category, (
                 f"expected {category} preserved, got {summary.failure_category}"
             )
+
+
+class TestSummaryFailureCategorySupersededByRetrySuccess:
+    """Issue #241: a later successful retry must clear an earlier failure category."""
+
+    def test_hybrid_negotiated_after_earlier_failed_attempt_clears_failure_category(
+        self,
+    ) -> None:
+        target = ScanTarget(
+            original_input="flaky.example",
+            host="flaky.example",
+            port=443,
+            sni=None,
+            locator="tls://flaky.example:443",
+        )
+        asset = build_asset(target)
+
+        attempt1 = ProbeResult(
+            command=ProbeCommand(
+                executable="openssl", args=("s_client", "-groups", HYBRID_GROUP), timeout_seconds=5
+            ),
+            return_code=1,
+            stdout_sha256="0" * 64,
+            stderr_sha256="0" * 64,
+            duration_ms=1,
+            attempt_number=1,
+            failure_category=FailureCategory.TARGET_CONNECT_FAILED,
+        )
+        attempt2_stdout = (
+            "Protocol version: TLSv1.3\n"
+            "Ciphersuite: TLS_AES_256_GCM_SHA384\n"
+            "Negotiated TLS1.3 group: X25519MLKEM768\n"
+        )
+        attempt2 = ProbeResult(
+            command=ProbeCommand(
+                executable="openssl", args=("s_client", "-groups", HYBRID_GROUP), timeout_seconds=5
+            ),
+            return_code=0,
+            stdout_sha256="0" * 64,
+            stderr_sha256="0" * 64,
+            parser_input=attempt2_stdout,
+            duration_ms=1,
+            attempt_number=2,
+            failure_category=None,
+        )
+
+        ev1 = evidence_from_probe(asset=asset, probe=attempt1, expected_group=HYBRID_GROUP)
+        ev2 = evidence_from_probe(asset=asset, probe=attempt2, expected_group=HYBRID_GROUP)
+        evidence = [ev1, ev2]
+        findings = classify_evidence(asset, evidence)
+        summary = _build_summary(target, findings, evidence)
+
+        assert summary.readiness is Readiness.TRANSITIONAL_HYBRID
+        assert summary.failure_category is None
 
 
 class TestScanReadinessRollupPrecedence:
