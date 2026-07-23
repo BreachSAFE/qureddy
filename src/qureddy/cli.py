@@ -142,7 +142,12 @@ SniOpt = Annotated[
 OpenSSLOpt = Annotated[str | None, typer.Option("--openssl", help="Path to OpenSSL 3.5+ binary.")]
 FormatOpt = Annotated[
     OutputFormat,
-    typer.Option("--format", help="Output format: rich | json", case_sensitive=False),
+    # Issue #266: this string had drifted out of sync with OutputFormat
+    # (which already has RICH/JSON/CBOM) — the auto-generated metavar
+    # showed "--format <rich|json|cbom>" right next to a description
+    # that only listed two of the three, contradicting itself in the
+    # same line of --help output.
+    typer.Option("--format", help="Output format: rich | json | cbom", case_sensitive=False),
 ]
 TimeoutOpt = Annotated[
     int,
