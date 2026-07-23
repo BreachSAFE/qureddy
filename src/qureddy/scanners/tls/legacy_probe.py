@@ -278,6 +278,7 @@ def probe_legacy_protocol(
     picked cipher is removed before the next round, so this terminates
     in accepted-cipher-count rounds, not candidate-count rounds.
     """
+    _log.info("legacy_probe.protocol.start", protocol=protocol_version)
     remaining, incomplete = _candidate_ciphers(
         openssl_path, protocol_flag, timeout_seconds=timeout_seconds
     )
@@ -299,13 +300,20 @@ def probe_legacy_protocol(
             break
         accepted.append(cipher)
         remaining.remove(cipher)
-    return LegacyProtocolResult(
+    result = LegacyProtocolResult(
         protocol_flag=protocol_flag,
         protocol_version=protocol_version,
         offered=bool(accepted),
         accepted_ciphers=tuple(accepted),
         probe_incomplete=incomplete,
     )
+    _log.info(
+        "legacy_probe.protocol.complete",
+        protocol=protocol_version,
+        offered=result.offered,
+        incomplete=result.probe_incomplete,
+    )
+    return result
 
 
 def probe_all_legacy_protocols(

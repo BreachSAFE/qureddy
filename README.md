@@ -16,6 +16,7 @@
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square)](CONTRIBUTING.md)
 
 > Open-source post-quantum cryptography readiness scanner.
+> Live OpenSSL handshakes against the target.
 > Find what's quantum-vulnerable. Generate a CBOM. Move on.
 
 `qureddy` runs in your terminal. Apache 2.0. No signup. No telemetry.

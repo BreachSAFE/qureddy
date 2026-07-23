@@ -52,14 +52,16 @@ READINESS_STYLE: dict[Readiness, str] = {
 
 SEVERITY_STYLE: dict[Severity, str] = {
     Severity.CRITICAL: "bold red",
-    Severity.HIGH: "red",
-    Severity.MEDIUM: "bold yellow",
-    Severity.LOW: "yellow",
-    Severity.INFO: "dim cyan",
+    Severity.HIGH: "dark_orange",
+    Severity.MEDIUM: "yellow",
+    Severity.LOW: "cyan",
+    Severity.INFO: "dim",
 }
 
 STATUS_STYLE: dict[str, str] = {
     "READY": "bold green",
+    "ACCEPTABLE": "bold green",
+    "ACTION NEEDED": "bold yellow",
     "NOT READY": "bold yellow",
     "FAIL": "bold red",
     "UNKNOWN": "dim",
@@ -85,9 +87,8 @@ RECOMMENDATION_TEXT: dict[Readiness, str] = {
     # actually served (issue #183). console.py's _cert_axis_recommendation
     # now derives this from the real tls.cert.* finding instead.
     Readiness.QUANTUM_VULNERABLE: (
-        "Plan PQ migration. Move TLS termination behind an edge that "
-        "supports X25519MLKEM768, or upgrade to OpenSSL 3.5+ with PQ "
-        "groups enabled."
+        "Plan PQ migration. Enable X25519MLKEM768 on the target TLS "
+        "terminator, then re-run the scan."
     ),
     Readiness.CLASSICALLY_WEAK: (
         "Migrate immediately. Weak classical crypto is exploitable "
@@ -106,10 +107,8 @@ RECOMMENDATION_TEXT: dict[Readiness, str] = {
 # console.py, matching the existing "message copy lives in _styles.py"
 # convention — filled in by console.py with hybrid_group/protocols.
 CLASSICALLY_WEAK_WITH_PQC_TEMPLATE: str = (
-    "PQ hybrid ({hybrid_group}) is negotiated and working — that's real, keep it. "
-    "Separately, this target also still accepts {protocols}, exploitable today "
-    "regardless of the PQ posture. Disable the legacy protocol(s) when the client "
-    "compatibility need allows; the two facts don't cancel out."
+    "PQ hybrid {hybrid_group} works. Legacy {protocols} remain enabled; "
+    "disable them when client compatibility allows."
 )
 
 

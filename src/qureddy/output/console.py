@@ -22,6 +22,7 @@ NO_COLOR support follows https://no-color.org. No emoji or icons.
 from __future__ import annotations
 
 import os
+import re
 import sys
 from typing import IO, TYPE_CHECKING
 
@@ -32,7 +33,14 @@ from rich.table import Table
 from rich.text import Text
 
 from qureddy._branding import HEADER
-from qureddy.core.models import Evidence, Readiness
+from qureddy.core.models import (
+    Evidence,
+    Finding,
+    ObservationType,
+    ProbeResult,
+    Readiness,
+    Severity,
+)
 from qureddy.output._styles import (
     CLASSICALLY_WEAK_WITH_PQC_TEMPLATE,
     RECOMMENDATION_TEXT,
@@ -73,6 +81,13 @@ _CLASSICAL_GROUP = "X25519"
 # information on stderr starting at `-vv` (verbosity == 2); the console
 # panel is the user-visible mirror for stdout-only consumers.
 _VERBOSITY_SHOW_COMMANDS = 3
+_SEVERITY_ORDER: dict[Severity, int] = {
+    Severity.CRITICAL: 0,
+    Severity.HIGH: 1,
+    Severity.MEDIUM: 2,
+    Severity.LOW: 3,
+    Severity.INFO: 4,
+}
 
 
 def render_rich(
@@ -114,7 +129,11 @@ def render_rich(
         console.print()
         console.print(_findings_table(result))
     console.print()
-    console.print(_dependencies_table(result))
+    console.print(_run_details_table(result))
+    errors_table = _errors_table(result)
+    if errors_table is not None:
+        console.print()
+        console.print(errors_table)
     if verbosity >= _VERBOSITY_SHOW_COMMANDS:
         commands_panel = _commands_panel(result)
         if commands_panel is not None:
@@ -136,6 +155,112 @@ def _make_console(stream: IO[str]) -> Console:
     return Console(file=stream, no_color=no_color, highlight=False)
 
 
+_OPENSSL_ERR_RE = re.compile(r"SSL routines:[^:]*:(?P<msg>.+?):[^:]*\.c:\d+")
+_ALERT_NUM_RE = re.compile(r"SSL alert number (?P<num>\d+)")
+
+
+def _clean_error_line(line: str) -> str:
+    """Reduce one OpenSSL stderr line to its human-meaningful message.
+
+    OpenSSL error lines are `HEX:error:CODE:SSL routines:func:MESSAGE:file.c:NN:`
+    — extract MESSAGE and append the alert number when present, so the reader
+    sees `tlsv1 alert insufficient security (alert 71)` rather than the raw
+    hex-prefixed record-layer noise. Non-OpenSSL lines pass through unchanged.
+    """
+    match = _OPENSSL_ERR_RE.search(line)
+    if not match:
+        return line
+    msg = match.group("msg")
+    alert = _ALERT_NUM_RE.search(line)
+    return f"{msg} (alert {alert.group('num')})" if alert else msg
+
+
+def _last_error_line(probe: ProbeResult) -> str:
+    """Return the most informative single line from a failing probe's stderr.
+
+    Prefers the actual TLS alert line (e.g. `tlsv1 alert insufficient
+    security`) over trailing teardown noise like `SSL_shutdown`; falls back
+    to the `[qureddy] timeout after Ns` marker, then the last non-blank
+    line. Purely a presentation of already-captured evidence; no new probing.
+    """
+    lines = [line.strip() for line in probe.stderr_excerpt.splitlines() if line.strip()]
+    if not lines:
+        return "(no error output captured)"
+    alert_line = next((line for line in lines if "alert" in line.lower()), None)
+    if alert_line is not None:
+        return _clean_error_line(alert_line)
+    timeout_line = next((line for line in lines if "timeout after" in line), None)
+    return _clean_error_line(timeout_line if timeout_line is not None else lines[-1])
+
+
+def _errors_table(result: ScanResult) -> Table | None:
+    """List each failing probe attempt with the real OpenSSL error it hit.
+
+    Surfaces `evidence[].probe_result.stderr_excerpt` so the human reader
+    sees *why* a probe failed (the specific alert or timeout) rather than
+    only the bucketed `failure_category`. Returns None when nothing
+    failed, so a clean scan shows no Errors section (issue #276).
+    """
+    rows: list[tuple[str, str, str]] = []
+    for ev in result.evidence:
+        probe = ev.probe_result
+        if probe is None or probe.failure_category is None:
+            continue
+        group = next(
+            (a for a in probe.command.args if "MLKEM" in a or a in {"X25519", "P-256"}),
+            ev.evidence_type,
+        )
+        rows.append((group, str(probe.attempt_number), _last_error_line(probe)))
+    if not rows:
+        return None
+    table = Table(
+        title="Errors",
+        title_style="bold",
+        title_justify="left",
+        show_header=True,
+        header_style="bold cyan",
+        show_lines=False,
+        box=box.SIMPLE_HEAD,
+        pad_edge=False,
+    )
+    table.add_column("Probe", style="bold cyan", no_wrap=True)
+    table.add_column("Attempt", justify="right")
+    table.add_column("Detail", style="yellow")
+    for group, attempt, detail in rows:
+        table.add_row(group, attempt, detail)
+    return table
+
+
+def _run_details_table(result: ScanResult) -> Table:
+    """Render scan execution metadata in the same form as scan details."""
+    duration = (result.scan.completed_at - result.scan.started_at).total_seconds()
+    completed = result.scan.completed_at.isoformat(timespec="seconds").replace("+00:00", "Z")
+    started = result.scan.started_at.isoformat(timespec="seconds").replace("+00:00", "Z")
+    table = Table(
+        title="Run details",
+        title_style="bold",
+        title_justify="left",
+        show_header=True,
+        header_style="bold cyan",
+        show_lines=False,
+        box=box.SIMPLE_HEAD,
+        pad_edge=False,
+    )
+    table.add_column("Field", style="bold cyan", no_wrap=True)
+    table.add_column("Value")
+    table.add_row("scan_id", Text(result.scan.scan_id))
+    table.add_row("scanner", Text(result.scan.scanner_name))
+    table.add_row("version", Text(result.scan.scanner_version))
+    table.add_row("started", Text(started))
+    table.add_row("completed", Text(completed))
+    table.add_row("duration", Text(f"{duration:.1f}s"))
+    for dep in result.dependencies:
+        table.add_row(f"{dep.name}_path", style_path(dep))
+        table.add_row(f"{dep.name}_version", styled_or_dash(dep.version))
+        table.add_row(f"{dep.name}_hybrid_support", style_capability(dep))
+    return table
+
+
 def _verdict_panel(result: ScanResult) -> Panel:
     """Top-of-output banner: at-a-glance verdict + recommendation.
 
@@ -153,8 +278,7 @@ def _verdict_panel(result: ScanResult) -> Panel:
     return Panel(
         body,
         title=f"QuReddy scan: {result.summary.target}",
-        title_align="left",
-        border_style=verdict_border_style(result.summary.readiness),
+        border_style=_verdict_panel_border(result),
         box=box.HEAVY,
         padding=(0, 1),
     )
@@ -164,9 +288,11 @@ def _summary_table(result: ScanResult) -> Table:
     table = Table(
         title="Scan details",
         title_style="bold",
-        show_header=False,
+        title_justify="left",
+        show_header=True,
+        header_style="bold cyan",
         show_lines=False,
-        box=box.SIMPLE,
+        box=box.SIMPLE_HEAD,
         pad_edge=False,
     )
     table.add_column("Field", style="bold cyan", no_wrap=True)
@@ -185,8 +311,8 @@ def _summary_table(result: ScanResult) -> Table:
     table.add_row("readiness", style_readiness(summary.readiness))
     table.add_row("protocol", styled_or_dash(protocol))
     table.add_row("cipher_suite", styled_or_dash(cipher))
-    table.add_row("hybrid probe", _style_probe_status(hybrid_evidence))
-    table.add_row("classical probe", _style_probe_status(classical_evidence))
+    table.add_row("hybrid_probe", _style_probe_status(hybrid_evidence))
+    table.add_row("classical_probe", _style_probe_status(classical_evidence))
     table.add_row("findings", Text(str(summary.finding_count)))
     table.add_row("attempts", Text(str(scan.total_attempts)))
     if summary.failure_category is not None:
@@ -272,10 +398,15 @@ def _summary_headline_and_recommendation(result: ScanResult) -> tuple[Text, Text
         headline.append(")")
     elif readiness is Readiness.CLASSICALLY_WEAK:
         if hybrid_group is not None:
-            headline = compose_status(
-                "FAIL", " — weak legacy fallback (PQ hybrid ", group=hybrid_group
-            )
-            headline.append(" also negotiated)")
+            headline = Text("PQ posture: ", style="bold")
+            headline.append("ACCEPTABLE", style="bold green")
+            headline.append(" — ")
+            headline.append(hybrid_group, style="bold green")
+            headline.append(" negotiated\n")
+            headline.append("Protocol hygiene: ", style="bold")
+            headline.append("ACTION NEEDED", style="bold yellow")
+            headline.append(" — ")
+            headline.append(_legacy_protocols(result))
         else:
             headline = compose_status("FAIL", " — weak classical primitive")
     elif readiness is Readiness.NOT_APPLICABLE:
@@ -304,15 +435,30 @@ def _classically_weak_with_pqc_recommendation(result: ScanResult, hybrid_group: 
     alongside a real legacy exposure. Both facts get said, not one
     hiding the other.
     """
-    legacy_protocols = sorted(
+    protocols = _legacy_protocols(result)
+    return CLASSICALLY_WEAK_WITH_PQC_TEMPLATE.format(hybrid_group=hybrid_group, protocols=protocols)
+
+
+def _legacy_protocols(result: ScanResult) -> str:
+    """Return the offered legacy protocol versions in stable order."""
+    protocols = sorted(
         {
             f.protocol_version
             for f in result.findings
             if f.finding_type == FINDING_TYPE_LEGACY_PROTOCOL_OFFERED and f.protocol_version
         }
     )
-    protocols = ", ".join(legacy_protocols) or "a legacy protocol"
-    return CLASSICALLY_WEAK_WITH_PQC_TEMPLATE.format(hybrid_group=hybrid_group, protocols=protocols)
+    return ", ".join(protocols) or "classical fallback accepted"
+
+
+def _verdict_panel_border(result: ScanResult) -> str:
+    """Use amber for mixed posture; red means unambiguously broken posture."""
+    if (
+        result.summary.readiness is Readiness.CLASSICALLY_WEAK
+        and _pick_evidence(result, group=_HYBRID_GROUP) is not None
+    ):
+        return "yellow"
+    return verdict_border_style(result.summary.readiness)
 
 
 def _cert_axis_recommendation(result: ScanResult) -> str:
@@ -347,64 +493,52 @@ _CERT_FINDING_TYPES = frozenset({FINDING_TYPE_PQ_SIGNATURE, FINDING_TYPE_CLASSIC
 def _findings_table(result: ScanResult) -> Table:
     """Findings table.
 
-    Issue #251: must render what distinguishes each
-    finding, not just its policy coordinates. Two certificate findings
-    (PQ-signed vs. classical-signed) share the same rule_id, severity,
-    readiness, group (None), and protocol_version (None) by design — the
-    only fields that actually differ are `title` and `algorithm`. Without
-    an Algorithm column, real ML-DSA-signed and ECDSA-signed certificates
-    rendered byte-identical rows (confirmed live, diff -u showed zero
-    output between two real servers with deliberately different cert
-    signature algorithms). `Rule` is kept, not replaced, for
-    automation-minded users matching on rule_id.
+    Keep the human table compact while retaining the fields that distinguish
+    observed crypto: severity, stable rule ID, protocol, group, and algorithm.
+    The full readiness enum remains in JSON and the scan-details block.
     """
     table = Table(
         title="Findings",
         title_style="bold",
+        title_justify="left",
         show_header=True,
         header_style="bold cyan",
         box=box.SIMPLE_HEAD,
+        pad_edge=False,
+        padding=(0, 0),
     )
-    table.add_column("Rule")
-    table.add_column("Severity")
-    table.add_column("Readiness")
-    table.add_column("Group")
-    table.add_column("Algorithm")
-    table.add_column("Protocol")
+    table.add_column("Severity", no_wrap=True, width=8)
+    # Long rule IDs must never be ellipsized: they are the stable join key
+    # between console, JSON, tests, and policy tooling.
+    table.add_column("Rule", no_wrap=True, width=38)
+    table.add_column("Protocol", no_wrap=True, width=8)
+    table.add_column("Crypto", no_wrap=False, overflow="fold", width=20)
 
-    for finding in result.findings:
+    for finding in sorted(result.findings, key=lambda item: _SEVERITY_ORDER[item.severity]):
+        details = _finding_crypto_detail(finding)
         table.add_row(
-            finding.rule_id,
             style_severity(finding.severity),
-            style_readiness(finding.readiness),
-            style_group(finding.negotiated_group),
-            styled_or_dash(finding.algorithm),
+            finding.rule_id,
             styled_or_dash(finding.protocol_version),
+            details,
         )
     return table
 
 
-def _dependencies_table(result: ScanResult) -> Table:
-    table = Table(
-        title="Dependencies",
-        title_style="bold",
-        show_header=True,
-        header_style="bold cyan",
-        box=box.SIMPLE_HEAD,
-    )
-    table.add_column("Name")
-    table.add_column("Path")
-    table.add_column("Version")
-    table.add_column("X25519MLKEM768")
-
-    for dep in result.dependencies:
-        table.add_row(
-            dep.name,
-            style_path(dep),
-            styled_or_dash(dep.version),
-            style_capability(dep),
-        )
-    return table
+def _finding_crypto_detail(finding: Finding) -> Text:
+    """Render the compact crypto discriminator for one finding."""
+    if finding.negotiated_group:
+        details = style_group(finding.negotiated_group)
+        if finding.algorithm:
+            details.append(f" / {finding.algorithm}")
+        return details
+    if finding.algorithm:
+        return Text(finding.algorithm)
+    if finding.finding_type == FINDING_TYPE_LEGACY_PROTOCOL_OFFERED:
+        return Text("legacy protocol")
+    if finding.finding_type == "tls.kex.classical_protocol":
+        return Text("classical suites")
+    return Text("—", style="dim")
 
 
 def _pick_evidence(result: ScanResult, *, group: str) -> Evidence | None:
@@ -433,14 +567,22 @@ def _pick_evidence(result: ScanResult, *, group: str) -> Evidence | None:
 
 def _first_protocol_version(evidence: tuple[Evidence, ...]) -> str | None:
     for ev in evidence:
-        if ev.protocol_version:
+        if (
+            ev.observation_type is ObservationType.NEGOTIATED
+            and ev.failure_category is None
+            and ev.protocol_version
+        ):
             return ev.protocol_version
     return None
 
 
 def _first_cipher_suite(evidence: tuple[Evidence, ...]) -> str | None:
     for ev in evidence:
-        if ev.cipher_suite:
+        if (
+            ev.observation_type is ObservationType.NEGOTIATED
+            and ev.failure_category is None
+            and ev.cipher_suite
+        ):
             return ev.cipher_suite
     return None
 

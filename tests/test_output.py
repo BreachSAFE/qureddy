@@ -197,7 +197,7 @@ class TestSummaryRows:
     ) -> None:
         monkeypatch.setenv("NO_COLOR", "1")
         out = _render_to_string(_build_result())
-        assert "hybrid probe" in out
+        assert "hybrid_probe" in out
         assert "negotiated" in out
         assert "X25519MLKEM768" in out
 
@@ -207,7 +207,7 @@ class TestSummaryRows:
     ) -> None:
         monkeypatch.setenv("NO_COLOR", "1")
         out = _render_to_string(_build_result())
-        assert "classical probe" in out
+        assert "classical_probe" in out
         assert "X25519" in out
 
 
@@ -261,6 +261,56 @@ class TestExistingContractStillHolds:
         out = _render_to_string(_build_result())
         assert "tls://example.com:443" in out
 
+    def test_mixed_posture_uses_two_axis_headline(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setenv("NO_COLOR", "1")
+        result = _build_result()
+        legacy = result.findings[1].model_copy(
+            update={
+                "finding_type": "tls.legacy.protocol_offered",
+                "rule_id": "tls.legacy.protocol_offered",
+                "protocol_version": "TLSv1.1",
+            },
+        )
+        result = result.model_copy(
+            update={
+                "findings": (result.findings[0], legacy),
+                "summary": result.summary.model_copy(
+                    update={
+                        "finding_count": 2,
+                        "readiness": Readiness.CLASSICALLY_WEAK,
+                    },
+                ),
+            },
+        )
+        out = _render_to_string(result)
+        assert "PQ posture:" in out
+        assert "ACCEPTABLE" in out
+        assert "Protocol hygiene:" in out
+        assert "ACTION NEEDED" in out
+        assert "FAIL — weak legacy fallback" not in out
+
+    def test_rule_id_is_not_ellipsized(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setenv("NO_COLOR", "1")
+        out = _render_to_string(_build_result())
+        assert "tls.hybrid.negotiated_x25519mlkem768" in out
+
+    def test_findings_are_sorted_by_severity(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setenv("NO_COLOR", "1")
+        result = _build_result()
+        out = _render_to_string(result)
+        assert out.index("tls.classical.negotiated_x25519") < out.index(
+            "tls.hybrid.negotiated_x25519mlkem768",
+        )
+
     def test_schema_version_in_output(
         self,
         monkeypatch: pytest.MonkeyPatch,
@@ -280,6 +330,18 @@ class TestExistingContractStillHolds:
         monkeypatch.setenv("NO_COLOR", "1")
         out = _render_to_string(_build_result())
         assert HEADER in out
+
+    def test_footer_contains_identity_and_run_provenance(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setenv("NO_COLOR", "1")
+        out = _render_to_string(_build_result())
+        assert "Run details" in out
+        assert "scan_id" in out
+        assert "scanner" in out
+        assert "tls" in out
+        assert "0.0s" in out
 
 
 class TestFailureCategoryRow:
@@ -308,6 +370,14 @@ class TestDependenciesTable:
         # The capability column header is X25519MLKEM768; the cell value is yes.
         # Verify the cell rendered as "yes" (color stripped under NO_COLOR).
         assert " yes " in out or out.endswith("yes\n") or "│ yes " in out
+
+    def test_capability_column_has_explicit_label(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setenv("NO_COLOR", "1")
+        out = _render_to_string(_build_result())
+        assert "openssl_hybrid_support" in out
 
 
 class TestColorStyleRules:
@@ -349,9 +419,8 @@ class TestColorStyleRules:
     def test_severity_critical_is_bold_red(self) -> None:
         assert _style_severity(Severity.CRITICAL).style == "bold red"
 
-    def test_severity_info_is_dim_cyan(self) -> None:
-
-        assert _style_severity(Severity.INFO).style == "dim cyan"
+    def test_severity_info_is_dim(self) -> None:
+        assert _style_severity(Severity.INFO).style == "dim"
 
 
 class TestUnknownRecommendationLibreSSL:

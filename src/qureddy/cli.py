@@ -12,6 +12,7 @@ Per skill §"Exit codes" + issue #12:
 
 from __future__ import annotations
 
+import os
 import re
 import sys
 from typing import Annotated
@@ -23,6 +24,7 @@ import typer
 from qureddy._branding import (
     PROJECT_NAME,
     PROJECT_URL,
+    PROJECT_VERSION,
     VERSION_BANNER,
 )
 from qureddy.core.errors import (
@@ -99,9 +101,169 @@ VersionOpt = Annotated[
 ]
 
 
+# Issue #266: single source of truth for "-h works everywhere, and no help
+# level's multi-line epilog gets mangled by Click's default text-wrapping"
+# (see the `\b` note on _SCAN_TLS_EPILOG below) — defined once, reused by
+# `app`, `scan_app`, and the `scan tls` command instead of three
+# separately-typed dicts that could silently drift (e.g. one level gaining
+# -h, another not).
+_NO_WRAP_CONTEXT_SETTINGS = {
+    "help_option_names": ["-h", "--help"],
+    "max_content_width": 10000,
+}
+
+# Issue #266: `qureddy scan tls` output already colors its verdict panel,
+# tables, and findings (see output/_styles.py's color discipline) — plain
+# black-and-white --help text next to that was an inconsistent product.
+# `rich_markup_mode="rich"` was tried and rejected (issue #71: it collapses
+# the `\b`-marked multi-line EXAMPLES/EXIT CODES/ENVIRONMENT blocks into one
+# wrapped line on current Typer). Instead this colors the plain epilog
+# strings below by *line shape* — one pattern-matching pass instead of
+# hand-placing click.style() calls three separate times (root/scan/scan-tls)
+# and re-doing it on every future example line added. The palette reuses
+# output/_styles.py's semantics rather than inventing a second one: green
+# for "do this / success", yellow for "expected, non-fatal", red for
+# "broken", dim for secondary text — plus cyan for structural labels
+# (matches the tables' `header_style="bold cyan"`) and magenta as the one
+# net-new color, for env var names, which have no equivalent in scan output.
+_HELP_SECTION_RE = re.compile(r"^[A-Z][A-Z /]*:$")
+_HELP_COMMENT_RE = re.compile(r"^(\s*)(#.*)$")
+_HELP_COMMAND_RE = re.compile(r"^(\s*)(qureddy\b.*)$")
+_HELP_EXIT_CODE_RE = re.compile(r"^(\d+)(\s+)(.*)$")
+_HELP_ENV_VAR_RE = re.compile(r"^([A-Z][A-Z0-9_]*)(\s{2,})(.*)$")
+
+
+def _exit_code_color(code: str) -> str:
+    """Color an exit code by severity, matching SEVERITY_STYLE's discipline.
+
+    0 (success) is green. 70 (internal error, BSD EX_SOFTWARE) is red —
+    it means qureddy itself broke. Everything between (2/3/4: target
+    failed, local dependency, usage error) is yellow: expected, routine
+    outcomes a script branches on, not a crash.
+    """
+    if code == str(EXIT_OK):
+        return "green"
+    if code == str(EXIT_INTERNAL_ERROR):
+        return "red"
+    return "yellow"
+
+
+def _colorize_help_text(text: str) -> str:
+    r"""Color a plain epilog string by line shape. Honors NO_COLOR.
+
+    Section headers ("QUICK START:", "EXIT CODES:") go bold cyan
+    (matches the tables' `header_style="bold cyan"`), comment lines
+    ("# ...") go dim, command lines ("qureddy ...") go bold green
+    (the "type this" action, same green as a PQ-positive finding),
+    leading exit-code numbers are colored by severity (see
+    `_exit_code_color`), and environment variable names go bold
+    magenta. Lines that are exactly the literal `\\b` Click marker
+    (see the note on `_SCAN_TLS_EPILOG` below) pass through untouched:
+    that byte must reach Click's HelpFormatter unmodified or the block
+    loses its no-wrap treatment (issue #71).
+    """
+    if "NO_COLOR" in os.environ:
+        return text
+    styled_lines = []
+    for line in text.split("\n"):
+        if line == "\b":
+            styled_lines.append(line)
+            continue
+        comment_match = _HELP_COMMENT_RE.match(line)
+        command_match = _HELP_COMMAND_RE.match(line)
+        exit_code_match = _HELP_EXIT_CODE_RE.match(line)
+        env_var_match = _HELP_ENV_VAR_RE.match(line)
+        if _HELP_SECTION_RE.match(line):
+            styled_lines.append(click.style(line, fg="cyan", bold=True))
+        elif comment_match:
+            styled_lines.append(
+                comment_match.group(1) + click.style(comment_match.group(2), dim=True)
+            )
+        elif command_match:
+            styled_lines.append(
+                command_match.group(1) + click.style(command_match.group(2), fg="green", bold=True)
+            )
+        elif exit_code_match:
+            code, gap, rest = exit_code_match.groups()
+            styled_lines.append(
+                click.style(code, fg=_exit_code_color(code), bold=True) + gap + rest
+            )
+        elif env_var_match:
+            name, gap, rest = env_var_match.groups()
+            styled_lines.append(click.style(name, fg="magenta", bold=True) + gap + rest)
+        else:
+            styled_lines.append(line)
+    return "\n".join(styled_lines)
+
+
+# Issue #266: root `qureddy --help` previously said only "Commands: scan
+# Run scans." — zero actionable guidance for a first-time user, who'd have
+# to already know to drill into `scan` then `tls` then `--help` again to
+# find the real EXAMPLES section. This gives root --help a taste of the
+# real range (not just one example) and a direct pointer to the full
+# reference. JSON and CBOM are repeated here even though they're also in
+# `scan tls --help`'s EXAMPLES — deliberately not DRY: CBOM in particular
+# is the product's own flagship differentiator ("Find what's
+# quantum-vulnerable. Generate a CBOM. Move on." — CLAUDE.md's tagline),
+# and a user who never drills past root --help shouldn't miss it.
+_ROOT_EPILOG = _colorize_help_text(f"""\
+QUICK START:
+
+\b
+# Human-readable scan.
+qureddy scan tls google.com
+
+\b
+# Machine-readable, for CI pipelines (real PQ hybrid endpoint).
+qureddy scan tls pq.cloudflareresearch.com --format json
+
+\b
+# Generate a CBOM (same real PQ hybrid endpoint).
+qureddy scan tls pq.cloudflareresearch.com --format cbom
+
+\b
+# IP target (SNI override required).
+qureddy scan tls 1.1.1.1:443 --sni one.one.one.one
+
+\b
+# Tolerate transient network blips (3 retries).
+qureddy scan tls flaky.net --retry-on tls_handshake_failed --retries 3
+
+\b
+# Verbose diagnostics (-v/-vv/-vvv).
+qureddy scan tls example.com -v
+
+MORE HELP:
+
+\b
+qureddy scan tls --help    # full options, examples, exit codes
+qureddy --version          # show version
+
+Project: {PROJECT_URL}
+""")
+
+# Issue #266: `qureddy scan --help` previously said only "Run scans." — the
+# weakest link in the help hierarchy, not even naming `tls` as the thing to
+# run. `scan` is a group (not `tls` directly) because more scan types are
+# planned per the roadmap (ssh, config, source-code) — this epilog says so,
+# rather than leaving a user to wonder why there's an extra level at all.
+_SCAN_EPILOG = _colorize_help_text("""\
+qureddy currently has one scan type; more (ssh, config, source-code) are
+planned per the roadmap, which is why "scan" is a group rather than a
+single command.
+
+\b
+qureddy scan tls <target>            # the only scan type today
+qureddy scan tls --help              # full options, examples, exit codes
+""")
+
 app = typer.Typer(
     name="qureddy",
-    help=f"{PROJECT_NAME} -- post-quantum TLS readiness scanner.",
+    help=(
+        f"{PROJECT_NAME} {PROJECT_VERSION} -- post-quantum TLS readiness scanner. "
+        "Live OpenSSL handshakes against the target."
+    ),
+    epilog=_ROOT_EPILOG,
     no_args_is_help=True,
     add_completion=False,
     # rich_markup_mode=None disables Typer's Rich-based formatter for help
@@ -110,26 +272,55 @@ app = typer.Typer(
     # epilog blocks (EXAMPLES, EXIT CODES, ENVIRONMENT) to render one item
     # per line. See issue #71 for the full investigation.
     rich_markup_mode=None,
+    context_settings=_NO_WRAP_CONTEXT_SETTINGS,
 )
 scan_app = typer.Typer(
-    help="Run scans.",
+    # Was "Run scans." — tautological for a scanning tool's one command
+    # group, and the only line a user who doesn't read the epilog ever
+    # sees on `qureddy --help`'s "Commands:" table. Now self-sufficient
+    # without requiring the epilog below to explain what's being scanned.
+    help="Scan a target for post-quantum TLS readiness.",
+    epilog=_SCAN_EPILOG,
     no_args_is_help=True,
     rich_markup_mode=None,
+    context_settings=_NO_WRAP_CONTEXT_SETTINGS,
 )
 app.add_typer(scan_app, name="scan")
 
 
-@app.callback()
+@app.callback(
+    help=(
+        f"{PROJECT_NAME} {PROJECT_VERSION} -- post-quantum TLS readiness scanner. "
+        "Live OpenSSL handshakes against the target."
+    ),
+)
 def _root(
     version: VersionOpt = None,
 ) -> None:
-    """BreachSAFE QuReddy -- post-quantum TLS readiness scanner.
+    """Root callback exists so `--version` can be wired at the app level.
 
-    Root callback exists so `--version` can be wired at the app level
-    (visible from `qureddy --version` without a subcommand). The body
+    (Visible from `qureddy --version` without a subcommand.) The body
     is empty because `_version_callback` short-circuits via
-    `is_eager=True`.
+    `is_eager=True`. Explicit `help=` above (not the docstring) is what
+    Typer shows for `--help`/`help`, since an f-string can't populate
+    `__doc__` — the docstring here is dev-facing only.
     """
+
+
+@app.command("help", context_settings=_NO_WRAP_CONTEXT_SETTINGS)
+def show_help(ctx: typer.Context) -> None:
+    """Show this message and exit.
+
+    Issue #266 item 3: `qureddy help` (bare word, no dashes) is common
+    muscle-memory (docker help, npm help) but previously errored with
+    "No such command 'help'" — confirmed live by a user hitting this
+    directly. `ctx.parent` is the root group's context since this
+    command is registered on `app`; printing its help text and exiting
+    0 makes `qureddy help` behave like `qureddy --help`, not an error.
+    """
+    if ctx.parent is not None:
+        click.echo(ctx.parent.get_help())
+    raise typer.Exit(code=EXIT_OK)
 
 
 # Module-level Annotated aliases compress the Typer option surface so
@@ -147,7 +338,16 @@ FormatOpt = Annotated[
     # showed "--format <rich|json|cbom>" right next to a description
     # that only listed two of the three, contradicting itself in the
     # same line of --help output.
-    typer.Option("--format", help="Output format: rich | json | cbom", case_sensitive=False),
+    # Issue #266 item 4: --format is single-value; passing it twice
+    # silently keeps the last one (standard Click behavior for a
+    # non-multiple Option) — documented here rather than left as a
+    # silent footgun for a scripted second --format elsewhere in a
+    # command line.
+    typer.Option(
+        "--format",
+        help="Output format: rich | json | cbom (repeat to override; last wins).",
+        case_sensitive=False,
+    ),
 ]
 TimeoutOpt = Annotated[
     int,
@@ -195,7 +395,7 @@ QuietOpt = Annotated[bool, typer.Option("-q", "--quiet", help="Suppress non-erro
 #   ENVIRONMENT row) needs its own `\b\n` prefix because blank lines
 #   between paragraphs end the `\b` block. Single `\b` at the top of a
 #   block isn't enough — paragraphs after the first blank reflow again.
-_SCAN_TLS_EPILOG = f"""\
+_SCAN_TLS_EPILOG = _colorize_help_text(f"""\
 EXAMPLES:
 
 \b
@@ -213,6 +413,18 @@ qureddy scan tls 1.1.1.1:443 --sni one.one.one.one
 \b
 # Tolerate transient network hiccups (3 retries, 2s apart).
 qureddy scan tls flaky.example.com --retry-on tls_handshake_failed --retries 3 --retry-delay 2
+
+SCAN BEHAVIOR:
+
+\b
+A full scan runs separate probes for TLS 1.3 hybrid key exchange, a TLS 1.3
+classical control, legacy TLS protocols, and certificate evidence. The
+`--timeout` value applies to each probe, so total wall time can be several
+times the timeout. Use `-vvv` to see every subprocess start and completion.
+
+\b
+For a faster diagnostic run, lower the per-probe timeout:
+qureddy scan tls example.com --timeout 5 -vvv
 
 EXIT CODES:
 
@@ -233,19 +445,18 @@ QUREDDY_OPENSSL  Override path to the OpenSSL 3.5+ binary
                  (precedence: --openssl > $QUREDDY_OPENSSL > $PATH).
 
 Project: {PROJECT_URL}
-"""
+""")
 
 
 @scan_app.command(
     "tls",
     epilog=_SCAN_TLS_EPILOG,
-    # Disable Click's text-wrapping for the epilog. With wrapping on,
-    # `\b` blocks still see individual `\n` chars merged within a
-    # paragraph (issue #71). Setting max_content_width to a very large
-    # value tells Click "don't wrap" — the epilog string's literal
-    # newlines survive. Option-table column widths are unaffected
-    # because they have their own column-fitting logic.
-    context_settings={"max_content_width": 10000},
+    # Issue #266: reuses the same _NO_WRAP_CONTEXT_SETTINGS as `app`/
+    # `scan_app` instead of a separately-typed {"max_content_width": ...}
+    # dict — one shared constant for "-h works + epilogs don't get
+    # mangled" everywhere, so a future change can't add -h at one level
+    # and silently miss another.
+    context_settings=_NO_WRAP_CONTEXT_SETTINGS,
 )
 def scan_tls(
     target: TargetArg,

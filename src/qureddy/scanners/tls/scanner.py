@@ -200,18 +200,23 @@ class TLSScanner:
         openssl_path: str,
         timeout_seconds: int,
     ) -> tuple[list[Evidence], int]:
+        log = get_logger(__name__)
+        log.info("probe.phase.start", phase="tls13_hybrid")
         hybrid_results = self._probe_with_retries(
             run_hybrid_probe,
             target=target,
             openssl_path=openssl_path,
             timeout_seconds=timeout_seconds,
         )
+        log.info("probe.phase.complete", phase="tls13_hybrid")
+        log.info("probe.phase.start", phase="tls13_classical")
         classical_results = self._probe_with_retries(
             run_classical_probe,
             target=target,
             openssl_path=openssl_path,
             timeout_seconds=timeout_seconds,
         )
+        log.info("probe.phase.complete", phase="tls13_classical")
         evidence = [
             evidence_from_probe(
                 asset=asset,
@@ -247,6 +252,8 @@ class TLSScanner:
         -handshake sweep per protocol — retrying the whole sweep on any
         transient failure would multiply an already-slower path.
         """
+        log = get_logger(__name__)
+        log.info("probe.phase.start", phase="legacy_tls1_tls11_tls12")
         results = probe_all_legacy_protocols(
             openssl_path,
             target.host,
@@ -254,6 +261,7 @@ class TLSScanner:
             target.sni,
             timeout_seconds=timeout_seconds,
         )
+        log.info("probe.phase.complete", phase="legacy_tls1_tls11_tls12")
         evidence = [evidence_from_legacy_result(asset, r) for r in results]
         findings = [
             f
@@ -285,6 +293,8 @@ class TLSScanner:
         binary the rest of the scan already required, so if it's
         missing the capability check above would already have failed.
         """
+        log = get_logger(__name__)
+        log.info("probe.phase.start", phase="certificate")
         try:
             pem = fetch_certificate_pem(
                 openssl_path, target.host, target.port, target.sni, timeout_seconds=timeout_seconds
@@ -298,6 +308,7 @@ class TLSScanner:
             certificate = None
         evidence = evidence_from_certificate(asset, certificate)
         finding = finding_from_certificate(asset, evidence, certificate)
+        log.info("probe.phase.complete", phase="certificate", observed=certificate is not None)
         return evidence, finding
 
     def _probe_with_retries(
