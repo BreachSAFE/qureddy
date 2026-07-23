@@ -48,4 +48,4 @@ VERSION_BANNER = f"{PROJECT_NAME} {_qureddy_version} -- {PROJECT_URL}"
 # bump propagates without code changes — the original
 # `HEADER = "QuReddy 0.1.0 by BreachSAFE OSS"` was a hardcoded-version
 # drift bug.
-HEADER = f"QuReddy {_qureddy_version} by BreachSAFE OSS"
+HEADER = f"QuReddy {_qureddy_version} by BreachSAFE OSS · {PROJECT_URL}"
