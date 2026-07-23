@@ -546,6 +546,13 @@ def _execute_scan(
         LocalOpenSSLLacksGroup,
     ) as exc:
         log.warning("scan.local_dependency_unusable", error=str(exc))
+        # Issue #274: machine formats default to quiet logging, which
+        # suppressed the warning above — the only user-facing report of
+        # this failure — leaving exit 3 with an empty stderr. The
+        # actionable message (the exception text carries the fix-it
+        # instructions) must reach stderr directly, exempt from the
+        # quiet default, matching the exit-2/exit-4 paths.
+        typer.echo(f"qureddy: {exc}", err=True)
         # Consume exc.dependency directly. Re-probing would waste a
         # subprocess and open a TOCTOU window.
         dependency = exc.dependency or OpenSSLDependency(
@@ -615,9 +622,16 @@ def _fetch_cert_for_cbom(result: ScanResult, timeout_seconds: int) -> Certificat
             "single-scanner invariant"
         )
         raise AssertionError(msg)
-    if not result.dependencies[0].path:
+    dependency = result.dependencies[0]
+    if dependency.failure_category is not None or not dependency.path:
+        # Issue #274: a rejected dependency still has a `path`, so a
+        # path-only guard let the CBOM cert fetch shell out to the very
+        # binary the capability check refused (real case: LibreSSL —
+        # which also serializes DNs differently, silently forking the
+        # CBOM's certificate data shape). A binary that failed the
+        # capability check must not be used for anything.
         return None
-    openssl_path = result.dependencies[0].path
+    openssl_path = dependency.path
     try:
         pem = fetch_certificate_pem(
             openssl_path,

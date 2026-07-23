@@ -828,3 +828,78 @@ class TestCapabilityFailureNoDoubleProbe:
             f"CLI is re-probing instead of consuming exc.dependency. "
             f"calls: {invocations}"
         )
+
+
+def test_cbom_capability_failure_never_fetches_cert_with_rejected_binary(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Issue #274: a rejected local OpenSSL must not be used for the CBOM cert fetch.
+
+    The capability check rejects LibreSSL (exit 3), but `_fetch_cert_for_cbom`
+    previously guarded only on `dependencies[0].path` — which a *rejected*
+    dependency still has — so the CBOM path shelled out to the rejected
+    binary anyway and emitted a plausible certificate component (with
+    LibreSSL's divergent slash-separated DN serialization). The fetch must
+    never be attempted once `failure_category` is set.
+    """
+
+    def _must_not_be_called(*args: object, **kwargs: object) -> str:
+        msg = "fetch_certificate_pem called despite rejected capability check"
+        raise AssertionError(msg)
+
+    monkeypatch.setattr("qureddy.cli.fetch_certificate_pem", _must_not_be_called)
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        [
+            "scan",
+            "tls",
+            "example.com",
+            "--openssl",
+            str(FAKE_DIR / "openssl_libressl.sh"),
+            "--format",
+            "cbom",
+        ],
+    )
+    assert result.exception is None or isinstance(result.exception, SystemExit), (
+        f"cert fetch ran against the rejected binary: {result.exception!r}"
+    )
+    assert result.exit_code == 3
+    payload = json.loads(result.stdout)
+    cert_components = [
+        c
+        for c in payload.get("components", [])
+        if c.get("cryptoProperties", {}).get("assetType") == "certificate"
+    ]
+    assert cert_components == [], "capability-failure CBOM must not contain a certificate component"
+
+
+@pytest.mark.parametrize("output_format", ["json", "cbom"])
+def test_machine_formats_emit_stderr_hint_on_capability_failure(
+    output_format: str,
+) -> None:
+    """Issue #274: exit 3 must explain itself on stderr even in machine formats.
+
+    `--format json/cbom` defaults to quiet logging so stdout stays a clean
+    machine document — but that suppressed the only user-facing report of
+    the capability failure (`log.warning`), leaving exit 3 with an empty
+    stderr. The actionable message must be a direct stderr echo, exempt
+    from the machine-format quiet default, like the exit-2/exit-4 paths.
+    """
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        [
+            "scan",
+            "tls",
+            "example.com",
+            "--openssl",
+            str(FAKE_DIR / "openssl_libressl.sh"),
+            "--format",
+            output_format,
+        ],
+    )
+    assert result.exit_code == 3
+    assert "LibreSSL" in result.stderr, (
+        f"exit 3 with empty/unhelpful stderr in --format {output_format}: {result.stderr!r}"
+    )
