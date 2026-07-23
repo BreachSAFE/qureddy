@@ -159,6 +159,8 @@ select = [
 ignore = [
     "E501",     # line-too-long, handled by formatter
     "PLR0913",  # too-many-arguments — Typer commands legitimately have many
+    "PLR0917",  # too-many-positional-arguments — same reason as PLR0913: Typer
+                # command options are declared as (keyword-defaulted) parameters
     # The mvp-implement skill explicitly mandates `class Foo(str, Enum)`
     # (not `enum.StrEnum`) for the locked enums. The skill is the
     # implementation authority; UP042 would request a change that

@@ -825,28 +825,56 @@ Project: {PROJECT_URL}
 """)
 
 
+def _clean_ssh_error(msg: str) -> str:
+    """Reduce a raw SSH probe error to a clean, operator-facing message.
+
+    Strips Python's `[Errno N]` prefix and rewrites the common OS-level
+    failure shapes (DNS, refused, timeout) into actionable language, so the
+    CLI never surfaces a raw `[Errno 8] nodename nor servname provided`.
+    """
+    cleaned = re.sub(r"\[Errno \d+\]\s*", "", msg)
+    lowered = cleaned.lower()
+    head = cleaned.split(" failed:")[0]
+    if "nodename nor servname" in lowered or "name or service not known" in lowered:
+        return f"{head} failed: host could not be resolved (DNS lookup failed)"
+    if "connection refused" in lowered:
+        return f"{head} failed: connection refused"
+    if "timed out" in lowered:
+        return f"{cleaned} — is that host:port actually an SSH endpoint?"
+    return cleaned
+
+
 @scan_app.command("ssh", epilog=_SCAN_SSH_EPILOG, context_settings=_NO_WRAP_CONTEXT_SETTINGS)
 def scan_ssh_cmd(
     target: TargetArg,
     fmt: FormatOpt = OutputFormat.RICH,
     timeout: TimeoutOpt = 8,
+    verbose: VerboseOpt = 0,
+    json_logs: JsonLogsOpt = False,
     quiet: QuietOpt = False,
 ) -> None:
     """Scan an SSH endpoint for post-quantum readiness."""
-    configure_logging(verbosity=0, quiet=quiet or fmt is not OutputFormat.RICH)
+    # Mirror scan tls: machine formats default to quiet so stdout stays a
+    # clean document, but an explicit -v/-vv/-vvv still wins. Keeps the
+    # verbosity/logging surface consistent across subcommands.
+    machine_format = fmt is not OutputFormat.RICH
+    effective_quiet = quiet or (machine_format and verbose == 0)
+    configure_logging(verbosity=verbose, json_logs=json_logs, quiet=effective_quiet)
     try:
         scan_target = parse_ssh_target(target)
     except TargetParseError as exc:
-        typer.echo(str(exc), err=True)
+        typer.echo(f"qureddy: invalid target: {exc}", err=True)
         raise typer.Exit(code=EXIT_USAGE) from None
     try:
         result = _scan_ssh(scan_target, timeout_seconds=timeout)
     except _SSHProbeError as exc:
-        typer.echo(f"ssh scan failed: {exc}", err=True)
+        # Present a clean, classified message on stderr — never the raw
+        # OSError/errno. Exit 2 (target scan failed), same contract as tls.
+        typer.echo(f"qureddy: ssh scan failed: {_clean_ssh_error(str(exc))}", err=True)
         raise typer.Exit(code=EXIT_TARGET_FAILED) from None
     if fmt is OutputFormat.JSON:
         render_json(result, sys.stdout)
     elif fmt is OutputFormat.CBOM:
         render_cbom(result, sys.stdout, certificate=None)
     else:
-        render_rich(result, sys.stdout, verbosity=0)
+        render_rich(result, sys.stdout, verbosity=verbose)
