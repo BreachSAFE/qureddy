@@ -18,6 +18,13 @@ ceiling, tracked in issue #82) rather than adding to an over-ceiling file.
 Still respects coding-rules.md §7: list-form args, shell=False, timeout on
 every call, both streams captured, check=False with manual returncode
 inspection.
+
+ANTIPATTERN ACCEPTED: cert-verification-skip, because this is a read-only
+analysis tool that must be able to observe and report on expired,
+self-signed, and otherwise untrusted certificate chains (that's the whole
+point — a scanner that refuses to look at a broken cert can't tell the
+user it's broken). No trust decision is ever made on this data; nothing
+downstream treats an unverified cert as verified.
 """
 
 from __future__ import annotations
@@ -25,10 +32,15 @@ from __future__ import annotations
 import subprocess
 from dataclasses import dataclass
 
+from qureddy.core.errors import LocalOpenSSLMissing
+from qureddy.core.logging import get_logger
+
+_log = get_logger(__name__)
+
 DEFAULT_TIMEOUT_SECONDS = 30
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class CertificateInfo:
     """Read-only summary of one observed certificate. Nothing here is minted."""
 
@@ -42,22 +54,55 @@ class CertificateInfo:
     is_self_signed: bool
 
 
+def _build_connect_target(host: str, port: int) -> str:
+    """Build the `host:port` string for `-connect`, bracketing IPv6 literals.
+
+    `ScanTarget` stores IPv6 hosts unbracketed (see core/targets.py
+    `_parse_bracketed_ipv6`), so `192.0.2.1:443` needs no change but
+    `::1` needs to become `[::1]:443` — an unbracketed IPv6 host:port is
+    ambiguous (which colon is the port separator?). A bare colon count
+    is a sufficient IPv6 heuristic here: no valid hostname or IPv4
+    literal ever contains one.
+    """
+    if ":" in host:
+        return f"[{host}]:{port}"
+    return f"{host}:{port}"
+
+
 def fetch_certificate_pem(
     openssl_path: str, host: str, port: int, sni: str | None, *, timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS
 ) -> str:
-    """Fetch the leaf certificate as PEM text via `openssl s_client`. Analysis mode: does not fail on untrusted/expired/self-signed chains, matches testssl.sh's -verify 1 -showcerts pattern."""
-    args = [openssl_path, "s_client", "-connect", f"{host}:{port}", "-showcerts"]
-    if sni is not None:
+    """Fetch the leaf certificate as PEM text via `openssl s_client`. Analysis mode: no -verify flags are set, so s_client will not abort the handshake over an invalid chain (expired/self-signed/untrusted certs are still captured via -showcerts).
+
+    Raises:
+        LocalOpenSSLMissing: `openssl_path` does not resolve to an executable.
+
+    On timeout, returns "" (same as "no certificate observed") rather than
+    raising — a hung connection is not a local-dependency problem, it's a
+    target-side condition the caller already has failure categories for.
+    """
+    args = [openssl_path, "s_client", "-connect", _build_connect_target(host, port), "-showcerts"]
+    if sni is not None and sni.strip():
         args.extend(["-servername", sni])
-    completed = subprocess.run(  # noqa: S603 -- list-form, shell=False
-        args,
-        input="",
-        capture_output=True,
-        text=True,
-        timeout=timeout_seconds,
-        check=False,
-        shell=False,
-    )
+    _log.info("cert_probe.fetch.start", args=args, timeout_seconds=timeout_seconds)
+    try:
+        completed = subprocess.run(  # noqa: S603 -- list-form, shell=False
+            args,
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            text=True,
+            timeout=timeout_seconds,
+            check=False,
+            shell=False,
+        )
+    except subprocess.TimeoutExpired:
+        _log.warning("cert_probe.fetch.timeout", args=args, timeout_seconds=timeout_seconds)
+        return ""
+    except FileNotFoundError as exc:
+        _log.error("cert_probe.fetch.openssl_missing", openssl_path=openssl_path)
+        raise LocalOpenSSLMissing(str(exc)) from exc
+
+    _log.info("cert_probe.fetch.complete", return_code=completed.returncode)
     pem_start = completed.stdout.find("-----BEGIN CERTIFICATE-----")
     pem_end = completed.stdout.find("-----END CERTIFICATE-----")
     if pem_start == -1 or pem_end == -1:
@@ -66,21 +111,51 @@ def fetch_certificate_pem(
 
 
 def _x509(openssl_path: str, pem: str, *args: str, timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS) -> str:
-    """One `openssl x509 -noout <args>` call against in-memory PEM text."""
-    completed = subprocess.run(  # noqa: S603 -- list-form, shell=False
-        [openssl_path, "x509", "-noout", *args],
-        input=pem,
-        capture_output=True,
-        text=True,
-        timeout=timeout_seconds,
-        check=False,
-        shell=False,
-    )
+    """One `openssl x509 -noout <args>` call against in-memory PEM text.
+
+    Raises:
+        LocalOpenSSLMissing: `openssl_path` does not resolve to an executable.
+
+    On timeout, returns "" — same degrade-gracefully rule as fetch_certificate_pem.
+    """
+    full_args = [openssl_path, "x509", "-noout", *args]
+    _log.info("cert_probe.x509.start", args=full_args, timeout_seconds=timeout_seconds)
+    try:
+        completed = subprocess.run(  # noqa: S603 -- list-form, shell=False
+            full_args,
+            input=pem,
+            capture_output=True,
+            text=True,
+            timeout=timeout_seconds,
+            check=False,
+            shell=False,
+        )
+    except subprocess.TimeoutExpired:
+        _log.warning("cert_probe.x509.timeout", args=full_args, timeout_seconds=timeout_seconds)
+        return ""
+    except FileNotFoundError as exc:
+        _log.error("cert_probe.x509.openssl_missing", openssl_path=openssl_path)
+        raise LocalOpenSSLMissing(str(exc)) from exc
+
+    _log.info("cert_probe.x509.complete", return_code=completed.returncode)
     return completed.stdout.strip()
 
 
 def parse_certificate(openssl_path: str, pem: str) -> CertificateInfo:
-    """Parse a PEM certificate using single-purpose `openssl x509` flags only — no `-text` full-dump parsing except the one field (signature algorithm) with no dedicated flag, same as testssl.sh."""
+    """Parse a PEM certificate using single-purpose `openssl x509` flags only — no `-text` full-dump parsing except the one field (signature algorithm) with no dedicated flag, same as testssl.sh.
+
+    Raises:
+        ValueError: `pem` is empty. Reviewer-flagged bug: on an empty PEM,
+            every `-noout` call below returns "", so subject == issuer ==
+            "" and is_self_signed silently comes out True — a failed
+            fetch must not look identical to a genuine self-signed cert.
+            Callers check `if pem:` before calling this (see cli.py); this
+            guard exists so the function is correct even if a future
+            caller doesn't.
+    """
+    if not pem.strip():
+        msg = "cannot parse empty certificate PEM"
+        raise ValueError(msg)
     subject = _x509(openssl_path, pem, "-subject").removeprefix("subject=").strip()
     issuer = _x509(openssl_path, pem, "-issuer").removeprefix("issuer=").strip()
     dates = _x509(openssl_path, pem, "-dates")

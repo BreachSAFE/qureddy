@@ -18,6 +18,15 @@ is a real gap in the library's Python bindings, not an oversight here.
 Worked around with a documented, minimal raw-JSON patch for the one
 missing edge type rather than avoiding the fix or hand-rolling full BOM
 serialization.
+
+ANTIPATTERN ACCEPTED: raw-json-post-processing, because
+`cyclonedx-python-lib`'s `Bom.register_dependency` has no `provides`
+parameter (confirmed via `inspect.signature(Dependency.__init__)` — only
+`ref`/`dependencies` exist) despite `provides` being valid CycloneDX 1.6.
+The alternative is hand-rolling BOM serialization ourselves, which is
+strictly worse: it reintroduces exactly the schema-drift risk the library
+exists to prevent. This patch touches only the one field the library
+doesn't expose; everything else stays fully delegated to `JsonV1Dot6`.
 """
 
 from __future__ import annotations

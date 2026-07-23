@@ -53,6 +53,11 @@ from qureddy.core.targets import parse_target
 from qureddy.output.cbom import render_cbom
 from qureddy.output.console import render_rich
 from qureddy.output.json import render_json
+from qureddy.scanners.tls.cert_probe import (
+    CertificateInfo,
+    fetch_certificate_pem,
+    parse_certificate,
+)
 from qureddy.scanners.tls.openssl_probe import DEFAULT_TIMEOUT_SECONDS
 from qureddy.scanners.tls.scanner import (
     RetryConfig,
@@ -334,9 +339,34 @@ def _render(result: ScanResult, output_format: OutputFormat, verbose: int) -> No
     if output_format is OutputFormat.JSON:
         render_json(result, sys.stdout)
     elif output_format is OutputFormat.CBOM:
-        render_cbom(result, sys.stdout)
+        render_cbom(result, sys.stdout, certificate=_fetch_cert_for_cbom(result))
     else:
         render_rich(result, sys.stdout, verbosity=verbose)
+
+
+def _fetch_cert_for_cbom(result: ScanResult) -> CertificateInfo | None:
+    """Best-effort certificate fetch for CBOM output.
+
+    Reviewer-flagged bug: this call path did not exist, so cbom.py's
+    certificate-component code was dead — render_cbom was always called
+    with certificate=None.
+
+    Uses the already-resolved OpenSSL path from the scan's own dependency
+    check (`result.dependencies[0].path`) rather than re-resolving —
+    avoids a second capability probe and stays consistent with whatever
+    binary the scan itself used. Swallows fetch/parse failures: a missing
+    certificate must not turn a successful TLS scan into a CBOM-export
+    failure, since the CBOM is still valid (just certificate-less) without
+    one.
+    """
+    if not result.dependencies or not result.dependencies[0].path:
+        return None
+    openssl_path = result.dependencies[0].path
+    try:
+        pem = fetch_certificate_pem(openssl_path, result.target.host, result.target.port, result.target.sni)
+        return parse_certificate(openssl_path, pem) if pem else None
+    except (LocalOpenSSLMissing, ValueError):
+        return None
 
 
 def _is_version_misplacement(exc: click.exceptions.UsageError) -> bool:
