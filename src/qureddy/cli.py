@@ -781,9 +781,51 @@ def main() -> None:
 
 
 # ---- SSH scanner command (issue #278) ----
+_SCAN_SSH_EPILOG = _colorize_help_text(f"""\
+EXAMPLES:
+
+\b
+# Check an SSH/SFTP endpoint for post-quantum readiness.
+qureddy scan ssh github.com
+
+\b
+# A non-standard SFTP port.
+qureddy scan ssh sftp.vendor.example.com:2222
+
+\b
+# Machine-readable JSON.
+qureddy scan ssh github.com --format json
+
+VERDICTS:
+
+\b
+transitional_hybrid   PQ hybrid KEX offered (mlkem768x25519 / sntrup761x25519)
+quantum_vulnerable    classical KEX only -- harvest-now-decrypt-later exposure
+classically_weak      a weak/deprecated host key (e.g. ssh-dss) is offered
+
+WHAT IT CHECKS (two axes):
+
+\b
+Key exchange   does the server offer a post-quantum hybrid KEX group?
+Host key       are the host-key signature algorithms classical or weak?
+
+\b
+No OpenSSL needed -- SSH posture is read from the cleartext KEXINIT, so the
+LibreSSL/OpenSSL prerequisite that applies to `scan tls` does NOT apply here.
+SFTP endpoints are usually IP-allowlisted: run this from inside your perimeter.
+
+EXIT CODES:
+
+\b
+0   scan succeeded
+2   target scan failed (unreachable, port closed, malformed response)
+4   usage / configuration error
+
+Project: {PROJECT_URL}
+""")
 
 
-@scan_app.command("ssh", context_settings=_NO_WRAP_CONTEXT_SETTINGS)
+@scan_app.command("ssh", epilog=_SCAN_SSH_EPILOG, context_settings=_NO_WRAP_CONTEXT_SETTINGS)
 def scan_ssh_cmd(
     target: TargetArg,
     fmt: FormatOpt = OutputFormat.RICH,
@@ -808,4 +850,3 @@ def scan_ssh_cmd(
         render_cbom(result, sys.stdout, certificate=None)
     else:
         render_rich(result, sys.stdout, verbosity=0)
-

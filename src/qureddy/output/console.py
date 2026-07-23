@@ -35,6 +35,7 @@ from rich.text import Text
 from qureddy._branding import HEADER
 from qureddy.core.models import (
     Evidence,
+    FailureCategory,
     Finding,
     ObservationType,
     ProbeResult,
@@ -301,18 +302,21 @@ def _summary_table(result: ScanResult) -> Table:
     summary = result.summary
     scan = result.scan
 
-    hybrid_evidence = _pick_evidence(result, group=_HYBRID_GROUP)
-    classical_evidence = _pick_evidence(result, group=_CLASSICAL_GROUP)
-    protocol = _first_protocol_version(result.evidence)
-    cipher = _first_cipher_suite(result.evidence)
-
     table.add_row("schema_version", Text(result.schema_version))
     table.add_row("status", Text(scan.status))
     table.add_row("readiness", style_readiness(summary.readiness))
-    table.add_row("protocol", styled_or_dash(protocol))
-    table.add_row("cipher_suite", styled_or_dash(cipher))
-    table.add_row("hybrid_probe", _style_probe_status(hybrid_evidence))
-    table.add_row("classical_probe", _style_probe_status(classical_evidence))
+    if scan.scanner_name == "ssh":
+        # SSH has no TLS-style forced hybrid/classical probes or cipher suite;
+        # show the KEX/host-key algorithms actually observed instead.
+        table.add_row("key_exchange", _style_ssh_kex(result))
+        table.add_row("host_keys", _style_ssh_hostkeys(result))
+    else:
+        hybrid_evidence = _pick_evidence(result, group=_HYBRID_GROUP)
+        classical_evidence = _pick_evidence(result, group=_CLASSICAL_GROUP)
+        table.add_row("protocol", styled_or_dash(_first_protocol_version(result.evidence)))
+        table.add_row("cipher_suite", styled_or_dash(_first_cipher_suite(result.evidence)))
+        table.add_row("hybrid_probe", _style_probe_status(hybrid_evidence))
+        table.add_row("classical_probe", _style_probe_status(classical_evidence))
     table.add_row("findings", Text(str(summary.finding_count)))
     table.add_row("attempts", Text(str(scan.total_attempts)))
     if summary.failure_category is not None:
@@ -374,6 +378,24 @@ def _commands_panel(result: ScanResult) -> Panel | None:
     )
 
 
+def _style_ssh_kex(result: ScanResult) -> Text:
+    """Summarize the SSH key-exchange evidence for the scan-details table."""
+    for ev in result.evidence:
+        if ev.evidence_type == "ssh.kex" and ev.negotiated_group:
+            out = Text("PQ hybrid ", style="green")
+            out.append(style_group(ev.negotiated_group))
+            return out
+    return Text("classical only", style="yellow")
+
+
+def _style_ssh_hostkeys(result: ScanResult) -> Text:
+    """Summarize SSH host-key posture (weak vs classical) for the table."""
+    for ev in result.evidence:
+        if ev.evidence_type == "ssh.hostkey":
+            return Text("weak algorithm offered", style="bold red")
+    return Text("classical", style="dim")
+
+
 def _summary_headline_and_recommendation(result: ScanResult) -> tuple[Text, Text]:
     """Return (headline, recommendation) for the top of the summary block.
 
@@ -414,15 +436,31 @@ def _summary_headline_and_recommendation(result: ScanResult) -> tuple[Text, Text
     else:
         headline = unknown_headline(failure)
 
+    return headline, _recommendation(result, readiness, hybrid_group, failure)
+
+
+_SSH_HYBRID_RECOMMENDATION = (
+    "SSH key exchange is post-quantum hybrid. Host-key signatures remain "
+    "classical (no PQ SSH signature type exists yet); monitor for one."
+)
+
+
+def _recommendation(
+    result: ScanResult,
+    readiness: Readiness,
+    hybrid_group: str | None,
+    failure: FailureCategory | None,
+) -> Text:
+    """Select the recommendation line for the verdict panel."""
     if readiness is Readiness.TRANSITIONAL_HYBRID:
-        recommendation = Text(_cert_axis_recommendation(result))
-    elif readiness is Readiness.CLASSICALLY_WEAK and hybrid_group is not None:
-        recommendation = Text(_classically_weak_with_pqc_recommendation(result, hybrid_group))
-    elif readiness in RECOMMENDATION_TEXT:
-        recommendation = Text(RECOMMENDATION_TEXT[readiness])
-    else:
-        recommendation = Text(unknown_recommendation(failure))
-    return headline, recommendation
+        if result.scan.scanner_name == "ssh":
+            return Text(_SSH_HYBRID_RECOMMENDATION)
+        return Text(_cert_axis_recommendation(result))
+    if readiness is Readiness.CLASSICALLY_WEAK and hybrid_group is not None:
+        return Text(_classically_weak_with_pqc_recommendation(result, hybrid_group))
+    if readiness in RECOMMENDATION_TEXT:
+        return Text(RECOMMENDATION_TEXT[readiness])
+    return Text(unknown_recommendation(failure))
 
 
 def _classically_weak_with_pqc_recommendation(result: ScanResult, hybrid_group: str) -> str:

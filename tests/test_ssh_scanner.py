@@ -4,10 +4,12 @@
 
 from __future__ import annotations
 
+import io
 from unittest.mock import patch
 
 from qureddy.core.models import Readiness
 from qureddy.core.targets import parse_ssh_target
+from qureddy.output.console import render_rich
 from qureddy.scanners.ssh.probe import SSHOffer
 from qureddy.scanners.ssh.scanner import scan_ssh
 
@@ -53,3 +55,15 @@ def test_scanner_name_and_scheme() -> None:
 def test_sntrup_also_counts_as_hybrid() -> None:
     r = _run(("sntrup761x25519-sha512@openssh.com", "curve25519-sha256"), ("ssh-ed25519",))
     assert r.summary.readiness is Readiness.TRANSITIONAL_HYBRID
+
+
+def test_ssh_rich_output_has_no_tls_cert_recommendation() -> None:
+    """SSH scan must not emit the TLS cert-axis recommendation or probe rows."""
+    r = _run(("mlkem768x25519-sha256",), ("ssh-ed25519",))
+    buf = io.StringIO()
+    render_rich(r, buf, verbosity=0)
+    out = buf.getvalue()
+    assert "certificate signature not yet inspected" not in out
+    assert "cipher_suite" not in out
+    assert "key_exchange" in out
+    assert "host_keys" in out
