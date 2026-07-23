@@ -100,6 +100,7 @@ LOCAL_CAPABILITY_CATEGORIES: frozenset[FailureCategory] = frozenset(
         FailureCategory.LOCAL_OPENSSL_MISSING,
         FailureCategory.LOCAL_OPENSSL_BROKEN,
         FailureCategory.LOCAL_OPENSSL_VERSION_UNREADABLE,
+        FailureCategory.LOCAL_OPENSSL_IS_LIBRESSL,
         FailureCategory.LOCAL_OPENSSL_TOO_OLD,
         FailureCategory.LOCAL_OPENSSL_LACKS_GROUP,
     },
@@ -193,6 +194,14 @@ def unknown_recommendation(failure: FailureCategory | None) -> str:
     """
     if failure is None:
         return "Re-run the scan with -v for diagnostics."
+    if failure is FailureCategory.LOCAL_OPENSSL_IS_LIBRESSL:
+        return (
+            "The openssl on this machine is LibreSSL, not OpenSSL — macOS ships "
+            "LibreSSL as /usr/bin/openssl by default. Install real OpenSSL and "
+            "point at it: brew install openssl@3, then pass "
+            "--openssl $(brew --prefix openssl@3)/bin/openssl or export "
+            "QUREDDY_OPENSSL to the same path."
+        )
     if failure in LOCAL_CAPABILITY_CATEGORIES:
         return (
             "Install OpenSSL 3.5+ with PQ group support and re-run. "

@@ -46,6 +46,7 @@ _LOCAL_CATEGORIES: frozenset[FailureCategory] = frozenset(
         FailureCategory.LOCAL_OPENSSL_MISSING,
         FailureCategory.LOCAL_OPENSSL_BROKEN,
         FailureCategory.LOCAL_OPENSSL_VERSION_UNREADABLE,
+        FailureCategory.LOCAL_OPENSSL_IS_LIBRESSL,
         FailureCategory.LOCAL_OPENSSL_TOO_OLD,
         FailureCategory.LOCAL_OPENSSL_LACKS_GROUP,
     },

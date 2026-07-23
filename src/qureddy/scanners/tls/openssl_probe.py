@@ -20,6 +20,7 @@ from packaging.version import InvalidVersion, Version
 
 from qureddy.core.errors import (
     LocalOpenSSLBroken,
+    LocalOpenSSLIsLibreSSL,
     LocalOpenSSLLacksGroup,
     LocalOpenSSLMissing,
     LocalOpenSSLTooOld,
@@ -43,6 +44,10 @@ CLASSICAL_GROUP = "X25519"
 EXCERPT_LIMIT = 4096
 
 OPENSSL_VERSION_PATTERN = re.compile(r"OpenSSL\s+(?P<version>\d+\.\d+\.\d+)")
+# Apple ships LibreSSL as /usr/bin/openssl on every macOS install by
+# default (issue #188); its version string ("LibreSSL 3.3.6") never
+# matches OPENSSL_VERSION_PATTERN, which requires the literal "OpenSSL".
+LIBRESSL_VERSION_PATTERN = re.compile(r"LibreSSL\s+(?P<version>\S+)")
 ENV_OVERRIDE = "QUREDDY_OPENSSL"
 
 
@@ -97,6 +102,15 @@ def probe_capability(
     supports_hybrid = HYBRID_GROUP.lower() in {g.lower() for g in groups}
 
     if version is None:
+        libressl_version = _extract_libressl_version(version_text)
+        if libressl_version is not None:
+            return OpenSSLDependency(
+                path=openssl_path,
+                version=libressl_version,
+                supports_tls13_groups=supports_groups,
+                supports_x25519mlkem768=supports_hybrid,
+                failure_category=FailureCategory.LOCAL_OPENSSL_IS_LIBRESSL,
+            )
         return OpenSSLDependency(
             path=openssl_path,
             version=None,
@@ -147,6 +161,17 @@ def raise_if_unusable(dep: OpenSSLDependency) -> None:
             f"(required: {MIN_OPENSSL_VERSION})"
         )
         raise LocalOpenSSLVersionUnreadable(msg, dependency=dep)
+    if dep.failure_category is FailureCategory.LOCAL_OPENSSL_IS_LIBRESSL:
+        msg = (
+            f"{dep.path} is LibreSSL {dep.version}, not OpenSSL — LibreSSL does not "
+            f"support the PQC groups this scanner requires (OpenSSL {MIN_OPENSSL_VERSION}+, "
+            f"needed for {HYBRID_GROUP}). On macOS, install real OpenSSL and point at it "
+            f"explicitly: brew install openssl@3 && qureddy scan tls <target> --openssl "
+            f"$(brew --prefix openssl@3)/bin/openssl — or export "
+            f"{ENV_OVERRIDE}=$(brew --prefix openssl@3)/bin/openssl once instead of "
+            f"passing --openssl every time."
+        )
+        raise LocalOpenSSLIsLibreSSL(msg, dependency=dep)
     if dep.failure_category is FailureCategory.LOCAL_OPENSSL_TOO_OLD:
         msg = f"OpenSSL {dep.version} is below required {MIN_OPENSSL_VERSION}"
         raise LocalOpenSSLTooOld(msg, dependency=dep)
@@ -407,6 +432,17 @@ def _extract_version(text: str) -> Version | None:
         return Version(match.group("version"))
     except InvalidVersion:
         return None
+
+
+def _extract_libressl_version(text: str) -> str | None:
+    """Return the raw LibreSSL version string (e.g. "3.3.6"), or None.
+
+    Kept as a plain string rather than a `packaging.version.Version`:
+    LibreSSL's numbering isn't the product this scanner targets, so
+    there is no "too old" comparison to make against MIN_OPENSSL_VERSION.
+    """
+    match = LIBRESSL_VERSION_PATTERN.search(text)
+    return match.group("version") if match else None
 
 
 def _parse_group_list(text: str) -> list[str]:

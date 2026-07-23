@@ -53,6 +53,17 @@ class LocalOpenSSLVersionUnreadable(_LocalOpenSSLProblem):
     """
 
 
+class LocalOpenSSLIsLibreSSL(_LocalOpenSSLProblem):
+    """The binary at the resolved path is LibreSSL, not OpenSSL.
+
+    Maps to FailureCategory.LOCAL_OPENSSL_IS_LIBRESSL. Triggers exit code 3.
+    Distinct from LocalOpenSSLVersionUnreadable: LibreSSL's version string
+    parses fine, it's just a different product that doesn't support the
+    PQC groups this scanner requires. Apple ships it as /usr/bin/openssl
+    on every macOS install by default (issue #188).
+    """
+
+
 class LocalOpenSSLTooOld(_LocalOpenSSLProblem):
     """OpenSSL is below 3.5.0.
 
