@@ -255,3 +255,71 @@ The same logic applies recursively. When `openssl_probe.py` itself crosses the c
 - Issues [#41](https://github.com/paul007ex/qureddy/issues/41), [#42](https://github.com/paul007ex/qureddy/issues/42), [#43](https://github.com/paul007ex/qureddy/issues/43), [#44](https://github.com/paul007ex/qureddy/issues/44), [#45](https://github.com/paul007ex/qureddy/issues/45) — ADR 0003 follow-ups that land in the new `cli/` package
 - Issue [#79](https://github.com/paul007ex/qureddy/issues/79) — `output/console.py:_commands_panel` function split (independent)
 - Issue [#69](https://github.com/paul007ex/qureddy/issues/69) — `tests/test_cli.py` size violation (deferred per Rule H)
+
+---
+
+## Refresh — 2026-07-23
+
+**Status of this refresh:** Proposed (pending Codex arbitration per Governance).
+The decision rules (A–H) are unchanged; this section only updates the file list
+to current reality and commits two additional splits.
+
+### Why refresh
+
+The original context table (2026-04-27) is stale. Three PRs merged on
+2026-07-23 — the `--help` quality work (#266, PR #272), the console output
+rework (two-axis verdict, Errors section, per-probe surfacing; PR #272), and
+the CBOM capability-gate fix (#274, PR #275) — grew the over-ceiling set well
+past what the original ADR anticipated. The growth is again the cost of doing
+the work correctly, not new features; the response is the structural split this
+ADR already governs.
+
+### Current over-ceiling and canary files (`wc -l`, src/qureddy/, 2026-07-23)
+
+| File | LOC | Band | Original ADR LOC | Tracking |
+|---|---|---|---|---|
+| `cli.py` | **776** | Red (+376) | 429 | #60 |
+| `output/console.py` | **605** | Red (+205) | 370 (was canary) | #243 |
+| `scanners/tls/openssl_probe.py` | **489** | Red (+89) | 424 | #82 |
+| `scanners/tls/scanner.py` | **401** | Red (+1) | — (new) | #211 |
+| `core/models.py` | 385 | Orange | — | (watch) |
+| `scanners/tls/legacy_probe.py` | 339 | Yellow | — | (watch) |
+| `tests/test_cli.py` | 905 | Red (test) | 774 | #69 (Rule H.1) |
+| `tests/test_output.py` | 445 | Red (test) | 353 (was yellow) | (Rule H.1) |
+
+`file-size-gate.yml` is RED on `main` for the four Red-band production files.
+The gate is correct; the code is oversized. This ADR's execution is the fix —
+not a change to the gate.
+
+### Committed splits (this refresh adds two to the original two)
+
+Per Rule H (one file per PR), in recommended order:
+
+1. **`output/console.py` → `output/console/`** (#243) — the freshest debt,
+   fully verifiable locally under Rule G. Split by purpose:
+   - `__init__.py` — re-export `render_rich`
+   - `_panel.py` — the two-axis verdict panel + headline/recommendation
+   - `_tables.py` — Scan details / Findings / Run details tables
+   - `_errors.py` — the Errors section (`_errors_table`, `_last_error_line`,
+     OpenSSL error-line cleanup)
+   - `_probe_view.py` — `_pick_evidence`, per-probe status styling
+2. **`cli.py` → `cli/`** (#60) — follow the original Worked Example 1 layout
+   (`_branding`, `_options`, `_help`, `_errors`, `main`, `scan`), now also
+   carrying the #266 help-colorization helpers in `_help.py` and the
+   `_fetch_cert_for_cbom` capability guard (#274) in `scan.py`.
+3. **`scanners/tls/openssl_probe.py` → `openssl_probe/`** (#82) — original
+   Worked Example 2, unchanged.
+4. **`scanners/tls/scanner.py` → `scanner/`** (#211) — split by purpose:
+   `__init__` (re-export `TLSScanner`, `RetryConfig`,
+   `build_capability_failure_result`), `_orchestrate.py` (the `scan()` flow),
+   `_collect.py` (evidence-collection helpers), `_capability.py`.
+
+Test-file splits (`tests/test_cli.py` #69, `tests/test_output.py`) follow
+Rule H.1 after their production counterparts land.
+
+### Non-negotiable for every split PR (restating Rule G for this refresh)
+
+Every existing test passes **unmodified** (import-path updates only). If an
+assertion changes, the split altered behavior and the PR is wrong. `just gates`
+green. No new dependencies (Rule F). No file in a new package over 200 LOC
+(Rule E).
