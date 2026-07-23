@@ -12,12 +12,36 @@ adopters. Mirrored verbatim from the skill's "Model notes" section.
 
 from __future__ import annotations
 
+import ipaddress
+import re
 from datetime import datetime
 from enum import Enum
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 FROZEN = ConfigDict(frozen=True, extra="forbid")
+
+MIN_PORT = 1
+MAX_PORT = 65535
+
+# Mirrors core/targets.py::HOSTNAME_PATTERN. Cannot import it directly:
+# targets.py imports ScanTarget from this module, so the reverse import
+# would be circular. Two copies of one small regex is the tolerated case
+# per docs/contributors/agent-antipatterns.md's "tolerate two copies,
+# extract on the third" rule — extract to a shared low-level module if
+# a third caller needs this pattern.
+_HOSTNAME_PATTERN = re.compile(
+    r"^(?=.{1,253}$)(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)*"
+    r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?$",
+)
+
+
+def _is_ip_literal(value: str) -> bool:
+    try:
+        ipaddress.ip_address(value)
+    except ValueError:
+        return False
+    return True
 
 
 class ObservationType(str, Enum):
@@ -129,16 +153,60 @@ class OutputFormat(str, Enum):
 
 
 class ScanTarget(BaseModel):
-    """A normalized scan target."""
+    """A normalized scan target.
+
+    Issue #236: enforces its own invariants at the construction boundary
+    so a caller building this model directly (or deserializing external
+    JSON via `model_validate`) cannot supply a `locator` that names a
+    different endpoint than `host`/`port`/`sni` — the scanner would
+    connect to the latter but attribute evidence to the former.
+    """
 
     model_config = FROZEN
 
     original_input: str
     host: str
-    port: int
+    port: int = Field(ge=MIN_PORT, le=MAX_PORT)
     sni: str | None
     scheme: str = "tls"
     locator: str
+
+    @field_validator("host")
+    @classmethod
+    def _host_must_be_valid(cls, value: str) -> str:
+        if not value or not value.strip():
+            msg = "host cannot be empty"
+            raise ValueError(msg)
+        if "[" in value or "]" in value:
+            # scanners/tls/_net.py::build_connect_target brackets IPv6
+            # hosts itself and assumes `host` is stored unbracketed
+            # (confirmed live: a pre-bracketed host produces a
+            # double-bracketed, malformed `-connect` argv). Reject at
+            # the source instead of letting that corruption happen
+            # downstream in a different module.
+            msg = f"host must not contain brackets, store IPv6 unbracketed: {value!r}"
+            raise ValueError(msg)
+        if not _is_ip_literal(value) and not _HOSTNAME_PATTERN.match(value):
+            msg = f"host is not a valid hostname or IP: {value!r}"
+            raise ValueError(msg)
+        return value
+
+    @field_validator("sni")
+    @classmethod
+    def _sni_must_be_valid(cls, value: str | None) -> str | None:
+        if value is not None and not value.strip():
+            msg = "sni cannot be empty or whitespace-only"
+            raise ValueError(msg)
+        return value
+
+    @model_validator(mode="after")
+    def _locator_matches_endpoint(self) -> ScanTarget:
+        rendered_host = f"[{self.host}]" if ":" in self.host else self.host
+        expected = f"{self.scheme}://{rendered_host}:{self.port}"
+        if self.locator != expected:
+            msg = f"locator {self.locator!r} does not match host/port/scheme {expected!r}"
+            raise ValueError(msg)
+        return self
 
 
 class OpenSSLDependency(BaseModel):
