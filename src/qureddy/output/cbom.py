@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import json
 import sys
+from datetime import UTC, datetime
 from typing import IO, TYPE_CHECKING
 
 from cyclonedx.model import Property
@@ -192,22 +193,87 @@ def _add_protocol_components(
         provides_edges.setdefault(_LIBRARY_REF, []).append(ref)
 
 
+def _parse_openssl_date(text: str) -> datetime | None:
+    """Parse `openssl x509 -dates` output (e.g. "Jul 17 07:18:11 2026 GMT").
+
+    Returns None on anything unparseable rather than raising — a date
+    the CBOM can't represent should degrade to "absent from this CBOM",
+    not abort rendering the rest of a real, otherwise-valid certificate.
+    OpenSSL always reports these in GMT (== UTC); `%Z` doesn't set
+    tzinfo on its own in `strptime`, so UTC is attached explicitly to
+    satisfy the project's timezone-aware-datetime rule.
+    """
+    if not text:
+        return None
+    try:
+        return datetime.strptime(text, "%b %d %H:%M:%S %Y %Z").replace(tzinfo=UTC)
+    except ValueError:
+        return None
+
+
+def _add_signature_algorithm_component(
+    bom: Bom, signature_algorithm: str, provides_edges: dict[str, list[str]]
+) -> BomRef | None:
+    """One cryptographic-asset component for the certificate's signature algorithm.
+
+    Mirrors `_add_algorithm_components`'s per-negotiated-group pattern —
+    same reasoning: `signature_algorithm_ref` on `CertificateProperties`
+    is typed `Optional[BomRef]`, a reference to a separate component, not
+    a free-text string (confirmed via `inspect.signature`). Returns None
+    for the "UNKNOWN" placeholder `cert_probe.py` emits when the `-text`
+    output has no matching line, rather than emitting a fake component.
+    """
+    if signature_algorithm == "UNKNOWN":
+        return None
+    ref = f"crypto/algorithm/{signature_algorithm.lower()}"
+    bom.components.add(
+        Component(
+            name=signature_algorithm,
+            type=ComponentType.CRYPTOGRAPHIC_ASSET,
+            bom_ref=ref,
+            crypto_properties=CryptoProperties(asset_type=CryptoAssetType.ALGORITHM),
+        )
+    )
+    provides_edges.setdefault(_LIBRARY_REF, []).append(ref)
+    return BomRef(value=ref)
+
+
 def _add_certificate_component(
     bom: Bom, certificate: CertificateInfo, provides_edges: dict[str, list[str]]
 ) -> None:
-    """One certificate component from a real fetched+parsed cert (cert_probe.py). Signature-algorithm/pubkey refs stay as free text pending an algorithm OID lookup table (not built yet)."""
+    """One certificate component from a real fetched+parsed cert (cert_probe.py).
+
+    `subject_public_key_ref` (pubkey) stays unset pending an OID/key-type
+    lookup table (larger, separate work — issue #190) rather than a fake
+    reference. `serial` has no home in CycloneDX 1.6's `certificateProperties`
+    at all (confirmed: not present in the installed library's schema) — kept
+    as a `qureddy:certificate.serial` component property instead of silently
+    dropped, same extension-point pattern as `_add_scan_status_properties`.
+    """
     ref = "crypto/certificate/leaf"
+    sig_alg_ref = _add_signature_algorithm_component(
+        bom, certificate.signature_algorithm, provides_edges
+    )
+    properties = (
+        [Property(name="qureddy:certificate.serial", value=certificate.serial)]
+        if certificate.serial
+        else []
+    )
     bom.components.add(
         Component(
             name=certificate.subject,
             type=ComponentType.CRYPTOGRAPHIC_ASSET,
             bom_ref=ref,
+            properties=properties,
             crypto_properties=CryptoProperties(
                 asset_type=CryptoAssetType.CERTIFICATE,
                 certificate_properties=CertificateProperties(
                     subject_name=certificate.subject,
                     issuer_name=certificate.issuer,
                     certificate_format="X.509",
+                    not_valid_before=_parse_openssl_date(certificate.not_before),
+                    not_valid_after=_parse_openssl_date(certificate.not_after),
+                    signature_algorithm_ref=sig_alg_ref,
                 ),
             ),
         )
