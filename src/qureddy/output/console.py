@@ -345,6 +345,19 @@ _CERT_FINDING_TYPES = frozenset({FINDING_TYPE_PQ_SIGNATURE, FINDING_TYPE_CLASSIC
 
 
 def _findings_table(result: ScanResult) -> Table:
+    """Findings table.
+
+    Issue #251: must render what distinguishes each
+    finding, not just its policy coordinates. Two certificate findings
+    (PQ-signed vs. classical-signed) share the same rule_id, severity,
+    readiness, group (None), and protocol_version (None) by design — the
+    only fields that actually differ are `title` and `algorithm`. Without
+    an Algorithm column, real ML-DSA-signed and ECDSA-signed certificates
+    rendered byte-identical rows (confirmed live, diff -u showed zero
+    output between two real servers with deliberately different cert
+    signature algorithms). `Rule` is kept, not replaced, for
+    automation-minded users matching on rule_id.
+    """
     table = Table(
         title="Findings",
         title_style="bold",
@@ -356,6 +369,7 @@ def _findings_table(result: ScanResult) -> Table:
     table.add_column("Severity")
     table.add_column("Readiness")
     table.add_column("Group")
+    table.add_column("Algorithm")
     table.add_column("Protocol")
 
     for finding in result.findings:
@@ -364,6 +378,7 @@ def _findings_table(result: ScanResult) -> Table:
             style_severity(finding.severity),
             style_readiness(finding.readiness),
             style_group(finding.negotiated_group),
+            styled_or_dash(finding.algorithm),
             styled_or_dash(finding.protocol_version),
         )
     return table
