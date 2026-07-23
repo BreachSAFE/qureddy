@@ -36,6 +36,7 @@ from dataclasses import dataclass
 from qureddy.core.errors import LocalOpenSSLMissing
 from qureddy.core.logging import get_logger
 from qureddy.scanners.tls._net import build_connect_target
+from qureddy.scanners.tls.cert_sig import parse_certificate_signature
 
 _log = get_logger(__name__)
 
@@ -54,6 +55,15 @@ class CertificateInfo:
     signature_algorithm: str
     public_key_summary: str
     is_self_signed: bool
+    is_post_quantum_signature: bool
+    """True iff `signature_algorithm` is a recognized ML-DSA (PQC) algorithm.
+
+    Issue #183: cert_sig.py's classification existed but nothing called
+    it, so the scan never reported the certificate/authentication axis
+    and output hardcoded a false "remain classical" assertion. Wired in
+    here rather than a second subprocess call: `parse_certificate`
+    already fetches the `-text` output cert_sig.py's regex needs.
+    """
 
 
 def _run_openssl(
@@ -181,10 +191,12 @@ def parse_certificate(openssl_path: str, pem: str) -> CertificateInfo:
     )
     serial = _x509(openssl_path, pem, "-serial").removeprefix("serial=").strip()
     pubkey_text = _x509(openssl_path, pem, "-text")
-    sig_line = next(
-        (line for line in pubkey_text.splitlines() if "Signature Algorithm" in line), ""
-    )
-    sig_alg = sig_line.split(":", 1)[-1].strip() if sig_line else "UNKNOWN"
+    # cert_sig.py's regex replaces the previous hand-rolled substring search
+    # ("Signature Algorithm" in line) — same source text, but anchored
+    # (^...$, MULTILINE) rather than a loose substring match, and it also
+    # classifies PQC vs classical in the same pass (issue #183).
+    cert_sig = parse_certificate_signature(pubkey_text)
+    sig_alg = cert_sig.raw_algorithm or "UNKNOWN"
     pubkey_line = next((line for line in pubkey_text.splitlines() if "Public-Key:" in line), "")
     pubkey_summary = pubkey_line.strip() or "UNKNOWN"
     return CertificateInfo(
@@ -195,5 +207,6 @@ def parse_certificate(openssl_path: str, pem: str) -> CertificateInfo:
         serial=serial,
         signature_algorithm=sig_alg,
         public_key_summary=pubkey_summary,
+        is_post_quantum_signature=cert_sig.is_post_quantum,
         is_self_signed=subject == issuer,
     )

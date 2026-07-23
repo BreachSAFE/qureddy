@@ -46,6 +46,10 @@ from qureddy.output._styles import (
     unknown_recommendation,
     verdict_border_style,
 )
+from qureddy.scanners.tls._cert_findings import (
+    FINDING_TYPE_CLASSICAL_SIGNATURE,
+    FINDING_TYPE_PQ_SIGNATURE,
+)
 
 # Tests import these underscore-prefixed names from the renderer module
 # (legacy convention). They're re-exported here so the test surface is
@@ -266,11 +270,42 @@ def _summary_headline_and_recommendation(result: ScanResult) -> tuple[Text, Text
     else:
         headline = unknown_headline(failure)
 
-    if readiness in RECOMMENDATION_TEXT:
+    if readiness is Readiness.TRANSITIONAL_HYBRID:
+        recommendation = Text(_cert_axis_recommendation(result))
+    elif readiness in RECOMMENDATION_TEXT:
         recommendation = Text(RECOMMENDATION_TEXT[readiness])
     else:
         recommendation = Text(unknown_recommendation(failure))
     return headline, recommendation
+
+
+def _cert_axis_recommendation(result: ScanResult) -> str:
+    """Recommendation text for TRANSITIONAL_HYBRID, driven by the actual finding.
+
+    Issue #183: replaces a hardcoded "remain classical" claim that was
+    false whenever a PQC cert was actually served. Three real states,
+    not two: PQ cert, classical cert, or not inspected (cert fetch
+    failed/timed out) — the issue's own guidance is to never assert
+    "classical" in that third case.
+    """
+    cert_finding = next((f for f in result.findings if f.finding_type in _CERT_FINDING_TYPES), None)
+    if cert_finding is None:
+        return (
+            "Monitor; certificate signature not yet inspected "
+            "(fetch failed, timed out, or was skipped)."
+        )
+    if cert_finding.finding_type == FINDING_TYPE_PQ_SIGNATURE:
+        return (
+            f"Both axes are post-quantum: hybrid key exchange and a "
+            f"{cert_finding.algorithm} certificate signature (FIPS 204)."
+        )
+    return (
+        f"Monitor; key exchange is PQ-hybrid but the certificate signature "
+        f"({cert_finding.algorithm}) remains classical."
+    )
+
+
+_CERT_FINDING_TYPES = frozenset({FINDING_TYPE_PQ_SIGNATURE, FINDING_TYPE_CLASSICAL_SIGNATURE})
 
 
 def _findings_table(result: ScanResult) -> Table:

@@ -79,10 +79,10 @@ VERDICT_BORDER: dict[Readiness, str] = {
 # advice points at standards and capabilities, not products.
 RECOMMENDATION_TEXT: dict[Readiness, str] = {
     Readiness.QUANTUM_SAFE: "No action required.",
-    Readiness.TRANSITIONAL_HYBRID: (
-        "Monitor; certificate and signature chain remain classical "
-        "(cert scanning lands at MVP 0.2)."
-    ),
+    # TRANSITIONAL_HYBRID intentionally absent: this used to be a static,
+    # always-"remain classical" string — false whenever a PQC cert was
+    # actually served (issue #183). console.py's _cert_axis_recommendation
+    # now derives this from the real tls.cert.* finding instead.
     Readiness.QUANTUM_VULNERABLE: (
         "Plan PQ migration. Move TLS termination behind an edge that "
         "supports X25519MLKEM768, or upgrade to OpenSSL 3.5+ with PQ "
