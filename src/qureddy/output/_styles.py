@@ -25,6 +25,7 @@ from __future__ import annotations
 from rich.text import Text
 
 from qureddy.core.models import (
+    LOCAL_CAPABILITY_CATEGORIES,
     FailureCategory,
     OpenSSLDependency,
     Readiness,
@@ -109,17 +110,6 @@ CLASSICALLY_WEAK_WITH_PQC_TEMPLATE: str = (
     "Separately, this target also still accepts {protocols}, exploitable today "
     "regardless of the PQ posture. Disable the legacy protocol(s) when the client "
     "compatibility need allows; the two facts don't cancel out."
-)
-
-LOCAL_CAPABILITY_CATEGORIES: frozenset[FailureCategory] = frozenset(
-    {
-        FailureCategory.LOCAL_OPENSSL_MISSING,
-        FailureCategory.LOCAL_OPENSSL_BROKEN,
-        FailureCategory.LOCAL_OPENSSL_VERSION_UNREADABLE,
-        FailureCategory.LOCAL_OPENSSL_IS_LIBRESSL,
-        FailureCategory.LOCAL_OPENSSL_TOO_OLD,
-        FailureCategory.LOCAL_OPENSSL_LACKS_GROUP,
-    },
 )
 
 

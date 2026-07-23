@@ -10,6 +10,7 @@ a `ScanSummary`. Extracted from `scanner.py` to keep that file under the
 from __future__ import annotations
 
 from qureddy.core.models import (
+    LOCAL_CAPABILITY_CATEGORIES,
     Evidence,
     FailureCategory,
     Finding,
@@ -39,17 +40,6 @@ _READINESS_PRECEDENCE: tuple[Readiness, ...] = (
     Readiness.UNKNOWN,
     Readiness.QUANTUM_SAFE,
     Readiness.NOT_APPLICABLE,
-)
-
-_LOCAL_CATEGORIES: frozenset[FailureCategory] = frozenset(
-    {
-        FailureCategory.LOCAL_OPENSSL_MISSING,
-        FailureCategory.LOCAL_OPENSSL_BROKEN,
-        FailureCategory.LOCAL_OPENSSL_VERSION_UNREADABLE,
-        FailureCategory.LOCAL_OPENSSL_IS_LIBRESSL,
-        FailureCategory.LOCAL_OPENSSL_TOO_OLD,
-        FailureCategory.LOCAL_OPENSSL_LACKS_GROUP,
-    },
 )
 
 
@@ -107,7 +97,7 @@ def summary_failure_category(
         findings,
         evidence_by_id,
         "tls.hybrid.not_testable",
-        allowed=_LOCAL_CATEGORIES,
+        allowed=LOCAL_CAPABILITY_CATEGORIES,
     )
     if local_match is not None:
         return local_match

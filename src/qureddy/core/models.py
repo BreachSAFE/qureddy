@@ -101,6 +101,23 @@ class FailureCategory(str, Enum):
     UNEXPECTED_GROUP = "unexpected_group"
 
 
+# The six "operator's environment is the problem" categories, defined once
+# so policy.py, _summary.py, and _styles.py import the same set instead of
+# each hand-typing an identical copy (issue #209) — confirmed live: adding
+# LOCAL_OPENSSL_IS_LIBRESSL required editing all three copies in the same
+# commit, with nothing enforcing they stay in sync.
+LOCAL_CAPABILITY_CATEGORIES: frozenset[FailureCategory] = frozenset(
+    {
+        FailureCategory.LOCAL_OPENSSL_MISSING,
+        FailureCategory.LOCAL_OPENSSL_BROKEN,
+        FailureCategory.LOCAL_OPENSSL_VERSION_UNREADABLE,
+        FailureCategory.LOCAL_OPENSSL_IS_LIBRESSL,
+        FailureCategory.LOCAL_OPENSSL_TOO_OLD,
+        FailureCategory.LOCAL_OPENSSL_LACKS_GROUP,
+    }
+)
+
+
 class OutputFormat(str, Enum):
     """CLI `--format` choices: terminal-rendered `rich` or machine-readable `json`."""
 
