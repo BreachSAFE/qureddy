@@ -19,6 +19,8 @@ from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from qureddy import __version__ as _version
+
 FROZEN = ConfigDict(frozen=True, extra="forbid")
 
 MIN_PORT = 1
@@ -353,7 +355,7 @@ class ScanMetadata(BaseModel):
     started_at: datetime
     completed_at: datetime
     scanner_name: str = "tls"
-    scanner_version: str = "0.1.0"
+    scanner_version: str = _version
     status: str
     total_attempts: int = 1
 

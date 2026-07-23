@@ -89,3 +89,7 @@ class RetryConfigError(QureddyError):
 # carried through to the JSON `summary.failure_category`. Keep that as
 # the project's failure model — failures-as-data — instead of failures-
 # as-control-flow. New failure modes go in the enum, not here.
+
+
+class SSHProbeError(QureddyError):
+    """An SSH probe failed: connect/timeout, or a malformed/oversized response."""

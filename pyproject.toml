@@ -7,7 +7,7 @@
 
 [project]
 name = "breachsafe-qureddy"
-version = "0.1.0"
+version = "0.2.0"
 description = "Open-source PQC readiness scanner -- live OpenSSL handshakes against the target."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -159,6 +159,8 @@ select = [
 ignore = [
     "E501",     # line-too-long, handled by formatter
     "PLR0913",  # too-many-arguments — Typer commands legitimately have many
+    "PLR0917",  # too-many-positional-arguments — same reason as PLR0913: Typer
+                # command options are declared as (keyword-defaulted) parameters
     # The mvp-implement skill explicitly mandates `class Foo(str, Enum)`
     # (not `enum.StrEnum`) for the locked enums. The skill is the
     # implementation authority; UP042 would request a change that

@@ -84,6 +84,25 @@ qureddy scan tls example.com -vvv        # show the exact OpenSSL commands run
 Run `qureddy scan tls --help` for the full option list (SNI override, timeout,
 retries, output format, verbosity).
 
+### Scan SSH / SFTP endpoints
+
+```bash
+qureddy scan ssh github.com
+qureddy scan ssh sftp.vendor.example.com:2222
+qureddy scan ssh github.com --format json
+```
+
+The SSH scanner reads the endpoint's offered key-exchange and host-key
+algorithms from the cleartext SSH handshake — no OpenSSL required (the
+LibreSSL/OpenSSL prerequisite that applies to `scan tls` does not apply). It
+reports the same readiness verdicts: `transitional_hybrid` when a post-quantum
+hybrid KEX (`mlkem768x25519` / `sntrup761x25519`) is offered, `quantum_vulnerable`
+for classical-only, and `classically_weak` when a deprecated host key (e.g.
+`ssh-dss`) is present. Run `qureddy scan ssh --help` for details.
+
+SFTP endpoints are typically IP-allowlisted, so run the scan from inside your
+allowlisted network.
+
 ## Example
 
 ```text

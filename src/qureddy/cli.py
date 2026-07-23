@@ -38,6 +38,9 @@ from qureddy.core.errors import (
     RetryConfigError,
     TargetParseError,
 )
+from qureddy.core.errors import (
+    SSHProbeError as _SSHProbeError,
+)
 from qureddy.core.logging import configure_logging, get_logger
 from qureddy.core.models import (
     FailureCategory,
@@ -52,10 +55,11 @@ from qureddy.core.retry import (
     parse_retry_on,
     validate_retry_args,
 )
-from qureddy.core.targets import parse_target
+from qureddy.core.targets import parse_ssh_target, parse_target
 from qureddy.output.cbom import render_cbom
 from qureddy.output.console import render_rich
 from qureddy.output.json import render_json
+from qureddy.scanners.ssh.scanner import scan_ssh as _scan_ssh
 from qureddy.scanners.tls.cert_probe import (
     CertificateInfo,
     fetch_certificate_pem,
@@ -774,3 +778,103 @@ def main() -> None:
         sys.stderr.write(f"qureddy: unexpected error: {exc}\n")
         sys.exit(EXIT_INTERNAL_ERROR)
     sys.exit(EXIT_OK if exit_code is None else exit_code)
+
+
+# ---- SSH scanner command (issue #278) ----
+_SCAN_SSH_EPILOG = _colorize_help_text(f"""\
+EXAMPLES:
+
+\b
+# Check an SSH/SFTP endpoint for post-quantum readiness.
+qureddy scan ssh github.com
+
+\b
+# A non-standard SFTP port.
+qureddy scan ssh sftp.vendor.example.com:2222
+
+\b
+# Machine-readable JSON.
+qureddy scan ssh github.com --format json
+
+VERDICTS:
+
+\b
+transitional_hybrid   PQ hybrid KEX offered (mlkem768x25519 / sntrup761x25519)
+quantum_vulnerable    classical KEX only -- harvest-now-decrypt-later exposure
+classically_weak      a weak/deprecated host key (e.g. ssh-dss) is offered
+
+WHAT IT CHECKS (two axes):
+
+\b
+Key exchange   does the server offer a post-quantum hybrid KEX group?
+Host key       are the host-key signature algorithms classical or weak?
+
+\b
+No OpenSSL needed -- SSH posture is read from the cleartext KEXINIT, so the
+LibreSSL/OpenSSL prerequisite that applies to `scan tls` does NOT apply here.
+SFTP endpoints are usually IP-allowlisted: run this from inside your perimeter.
+
+EXIT CODES:
+
+\b
+0   scan succeeded
+2   target scan failed (unreachable, port closed, malformed response)
+4   usage / configuration error
+
+Project: {PROJECT_URL}
+""")
+
+
+def _clean_ssh_error(msg: str) -> str:
+    """Reduce a raw SSH probe error to a clean, operator-facing message.
+
+    Strips Python's `[Errno N]` prefix and rewrites the common OS-level
+    failure shapes (DNS, refused, timeout) into actionable language, so the
+    CLI never surfaces a raw `[Errno 8] nodename nor servname provided`.
+    """
+    cleaned = re.sub(r"\[Errno \d+\]\s*", "", msg)
+    lowered = cleaned.lower()
+    head = cleaned.split(" failed:")[0]
+    if "nodename nor servname" in lowered or "name or service not known" in lowered:
+        return f"{head} failed: host could not be resolved (DNS lookup failed)"
+    if "connection refused" in lowered:
+        return f"{head} failed: connection refused"
+    if "timed out" in lowered:
+        return f"{cleaned} — is that host:port actually an SSH endpoint?"
+    return cleaned
+
+
+@scan_app.command("ssh", epilog=_SCAN_SSH_EPILOG, context_settings=_NO_WRAP_CONTEXT_SETTINGS)
+def scan_ssh_cmd(
+    target: TargetArg,
+    fmt: FormatOpt = OutputFormat.RICH,
+    timeout: TimeoutOpt = 8,
+    verbose: VerboseOpt = 0,
+    json_logs: JsonLogsOpt = False,
+    quiet: QuietOpt = False,
+) -> None:
+    """Scan an SSH endpoint for post-quantum readiness."""
+    # Mirror scan tls: machine formats default to quiet so stdout stays a
+    # clean document, but an explicit -v/-vv/-vvv still wins. Keeps the
+    # verbosity/logging surface consistent across subcommands.
+    machine_format = fmt is not OutputFormat.RICH
+    effective_quiet = quiet or (machine_format and verbose == 0)
+    configure_logging(verbosity=verbose, json_logs=json_logs, quiet=effective_quiet)
+    try:
+        scan_target = parse_ssh_target(target)
+    except TargetParseError as exc:
+        typer.echo(f"qureddy: invalid target: {exc}", err=True)
+        raise typer.Exit(code=EXIT_USAGE) from None
+    try:
+        result = _scan_ssh(scan_target, timeout_seconds=timeout)
+    except _SSHProbeError as exc:
+        # Present a clean, classified message on stderr — never the raw
+        # OSError/errno. Exit 2 (target scan failed), same contract as tls.
+        typer.echo(f"qureddy: ssh scan failed: {_clean_ssh_error(str(exc))}", err=True)
+        raise typer.Exit(code=EXIT_TARGET_FAILED) from None
+    if fmt is OutputFormat.JSON:
+        render_json(result, sys.stdout)
+    elif fmt is OutputFormat.CBOM:
+        render_cbom(result, sys.stdout, certificate=None)
+    else:
+        render_rich(result, sys.stdout, verbosity=verbose)
