@@ -270,9 +270,7 @@ qureddy scan ssh --help              # SSH options and examples
 
 app = typer.Typer(
     name="qureddy",
-    help=(
-        f"{PROJECT_NAME} {PROJECT_VERSION} -- {DESCRIPTION}."
-    ),
+    help=(f"{PROJECT_NAME} {PROJECT_VERSION} -- {DESCRIPTION}."),
     epilog=_ROOT_EPILOG,
     no_args_is_help=True,
     add_completion=False,
@@ -299,9 +297,7 @@ app.add_typer(scan_app, name="scan")
 
 
 @app.callback(
-    help=(
-        f"{PROJECT_NAME} {PROJECT_VERSION} -- {DESCRIPTION}."
-    ),
+    help=(f"{PROJECT_NAME} {PROJECT_VERSION} -- {DESCRIPTION}."),
 )
 def _root(
     version: VersionOpt = None,
