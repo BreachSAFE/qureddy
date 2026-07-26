@@ -470,7 +470,7 @@ def test_main_exits_70_on_internal_error(
     # Patch parse_target — called early in scan_tls, before any exception
     # handling. A non-QureddyError raised here flows up through main()'s
     # last-resort `except Exception`, which is the path issue #12 fixes.
-    monkeypatch.setattr("qureddy.cli.parse_target", _boom)
+    monkeypatch.setattr("qureddy.cli.scan.parse_target", _boom)
     monkeypatch.setattr(
         "sys.argv",
         ["qureddy", "scan", "tls", "example.com", "--format", "json"],
@@ -847,7 +847,7 @@ def test_cbom_capability_failure_never_fetches_cert_with_rejected_binary(
         msg = "fetch_certificate_pem called despite rejected capability check"
         raise AssertionError(msg)
 
-    monkeypatch.setattr("qureddy.cli.fetch_certificate_pem", _must_not_be_called)
+    monkeypatch.setattr("qureddy.cli._render.fetch_certificate_pem", _must_not_be_called)
     runner = CliRunner()
     result = runner.invoke(
         app,

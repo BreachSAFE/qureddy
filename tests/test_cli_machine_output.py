@@ -26,7 +26,8 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from qureddy.cli import _stderr_merged_into_stdout, app
+from qureddy.cli import app
+from qureddy.cli._errors import _stderr_merged_into_stdout
 
 FAKE_DIR = Path(__file__).parent / "fixtures" / "openssl" / "fake"
 # Resolved once to a full path so subprocess calls below satisfy Bandit's

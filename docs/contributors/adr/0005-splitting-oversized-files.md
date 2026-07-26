@@ -2,7 +2,9 @@
 
 # ADR 0005 — Splitting oversized files into purpose-organized packages
 
-**Status:** Proposed
+**Status:** Accepted (2026-07-26 — adopted as the split playbook by the
+[#30](https://github.com/breachsafe/qureddy/issues/30) release program;
+first implementation PR is the `cli.py` → `cli/` split)
 **Date:** 2026-04-27
 **Deciders:** Paul Volosen, project lead
 **Consulted:** Claude (drafting), Codex (architect / arbiter)
@@ -260,7 +262,9 @@ The same logic applies recursively. When `openssl_probe.py` itself crosses the c
 
 ## Refresh — 2026-07-23
 
-**Status of this refresh:** Proposed (pending Codex arbitration per Governance).
+**Status of this refresh:** Accepted (2026-07-26, together with the ADR —
+see the Status line above; execution ordered by
+[#30](https://github.com/breachsafe/qureddy/issues/30)).
 The decision rules (A–H) are unchanged; this section only updates the file list
 to current reality and commits two additional splits.
 
