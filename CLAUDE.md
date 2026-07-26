@@ -10,24 +10,28 @@ Auto-loaded into every Claude Code session. Tight on purpose. Use it to orient f
 |---|---|
 | **Name** | BreachSAFE QuReddy OSS |
 | **CLI** | `qureddy` |
-| **Repo** | `github.com/breachsafe/qureddy` (will move to `github.com/breachsafe/qureddy` at v1.0) |
+| **Repo** | `github.com/breachsafe/qureddy` (canonical, public — org cutover done in #21). `github.com/paul007ex/qureddy` is a private mirror that lags behind. |
 | **PyPI** | `breachsafe-qureddy` |
 | **License** | Apache 2.0 |
-| **Tagline** | QuReddy 0.1.0 — BreachSAFE OSS |
+| **Version** | Single-sourced from `pyproject.toml` (0.2.0 since the SSH scanner landed) |
+
+Local-checkout gotcha: the git remote named `breachsafe` is canonical (PRs, issues, pushes go there); `origin` points at the stale `paul007ex` mirror. Don't push to `origin` expecting it to be the real repo.
 
 Open-source post-quantum cryptography readiness scanner. Find what's quantum-vulnerable. Generate a CBOM. Move on.
 
 ## Repo state (read this first)
 
-**MVP 0.1 shipped on 2026-04-26.** The TLS scanner is live:
+**Shipped:** MVP 0.1 (TLS scanner, 2026-04-26), MVP 0.2 initial (cert signature-algorithm detection + legacy TLS 1.0/1.1/1.2 sweep in the default scan), MVP 0.3 prototype (`--format cbom`, CycloneDX 1.6 via `cyclonedx-python-lib`), and the SSH scanner (`qureddy scan ssh`, raw-socket KEXINIT probe, no subprocess — shipped 2026-07, version bumped to 0.2.0). Note: `docs/reference/milestones.md` still lists SSH under "MVP 0.4 Planned" — known doc drift.
 
-- `src/qureddy/` — 31 source modules including `cli.py`, `_branding.py`, `core/{models,errors,logging,policy,retry,status,targets}.py`, `output/{console,_styles,json,cbom}.py`, `scanners/tls/{openssl_probe,scanner,parse,_classify,_evidence,_summary,legacy_probe,_legacy_findings,cert_probe,cert_sig,_cert_findings,_net}.py`. Authoritative count: `find src/qureddy -name '*.py' | wc -l`.
-- `tests/` — 15 unit test files, 1 live test file, 11 fake openssl shims under `tests/fixtures/openssl/fake/`, 8 captured `s_client -brief` fixtures under `tests/fixtures/openssl/`. 272 unit tests + 6 live tests = 278 collected, 80%+ coverage. Authoritative counts: `pytest --collect-only -q` and `find tests/fixtures/openssl -maxdepth 2 -name '*.txt' -o -name '*.sh'`.
+- `src/qureddy/` — 41 source modules: `cli.py`, `_branding.py`, `core/{models,errors,logging,policy,retry,status,targets}.py`, `output/{json,cbom,_styles}.py`, `output/console/` (renderer split into `render` + `_commands/_errors/_evidence/_tables/_verdict` per ADR 0005), `scanners/tls/` (openssl_probe, scanner, parse, _classify, _evidence, _summary, legacy_probe, _legacy_findings, cert_probe, cert_sig, _cert_findings, _net), `scanners/ssh/{probe,scanner,classify}.py`. Authoritative count: `find src/qureddy -name '*.py' | wc -l`.
+- `tests/` — 17 unit test files + 1 live test file, ~290 tests collected, 80%+ coverage. Fixtures: 11 fake openssl shims under `tests/fixtures/openssl/fake/`, 8 captured `s_client -brief` fixtures under `tests/fixtures/openssl/`, cert fixtures under `tests/fixtures/certs/`. SSH tests use a real loopback TCP server, no fixtures on disk. Authoritative counts: `pytest --collect-only -q`.
 - `pyproject.toml` is wired with the runtime + dev deps; `qureddy.cli:main` is the install-time entrypoint (translates Click usage errors to exit code 4 per the documented exit-code surface).
 - `docs/` follows [Diátaxis](https://diataxis.fr) — see `docs/README.md` for the structure; ADR 0002 is the decision record.
 - `scratch/` holds prior agent work and review artifacts. Gitignored. `scratch/claude-1`, `scratch/claude-2`, `scratch/claude-3-developer/`, `scratch/staging/claude-app/` are untrusted prior art — read for historical context only; do not import from them, do not edit them as part of normal work.
 
-The next milestone is **MVP 0.2 — certificate scanner**. See `docs/reference/milestones.md` for the planned scope and `.claude/skills/mvp-implement/SKILL.md` for the implementation authority.
+The current push is **PyPI release readiness (v1.0 track)**: green main, a tag-gated publish workflow with Trusted Publishing (issue #144 on staging), changelog/version coherence, and the launch-gate checklists (#49, #161, #162 on staging). See `docs/reference/milestones.md` for milestone scope and `.claude/skills/mvp-implement/SKILL.md` for the MVP implementation authority.
+
+**Issue-tracker split (issue #161):** `paul007ex/qureddy` (private staging) holds the real backlog (~150 open issues); `breachsafe/qureddy` (public) has a fresh, curated tracker. When a doc or changelog cites an issue number, check which tracker it belongs to — public links to staging numbers 404.
 
 ## Where to look
 
@@ -60,6 +64,13 @@ Operational workflows live under `.claude/skills/`. Read each skill's `SKILL.md`
 | `python-oss-crypto-reviewer` | Reviewing a proposed bug fix, PR diff, or another agent's code suggestion against correctness, security, and schema-stability standards |
 | `validate-fix` | Verifying a PR actually resolves the linked issue (separate question from "do gates pass"); applies a `validation:claude:<verdict>` label |
 | `audit-docs` | Auditing docs for drift against the working tree (stale ADR statuses, dangling refs, drifted counts, catalog mismatches). Read-only; produces a findings report. |
+| `breachsafe-implement` | Writing/extending code in any BQP repo — narrow, test-first, issue-referenced scope |
+| `breachsafe-quality-review` | Build/test/lint checks, PR diff audits, issue-resolution verification, doc-drift sweeps (audit-only) |
+| `breachsafe-release` | Supply-chain + OSS release-readiness audit: PyPI publish readiness, Trusted Publishing/OIDC, Sigstore/SLSA, OpenSSF |
+| `breachsafe-security-audit` | Crypto-correctness, side-channel, and dependency-soundness security review (audit-only) |
+| `breachsafe-pqc-pm` | Cross-repo sequencing/prioritization spanning BQP components |
+
+The five `breachsafe-*` skills are installed copies from the canonical library at `github.com/paul007ex/breachsafe-skills` — edit them there and re-run its `scripts/sync.py`, never edit the installed copies here (`scripts/drift_check.py` in that repo flags divergence).
 
 See `.claude/skills/README.md` for the catalog.
 
@@ -67,9 +78,12 @@ See `.claude/skills/README.md` for the catalog.
 
 | Version | Scope |
 |---|---|
-| **MVP 0.1 (now)** | TLS scanner only. Python via `uv`/`pipx`. Mac/Linux/Windows. No Docker. |
-| **MVP 0.2 - 0.6** | Cert (0.2), CBOM (0.3), SSH (0.4), config (0.5), source-code (0.6) scanners. |
-| **v1.0** | Full OSS release: PyPI publish, Docker image at `ghcr.io/breachsafe/qureddy`, signed artifacts, full docs, community-ready. |
+| **MVP 0.1** | Shipped 2026-04-26. TLS scanner. Python via `uv`/`pipx`. Mac/Linux/Windows. No Docker. |
+| **MVP 0.2** | Shipped (initial). Cert signature-algorithm detection + legacy-protocol sweep; full cert-chain/key-size analysis still open. |
+| **MVP 0.3** | Shipped (prototype). CBOM via `--format cbom`; hardening (deterministic bom-refs, full protocol inventory) in open issues. |
+| **MVP 0.4** | SSH scanner — shipped early as `scan ssh` (v0.2.0). |
+| **MVP 0.5 - 0.6** | Config (0.5) and source-code (0.6) scanners. Planned. |
+| **v1.0 (current push)** | Full OSS release: PyPI publish, Docker image at `ghcr.io/breachsafe/qureddy`, signed artifacts, full docs, community-ready. |
 | **P2** | Enterprise tier (cloud scanners, SaaS, SIEM integrations, RBAC). Docker is not the differentiator. |
 
 OpenSSF Best Practices Badge target: passing by MVP 0.6, silver by v1.0.
@@ -87,6 +101,8 @@ uv pip install -e ".[dev]"
 qureddy scan tls www.google.com
 qureddy scan tls 1.1.1.1:443 --sni one.one.one.one
 qureddy scan tls TARGET --format json
+qureddy scan tls TARGET --format cbom     # CycloneDX 1.6 CBOM
+qureddy scan ssh github.com               # SSH KEXINIT probe (no OpenSSL dependency)
 
 # Tier 1 quality gates (full suite incl. pip-audit, deptry, reuse-lint)
 just gates
