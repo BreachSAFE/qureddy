@@ -60,6 +60,7 @@ from qureddy.core.targets import parse_ssh_target, parse_target
 from qureddy.output.cbom import render_cbom
 from qureddy.output.console import render_rich
 from qureddy.output.json import render_json
+from qureddy.scanners.ssh.scanner import build_ssh_failure_result
 from qureddy.scanners.ssh.scanner import scan_ssh as _scan_ssh
 from qureddy.scanners.tls.cert_probe import (
     CertificateInfo,
@@ -497,7 +498,9 @@ def scan_tls(
             openssl_path=openssl,
             retry=RetryConfig(retries=retries, retry_delay=retry_delay, retry_on=retry_set),
         )
-        result, exit_code = _execute_scan(scanner, scan_target, timeout)
+        result, exit_code = _execute_scan(
+            scanner, scan_target, timeout, machine_format=machine_format
+        )
         _render(result, output_format, verbose, timeout)
         raise typer.Exit(code=exit_code)
     finally:
@@ -528,10 +531,49 @@ def _parse_cli_target(target: str, sni: str | None) -> ScanTarget:
         raise typer.Exit(code=EXIT_USAGE) from None
 
 
+def _stderr_merged_into_stdout() -> bool:
+    """True when fd 2 writes into the same non-tty open file as fd 1.
+
+    Detects genuine shell-level `2>&1` (dup2 on the real file descriptor
+    table): both streams resolve to the same device/inode and neither is
+    an interactive terminal. In-process stream substitutes without a
+    real file descriptor (CliRunner, pytest capture objects) report
+    False — there is no fd-level merge to corrupt.
+    """
+    try:
+        stdout_fd = sys.stdout.fileno()
+        stderr_fd = sys.stderr.fileno()
+        # A shared interactive tty is not a machine pipeline: nothing
+        # downstream parses stdout, and the operator should see the hint.
+        if os.isatty(stderr_fd):
+            return False
+        stdout_stat = os.fstat(stdout_fd)
+        stderr_stat = os.fstat(stderr_fd)
+    except (AttributeError, OSError, ValueError):
+        return False
+    return (stdout_stat.st_dev, stdout_stat.st_ino) == (stderr_stat.st_dev, stderr_stat.st_ino)
+
+
+def _echo_operator_diagnostic(message: str, *, machine_format: bool) -> None:
+    """Echo a failure diagnostic to stderr unless it would corrupt `2>&1`.
+
+    In `--format json`/`cbom` the stdout document plus the exit code carry
+    the failure (issue #30's machine-output contract); the stderr echo is
+    an operator courtesy (issue #274). Under fd-level `2>&1` that courtesy
+    would land inside the machine document, so it is suppressed there —
+    and only there. Rich mode always echoes.
+    """
+    if machine_format and _stderr_merged_into_stdout():
+        return
+    typer.echo(f"qureddy: {message}", err=True)
+
+
 def _execute_scan(
     scanner: TLSScanner,
     scan_target: ScanTarget,
     timeout: int,
+    *,
+    machine_format: bool,
 ) -> tuple[ScanResult, int]:
     """Run the scan; map local-capability + scan failures to exit codes.
 
@@ -555,9 +597,11 @@ def _execute_scan(
         # suppressed the warning above — the only user-facing report of
         # this failure — leaving exit 3 with an empty stderr. The
         # actionable message (the exception text carries the fix-it
-        # instructions) must reach stderr directly, exempt from the
-        # quiet default, matching the exit-2/exit-4 paths.
-        typer.echo(f"qureddy: {exc}", err=True)
+        # instructions) reaches stderr directly, exempt from the quiet
+        # default — except under fd-level `2>&1`, where it would corrupt
+        # the machine document (issue #30; failure_category plus the
+        # dependency details carry the failure in the document there).
+        _echo_operator_diagnostic(str(exc), machine_format=machine_format)
         # Consume exc.dependency directly. Re-probing would waste a
         # subprocess and open a TOCTOU window.
         dependency = exc.dependency or OpenSSLDependency(
@@ -866,16 +910,27 @@ def scan_ssh_cmd(
     except TargetParseError as exc:
         typer.echo(f"qureddy: invalid target: {exc}", err=True)
         raise typer.Exit(code=EXIT_USAGE) from None
+    exit_code = EXIT_OK
     try:
         result = _scan_ssh(scan_target, timeout_seconds=timeout)
     except _SSHProbeError as exc:
         # Present a clean, classified message on stderr — never the raw
         # OSError/errno. Exit 2 (target scan failed), same contract as tls.
-        typer.echo(f"qureddy: ssh scan failed: {_clean_ssh_error(str(exc))}", err=True)
-        raise typer.Exit(code=EXIT_TARGET_FAILED) from None
+        cleaned = _clean_ssh_error(str(exc))
+        _echo_operator_diagnostic(f"ssh scan failed: {cleaned}", machine_format=machine_format)
+        if not machine_format:
+            raise typer.Exit(code=EXIT_TARGET_FAILED) from None
+        # Machine formats emit exactly one parseable document even on
+        # probe failure (issue #30): the failure travels in the document
+        # (summary.failure_category) plus the exit code, matching the
+        # `scan tls` failure paths instead of leaving stdout empty.
+        result = build_ssh_failure_result(scan_target, exc, cleaned_error=cleaned)
+        exit_code = EXIT_TARGET_FAILED
     if fmt is OutputFormat.JSON:
         render_json(result, sys.stdout)
     elif fmt is OutputFormat.CBOM:
         render_cbom(result, sys.stdout, certificate=None)
     else:
         render_rich(result, sys.stdout, verbosity=verbose)
+    if exit_code != EXIT_OK:
+        raise typer.Exit(code=exit_code)

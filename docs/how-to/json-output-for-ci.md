@@ -125,6 +125,22 @@ qureddy scan tls www.google.com --format json --json-logs > scan.json 2> scan.lo
 # scan.log now contains one JSON object per line
 ```
 
+## Failure diagnostics and `2>&1`
+
+In `--format json` and `--format cbom`, stdout always carries exactly one parseable document — including when the scan fails. The failure itself travels in the document (`summary.failure_category`, plus the `dependencies` entry for local OpenSSL problems) and in the process exit code; parse those, not stderr.
+
+On failure, a one-line operator hint (`qureddy: ...`) is also written to stderr. When stderr is merged into a non-terminal stdout at the file-descriptor level (`2>&1`), that hint is suppressed so the document stays parseable:
+
+```bash
+# Separate streams: document on stdout, hint on stderr
+qureddy scan tls api.example.com --format json > scan.json 2> scan.log
+
+# Merged streams: still exactly one parseable document
+qureddy scan tls api.example.com --format json 2>&1 | jq '.summary.failure_category'
+```
+
+Explicit `-v`/`-vv`/`-vvv` re-enables verbose logs even in machine formats. If you use them, keep the streams separate (`2> scan.log`) — verbose logs under `2>&1` will corrupt the document, by design: asking for diagnostics means accepting they need somewhere separate to go.
+
 ## Schema stability
 
 The top-level shape (`schema_version: "qureddy.scan.v1"`) will not change without a version bump. Additive changes to nested objects (new optional fields) can land in v1; breaking changes bump to `v2`.

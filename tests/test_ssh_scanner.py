@@ -7,11 +7,12 @@ from __future__ import annotations
 import io
 from unittest.mock import patch
 
-from qureddy.core.models import Readiness
+from qureddy.core.errors import SSHProbeError
+from qureddy.core.models import FailureCategory, Readiness
 from qureddy.core.targets import parse_ssh_target
 from qureddy.output.console import render_rich
 from qureddy.scanners.ssh.probe import SSHOffer
-from qureddy.scanners.ssh.scanner import scan_ssh
+from qureddy.scanners.ssh.scanner import build_ssh_failure_result, scan_ssh
 
 
 def _run(kex: tuple[str, ...], host_keys: tuple[str, ...]):
@@ -55,6 +56,40 @@ def test_scanner_name_and_scheme() -> None:
 def test_sntrup_also_counts_as_hybrid() -> None:
     r = _run(("sntrup761x25519-sha512@openssh.com", "curve25519-sha256"), ("ssh-ed25519",))
     assert r.summary.readiness is Readiness.TRANSITIONAL_HYBRID
+
+
+def _failure_result(error: SSHProbeError):
+    target = parse_ssh_target("test.invalid")
+    return build_ssh_failure_result(target, error, cleaned_error="probe failed (cleaned)")
+
+
+def test_failure_result_connect_cause_maps_to_target_connect_failed() -> None:
+    """The probe raises connect failures `from` OSError/TimeoutError."""
+    error = SSHProbeError("ssh probe of test.invalid:22 failed: connection refused")
+    error.__cause__ = ConnectionRefusedError(61, "Connection refused")
+    result = _failure_result(error)
+    assert result.summary.failure_category is FailureCategory.TARGET_CONNECT_FAILED
+    assert result.evidence[0].failure_category is FailureCategory.TARGET_CONNECT_FAILED
+
+
+def test_failure_result_malformed_response_maps_to_parse_ambiguous() -> None:
+    """Malformed-response failures are raised without a cause chain."""
+    result = _failure_result(SSHProbeError("response is not an SSH_MSG_KEXINIT"))
+    assert result.summary.failure_category is FailureCategory.PARSE_AMBIGUOUS
+
+
+def test_failure_result_shape_matches_ssh_scan_contract() -> None:
+    """Failure document mirrors the success shape: ssh scanner, no findings."""
+    error = SSHProbeError("ssh probe of test.invalid:22 failed: timed out")
+    error.__cause__ = TimeoutError()
+    result = _failure_result(error)
+    assert result.scan.scanner_name == "ssh"
+    assert result.scan.status == "target_connect_failed"
+    assert result.dependencies == ()  # SSH has no openssl dependency
+    assert result.findings == ()
+    assert result.summary.readiness is Readiness.UNKNOWN
+    assert result.summary.finding_count == 0
+    assert result.evidence[0].notes == ("probe failed (cleaned)",)
 
 
 def test_ssh_rich_output_has_no_tls_cert_recommendation() -> None:

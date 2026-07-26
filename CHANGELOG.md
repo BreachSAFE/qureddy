@@ -32,6 +32,8 @@ OpenSSF Best Practices Badge target: passing tier by MVP 0.6, silver by v1.0.
 
 ### Fixed
 
+- `--format json`/`--format cbom` stdout now stays exactly one parseable document under genuine shell `2>&1`: the failure-path operator hint is suppressed when stderr is fd-merged into a non-terminal stdout, and only there — separate streams and rich mode keep the actionable stderr message from issue #274. Part of [#30](https://github.com/breachsafe/qureddy/issues/30).
+- `scan ssh` probe failures in `--format json`/`cbom` now emit a failure-state ScanResult document on stdout (exit 2 unchanged) instead of leaving stdout completely empty, matching the `scan tls` failure contract. Part of [#30](https://github.com/breachsafe/qureddy/issues/30).
 - `--version` / `-V` on a subcommand (e.g. `qureddy scan tls --version`) now prints a clear error pointing the user at the root-level form, instead of Click's default cryptic "no such option" message. Closes [#64](https://github.com/breachsafe/qureddy/issues/64). PR [#65](https://github.com/breachsafe/qureddy/pull/65).
 - `--v`, `--vv`, `--vvv`, `--verbos` typos at the root level now produce a helpful hint pointing the user at the single-dash POSIX-stacking form (`-v`, `-vv`, `-vvv`), instead of Click's default "no such option" message. Closes [#74](https://github.com/breachsafe/qureddy/issues/74). PR [#80](https://github.com/breachsafe/qureddy/pull/80).
 - TLS scanner parser now strictly validates input contract (no trailing whitespace surprises, no NUL-byte injection paths, no silent fallback on unparseable group lines). Closes [#8](https://github.com/breachsafe/qureddy/issues/8) and [#9](https://github.com/breachsafe/qureddy/issues/9). PR [#87](https://github.com/breachsafe/qureddy/pull/87).
