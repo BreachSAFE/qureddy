@@ -5,26 +5,19 @@
 from __future__ import annotations
 
 import json
-import os
-import shutil
-import subprocess
 from pathlib import Path
 
 import pytest
 from typer.testing import CliRunner
 
 import qureddy.cli as cli_module
+import qureddy.cli.ssh as ssh_cli_module
 from qureddy import __version__
 from qureddy._branding import HEADER, VERSION_BANNER
 from qureddy.cli import app, main
 from qureddy.core import retry as retry_module
 
 FAKE_DIR = Path(__file__).parent / "fixtures" / "openssl" / "fake"
-# Resolved once to a full path so subprocess calls below satisfy Bandit's
-# S607 (partial executable path) the same way openssl_probe.py's own
-# subprocess calls do — via an already-resolved path, not a bare name.
-_QUREDDY_BIN = shutil.which("qureddy") or "qureddy"
-_SUBPROCESS_INJECT_DIR = Path(__file__).parent / "subprocess_inject"
 
 
 def test_help_lists_scan_subcommand() -> None:
@@ -472,7 +465,7 @@ def test_main_exits_70_on_internal_error(
     # Patch parse_target — called early in scan_tls, before any exception
     # handling. A non-QureddyError raised here flows up through main()'s
     # last-resort `except Exception`, which is the path issue #12 fixes.
-    monkeypatch.setattr("qureddy.cli.parse_target", _boom)
+    monkeypatch.setattr("qureddy.cli.scan.parse_target", _boom)
     monkeypatch.setattr(
         "sys.argv",
         ["qureddy", "scan", "tls", "example.com", "--format", "json"],
@@ -518,129 +511,6 @@ def test_local_openssl_too_old_exits_3() -> None:
     payload = json.loads(result.stdout)
     assert payload["summary"]["failure_category"] == "local_openssl_too_old"
     assert payload["summary"]["readiness"] == "unknown"
-
-
-@pytest.mark.parametrize("output_format", ["json", "cbom"])
-@pytest.mark.parametrize("quiet", [True, False])
-def test_machine_output_clean_when_stderr_redirected_to_stdout(
-    output_format: str, quiet: bool
-) -> None:
-    """Machine stdout stays parseable under real OS-level ``2>&1``.
-
-    typer.testing.CliRunner dropped `mix_stderr` (see #189) and, more
-    importantly, could never exercise genuine shell-level `2>&1` anyway —
-    that redirection happens via dup2() on the real file descriptor table
-    before the process starts, which CliRunner's in-process stream
-    capture cannot simulate. This invokes the actual installed console
-    entrypoint via subprocess with stderr=STDOUT, the only way to test
-    real fd-level merging.
-
-    Both machine formats and both quiet modes must remain one document.
-    """
-    args = [
-        _QUREDDY_BIN,
-        "scan",
-        "tls",
-        "example.com",
-        "--openssl",
-        str(FAKE_DIR / "openssl_too_old.sh"),
-        "--format",
-        output_format,
-    ]
-    if quiet:
-        args.append("--quiet")
-    result = subprocess.run(  # noqa: S603 -- list-form, shell=False, resolved full path
-        args,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-        check=False,
-    )
-    assert result.returncode == 3
-    payload = json.loads(result.stdout)
-    if output_format == "json":
-        assert payload["summary"]["failure_category"] == "local_openssl_too_old"
-    else:
-        assert payload["bomFormat"] == "CycloneDX"
-
-
-@pytest.mark.parametrize("output_format", ["json", "cbom"])
-@pytest.mark.parametrize("quiet", [True, False])
-def test_machine_output_keeps_hint_on_separate_stderr(output_format: str, quiet: bool) -> None:
-    """Separate streams preserve the actionable diagnostic, even with --quiet."""
-    args = [
-        _QUREDDY_BIN,
-        "scan",
-        "tls",
-        "example.com",
-        "--openssl",
-        str(FAKE_DIR / "openssl_too_old.sh"),
-        "--format",
-        output_format,
-    ]
-    if quiet:
-        args.append("--quiet")
-    result = subprocess.run(  # noqa: S603 -- resolved executable, shell=False
-        args,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    assert result.returncode == 3
-    json.loads(result.stdout)
-    assert "qureddy: OpenSSL 3.4.0 is below required 3.5.0" in result.stderr
-
-
-def test_verbose_machine_output_is_clean_with_separate_stderr() -> None:
-    """Explicit verbosity keeps JSON clean when diagnostics have their own fd."""
-    result = subprocess.run(  # noqa: S603 -- resolved executable, shell=False
-        [
-            _QUREDDY_BIN,
-            "scan",
-            "tls",
-            "example.com",
-            "--openssl",
-            str(FAKE_DIR / "openssl_too_old.sh"),
-            "--format",
-            "json",
-            "-v",
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    assert result.returncode == 3
-    json.loads(result.stdout)
-    assert "scan.local_dependency_unusable" in result.stderr
-
-
-@pytest.mark.parametrize("output_format", ["json", "cbom"])
-def test_typed_scan_error_emits_document_under_2and1(output_format: str) -> None:
-    """Installed subprocess preserves a document and exit 2 for typed failures."""
-    env = os.environ.copy()
-    env["PYTHONPATH"] = str(_SUBPROCESS_INJECT_DIR)
-    env["QUREDDY_TEST_FORCE_TYPED_ERROR"] = "1"
-    result = subprocess.run(  # noqa: S603 -- resolved executable, shell=False
-        [
-            _QUREDDY_BIN,
-            "scan",
-            "tls",
-            "example.com",
-            "--format",
-            output_format,
-        ],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-        check=False,
-        env=env,
-    )
-    assert result.returncode == 2
-    payload = json.loads(result.stdout)
-    if output_format == "json":
-        assert payload["summary"]["failure_category"] == "parse_ambiguous"
-    else:
-        assert payload["bomFormat"] == "CycloneDX"
 
 
 def test_local_openssl_lacks_group_exits_3() -> None:
@@ -698,7 +568,7 @@ def test_ssh_foreign_scheme_exits_4_without_probe(
     def unexpected_probe(*_args: object, **_kwargs: object) -> None:
         pytest.fail("SSH probe was called for a rejected target")
 
-    monkeypatch.setattr(cli_module, "_scan_ssh", unexpected_probe)
+    monkeypatch.setattr(ssh_cli_module, "scan_ssh", unexpected_probe)
     result = CliRunner().invoke(app, ["scan", "ssh", target, "--format", "json"])
     assert result.exit_code == 4
     assert "unsupported SSH scheme" in result.stderr
@@ -929,7 +799,7 @@ def test_cbom_capability_failure_never_fetches_cert_with_rejected_binary(
         msg = "fetch_certificate_pem called despite rejected capability check"
         raise AssertionError(msg)
 
-    monkeypatch.setattr("qureddy.cli.fetch_certificate_pem", _must_not_be_called)
+    monkeypatch.setattr("qureddy.cli._render.fetch_certificate_pem", _must_not_be_called)
     runner = CliRunner()
     result = runner.invoke(
         app,

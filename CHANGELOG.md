@@ -38,6 +38,7 @@ OpenSSF Best Practices Badge target: passing tier by MVP 0.6, silver by v1.0.
 
 ### Changed
 
+- `src/qureddy/cli.py` (936 lines) split into the `src/qureddy/cli/` package per [ADR 0005](docs/contributors/adr/0005-splitting-oversized-files.md) (now Accepted): `_errors`, `_execute`, `_help`, `_options`, `_render`, `main`, `scan`, `ssh`. No behavior change — `qureddy.cli:main` entry point, `from qureddy.cli import app`, all help output, and every exit code are identical; ADR 0005's `_fail(message, code)` helper consolidation included. Part of [#30](https://github.com/breachsafe/qureddy/issues/30).
 - Engineering and agent docs moved from `docs/` root into `docs/contributors/` per Diátaxis. `git mv` preserves blame. See ADR 0002 for the full move table.
 - All internal markdown links updated to the new paths.
 

@@ -6,11 +6,13 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
 from qureddy.core.models import (
     Asset,
     Confidence,
     Evidence,
+    FailureCategory,
     Finding,
     ObservationType,
     Readiness,
@@ -22,6 +24,9 @@ from qureddy.core.models import (
 )
 from qureddy.scanners.ssh import classify
 from qureddy.scanners.ssh.probe import read_kexinit_offer
+
+if TYPE_CHECKING:
+    from qureddy.core.errors import SSHProbeError
 
 _DEFAULT_SSH_PORT = 22
 # readiness rollup precedence (mirrors _summary.py)
@@ -38,18 +43,71 @@ def _uid(prefix: str) -> str:
     return f"{prefix}-{uuid.uuid4().hex[:12]}"
 
 
-def scan_ssh(target: ScanTarget, *, timeout_seconds: int = 8) -> ScanResult:
-    """Scan an SSH endpoint for post-quantum readiness. Raises SSHProbeError on probe failure."""
-    started = datetime.now(UTC)
-    offer = read_kexinit_offer(target.host, target.port, timeout_seconds=timeout_seconds)
-
-    asset = Asset(
+def _build_ssh_asset(target: ScanTarget) -> Asset:
+    """Build the single ssh.endpoint asset every SSH ScanResult carries."""
+    return Asset(
         id=_uid("asset"),
         asset_type="ssh.endpoint",
         locator=target.locator,
         display_name=f"{target.host}:{target.port}",
         protocol="ssh",
     )
+
+
+def build_ssh_failure_result(
+    target: ScanTarget,
+    error: SSHProbeError,
+    *,
+    cleaned_error: str,
+) -> ScanResult:
+    """Build a structured result for an SSH probe failure."""
+    started = datetime.now(UTC)
+    failure_category = (
+        FailureCategory.TARGET_CONNECT_FAILED
+        if isinstance(error.__cause__, OSError | TimeoutError)
+        else FailureCategory.PARSE_AMBIGUOUS
+    )
+    asset = _build_ssh_asset(target)
+    evidence = Evidence(
+        id=_uid("ev"),
+        asset_id=asset.id,
+        evidence_type="ssh.kex",
+        observation_type=ObservationType.NOT_TESTABLE,
+        source="qureddy.scanners.ssh.probe",
+        protocol="ssh",
+        failure_category=failure_category,
+        notes=(cleaned_error,),
+    )
+    return ScanResult(
+        scan=ScanMetadata(
+            scan_id=_uid("scan"),
+            started_at=started,
+            completed_at=datetime.now(UTC),
+            scanner_name="ssh",
+            status=failure_category.value,
+            total_attempts=1,
+        ),
+        target=target,
+        dependencies=(),
+        assets=(asset,),
+        evidence=(evidence,),
+        findings=(),
+        summary=ScanSummary(
+            target=target.locator,
+            finding_count=0,
+            highest_severity=None,
+            readiness=Readiness.UNKNOWN,
+            failure_category=failure_category,
+        ),
+    )
+
+
+def scan_ssh(target: ScanTarget, *, timeout_seconds: int = 8) -> ScanResult:
+    """Scan an SSH endpoint for post-quantum readiness. Raises SSHProbeError on probe failure."""
+    started = datetime.now(UTC)
+    offer = read_kexinit_offer(target.host, target.port, timeout_seconds=timeout_seconds)
+
+    asset = _build_ssh_asset(target)
 
     evidence: list[Evidence] = []
     findings: list[Finding] = []
