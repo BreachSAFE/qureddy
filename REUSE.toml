@@ -59,6 +59,17 @@ SPDX-FileCopyrightText = "2026 BreachSAFE"
 SPDX-License-Identifier = "Apache-2.0"
 
 [[annotations]]
+# Codex-layout copies of the same skills library as .claude/skills/,
+# installed from the canonical paul007ex/breachsafe-skills repo. Same
+# reasoning as the .claude/** block: annotate here so installed copies
+# stay byte-identical to the library (its drift_check compares content;
+# adding inline headers per-repo would flag every file as drifted).
+path = ".agents/**"
+precedence = "override"
+SPDX-FileCopyrightText = "2026 BreachSAFE"
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
 path = "tests/fixtures/**"
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 BreachSAFE"
