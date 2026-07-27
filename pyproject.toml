@@ -50,7 +50,7 @@ classifiers = [
 # (qureddy#61) — revisit the floor when that lands.
 dependencies = [
     "typer>=0.23.1,<0.27",
-    "click>=8.3.3",
+    "click>=8.3.3,<8.5",
     "rich>=13.7",
     "pydantic>=2.7",
     "structlog>=24.1",

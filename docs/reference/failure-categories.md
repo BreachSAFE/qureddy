@@ -13,7 +13,7 @@ flowchart LR
     fail([Failure]) --> kind{Detected where?}
 
     kind -->|capability check| local["LOCAL_OPENSSL_MISSING<br/>LOCAL_OPENSSL_BROKEN<br/>LOCAL_OPENSSL_VERSION_UNREADABLE<br/>LOCAL_OPENSSL_TOO_OLD<br/>LOCAL_OPENSSL_LACKS_GROUP"]
-    kind -->|probe<br/>(subprocess + stderr)| probe_cat["TARGET_CONNECT_FAILED<br/>TLS_HANDSHAKE_FAILED<br/>SNI_REQUIRED_OR_WRONG<br/>MIDDLEBOX_OR_MTU_FAILURE"]
+    kind -->|scan / probe<br/>(subprocess + stderr)| probe_cat["TARGET_SCAN_FAILED<br/>TARGET_CONNECT_FAILED<br/>TLS_HANDSHAKE_FAILED<br/>SNI_REQUIRED_OR_WRONG<br/>MIDDLEBOX_OR_MTU_FAILURE"]
     kind -->|parser| parse_cat["PARSE_NO_GROUP<br/>PARSE_AMBIGUOUS<br/>UNEXPECTED_GROUP"]
 
     local --> exit3[Exit 3<br/>local dependency]
@@ -36,6 +36,7 @@ flowchart LR
 | `local_openssl_version_unreadable` | capability check | 3 | no | OpenSSL exits successfully but its version output cannot be parsed. Confirm the binary is OpenSSL-compatible and prints a standard `openssl version` line. |
 | `local_openssl_too_old` | capability check | 3 | no | OpenSSL is below 3.5.0. Hybrid PQ groups landed in 3.5. |
 | `local_openssl_lacks_group` | capability check | 3 | no | OpenSSL 3.5+ is present but doesn't list `X25519MLKEM768` as a TLS 1.3 group. The build was compiled without PQ support. |
+| `target_scan_failed` | scan | 2 | no | A typed scan error occurred before QuReddy could assign a more specific target, TLS, or parser category. The original error is preserved in the result note. |
 | `target_connect_failed` | probe | 2 | **yes** | TCP-level failure: connection refused, DNS lookup failed, network unreachable, no route to host, operation timed out. |
 | `tls_handshake_failed` | probe | 2 | **yes** | TLS handshake failed for an unidentified reason. Generic fallback when stderr doesn't match a more specific pattern. |
 | `sni_required_or_wrong` | probe | 2 | no | Server returned `unrecognized_name` or required SNI was missing. Re-run with `--sni`. |
@@ -62,7 +63,7 @@ parse_no_group
 The category prefix tells you where the failure was detected:
 
 - **`local_openssl_*`** — detected by the capability check before any target probe runs. Exit 3.
-- **`target_connect_*`, `tls_*`, `sni_*`, `middlebox_*`** — detected by the probe (subprocess + stderr classification). Exit 2.
+- **`target_scan_*`, `target_connect_*`, `tls_*`, `sni_*`, `middlebox_*`** — detected during scan execution or by the probe (subprocess + stderr classification). Exit 2.
 - **`parse_*`, `unexpected_*`** — detected by the parser after a successful probe. Exit 2.
 
 ## How `--retry-on` interacts

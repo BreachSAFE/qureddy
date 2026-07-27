@@ -85,7 +85,7 @@ def _execute_scan(
             raise typer.Exit(code=EXIT_TARGET_FAILED) from None
         result = build_scan_failure_result(
             scan_target,
-            FailureCategory.PARSE_AMBIGUOUS,
+            FailureCategory.TARGET_SCAN_FAILED,
             note=str(exc),
         )
         exit_code = EXIT_TARGET_FAILED

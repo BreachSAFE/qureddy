@@ -379,7 +379,7 @@ jobs:
           ignore-unfixed: true
           severity: HIGH,CRITICAL
           format: table
-          exit-code: 0  # do not block PRs at MVP scale; promote to blocking at v1.0
+          exit-code: 1
           skip-dirs: scratch,.git
 
   # ===========================================================================

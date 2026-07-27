@@ -143,7 +143,7 @@ def test_typed_scan_error_emits_document_under_2and1(output_format: str) -> None
     assert result.returncode == 2
     payload = json.loads(result.stdout)
     if output_format == "json":
-        assert payload["summary"]["failure_category"] == "parse_ambiguous"
+        assert payload["summary"]["failure_category"] == "target_scan_failed"
     else:
         assert payload["bomFormat"] == "CycloneDX"
 
