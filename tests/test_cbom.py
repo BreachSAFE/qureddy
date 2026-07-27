@@ -130,7 +130,7 @@ class TestCycloneDx17Contract:
         tools_by_ref = {tool["bom-ref"]: tool for tool in tools}
         deps_by_ref = {d["ref"]: d for d in payload["dependencies"]}
 
-        assert tools_by_ref["tool/qureddy"]["version"] == "0.2.0"
+        assert tools_by_ref["tool/qureddy"]["version"] == "0.2.1"
         assert tools_by_ref["tool/openssl"]["version"] == "3.6.3"
         assert "crypto-library/openssl" not in json.dumps(payload)
         assert "dependsOn" not in deps_by_ref["endpoint"]

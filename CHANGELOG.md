@@ -1,7 +1,7 @@
 # Changelog
 
 [![Status: Alpha](https://img.shields.io/badge/status-alpha-blue?style=flat-square)](https://github.com/breachsafe/qureddy)
-[![Version](https://img.shields.io/badge/version-0.2.0-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.1-blue?style=flat-square)](CHANGELOG.md)
 [![Keep a Changelog](https://img.shields.io/badge/keep%20a%20changelog-1.1.0-orange?style=flat-square)](https://keepachangelog.com/en/1.1.0/)
 [![SemVer](https://img.shields.io/badge/SemVer-2.0.0-blue?style=flat-square)](https://semver.org/spec/v2.0.0.html)
 
@@ -11,8 +11,18 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Contents
 
+- [0.2.1](#021---2026-07-27)
 - [0.2.0](#020---2026-07-27)
 - [0.1.0](#010---2026-05-10)
+
+## [0.2.1] - 2026-07-27
+
+### Fixed
+
+- Align the published package metadata with the supported Python range of
+  `>=3.12`, including Python 3.13.
+- Rebuild release artifacts from the tagged source tree so package metadata,
+  documentation, and CI agree.
 
 ## [0.2.0] - 2026-07-27
 
@@ -51,7 +61,7 @@ platforms.
 ### Changed
 
 - The package name is `breachsafe-qureddy`, the installed command is
-  `qureddy`, and the version is single-sourced as `0.2.0`.
+  `qureddy`, and the package version is single-sourced in `pyproject.toml`.
 - Canonical repository, issue, documentation, and package metadata URLs now
   use `github.com/breachsafe/qureddy`. See
   [PR #21](https://github.com/breachsafe/qureddy/pull/21).
