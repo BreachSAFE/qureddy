@@ -23,6 +23,7 @@ TOOLS_MANIFEST = ROOT / "scripts" / "release-tools.json"
 COMMAND_TIMEOUT = 600
 DOWNLOAD_TIMEOUT = 120
 EXPECTED_ARTIFACT_COUNT = 2
+FAILURE_INJECTION_ENV = "QUREDDY_RELEASE_GATE_TEST_FAIL"
 
 
 def sha256(path: Path) -> str:
@@ -55,7 +56,13 @@ def _download_https(url: str, destination: Path) -> None:
 
 
 def download_tool(name: str, directory: Path) -> Path:
-    """Download, checksum, safely extract, and return a pinned tool."""
+    """Download, checksum, freshly extract, and return a pinned tool.
+
+    The archive is the cache authority because its digest is pinned in the
+    repository. Never trust an executable left in the extraction directory:
+    re-extract from the rehashed archive on every run, validate the shape, and
+    only then replace the prior extraction.
+    """
     directory.mkdir(parents=True, exist_ok=True)
     manifest = json.loads(TOOLS_MANIFEST.read_text(encoding="utf-8"))[name]
     key = platform_key()
@@ -74,15 +81,22 @@ def download_tool(name: str, directory: Path) -> Path:
     if actual != expected:
         raise RuntimeError(f"{name} checksum mismatch: expected {expected}, got {actual}")
     unpacked = directory / name
-    if not unpacked.exists():
-        unpacked.mkdir()
-        _extract_archive(name, archive, unpacked)
+    fresh = directory / f".{name}-fresh"
+    if fresh.exists():
+        shutil.rmtree(fresh)
+    fresh.mkdir()
+    _extract_archive(name, archive, fresh)
     executable = f"{name}.exe" if platform.system() == "Windows" else name
-    matches = list(unpacked.rglob(executable))
+    matches = list(fresh.rglob(executable))
     if len(matches) != 1:
+        shutil.rmtree(fresh)
         raise RuntimeError(f"{name} archive did not contain exactly one executable")
     matches[0].chmod(0o755)
-    return matches[0]
+    relative_executable = matches[0].relative_to(fresh)
+    if unpacked.exists():
+        shutil.rmtree(unpacked)
+    fresh.replace(unpacked)
+    return unpacked / relative_executable
 
 
 def _extract_archive(name: str, archive: Path, destination: Path) -> None:
@@ -148,6 +162,13 @@ class Gate:
     ) -> None:
         """Run and record one blocking command."""
         started = datetime.now(UTC)
+        if self.environment.get(FAILURE_INJECTION_ENV) == name:
+            record = self._record(name, command, started, 97, "fail")
+            record["stdout_sha256"] = hashlib.sha256(b"").hexdigest()
+            record["stderr_sha256"] = hashlib.sha256(b"injected failure").hexdigest()
+            record["duration_seconds"] = (datetime.now(UTC) - started).total_seconds()
+            self.commands.append(record)
+            raise RuntimeError(f"{name} failed: injected release-gate test failure")
         try:
             completed = subprocess.run(  # noqa: S603 - fixed repository gate definitions.
                 command,

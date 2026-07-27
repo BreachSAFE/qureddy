@@ -32,7 +32,8 @@ def _load_script(name: str) -> ModuleType:
 release_support = _load_script("release_support")
 release_gate = _load_script("release_gate")
 size_policy = _load_script("check_size_policy")
-CRITICAL_GATES = (
+STATIC_GATES = (
+    "sync",
     "ruff-lint",
     "ruff-format",
     "mypy",
@@ -43,11 +44,29 @@ CRITICAL_GATES = (
     "deptry",
     "reuse",
     "secrets",
+    "runtime-export",
+    "pip-audit",
+)
+BUILD_GATES = (
     "build",
     "twine",
+    "smoke-venv",
     "smoke-install",
+    "smoke-pip-check",
+    "smoke-console",
+    "smoke-version",
+    "smoke-tls-help",
+    "smoke-ssh-help",
+    "smoke-usage-error",
+    "smoke-tls-scan",
+    "smoke-ssh-scan",
+    "sdist-venv",
+    "sdist-install",
+    "sdist-pip-check",
+    "conformance-dependencies",
     "cbom-conformance",
 )
+CRITICAL_GATES = (*STATIC_GATES, *BUILD_GATES)
 
 
 def test_dirty_worktree_fails_closed(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -66,6 +85,58 @@ def test_each_critical_command_fails_closed(
     with pytest.raises(RuntimeError, match="got 9"):
         gate.run(gate_name, ["false"])
     assert gate.commands[0]["exit_code"] == 9
+
+
+@pytest.mark.parametrize("gate_name", CRITICAL_GATES)
+def test_actual_orchestrator_fails_closed_at_each_gate(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, gate_name: str
+) -> None:
+    def succeed(command: list[str], **_kwargs: object) -> subprocess.CompletedProcess[str]:
+        expected = (
+            4
+            if command[-2:] == ["scan", "tls"]
+            else 2
+            if "scan" in command and "ssh" in command and "--format" in command
+            else 0
+        )
+        return subprocess.CompletedProcess(command, expected, "", "")
+
+    evidence = tmp_path / "evidence" / "manifest.json"
+    evidence.parent.mkdir()
+    dist = evidence.parent / "dist"
+    dist.mkdir()
+    (dist / "candidate.whl").touch()
+    (dist / "candidate.tar.gz").touch()
+    cyclonedx = tmp_path / "cyclonedx"
+    cyclonedx.write_bytes(b"pinned test executable")
+    monkeypatch.setattr(release_support.subprocess, "run", succeed)
+    monkeypatch.setattr(release_gate, "inspect_archives", lambda _artifacts: None)
+    monkeypatch.setattr(
+        release_gate,
+        "download_cyclonedx",
+        lambda _cache: (cyclonedx, "linux-x64"),
+    )
+    gate = release_support.Gate(
+        evidence,
+        {release_support.FAILURE_INJECTION_ENV: gate_name},
+        release_support.locked_versions("abc"),
+    )
+
+    def run_orchestrator() -> None:
+        if gate_name in STATIC_GATES:
+            release_gate._static_commands(  # noqa: SLF001
+                tmp_path / "uv", tmp_path / "gitleaks", gate
+            )
+        else:
+            release_gate._build_and_conformance(  # noqa: SLF001
+                tmp_path / "uv", gate, tmp_path / "tools"
+            )
+
+    with pytest.raises(RuntimeError, match=f"{gate_name} failed: injected"):
+        run_orchestrator()
+    assert gate.commands[-1]["name"] == gate_name
+    assert gate.commands[-1]["status"] == "fail"
+    assert gate.commands[-1]["exit_code"] == 97
 
 
 def test_timeout_is_recorded_and_raised(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -153,6 +224,44 @@ def test_tool_download_rejects_checksum_mismatch(
     )
     with pytest.raises(RuntimeError, match="checksum mismatch"):
         release_support.download_tool("uv", tmp_path / "download")
+
+
+def test_tool_cache_reextracts_verified_archive(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    cache = tmp_path / "cache"
+    cache.mkdir()
+    archive = cache / "uv.tar.gz"
+    payload = b"verified executable"
+    with tarfile.open(archive, "w:gz") as bundle:
+        member = tarfile.TarInfo("uv-release/uv")
+        member.size = len(payload)
+        bundle.addfile(member, BytesIO(payload))
+    manifest = tmp_path / "tools.json"
+    manifest.write_text(
+        json.dumps(
+            {
+                "uv": {
+                    "version": "0.11.32",
+                    "assets": {
+                        "linux-x64": [archive.name, release_support.sha256(archive)],
+                    },
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    stale = cache / "uv" / "uv"
+    stale.parent.mkdir()
+    stale.write_bytes(b"tampered cached executable")
+    monkeypatch.setattr(release_support, "TOOLS_MANIFEST", manifest)
+    monkeypatch.setattr(release_support, "platform_key", lambda: "linux-x64")
+    monkeypatch.setattr(release_support.platform, "system", lambda: "Linux")
+
+    executable = release_support.download_tool("uv", cache)
+
+    assert executable.read_bytes() == payload
+    assert not (cache / ".uv-fresh").exists()
 
 
 def test_gitleaks_false_positive_classification_is_exactly_scoped() -> None:
