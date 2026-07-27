@@ -29,7 +29,8 @@
 
 Publishing to PyPI is the project's first public-installability event. It's irreversible (every version stays on PyPI forever), it sets first impressions for every operator who `pip install`s the tool, and it touches code, docs, infra, and external outreach. That's plan-shaped, not issue-shaped.
 
-This document is the canonical reference for the launch. Issues track individual tasks; this doc explains how they connect.
+This document was the original connecting reference for the launch. The public
+release issues now define the current gates, order, and authority.
 
 ## Pre-launch gate (the "rock-solid" bar)
 

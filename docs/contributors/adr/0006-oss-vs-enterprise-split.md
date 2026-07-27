@@ -36,7 +36,10 @@ Anything that requires understanding cryptography — algorithms, parsers, verdi
 
 **OSS forever (Apache 2.0, no feature gates):**
 
-- All scanners — TLS (shipped), certificate (MVP 0.2), CBOM (MVP 0.3), SSH (MVP 0.4), local config (MVP 0.5), source code (MVP 0.6)
+- All scanners. TLS and SSH are shipped; certificate, local configuration,
+  and source-code scanners remain planned.
+- All output formats. Rich console, `qureddy.scan.v1` JSON, and CycloneDX 1.7
+  CBOM are shipped.
 - All shipped output formats, currently Rich console, JSON, and CycloneDX 1.7 CBOM
 - Single-target operation — `qureddy scan tls foo.com` and equivalents for every scanner
 - All policy rules — the hardcoded MVP 0.1 rules and their evolution

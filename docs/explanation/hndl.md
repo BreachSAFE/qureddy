@@ -91,4 +91,4 @@ perform remediation.
 - [Why hybrid post-quantum](why-hybrid-pq.md)
 - [Evidence honesty](evidence-honesty.md)
 - [Threat model](threat-model.md)
-- [NIST migration to post-quantum cryptography project](https://csrc.nist.gov/projects/post-quantum-cryptography/migration)
+- [NIST post-quantum cryptography project](https://csrc.nist.gov/projects/post-quantum-cryptography)

@@ -43,7 +43,10 @@ The current push is the first PyPI release of 0.2.0. Public issues
 [#36](https://github.com/breachsafe/qureddy/issues/36) are the release
 sequence. See `docs/reference/milestones.md` for exact status.
 
-**Issue-tracker split (issue #161):** `paul007ex/qureddy` (private staging) holds the real backlog (~150 open issues); `breachsafe/qureddy` (public) has a fresh, curated tracker. When a doc or changelog cites an issue number, check which tracker it belongs to — public links to staging numbers 404.
+**Issue-tracker split:** `breachsafe/qureddy` is the canonical public tracker.
+`paul007ex/qureddy` is private staging and retains historical planning records.
+When a document cites an issue or pull request, link the tracker that owns that
+record. Do not reuse a staging number as though it were a public reference.
 
 ## Where to look
 
