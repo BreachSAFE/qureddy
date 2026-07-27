@@ -533,6 +533,7 @@ jobs:
       - name: Audit wheel runtime dependencies only
         run: |
           python -m venv runtime
+          runtime/bin/python -m pip install --upgrade "pip==26.1.2"
           runtime/bin/python -m pip install dist/breachsafe_qureddy-*.whl
           python -m venv audit-tool
           audit-tool/bin/python -m pip install "pip-audit==2.10.1"
