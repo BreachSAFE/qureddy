@@ -87,9 +87,10 @@ and copies only the installed runtime into the final image.
 
 The repository workflow at `.github/workflows/container.yml` publishes only
 through an explicit manual dispatch with `publish=true`. It authenticates to
-GHCR with the repository token, builds `linux/amd64` and `linux/arm64`, and
-emits the version tag plus a commit tag. Pull requests run the smoke gate but
-never publish.
+GHCR with the repository token, builds the verified `linux/amd64` image, and
+emits the version tag plus a commit tag. Docker Desktop on Apple Silicon can
+run this image with its standard amd64 emulation. Pull requests run the smoke
+gate but never publish.
 
 See [installation and troubleshooting](install.md), [CBOM reference](../reference/cbom.md),
 and [exit codes](../reference/exit-codes.md) for the surrounding contracts.
