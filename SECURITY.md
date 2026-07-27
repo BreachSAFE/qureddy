@@ -78,7 +78,7 @@ In scope:
 - Documentation that misleads users about cryptographic posture
 
 Out of scope:
-- Vulnerabilities in dependencies that have been disclosed and patched upstream — file with the upstream project
+- Vulnerabilities in dependencies that have been disclosed and patched upstream; file with the upstream project
 - Theoretical issues without a working PoC
 - Social engineering of contributors
 - Denial of service against the QuReddy maintainers

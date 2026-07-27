@@ -27,7 +27,7 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- `scripts/bump_version.py` — single-source version bump driven by
+- `scripts/bump_version.py`; single-source version bump driven by
   `pyproject.toml`, updating the README version badge so a release touches one
   number.
 

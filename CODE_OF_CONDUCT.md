@@ -48,10 +48,10 @@ All maintainers are obligated to respect the privacy and security of the reporte
 
 Maintainers will follow the [Contributor Covenant 2.1 Enforcement Guidelines](https://www.contributor-covenant.org/version/2/1/code_of_conduct/#enforcement-guidelines) when determining the consequences for any action they deem in violation of this Code of Conduct:
 
-1. **Correction** — Private written warning, clarification of the violation.
-2. **Warning** — Public or private warning with consequences for continued behavior.
-3. **Temporary Ban** — Temporary ban from any sort of interaction or public communication with the community.
-4. **Permanent Ban** — Permanent ban from any sort of public interaction within the community.
+1. **Correction**; Private written warning, clarification of the violation.
+2. **Warning**; Public or private warning with consequences for continued behavior.
+3. **Temporary Ban**; Temporary ban from any sort of interaction or public communication with the community.
+4. **Permanent Ban**; Permanent ban from any sort of public interaction within the community.
 
 ## Attribution
 
