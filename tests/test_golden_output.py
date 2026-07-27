@@ -74,5 +74,5 @@ def _actual_outputs() -> dict[str, str]:
 
 @pytest.mark.parametrize("output_format", ["rich", "json", "cbom"])
 def test_normalized_output_matches_golden(output_format: str) -> None:
-    expected = (GOLDEN_DIR / f"{output_format}.golden").read_text()
+    expected = (GOLDEN_DIR / f"{output_format}.golden").read_text(encoding="utf-8")
     assert _actual_outputs()[output_format] == expected

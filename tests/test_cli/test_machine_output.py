@@ -51,7 +51,7 @@ def _run_qureddy(
         [_QUREDDY_BIN, *args],
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT if merge_stderr else subprocess.PIPE,
-        text=True,
+        encoding="utf-8",
         check=False,
         timeout=_SUBPROCESS_TIMEOUT,
         env=env,

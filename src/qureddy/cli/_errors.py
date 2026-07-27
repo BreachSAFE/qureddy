@@ -64,13 +64,35 @@ def _stderr_merged_into_stdout() -> bool:
 
 
 def _windows_standard_handles_match() -> bool:
-    """Compare Win32 stdout/stderr handles without unreliable pipe inodes."""
+    """Compare the Win32 kernel objects behind stdout and stderr.
+
+    ``subprocess.STDOUT`` may give fd 1 and fd 2 distinct numeric HANDLE
+    values which refer to the same pipe object.  Comparing the values alone
+    therefore misses a genuine ``2>&1``.  ``CompareObjectHandles`` performs
+    the underlying kernel-object identity check; the value comparison is a
+    compatibility fallback for older Windows versions where that API is not
+    exported.
+    """
     kernel32 = vars(ctypes)["windll"].kernel32
     get_std_handle = kernel32.GetStdHandle
     get_std_handle.restype = ctypes.c_void_p
     stdout_handle = int(get_std_handle(-11) or 0)
     stderr_handle = int(get_std_handle(-12) or 0)
-    return stdout_handle != 0 and stdout_handle == stderr_handle
+    invalid_handle = ctypes.c_void_p(-1).value
+    if (
+        stdout_handle in (0, invalid_handle)
+        or stderr_handle in (0, invalid_handle)
+    ):
+        return False
+
+    try:
+        compare_handles = kernel32.CompareObjectHandles
+    except AttributeError:
+        return stdout_handle == stderr_handle
+
+    compare_handles.argtypes = (ctypes.c_void_p, ctypes.c_void_p)
+    compare_handles.restype = ctypes.c_bool
+    return bool(compare_handles(stdout_handle, stderr_handle))
 
 
 def _echo_operator_diagnostic(message: str, *, machine_format: bool) -> None:

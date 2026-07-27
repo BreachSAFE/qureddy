@@ -121,6 +121,21 @@ scan_app = typer.Typer(
 app.add_typer(scan_app, name="scan")
 
 
+def _configure_utf8_stdio() -> None:
+    """Make the installed CLI's byte-stream contract UTF-8 on every OS.
+
+    Windows otherwise inherits a locale-dependent encoding such as cp1252,
+    which cannot represent all scan diagnostics and can turn a typed target
+    failure into an internal encoding error.  In-process test and embedding
+    streams may not expose ``reconfigure``; those already consume text and
+    need no byte-level configuration.
+    """
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            reconfigure(encoding="utf-8", errors="backslashreplace")
+
+
 @app.callback(
     help=(f"{PROJECT_NAME} {PROJECT_VERSION} -- {DESCRIPTION}."),
 )
@@ -169,6 +184,7 @@ def main() -> None:
     suggests `--verbose` which is wrong — replace with a hint at the
     root-level form.
     """
+    _configure_utf8_stdio()
     try:
         exit_code = app(standalone_mode=False)
     except click.exceptions.Exit as exc:
