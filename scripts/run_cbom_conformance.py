@@ -112,9 +112,11 @@ def _validate_installed_console(binary: Path, console: Path) -> None:
 def main() -> None:
     """Run the complete fail-closed conformance gate."""
     args = parse_args()
-    verify_independent_cli(args.cyclonedx_cli, args.tool_asset_key)
-    _validate_fixture_matrix(args.cyclonedx_cli)
-    _validate_installed_console(args.cyclonedx_cli, args.qureddy_console)
+    cyclonedx_cli = args.cyclonedx_cli.resolve(strict=True)
+    qureddy_console = args.qureddy_console.resolve(strict=True)
+    verify_independent_cli(cyclonedx_cli, args.tool_asset_key)
+    _validate_fixture_matrix(cyclonedx_cli)
+    _validate_installed_console(cyclonedx_cli, qureddy_console)
     print("CycloneDX 1.7 final-byte conformance: PASS")
 
 
