@@ -28,5 +28,8 @@ def render_json(result: ScanResult, stream: IO[str] | None = None) -> None:
     """
     target_stream = stream if stream is not None else sys.stdout
     payload = result.model_dump(mode="json")
-    json.dump(payload, target_stream, indent=2, sort_keys=False)
+    # ``ensure_ascii`` is an output-boundary guarantee: machine JSON remains
+    # writable even when an embedding caller supplies a legacy Windows text
+    # stream instead of entering through the UTF-8-configured CLI.
+    json.dump(payload, target_stream, indent=2, sort_keys=False, ensure_ascii=True)
     target_stream.write("\n")

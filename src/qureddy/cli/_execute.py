@@ -13,7 +13,6 @@ from qureddy.cli._errors import (
     EXIT_OK,
     EXIT_TARGET_FAILED,
     _echo_operator_diagnostic,
-    _stderr_merged_into_stdout,
 )
 from qureddy.core.errors import (
     LocalOpenSSLBroken,
@@ -71,7 +70,7 @@ def _execute_scan(
         result = build_capability_failure_result(scan_target, dependency)
         exit_code = EXIT_LOCAL_DEPENDENCY
     except QureddyError as exc:
-        if not (machine_format and _stderr_merged_into_stdout()):
+        if not machine_format:
             log.exception("scan.failed", error=str(exc))
         _echo_operator_diagnostic(f"scan failed: {exc}", machine_format=machine_format)
         if not machine_format:

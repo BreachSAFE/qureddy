@@ -109,4 +109,13 @@ def _make_console(stream: IO[str]) -> Console:
     addresses or numbers; we want only the styles we apply ourselves.
     """
     no_color = "NO_COLOR" in os.environ
-    return Console(file=stream, no_color=no_color, highlight=False)
+    # Rich otherwise enables a Windows-legacy layout which changes table
+    # widths by one cell.  Pin both inputs so redirected output has one
+    # cross-platform textual contract.
+    return Console(
+        file=stream,
+        no_color=no_color,
+        highlight=False,
+        width=80,
+        legacy_windows=False,
+    )

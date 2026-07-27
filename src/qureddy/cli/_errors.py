@@ -82,9 +82,16 @@ def _windows_standard_handles_match() -> bool:
     if stdout_handle in (0, invalid_handle) or stderr_handle in (0, invalid_handle):
         return False
 
-    try:
-        compare_handles = kernel32.CompareObjectHandles
-    except AttributeError:
+    compare_handles = getattr(kernel32, "CompareObjectHandles", None)
+    if compare_handles is None:
+        # The API is documented under Kernel32, but current Windows runners
+        # may expose it only from KernelBase.  Load that implementation
+        # explicitly before falling back to numeric equality.
+        win_dll = vars(ctypes).get("WinDLL")
+        if win_dll is not None:
+            kernelbase = win_dll("KernelBase.dll", use_last_error=True)
+            compare_handles = getattr(kernelbase, "CompareObjectHandles", None)
+    if compare_handles is None:
         return stdout_handle == stderr_handle
 
     compare_handles.argtypes = (ctypes.c_void_p, ctypes.c_void_p)
@@ -103,6 +110,11 @@ def _echo_operator_diagnostic(message: str, *, machine_format: bool) -> None:
     """
     if machine_format and _stderr_merged_into_stdout():
         return
+    if machine_format and os.name == "nt":
+        # A redirected Windows stderr can inherit a legacy code page.  Keep
+        # this optional operator courtesy representable; the structured
+        # document retains the complete Unicode failure detail.
+        message = message.encode("ascii", errors="backslashreplace").decode("ascii")
     typer.echo(f"qureddy: {message}", err=True)
 
 
