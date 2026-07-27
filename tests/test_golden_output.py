@@ -48,7 +48,10 @@ def _normalize_cbom(text: str) -> str:
 
 
 def _normalize_rich(text: str) -> str:
-    return "\n".join(line.rstrip() for line in text.splitlines()) + "\n"
+    lines = [line.rstrip() for line in text.splitlines()]
+    while lines and not lines[-1]:
+        lines.pop()
+    return "\n".join(lines) + "\n"
 
 
 def _actual_outputs() -> dict[str, str]:

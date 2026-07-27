@@ -42,4 +42,3 @@ Run details
  openssl_path             /opt/homebrew/opt/openssl@3.5/bin/openssl
  openssl_version          3.5.6
  openssl_hybrid_support   yes
-

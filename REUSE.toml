@@ -76,6 +76,12 @@ SPDX-FileCopyrightText = "2026 BreachSAFE"
 SPDX-License-Identifier = "Apache-2.0"
 
 [[annotations]]
+path = "tests/golden/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 BreachSAFE"
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
 path = "LICENSES/**"
 # The Apache 2.0 license text itself is a work of the Apache Software
 # Foundation, not of BreachSAFE — attributing it correctly here keeps
