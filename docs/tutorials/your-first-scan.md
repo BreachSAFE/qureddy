@@ -70,7 +70,7 @@ favorable readiness result.
 
 ## Prepare OpenSSL
 
-TLS scans require OpenSSL 3.5 or newer with the `X25519MLKEM768` group. Check
+TLS scans require OpenSSL 3.6.3 or newer with the `X25519MLKEM768` group. Check
 the selected binary:
 
 ```bash

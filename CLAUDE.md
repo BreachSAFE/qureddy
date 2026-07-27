@@ -138,7 +138,7 @@ pytest tests/test_tls_parse.py::test_parse_hybrid_negotiation -xvs
 
 Live tests in `tests/live/` run by default — every test runs every time, no carve-outs (per `docs/contributors/coding-rules.md` §9). When CI fails on a live target, investigate before re-running; that is signal, not noise.
 
-OpenSSL 3.5+ is required at runtime. Path resolution: `--openssl PATH` → `QUREDDY_OPENSSL` env var → `openssl` on `PATH`.
+OpenSSL 3.6.3+ is required at runtime. Path resolution: `--openssl PATH` → `QUREDDY_OPENSSL` env var → `openssl` on `PATH`.
 
 ## Settled architecture
 
@@ -150,7 +150,7 @@ Decisions marked **pending** in `docs/contributors/coding-rules.md` should not b
 | Dev tooling | `uv` |
 | CLI | Typer + Rich |
 | Async | Not used by the shipped scanners |
-| TLS scanner | OpenSSL 3.5+ subprocesses behind dedicated probe modules |
+| TLS scanner | OpenSSL 3.6.3+ subprocesses behind dedicated probe modules |
 | SSH scanner | Direct bounded socket probe; no OpenSSL subprocess |
 | Storage | None in the shipped package |
 | HTML templates | Not shipped |

@@ -20,7 +20,7 @@ not carry a second release policy or replace a failed command with a hosted-only
 A failed or timed-out gate exits nonzero and still writes a machine-readable failure
 manifest. Public TLS probes and the real SSH self-scan run weekly or by explicit manual
 dispatch as advisory signals; they never block a pull request. Those jobs use the same
-checksum-verified OpenSSL 3.5.1 source build on Linux, macOS, and Windows. Public repository
+checksum-verified OpenSSL 3.6.3 source build on Linux, macOS, and Windows. Public repository
 protection settings are administered separately and follow
 [coding-rules §27](coding-rules.md#section-27--branch-protection-and-merge-hygiene); they
 are not hidden inside this local command.
