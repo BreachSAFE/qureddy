@@ -1,0 +1,7 @@
+fixture: n6-undeclared-top-level
+classification: synthetic-negative
+not_network_evidence: true
+derived_from: fixtures/positive/p2-classical-tls.cbom.json
+base_sha256: ac24c39fa6f3197ad964a3b8cca470847d4bd2637d7dcf1f0624e41b71fda116
+mutation: undeclared qureddyVerdict field added
+sha256: 8b9280c36a6f8eeac1c354d78cac32323d11b29cfb99faead2cbe2e3e9d92b21

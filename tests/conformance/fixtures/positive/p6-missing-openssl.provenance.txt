@@ -1,0 +1,9 @@
+fixture: p6-missing-openssl
+classification: minimized-from-captured
+command: qureddy scan tls 192.0.2.10 --format cbom --openssl /nonexistent/openssl
+exit_code: 3
+captured_utc: 2026-07-27T01:45:10Z
+source: hermetic minimized missing-local-tool result
+producer_commit: bdaa5669bff7b46a8b6e6c48f1003a3acb26808a
+installed_wheel_sha256: ddb96f9e62e16805dba045483eaa55c2f7ac4bc4f63397a7dfd80207ab82dc38
+sha256: 5bb7bd2cdd85b960e64e7dc27c2d8ff49fcec015e0128d6ea5c7697d5236cabf
