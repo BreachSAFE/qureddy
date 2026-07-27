@@ -16,9 +16,10 @@ Side-by-side capability matrix for **QuReddy OSS** (this repository, free foreve
 | Capability | OSS | Enterprise |
 |---|---|---|
 | TLS scanner (X25519MLKEM768 hybrid + X25519 control) | ✅ MVP 0.1 | inherits OSS |
-| Certificate scanner (chain, signatures, key sizes) | 🛠️ MVP 0.2 | inherits OSS |
-| CBOM emission (CycloneDX 1.6) | 🛠️ MVP 0.3 | inherits OSS |
-| SSH scanner (host keys, KEX algorithms) | 🛠️ MVP 0.4 | inherits OSS |
+| Certificate issuer-signature observation | ✅ MVP 0.2 | inherits OSS |
+| Full certificate-chain and key-size analysis | 🛠️ Planned | inherits OSS |
+| CBOM emission (CycloneDX 1.6 on current main) | ✅ MVP 0.3 prototype | inherits OSS |
+| SSH scanner (host keys, KEX algorithms) | ✅ MVP 0.4 | inherits OSS |
 | Local crypto config scanner | 🛠️ MVP 0.5 | inherits OSS |
 | Source-code scanner | 🛠️ MVP 0.6 | inherits OSS |
 | Binary scanning (`.exe`, `.dll`, `.jar`, firmware) | ❌ | ❌ |
@@ -31,11 +32,11 @@ Every scanner ships in OSS. Enterprise inherits the full scanner suite — Enter
 |---|---|---|
 | Rich console output | ✅ | inherits OSS |
 | JSON output (locked `qureddy.scan.v1` schema) | ✅ | inherits OSS |
-| CycloneDX 1.6 CBOM output | 🛠️ MVP 0.3 | inherits OSS |
+| CycloneDX 1.6 CBOM output | ✅ MVP 0.3 prototype | inherits OSS |
 | HTML output | 🛠️ post-MVP-0.3 | inherits OSS |
 | CSV output | 🛠️ post-MVP-0.3 | inherits OSS |
 | Markdown output | 🛠️ post-MVP-0.3 | inherits OSS |
-| SARIF 2.1.0 output (GitHub Code Scanning) | 🛠️ (per issue #117) | inherits OSS |
+| SARIF 2.1.0 output (GitHub Code Scanning) | 🛠️ Planned | inherits OSS |
 | Compliance attestation reports (PDF, auditor-formatted) | ❌ | 🟦 PCI DSS 4.0, FFIEC, CMMC 2.0, etc. |
 | Drift detection (compare scans over time) | ❌ | 🟦 |
 
@@ -44,7 +45,7 @@ Every scanner ships in OSS. Enterprise inherits the full scanner suite — Enter
 | Capability | OSS | Enterprise |
 |---|---|---|
 | Single-target CLI invocation | ✅ | inherits OSS |
-| `--targets-file FILE` batch input | 🛠️ (per issue #118) | inherits OSS |
+| `--targets-file FILE` batch input | 🛠️ Planned | inherits OSS |
 | Fleet/parallel scan orchestration (10,000+ endpoints) | ❌ | 🟦 |
 | Persistent scan history storage | ❌ | 🟦 |
 | Multi-account orchestration | ❌ | 🟦 |

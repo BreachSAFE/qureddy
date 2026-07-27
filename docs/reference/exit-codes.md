@@ -2,6 +2,10 @@
 
 The `qureddy` CLI uses POSIX exit codes to signal what happened. Scripts and CI pipelines should branch on the exit code, not on parsing stdout.
 
+Exit 3 is specific to `scan tls`, because the SSH scanner does not use
+OpenSSL. `scan ssh` uses exits 0, 2, and 4; exit 70 remains the process-wide
+last-resort internal-error code.
+
 ## The codes
 
 | Code | Name | Meaning | When it fires |
@@ -63,7 +67,7 @@ esac
 
 ## Implementation note
 
-The CLI's `main()` wrapper translates Click's default `UsageError` exit code (Click's 2) to QuReddy's `EXIT_USAGE` (4) so usage errors never collide with the documented "target scan failed" exit code. This means you can run `qureddy` from any shell and get the documented codes — Click's defaults stay internal to Click.
+The Typer-based CLI's `main()` wrapper translates Click's default `UsageError` exit code (Click's 2) to QuReddy's `EXIT_USAGE` (4) so usage errors never collide with the documented "target scan failed" exit code. This means you can run `qureddy` from any shell and get the documented codes — Click's defaults stay internal to Click.
 
 If you invoke `qureddy.cli.app` directly from Python (skipping `main()`), you get Click's defaults instead. Use `qureddy.cli.main` if you need the documented exit codes from a Python wrapper.
 

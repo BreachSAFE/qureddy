@@ -1,9 +1,13 @@
 # Plan 0001 — PyPI launch
 
-**Status:** Draft
+**Status:** Superseded by public release issues
 **Date:** 2026-04-26
 **Owner:** Paul Volosen
-**Target version:** v0.1.0-public (or v0.1.1, depending on what ships in MVP 0.2)
+**Superseded by:** [public issues #30–#36](https://github.com/breachsafe/qureddy/issues)
+
+> Historical plan. It records the original launch thinking, but its version,
+> issue-number, workflow-action, and release-authority details are not current.
+> Use public issues #30–#36 for the first-PyPI-release gate and sequence.
 
 ## Why a plan, not an issue
 

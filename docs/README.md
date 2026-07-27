@@ -29,13 +29,15 @@ Learning-oriented walkthroughs for someone new to the tool.
 Task-oriented recipes for someone who already knows the basics.
 
 - [Scan an IP target with a custom SNI](how-to/scan-ip-with-sni.md)
+- [Scan an SSH or SFTP endpoint](how-to/scan-ssh.md)
 - [Capture machine-readable output for CI](how-to/json-output-for-ci.md)
+- [Generate a CBOM](how-to/generate-a-cbom.md)
 
 ### [Reference](reference/)
 Look-it-up information. Comprehensive, accurate, dry.
 
 - [CLI options](reference/cli.md) — every flag, every default, every value
-- [Exit codes](reference/exit-codes.md) — 0, 2, 3, 4 and what triggers each
+- [Exit codes](reference/exit-codes.md) — 0, 2, 3, 4, 70 and what triggers each
 - [JSON output schema](reference/json-schema.md) — the locked top-level keys, every field type
 - [Failure categories](reference/failure-categories.md) — the `FailureCategory` enum, what each value means, retry eligibility
 - [Project milestones](reference/milestones.md) — what's shipped, what's planned

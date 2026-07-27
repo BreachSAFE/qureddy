@@ -219,5 +219,5 @@ flowchart TD
 | see the exit-code contract | [exit-codes.md](../reference/exit-codes.md) |
 | understand a `FailureCategory` value | [failure-categories.md](../reference/failure-categories.md) |
 | change the code | [coding-rules.md](../contributors/coding-rules.md) first |
-| review someone else's change | [the review apparatus](review-process.md) (TODO) and the `python-oss-crypto-reviewer` skill |
+| review someone else's change | [the review apparatus](../contributors/review-process.md) and the `python-oss-crypto-reviewer` skill |
 | add a new scanner (MVP 0.2+) | the `mvp-implement` skill |

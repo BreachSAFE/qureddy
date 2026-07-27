@@ -6,24 +6,24 @@ This page is the canonical record of what's shipped, what's planned, and which s
 
 | Milestone | Status | Scope | Released |
 |---|---|---|---|
-| **MVP 0.1** | **Shipped** | TLS scanner. Hybrid + classical probes against `X25519MLKEM768` / `X25519` via `openssl s_client -brief`. Rich, JSON, and CBOM output. Exit codes 0/2/3/4/70. Capability detection. | 2026-04-26 |
+| **MVP 0.1** | **Shipped** | TLS scanner. Hybrid + classical probes against `X25519MLKEM768` / `X25519` via `openssl s_client -brief`. Rich and JSON output. Exit codes 0/2/3/4/70. Capability detection. | 2026-05-10 |
 | MVP 0.2 | **Shipped (initial)** | Certificate signature-algorithm detection (classical vs post-quantum) and a legacy-protocol sweep (TLS 1.0/1.1/1.2 with per-protocol cipher enumeration), both wired into the default scan. Full cert-chain and key-size analysis still to come. | 2026-07 |
 | MVP 0.3 | **Shipped (prototype)** | CBOM emission via `--format cbom` — CycloneDX 1.6 through `cyclonedx-python-lib`, validated against the official schema and Qurum's parser. Hardening (deterministic bom-refs, graph direction, full protocol inventory) tracked in open issues. | 2026-07 |
-| MVP 0.4 | Planned | SSH scanner (host keys, KEX algorithms). | TBD |
+| MVP 0.4 | **Shipped** | SSH scanner with host-key and key-exchange algorithm observations. Rich, JSON, and CBOM output; no local OpenSSL dependency. | 2026-07 |
 | MVP 0.5 | Planned | Local crypto config scanner. | TBD |
 | MVP 0.6 | Planned | Source-code scanner. OpenSSF Best Practices passing tier target. | TBD |
 | v1.0 | Planned | Full OSS release. PyPI publish. Docker image at `ghcr.io/breachsafe/qureddy`. Signed artifacts. OpenSSF Best Practices silver tier target. | TBD |
 | **P2** | Planned | **BreachSAFE QuReddy Enterprise** — separate commercial product. Cloud scanners, fleet/batch operation, SaaS dashboard, SIEM integrations, compliance attestation reports, support contracts. Capability split documented in [`editions.md`](editions.md); design locked in [ADR 0006](../contributors/adr/0006-oss-vs-enterprise-split.md). | TBD |
 
-## Active skill
+## Historical implementation skill
 
-The implementation authority for the current milestone is the skill at:
+The original MVP 0.1 implementation instructions remain at:
 
 **`.claude/skills/mvp-implement/SKILL.md`**
 
-Claude Code loads this skill when the active task matches its scope. The skill is self-contained — it includes locked Pydantic model definitions, build order, scope rules, and quality gates.
-
-When MVP 0.2 work begins, the current skill moves to `.claude/skills/done/mvp-0.1/` and a new `.claude/skills/mvp-implement/SKILL.md` is created for the next milestone. This file is updated to point at the new skill.
+That skill describes the historical TLS-only milestone and is not authority for the
+shipped SSH or CBOM surfaces. Current work is tracked in the public issue tracker and
+must be checked against the repository's current contributor rules.
 
 ## Out of scope (explicit non-goals)
 
@@ -51,7 +51,7 @@ These never ship in either OSS or Enterprise — see [`editions.md`](editions.md
 - [`docs/contributors/oss-standards.md`](../contributors/oss-standards.md) — OSS conventions
 - [ADR 0001 — `--trace` flag](../contributors/adr/0001-trace-and-verbosity.md) — accepted, not yet implemented
 - [ADR 0002 — Diátaxis docs standard](../contributors/adr/0002-diataxis-documentation-standard.md)
-- [ADR 0003 — CLI `--help` rewrite](../contributors/adr/0003-cli-help-rewrite.md) — proposed
+- [ADR 0003 — CLI `--help` rewrite](../contributors/adr/0003-cli-help-rewrite.md)
 - [ADR 0004 — Multi-scanner architecture](../contributors/adr/0004-multi-scanner-architecture.md)
 - [ADR 0005 — Splitting oversized files](../contributors/adr/0005-splitting-oversized-files.md)
 - [ADR 0006 — OSS vs Enterprise split](../contributors/adr/0006-oss-vs-enterprise-split.md) — locks the P2 design
