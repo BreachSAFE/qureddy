@@ -2,6 +2,14 @@
 
 Side-by-side capability matrix for **QuReddy OSS** (this repository, free forever under Apache 2.0) and **BreachSAFE QuReddy Enterprise** (planned commercial product, P2 milestone). For the reasoning behind the split, see [explanation: OSS vs Enterprise](../explanation/oss-vs-enterprise.md). For the locked decision, see [ADR 0006](../contributors/adr/0006-oss-vs-enterprise-split.md).
 
+## Contents
+
+- [Status legend](#status-legend)
+- [Capability matrix](#capability-matrix)
+- [Never shipped](#never-shipped-explicit-non-goals-neither-edition)
+- [How to choose](#how-to-choose)
+- [Related documentation](#related-documentation)
+
 ## Status legend
 
 - ✅ Available today
@@ -16,9 +24,10 @@ Side-by-side capability matrix for **QuReddy OSS** (this repository, free foreve
 | Capability | OSS | Enterprise |
 |---|---|---|
 | TLS scanner (X25519MLKEM768 hybrid + X25519 control) | ✅ MVP 0.1 | inherits OSS |
-| Certificate scanner (chain, signatures, key sizes) | 🛠️ MVP 0.2 | inherits OSS |
-| CBOM emission (CycloneDX 1.6) | 🛠️ MVP 0.3 | inherits OSS |
-| SSH scanner (host keys, KEX algorithms) | 🛠️ MVP 0.4 | inherits OSS |
+| Certificate issuer-signature observation | ✅ MVP 0.2 | inherits OSS |
+| Full certificate-chain and key-size analysis | 🛠️ Planned | inherits OSS |
+| CBOM emission (CycloneDX 1.7) | ✅ | inherits OSS |
+| SSH scanner (host keys, KEX algorithms) | ✅ MVP 0.4 | inherits OSS |
 | Local crypto config scanner | 🛠️ MVP 0.5 | inherits OSS |
 | Source-code scanner | 🛠️ MVP 0.6 | inherits OSS |
 | Binary scanning (`.exe`, `.dll`, `.jar`, firmware) | ❌ | ❌ |
@@ -31,11 +40,11 @@ Every scanner ships in OSS. Enterprise inherits the full scanner suite — Enter
 |---|---|---|
 | Rich console output | ✅ | inherits OSS |
 | JSON output (locked `qureddy.scan.v1` schema) | ✅ | inherits OSS |
-| CycloneDX 1.6 CBOM output | 🛠️ MVP 0.3 | inherits OSS |
+| CycloneDX 1.7 CBOM output | ✅ | inherits OSS |
 | HTML output | 🛠️ post-MVP-0.3 | inherits OSS |
 | CSV output | 🛠️ post-MVP-0.3 | inherits OSS |
 | Markdown output | 🛠️ post-MVP-0.3 | inherits OSS |
-| SARIF 2.1.0 output (GitHub Code Scanning) | 🛠️ (per issue #117) | inherits OSS |
+| SARIF 2.1.0 output (GitHub Code Scanning) | 🛠️ Planned | inherits OSS |
 | Compliance attestation reports (PDF, auditor-formatted) | ❌ | 🟦 PCI DSS 4.0, FFIEC, CMMC 2.0, etc. |
 | Drift detection (compare scans over time) | ❌ | 🟦 |
 
@@ -44,7 +53,7 @@ Every scanner ships in OSS. Enterprise inherits the full scanner suite — Enter
 | Capability | OSS | Enterprise |
 |---|---|---|
 | Single-target CLI invocation | ✅ | inherits OSS |
-| `--targets-file FILE` batch input | 🛠️ (per issue #118) | inherits OSS |
+| `--targets-file FILE` batch input | 🛠️ Planned | inherits OSS |
 | Fleet/parallel scan orchestration (10,000+ endpoints) | ❌ | 🟦 |
 | Persistent scan history storage | ❌ | 🟦 |
 | Multi-account orchestration | ❌ | 🟦 |
@@ -148,7 +157,7 @@ These never ship, in either OSS or Enterprise:
 | Need binary scanning of `.exe`/`.dll`/`.jar` | Use [`syft`](https://github.com/anchore/syft), [`trivy`](https://github.com/aquasecurity/trivy), or BlackDuck — not QuReddy, in either edition |
 | Need vulnerability scanning of TLS configurations (Heartbleed, BEAST, etc.) | Use [`sslyze`](https://github.com/nabla-c0d3/sslyze) or [`testssl.sh`](https://testssl.sh) — not QuReddy, in either edition |
 
-## Related
+## Related documentation
 
 - [Explanation: Why QuReddy is open-core](../explanation/oss-vs-enterprise.md) — the reasoning behind this matrix
 - [ADR 0006 — OSS vs Enterprise split](../contributors/adr/0006-oss-vs-enterprise-split.md) — the locked decision

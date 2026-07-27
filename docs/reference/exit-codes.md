@@ -2,6 +2,21 @@
 
 The `qureddy` CLI uses POSIX exit codes to signal what happened. Scripts and CI pipelines should branch on the exit code, not on parsing stdout.
 
+## Contents
+
+- [Applicability by scanner](#applicability-by-scanner)
+- [The codes](#the-codes)
+- [Why these values](#why-these-values)
+- [Worked examples](#worked-examples)
+- [Implementation note](#implementation-note)
+- [Related documentation](#related-documentation)
+
+## Applicability by scanner
+
+Exit 3 is specific to `scan tls`, because the SSH scanner does not use
+OpenSSL. `scan ssh` uses exits 0, 2, and 4; exit 70 remains the process-wide
+last-resort internal-error code.
+
 ## The codes
 
 | Code | Name | Meaning | When it fires |
@@ -12,7 +27,7 @@ The `qureddy` CLI uses POSIX exit codes to signal what happened. Scripts and CI 
 | **4** | `EXIT_USAGE` | Usage or configuration error | Bad flag value (e.g. `--format yaml`), unknown retry category, `--retries` without `--retry-on`, malformed target string. |
 | **70** | `EXIT_INTERNAL_ERROR` | Internal qureddy bug | An unhandled exception escaped to `main()`'s last-resort catch (e.g., a programming error in qureddy itself, an unhandled dependency failure). **This is qureddy's problem, not yours.** Open an issue with the printed error message and a reproducer. Code 70 is BSD `sysexits.h` `EX_SOFTWARE`. |
 
-## Why these specific values
+## Why these values
 
 - **0 and non-zero is universal** — every shell, every CI runner, every script handles `if exit == 0` correctly.
 - **2 for "the operation didn't succeed"** matches `grep` and most CLIs that distinguish "no match" (1) from "I failed" (2). QuReddy doesn't have a "no match" outcome — failure is always a real failure.
@@ -63,11 +78,11 @@ esac
 
 ## Implementation note
 
-The CLI's `main()` wrapper translates Click's default `UsageError` exit code (Click's 2) to QuReddy's `EXIT_USAGE` (4) so usage errors never collide with the documented "target scan failed" exit code. This means you can run `qureddy` from any shell and get the documented codes — Click's defaults stay internal to Click.
+The Typer-based CLI's `main()` wrapper translates Click's default `UsageError` exit code (Click's 2) to QuReddy's `EXIT_USAGE` (4) so usage errors never collide with the documented "target scan failed" exit code. This means you can run `qureddy` from any shell and get the documented codes — Click's defaults stay internal to Click.
 
 If you invoke `qureddy.cli.app` directly from Python (skipping `main()`), you get Click's defaults instead. Use `qureddy.cli.main` if you need the documented exit codes from a Python wrapper.
 
-## Related
+## Related documentation
 
 - [Reference: CLI options](cli.md) — what triggers exit 4
 - [Reference: Failure categories](failure-categories.md) — what triggers exit 2 and exit 3

@@ -2,6 +2,15 @@
 
 This directory follows **[Diátaxis](https://diataxis.fr)** — every documentation page belongs to exactly one of four quadrants. Mixing types in the same page is the primary doc smell Diátaxis is designed to prevent, so each page below has one job.
 
+## Contents
+
+- [The four quadrants](#the-four-quadrants)
+- [QuReddy documentation](#qureddy-documentation)
+- [Contributor documentation](#contributor-documentation)
+- [Editorial rules](#editorial-rules)
+- [Add a page](#add-a-page)
+- [Why Diátaxis](#why-diátaxis)
+
 ## The four quadrants
 
 |  | Theoretical (concept) | Practical (action) |
@@ -18,7 +27,7 @@ The split is more useful than it looks. Each quadrant answers a different reader
 
 A page that does two of these jobs is doing neither well. When in doubt, split it.
 
-## What's in each quadrant for QuReddy
+## QuReddy documentation
 
 ### [Tutorials](tutorials/)
 Learning-oriented walkthroughs for someone new to the tool.
@@ -29,13 +38,15 @@ Learning-oriented walkthroughs for someone new to the tool.
 Task-oriented recipes for someone who already knows the basics.
 
 - [Scan an IP target with a custom SNI](how-to/scan-ip-with-sni.md)
+- [Scan an SSH or SFTP endpoint](how-to/scan-ssh.md)
 - [Capture machine-readable output for CI](how-to/json-output-for-ci.md)
+- [Generate a CBOM](how-to/generate-a-cbom.md)
 
 ### [Reference](reference/)
 Look-it-up information. Comprehensive, accurate, dry.
 
 - [CLI options](reference/cli.md) — every flag, every default, every value
-- [Exit codes](reference/exit-codes.md) — 0, 2, 3, 4 and what triggers each
+- [Exit codes](reference/exit-codes.md) — 0, 2, 3, 4, 70 and what triggers each
 - [JSON output schema](reference/json-schema.md) — the locked top-level keys, every field type
 - [Failure categories](reference/failure-categories.md) — the `FailureCategory` enum, what each value means, retry eligibility
 - [Project milestones](reference/milestones.md) — what's shipped, what's planned
@@ -50,7 +61,7 @@ Conceptual discussion. Why we made the choices we did.
 - [Threat model and scope](explanation/threat-model.md) — what QuReddy assumes, what it doesn't try to defend against
 - [Why QuReddy is open-core](explanation/oss-vs-enterprise.md) — what stays in OSS vs Enterprise (P2), and why
 
-## Contributor docs
+## Contributor documentation
 
 The rules and conventions for working *on* QuReddy (not *with* it) live separately from user-facing docs:
 
@@ -74,7 +85,7 @@ These keep Diátaxis from drifting:
 6. **Front-load the answer.** Every page starts with what it covers in 1–2 sentences. The reader should know in five seconds whether they're in the right place.
 7. **No marketing voice.** This is technical documentation. "QuReddy makes PQ easy!" — no.
 
-## Adding new docs
+## Add a page
 
 When you add a doc, ask:
 

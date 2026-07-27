@@ -6,6 +6,14 @@ How QuReddy's TLS scanner is wired together. This document is for contributors w
 
 For *why* the architecture is what it is — design tradeoffs, alternatives considered — see the [ADR index](../contributors/adr/). For *what* the scanner outputs, see [JSON schema](../reference/json-schema.md). This document covers the *what is here* layer.
 
+## Contents
+
+- [Module map](#module-map)
+- [Scan flow](#scan-flow)
+- [Output stream contract](#output-stream-contract)
+- [Failure category routing](#failure-category-routing)
+- [Related documentation](#related-documentation)
+
 ## Module map
 
 ```mermaid
@@ -209,7 +217,7 @@ flowchart TD
 
 **Why local failures aren't retryable:** an OpenSSL binary that's missing/too-old/lacking-the-group will not fix itself by waiting and trying again. The retry budget is for transient network conditions, not for client-side configuration problems.
 
-## Where to read next
+## Related documentation
 
 | If you want to... | Read |
 |---|---|
@@ -219,5 +227,5 @@ flowchart TD
 | see the exit-code contract | [exit-codes.md](../reference/exit-codes.md) |
 | understand a `FailureCategory` value | [failure-categories.md](../reference/failure-categories.md) |
 | change the code | [coding-rules.md](../contributors/coding-rules.md) first |
-| review someone else's change | [the review apparatus](review-process.md) (TODO) and the `python-oss-crypto-reviewer` skill |
+| review someone else's change | [the review apparatus](../contributors/review-process.md) and the `python-oss-crypto-reviewer` skill |
 | add a new scanner (MVP 0.2+) | the `mvp-implement` skill |
