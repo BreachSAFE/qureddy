@@ -29,3 +29,10 @@ def test_blocking_package_install_smoke_is_hermetic() -> None:
 
     assert "scan ssh 127.0.0.1:1" in packaging
     assert "scan ssh github.com" not in packaging
+
+
+def test_legacy_ci_uses_the_release_gate_secret_scanner() -> None:
+    workflow = CI_WORKFLOW.read_text(encoding="utf-8")
+
+    assert "python scripts/run_secret_scan.py" in workflow
+    assert "gitleaks/gitleaks-action@" not in workflow
