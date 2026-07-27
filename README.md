@@ -1,6 +1,6 @@
 # BreachSAFE QuReddy
 
-[![Version](https://img.shields.io/badge/version-0.2.0-blue?style=flat-square)](https://github.com/breachsafe/qureddy/blob/main/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.1-blue?style=flat-square)](https://github.com/breachsafe/qureddy/blob/main/CHANGELOG.md)
 [![Python](https://img.shields.io/badge/python-3.12-blue?style=flat-square&logo=python&logoColor=white)](https://www.python.org/downloads/)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue?style=flat-square)](https://github.com/breachsafe/qureddy/blob/main/LICENSE)
 [![Code Style: Ruff](https://img.shields.io/badge/code%20style-ruff-D7FF64?style=flat-square&logo=ruff&logoColor=black)](https://docs.astral.sh/ruff/)
@@ -31,7 +31,7 @@ cleartext KEXINIT offer directly and do not require OpenSSL.
 
 ## Install
 
-> **Pre-release (TestPyPI):** QuReddy 0.2.0 is currently published to **TestPyPI**
+> **Pre-release (TestPyPI):** QuReddy 0.2.1 is being published to **TestPyPI**
 > while the PyPI release is finalized. Install with (**Python 3.12+**):
 >
 > ```bash
@@ -52,14 +52,13 @@ qureddy --version
 ```
 
 > **Python 3.12 or newer.** QuReddy targets `>=3.12` (3.12, 3.13, …). Note: the
-> current pre-release wheel on **TestPyPI** was built with a `<3.13` cap, so until
-> the next build lands, installing *that* wheel on 3.13 needs `--python 3.12`.
-> The source and future releases have no upper bound.
+> The previous `0.2.0` TestPyPI wheel had a `<3.13` cap; the `0.2.1` candidate
+> removes that stale upper bound.
 
 The expected version line is:
 
 ```text
-BreachSAFE QuReddy 0.2.0 -- https://www.breachsafe.ai
+BreachSAFE QuReddy 0.2.1 -- https://www.breachsafe.ai
 ```
 
 `pipx` creates an isolated environment and places `qureddy` on your command
