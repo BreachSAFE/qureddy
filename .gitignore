@@ -113,6 +113,9 @@ scratch/
 Scratch/
 /Scratch/
 
+# Local evidence-honesty working document; keep it out of the public tree.
+/docs/explanation/evidence-honesty.md
+
 # Secrets, never commit
 .env
 .env.*
