@@ -137,7 +137,7 @@ the exact OpenSSL binary used).
 |---|---|
 | `rich` (default) | The colored terminal report above. |
 | `json` | A stable machine document, schema `qureddy.scan.v1` — findings, evidence, and per-probe results. See the [JSON schema reference](docs/reference/json-schema.md). |
-| `cbom` | A CycloneDX 1.6 Cryptography Bill of Materials of the observed crypto assets. |
+| `cbom` | A validated CycloneDX 1.7 Cryptography Bill of Materials of positively observed crypto assets. |
 
 ## Exit codes
 

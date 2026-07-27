@@ -39,9 +39,6 @@ classifiers = [
 # fix before that upgrade. Click 8.3.3 is the first release containing
 # the fix for PYSEC-2026-2132.
 #
-# cyclonedx-python-lib 11.11.x is the validated serialization contract.
-# The major-version ceiling forces a deliberate conformance review before
-# serializer/model changes can alter emitted CBOM bytes.
 dependencies = [
     "typer>=0.23.1,<0.27",
     "click>=8.3.3,<8.5",
@@ -49,9 +46,8 @@ dependencies = [
     "pydantic>=2.7",
     "structlog>=24.1",
     "packaging>=24.0",
-    # Final producer bytes and the independent conformance fixtures are
-    # validated against the 11.x model/serializer contract. A 12.x upgrade
-    # must deliberately refresh those byte-level expectations.
+    # Final bytes and independent fixtures validate the 11.x serializer
+    # contract; a 12.x upgrade must deliberately refresh conformance evidence.
     "cyclonedx-python-lib>=11.11,<12",
 ]
 
