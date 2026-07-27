@@ -26,6 +26,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: container-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   smoke:
     name: Container smoke gate
