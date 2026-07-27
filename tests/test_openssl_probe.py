@@ -254,7 +254,7 @@ class TestStderrClassification:
 
 
 # Parametrized coverage for every classifier pattern. Lifted from
-# claude-app's pre-archive test suite; each row is a real OpenSSL
+# pre-release test suite; each row is a real OpenSSL
 # stderr fragment seen in the wild. Adding a new pattern to
 # `_STDERR_SIGNATURES` should mean adding a row here in the same PR.
 @pytest.mark.parametrize(
@@ -306,7 +306,7 @@ def test_classify_failure_recognizes_known_patterns(
 ) -> None:
     """Every entry in `_STDERR_SIGNATURES` has at least one test row.
 
-    Lifted from claude-app/mvp-implementation before that staging tree
+    Lifted from the pre-release implementation before that staging tree
     was archived. Ensures regressions don't quietly drop a pattern.
     """
     assert _classify_failure(stderr_fragment) is expected_category

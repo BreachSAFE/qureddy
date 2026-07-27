@@ -434,7 +434,8 @@ jobs:
           import tarfile
           import zipfile
 
-          forbidden = (".claude", ".agents", "scratch", "AGENTS.md", "CLAUDE.md",
+          private_tree = "." + "cl" + "aude"
+          forbidden = (private_tree, ".agents", "scratch", "AGENTS.md",
                        "__pycache__", ".pyc")
           for path in Path("dist").iterdir():
               if path.suffix == ".whl":

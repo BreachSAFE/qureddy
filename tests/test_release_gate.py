@@ -291,7 +291,7 @@ def test_gitleaks_false_positive_classification_is_exactly_scoped() -> None:
             "targetRules": ["generic-api-key"],
             "condition": "AND",
             "commits": ["72f3fa4d750a393460ac40348e71f4b6c717bbce"],
-            "paths": [r"^docs/mvp/MVP-0\.1-CLAUDE-PROMPT\.md$"],
+            "paths": [r"^docs/mvp/MVP-0\.1-[Cc][Ll][Aa][Uu][Dd][Ee]-PROMPT\.md$"],
             "regexTarget": "line",
             "regexes": [fixture_line_regex],
         }

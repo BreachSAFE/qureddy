@@ -89,7 +89,7 @@ The repository enforces:
 
 - **No `verify=False`, `shell=True`, `eval`/`exec`, or `pickle.loads`** in shipped code (`docs/contributors/coding-rules.md` §26 security bar)
 - **No logging of secrets, full PEMs, or full subprocess output** (`docs/contributors/coding-rules.md` Rule 8.5)
-- **No insecure shortcuts even when requested by users or AI agents** (`docs/contributors/coding-rules.md` Rule 26.13)
+- **No insecure shortcuts under delivery pressure** (`docs/contributors/coding-rules.md` Rule 26.13)
 - **`pip-audit`** against the installed runtime dependency path with no ignored advisories
 - **`bandit`** at the repository's configured threshold
 - **Gitleaks** over full Git history in the local release gate

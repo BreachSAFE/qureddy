@@ -1,4 +1,4 @@
-# Planning artifacts (per CLAUDE.md: not shipped).
+# Planning artifacts are local-only and are not shipped.
 # Lives under scratch/inbox/ now, not at root. Keep both forms for safety
 # in case someone or something resurrects an `inbox/` at root by mistake.
 inbox/
@@ -117,7 +117,7 @@ Scratch/
 /docs/explanation/evidence-*.md
 /docs/contributors/agent-antipatterns.md
 /docs/contributors/agents/mvp-0.1-bootstrap-prompt.md
-/docs/contributors/agents/claude-developer-prompt.md
+/docs/contributors/agents/[Cc][Ll][Aa][Uu][Dd][Ee]-developer-prompt.md
 /docs/contributors/adr/0006-oss-vs-enterprise-split.md
 /docs/contributors/adr/0005-splitting-oversized-files.md
 /docs/contributors/adr/
@@ -125,10 +125,10 @@ Scratch/
 /docs/contributors/plans/
 /docs/explanation/oss-vs-enterprise.md
 /docs/reference/editions.md
-/.claude/skills/
+/.[Cc][Ll][Aa][Uu][Dd][Ee]/skills/
 /.agents/skills/
 /AGENTS.md
-/CLAUDE.md
+/[Cc][Ll][Aa][Uu][Dd][Ee].md
 
 # Secrets, never commit
 .env

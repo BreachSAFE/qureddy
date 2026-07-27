@@ -13,13 +13,13 @@ flowchart LR
     issue([Bug issue<br/>filed]) --> branch([fix/N-slug<br/>branch])
     branch --> pr([PR opened])
 
-    pr --> review_a["Reviewer A<br/>(Claude session 1<br/>via python-oss-crypto-reviewer)"]
-    pr --> review_b["Reviewer B<br/>(Claude session 2 / human / other)"]
+    pr --> review_a["Reviewer A<br/>(automated review 1)"]
+    pr --> review_b["Reviewer B<br/>(automated review 2 / human / other)"]
     pr --> validate["Validator<br/>(validate-fix skill)"]
 
-    review_a -->|review:claude-1:&lt;verdict&gt;| labels1[(Issue/PR labels)]
-    review_b -->|review:claude:&lt;verdict&gt;| labels1
-    validate -->|validation:claude:&lt;verdict&gt;| labels1
+    review_a -->|review:automated-1:&lt;verdict&gt;| labels1[(Issue/PR labels)]
+    review_b -->|review:automated:&lt;verdict&gt;| labels1
+    validate -->|validation:automated:&lt;verdict&gt;| labels1
 
     labels1 --> arbiter["Arbiter<br/>(Codex)"]
     arbiter -->|arbiter:codex:&lt;verdict&gt;| labels2[(Binding label)]
@@ -40,21 +40,21 @@ flowchart LR
 |---|---|---|---|---|
 | **Reviewer** | `review:<role>-<instance>:<verdict>` | Each individual reviewer | 0..N | Recommendation; informational |
 | **Arbiter** | `arbiter:codex:<verdict>` | Only the arbiter | 0 or 1 | Arbiter's verdict, mirrors reviewer namespace for filterability |
-| **Validator** | `validation:claude-<instance>:<verdict>` | The validator | 0..N | Mechanical: bug confirmed pre-patch, gone post-patch |
+| **Validator** | `validation:automated-<instance>:<verdict>` | The validator | 0..N | Mechanical: bug confirmed pre-patch, gone post-patch |
 | **Decision** | `decision:<outcome>` | Only the arbiter | 0 or 1 | **Binding.** The merge gate reads this and nothing else. |
 
 ### `<role>-<instance>` naming convention
 
-Each Claude session adds an instance suffix so concurrent sessions don't collide. The convention is:
+Each automated review adds an instance suffix so concurrent reviews don't collide. The convention is:
 
-- `review:claude-1:<verdict>` — first Claude session
-- `review:claude-2:<verdict>` — second Claude session
-- `review:claude-N:<verdict>` — Nth Claude session
+- `review:automated-1:<verdict>` — first automated review
+- `review:automated-2:<verdict>` — second automated review
+- `review:automated-N:<verdict>` — Nth automated review
 - `review:codex:<verdict>` — Codex (single-instance role; no suffix needed)
 - `review:human:<verdict>` — human reviewer (single-instance role; no suffix needed)
-- `validation:claude-N:<verdict>` — same shape for validator labels
+- `validation:automated-N:<verdict>` — same shape for validator labels
 
-**Rule:** when a Claude session applies a reviewer or validator label, the session must include an instance suffix. **Bare `review:claude:*` and `validation:claude:*` labels are deprecated** — they predate this convention and exist on prior issues (#7, #8, #9, #11, #13, #14, #18, #19, #21, #23 and similar) for audit-trail purposes only.
+**Rule:** when an automated review applies a reviewer or validator label, the review must include an instance suffix. Bare automated labels are deprecated; historical labels remain only for audit-trail compatibility.
 
 **Why instance-suffixed:** concurrent sessions are real here. The 2026-04-27 audit caught two sessions committing on each other's branches. Race-prone label semantics ("the latest applier wins") is the wrong default; multiple labels coexisting on the same issue is the correct audit trail.
 
@@ -87,7 +87,7 @@ Each reviewer runs the `python-oss-crypto-reviewer` skill, posts a `## Review:` 
 
 ```bash
 gh pr comment <n> --repo breachsafe/qureddy --body "$(cat review.md)"
-gh pr edit <n> --repo breachsafe/qureddy --add-label "review:claude-1:approve"
+gh pr edit <n> --repo breachsafe/qureddy --add-label "review:automated-1:approve"
 ```
 
 Multiple reviewers can run concurrently. None of them gate merge — they're recommendations.
@@ -98,7 +98,7 @@ The `validate-fix` skill (or its manual procedure if not yet auto-loaded) runs t
 
 ```bash
 gh pr comment <n> --repo breachsafe/qureddy --body "$(cat validation.md)"
-gh pr edit <n> --repo breachsafe/qureddy --add-label "validation:claude:validated"
+gh pr edit <n> --repo breachsafe/qureddy --add-label "validation:automated-1:validated"
 ```
 
 ### 4. Arbiter (codex) decides
@@ -126,15 +126,15 @@ gh pr merge <n> --repo breachsafe/qureddy --squash --delete-branch
 # Ready to merge
 gh issue list --repo breachsafe/qureddy --label "decision:approved"
 
-# Reviewed by Claude session 1, awaiting arbiter
+# Reviewed by automated review 1, awaiting arbiter
 gh issue list --repo breachsafe/qureddy \
-  --label "review:claude-1:approve" \
+  --label "review:automated-1:approve" \
   -- -l "arbiter:codex:*"
 
 # Disagreement between two reviewers
 gh issue list --repo breachsafe/qureddy \
-  --label "review:claude-1:approve" \
-  --label "review:claude:reject"
+  --label "review:automated-1:approve" \
+  --label "review:automated-2:reject"
 
 # New PRs needing first review
 gh pr list --repo breachsafe/qureddy --state open \

@@ -58,8 +58,8 @@ dev = [
     "pytest-rerunfailures>=14.0",
     # ruff upper bound: CI resolves this fresh, so an unpinned range let CI
     # jump to 0.16 while local envs sat on 0.15 — and 0.16 starts format-
-    # checking Python code blocks inside Markdown, flagging .claude/ and
-    # .agents/ skill files that must stay byte-identical to the canonical
+    # checking Python code blocks inside Markdown, flagging repository-local
+    # skill files that must stay byte-identical to their canonical source
     # breachsafe-skills library. Bumping past 0.16 requires deciding the
     # markdown-format policy (exclude those trees) in the same PR.
     "ruff>=0.15,<0.16",
@@ -108,8 +108,8 @@ packages = ["src/qureddy"]
 
 [tool.hatch.build.targets.sdist]
 # Issue #159: an exclude-blocklist can only omit what it names, so every
-# internal directory added later (`.claude/`, `.github/`, `AGENTS.md`,
-# `CLAUDE.md`, the agent scaffolding) shipped into the public sdist by
+# internal directories added later (agent scaffolding and CI metadata) shipped
+# into the public sdist by
 # default — 51 internal files on the PyPI source view. Use an
 # include-allowlist instead: the sdist ships only what a source consumer
 # needs to build, install, and satisfy the license, and any new
@@ -168,14 +168,14 @@ ignore = [
     "PLR0913",  # too-many-arguments — Typer commands legitimately have many
     "PLR0917",  # too-many-positional-arguments — same reason as PLR0913: Typer
                 # command options are declared as (keyword-defaulted) parameters
-    # The mvp-implement skill explicitly mandates `class Foo(str, Enum)`
+    # The implementation rules explicitly mandate `class Foo(str, Enum)`
     # (not `enum.StrEnum`) for the locked enums. The skill is the
     # implementation authority; UP042 would request a change that
     # violates the locked spec.
     "UP042",
     # `_LocalOpenSSLProblem` is the abstract base for the three local-
     # capability exceptions; it is private and not raised directly.
-    # The mvp-implement skill convention is `*Error` suffix on the
+    # The implementation convention is `*Error` suffix on the
     # public hierarchy (QureddyError, TargetParseError, RetryConfigError);
     # the private base does not need the suffix to be readable.
     "N818",
