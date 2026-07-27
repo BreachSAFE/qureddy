@@ -2,14 +2,25 @@
 
 This guide covers using `--format json` to capture scan results in a way CI pipelines, dashboards, or scripts can consume. Use it when you're wiring QuReddy into nightly scans, alerting, or compliance dashboards.
 
+## Contents
+
+- [Prerequisites](#prerequisites)
+- [Capture a result](#capture-a-result)
+- [Branch on the exit code](#branch-on-the-exit-code)
+- [Read fields with jq](#read-fields-with-jq)
+- [Scan several targets](#scan-several-targets)
+- [Aggregate results](#aggregate-results)
+- [Separate diagnostics](#separate-diagnostics)
+- [Handle failed scans](#handle-failed-scans)
+- [Schema stability](#schema-stability)
+- [Related documentation](#related-documentation)
+
 ## Prerequisites
 
 - A working `qureddy` install ([tutorial](../tutorials/your-first-scan.md))
 - A target list (one per line, or programmatically generated)
 
-## Steps
-
-### 1. Get JSON for a single target
+## Capture a result
 
 ```bash
 qureddy scan tls www.google.com --format json > scan.json
@@ -23,7 +34,7 @@ schema_version, scan, target, dependencies, assets, evidence, findings, summary
 
 Don't depend on field order *inside* the nested objects — only the top level is contractually stable.
 
-### 2. Check the exit code, not the JSON, for success/failure
+## Branch on the exit code
 
 QuReddy uses POSIX exit codes:
 
@@ -33,6 +44,7 @@ QuReddy uses POSIX exit codes:
 | 2 | Target scan failed (network, TLS, or parser error) |
 | 3 | Local OpenSSL is missing or unsupported (operator's problem, not the target's) |
 | 4 | Usage / configuration error (bad flag value, unknown retry category) |
+| 70 | Internal QuReddy error |
 
 In a CI step:
 
@@ -54,7 +66,7 @@ If you need to keep the pipeline running on a failed scan but record the result,
     set -e
 ```
 
-### 3. Extract the readiness verdict with `jq`
+## Read fields with jq
 
 ```bash
 qureddy scan tls www.google.com --format json | jq -r '.summary.readiness'
@@ -77,7 +89,7 @@ jq -r '.findings[] | "\(.rule_id) \(.readiness)"' scan.json
 jq -r '.evidence[].probe_result.command | "\(.executable) \(.args | join(" "))"' scan.json | sort -u
 ```
 
-### 4. Scan multiple targets in a loop
+## Scan several targets
 
 ```bash
 mkdir -p scans
@@ -88,7 +100,7 @@ done
 
 Each scan writes to its own file. The `|| true` keeps the loop running if individual scans fail; check exit codes if you need stricter behavior.
 
-### 5. Aggregate across many scans
+## Aggregate results
 
 `jq -s` ("slurp") combines multiple JSON files into one array:
 
@@ -106,15 +118,14 @@ Output:
 ]
 ```
 
-## Suppressing console logs
+## Separate diagnostics
 
-By default, INFO logs go to stderr. For clean JSON capture, redirect stderr or use `--quiet`:
+Machine output defaults to quiet logging. A successful scan without an
+explicit verbosity flag writes one document to standard output and leaves
+standard error empty. Redirect both streams when a pipeline needs explicit
+artifacts:
 
 ```bash
-# Suppress all but ERROR-level logs
-qureddy scan tls www.google.com --format json --quiet > scan.json
-
-# Or redirect stderr if you want to keep WARNING logs in a separate file
 qureddy scan tls www.google.com --format json > scan.json 2> scan.log
 ```
 
@@ -125,7 +136,7 @@ qureddy scan tls www.google.com --format json --json-logs > scan.json 2> scan.lo
 # scan.log now contains one JSON object per line
 ```
 
-## Failure diagnostics and merged streams
+## Handle failed scans
 
 JSON and CBOM failures still emit one structured document and preserve the
 documented nonzero exit code. With separate streams, an actionable operator
@@ -149,7 +160,7 @@ The top-level shape (`schema_version: "qureddy.scan.v1"`) will not change withou
 
 If you depend on a specific nested field, pin against the field name and tolerate missing optional fields. Don't depend on object-field order beyond the locked top-level keys.
 
-## Related
+## Related documentation
 
 - [Reference: JSON output schema](../reference/json-schema.md) — every field, every type
 - [Reference: Exit codes](../reference/exit-codes.md) — full surface

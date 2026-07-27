@@ -1,80 +1,129 @@
 # Threat model and scope
 
-QuReddy is a **read-only** TLS readiness scanner. This page documents what it assumes about the operator, the network, and the target — and what it does not try to defend against. Reading this before opening a security issue saves a round trip.
+QuReddy is a read-only endpoint measurement tool. It assumes an authorized
+operator and a trustworthy scanner host. It reports what its TLS and SSH
+probes observe; it is not a penetration test, trust validator, or defensive
+control.
+
+## Contents
+
+- [Operator assumptions](#operator-assumptions)
+- [Scanner host assumptions](#scanner-host-assumptions)
+- [Network assumptions](#network-assumptions)
+- [Target assumptions](#target-assumptions)
+- [In-scope protections](#in-scope-protections)
+- [Out-of-scope threats](#out-of-scope-threats)
+- [Privacy and data handling](#privacy-and-data-handling)
+- [Report a vulnerability](#report-a-vulnerability)
+- [Related documentation](#related-documentation)
 
 ## Operator assumptions
 
-QuReddy assumes the operator:
+The operator:
 
-- **Owns or has authorization to scan the target.** QuReddy makes no attempt to scan stealthily. It opens TCP connections, completes TLS handshakes, and produces detectable signatures (the second probe especially — a server that just saw an `X25519MLKEM768` ClientHello and now sees an `X25519`-only ClientHello from the same source IP within milliseconds is being scanned, and any halfway-decent IDS will flag it). Run this against your own infrastructure or with explicit permission.
+- owns the target or has authorization to scan it;
+- supplies the intended hostname, port, SNI, and collector path;
+- understands that endpoint probes are visible in network and service logs;
+- preserves the result's exit code and unknown states;
+- applies remediation outside QuReddy.
 
-- **Trusts their local OpenSSL binary.** QuReddy invokes `openssl` as a subprocess. The path resolution order (`--openssl` → `QUREDDY_OPENSSL` → PATH) lets the operator pin a specific binary. If your `openssl` is malicious, QuReddy has no defense — and neither does anything else on your system. This is a normal Unix-tool assumption.
+QuReddy does not scan stealthily or discover targets automatically.
 
-- **Trusts their Python interpreter and dependencies.** QuReddy is a Python 3.12+ package with declared deps (`typer`, `click`, `rich`, `pydantic`, `structlog`, `packaging`). Supply-chain compromise of any of these compromises QuReddy. The project tracks CVEs via `pip-audit` in CI per [`docs/contributors/coding-rules.md`](../contributors/coding-rules.md).
+## Scanner host assumptions
 
-- **Reads the verdict.** A `quantum_vulnerable` finding is informational, not actionable by the tool. QuReddy does not attempt to remediate, alert, or block. It produces a report; the human acts on it.
+The Python interpreter, installed package, dependencies, operating system,
+network resolver, and selected OpenSSL binary are trusted.
+
+TLS collector selection is explicit: `--openssl`, then `QUREDDY_OPENSSL`, then
+`openssl` on `PATH`. A malicious or replaced binary can fabricate output or
+execute with the operator's privileges. QuReddy checks capability and records
+path, version, subprocess digests, and bounded excerpts; it cannot establish
+the binary's supply-chain integrity at runtime.
+
+SSH scanning does not run OpenSSL.
 
 ## Network assumptions
 
-QuReddy assumes the network path between the scanner and the target:
+The network path:
 
-- **Allows outbound TLS to the target on the requested port.** Egress firewalls or proxies that intercept TLS will produce confusing results — middleboxes that downgrade or replace certificates will look like target misconfiguration in the output. Run from a network path you control.
+- permits outbound TCP to the named target;
+- does not transparently redirect the connection to a different endpoint;
+- may contain firewalls, proxies, load balancers, or middleboxes that affect
+  the observed result;
+- may fail or change between probes.
 
-- **Has acceptable latency for two sequential handshakes.** Each scan runs two probes (hybrid + classical) in sequence, each subject to `--timeout`. Pathological latency (>30s default) produces `target_connect_failed` or `tls_handshake_failed` even when the target is fine.
-
-- **Does not actively MITM.** A network attacker who can intercept and modify TLS traffic between the scanner and the target can produce arbitrary readiness verdicts. QuReddy does not validate certificates against pinned roots or compare server responses against an out-of-band source of truth.
+A network attacker that can alter DNS or traffic can influence the
+observation. QuReddy does not use an out-of-band endpoint identity channel.
 
 ## Target assumptions
 
-QuReddy assumes the target:
+TLS targets return protocol output that the supported OpenSSL collector can
+parse. SSH targets return an SSH identification string and KEXINIT packet
+within the configured timeout.
 
-- **Speaks TLS 1.3.** Both probes use `-tls1_3`. A target that only supports TLS 1.2 will fail both probes and report `tls_handshake_failed`. This is intentional — hybrid PQ groups are TLS-1.3-only.
+Malformed or conflicting responses become typed target or parse failures.
+Target-controlled text is treated as untrusted data and is not evaluated as
+code.
 
-- **Will negotiate a single key exchange group per handshake.** Standard TLS 1.3 behavior. A non-conforming server that returns multiple group names or no group line at all produces `parse_no_group` or `parse_ambiguous`.
+## In-scope protections
 
-- **Will produce parseable `openssl s_client -brief` output.** The parser is grounded in real OpenSSL 3.5.6 behavior. A server whose handshake produces `-brief` output not seen in the test fixtures may produce unexpected categorization. New shapes get added to the test fixture suite per [`docs/contributors/agents/...`](../contributors/agents/) skill `write-test-fixture`.
+QuReddy provides:
 
-## What QuReddy does not try to defend against
+- strict target parsing before network access;
+- allowlisted URI schemes;
+- explicit ports and bounded timeouts;
+- subprocess argument vectors without a shell;
+- bounded output excerpts and full output digests;
+- typed failure and unknown states;
+- standard output separation from diagnostics;
+- no SSH authentication or session creation;
+- CycloneDX semantic rejection of duplicate or dangling references and
+  secret-like material.
 
-These are explicitly out of scope. Filing an issue for any of these will be closed as not-a-bug:
+These properties limit scanner behavior and preserve evidence. They do not
+secure the target.
 
-- **Active attackers on the network path** (TLS interception, BGP hijacking, DNS cache poisoning). QuReddy is a measurement tool, not a defensive tool. Defense is the target server's responsibility — QuReddy reports what it sees.
+## Out-of-scope threats
 
-- **Compromised operator endpoint.** If the machine running `qureddy` is compromised, the attacker can replace the binary, modify the venv, intercept subprocess calls. There is no defense possible at the application layer for this.
+QuReddy does not defend against:
 
-- **Side-channel attacks against the scanner host.** Timing, power analysis, electromagnetic emanations from the scanner — out of scope. QuReddy is not a cryptographic implementation; it shells out to OpenSSL.
+- a compromised scanner host, Python environment, or selected OpenSSL binary;
+- DNS, routing, or active network interception;
+- endpoint compromise or deliberate deceptive responses;
+- denial of service against the scanner or target;
+- side-channel attacks on the scanner host;
+- TLS or SSH vulnerability exploitation;
+- decryption or key recovery;
+- certificate path, trust, hostname, revocation, or transparency validation;
+- complete application, source, binary, key, or certificate inventory;
+- automated remediation or blocking.
 
-- **Adversarial targets crafting confusing responses.** A target server that deliberately produces malformed `-brief` output to crash or mislead the parser is treated the same as accidentally-malformed output: the parser categorizes the failure into one of the documented `FailureCategory` values and the scan exits 2. The parser does not execute target-controlled content; it pattern-matches against typed regexes against a string buffer.
+Use a dedicated TLS vulnerability scanner for vulnerability assessment.
+QuReddy's scope is post-quantum readiness evidence.
 
-- **Decrypting target traffic, recovering target keys, exploiting target vulnerabilities.** QuReddy is a readiness scanner, not a penetration testing tool. It will not produce SSL/TLS exploits. Use [`testssl.sh`](https://testssl.sh) or [`sslyze`](https://github.com/nabla-c0d3/sslyze) for vulnerability assessment.
+## Privacy and data handling
 
-- **Privacy of the target.** QuReddy logs target hostnames, IPs, ports, SNI values, and OpenSSL output excerpts. If you need privacy of who you scanned, redact at the operator boundary (don't share scan logs with third parties).
+QuReddy makes no telemetry, analytics, update-check, or BreachSAFE service
+connection. It connects to the target named by the operator.
 
-## What QuReddy does provide
+Results can contain target names, IP addresses, ports, SNI, certificate
+metadata, algorithm names, local tool paths, bounded subprocess excerpts, and
+digests. Standard output, redirected files, logs, and artifacts remain under
+operator control. Operators must protect them according to their target and
+environment sensitivity.
 
-- **Determinism.** Same input produces the same output (modulo the `scan_id` UUID and timestamps). The JSON shape is locked at `qureddy.scan.v1`.
+## Report a vulnerability
 
-- **Auditable invocations.** `qureddy scan tls TARGET -vvv` shows the exact `openssl` commands. JSON output always includes the `command.executable` and `command.args` per probe. Operators can reproduce a probe by hand from the JSON.
+Do not report a vulnerability in a public issue. Follow the private process in
+[`SECURITY.md`](../../SECURITY.md).
 
-- **Forensic preservation.** SHA-256 of full stdout and stderr is recorded per probe even when only an excerpt is shown. The 4 KB excerpt is bounded; the hash lets a downstream consumer detect tampering or truncation.
+Questions about expected scope or classification may use the public issue
+tracker when they contain no sensitive target data.
 
-- **Failure categorization.** Every nonzero outcome maps to a typed `FailureCategory` value. Scripts can branch deterministically without parsing strings.
+## Related documentation
 
-- **Reproducible local capability check.** Capability detection runs `openssl version` and `openssl list -tls1_3 -tls-groups`. Operators can re-run those two commands by hand to verify the local environment matches what QuReddy reported.
-
-## Privacy and telemetry
-
-**No telemetry, ever.** QuReddy makes no outbound connections except to the targets the operator specifies. There is no analytics SDK, no auto-update check, no error reporting service, no usage statistics. The dependency list ([`pyproject.toml`](../../pyproject.toml)) is auditable; `pip-audit` runs in CI.
-
-The only data QuReddy collects is what the operator explicitly asked it to scan. That data goes to stdout (and, with `-v`+, to stderr). Where it goes after that is the operator's choice.
-
-## Reporting security issues
-
-Genuine security issues — vulnerabilities in the scanner that allow attacker-controlled execution, secrets disclosure, or scope escape — should follow [`SECURITY.md`](../../SECURITY.md). Behavioral questions ("does the scanner protect against X") should be filed as GitHub issues using the question template.
-
-## Related
-
-- [Why hybrid post-quantum?](why-hybrid-pq.md) — the cryptographic design QuReddy probes for
-- [Harvest now, decrypt later](hndl.md) — the threat model behind the migration timeline
-- [`SECURITY.md`](../../SECURITY.md) — vulnerability disclosure process
-- [`docs/contributors/coding-rules.md`](../contributors/coding-rules.md) — the security bar for code changes
+- [Evidence honesty](evidence-honesty.md)
+- [Why hybrid post-quantum](why-hybrid-pq.md)
+- [Harvest now, decrypt later](hndl.md)
+- [Failure categories](../reference/failure-categories.md)
+- [Security policy](../../SECURITY.md)

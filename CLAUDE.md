@@ -21,17 +21,32 @@ Open-source post-quantum cryptography readiness scanner. Find what's quantum-vul
 
 ## Repo state (read this first)
 
-**Shipped:** MVP 0.1 (TLS scanner, 2026-04-26), MVP 0.2 initial (cert signature-algorithm detection + legacy TLS 1.0/1.1/1.2 sweep in the default scan), MVP 0.3 prototype (`--format cbom`, CycloneDX 1.6 via `cyclonedx-python-lib`), and the SSH scanner (`qureddy scan ssh`, raw-socket KEXINIT probe, no subprocess — shipped 2026-07, version bumped to 0.2.0). Note: `docs/reference/milestones.md` still lists SSH under "MVP 0.4 Planned" — known doc drift.
+**Shipped:** TLS and SSH scanners; certificate signature observation; legacy
+TLS enumeration; Rich and `qureddy.scan.v1` JSON output; and CycloneDX 1.7
+CBOM output. The package version is 0.2.0. PyPI publication remains a release
+candidate until the public release program completes.
 
-- `src/qureddy/` — 41 source modules: `cli.py`, `_branding.py`, `core/{models,errors,logging,policy,retry,status,targets}.py`, `output/{json,cbom,_styles}.py`, `output/console/` (renderer split into `render` + `_commands/_errors/_evidence/_tables/_verdict` per ADR 0005), `scanners/tls/` (openssl_probe, scanner, parse, _classify, _evidence, _summary, legacy_probe, _legacy_findings, cert_probe, cert_sig, _cert_findings, _net), `scanners/ssh/{probe,scanner,classify}.py`. Authoritative count: `find src/qureddy -name '*.py' | wc -l`.
-- `tests/` — 17 unit test files + 1 live test file, ~290 tests collected, 80%+ coverage. Fixtures: 11 fake openssl shims under `tests/fixtures/openssl/fake/`, 8 captured `s_client -brief` fixtures under `tests/fixtures/openssl/`, cert fixtures under `tests/fixtures/certs/`. SSH tests use a real loopback TCP server, no fixtures on disk. Authoritative counts: `pytest --collect-only -q`.
+- `src/qureddy/` contains the CLI, shared core model, TLS and SSH scanners, and
+  Rich, JSON, and CBOM renderers. Derive the current module list with
+  `find src/qureddy -name '*.py' -print | sort`; do not hardcode a count.
+- `tests/` contains hermetic unit, integration, conformance, release-gate, and
+  live tests. Derive the current count with `pytest --collect-only -q`; do not
+  copy a snapshot count into prose.
+- Fixtures include captured OpenSSL output, executable fake OpenSSL shims,
+  certificate material, and pinned CycloneDX conformance cases with provenance.
 - `pyproject.toml` is wired with the runtime + dev deps; `qureddy.cli:main` is the install-time entrypoint (translates Click usage errors to exit code 4 per the documented exit-code surface).
 - `docs/` follows [Diátaxis](https://diataxis.fr) — see `docs/README.md` for the structure; ADR 0002 is the decision record.
 - `scratch/` holds prior agent work and review artifacts. Gitignored. `scratch/claude-1`, `scratch/claude-2`, `scratch/claude-3-developer/`, `scratch/staging/claude-app/` are untrusted prior art — read for historical context only; do not import from them, do not edit them as part of normal work.
 
-The current push is **PyPI release readiness (v1.0 track)**: green main, a tag-gated publish workflow with Trusted Publishing (issue #144 on staging), changelog/version coherence, and the launch-gate checklists (#49, #161, #162 on staging). See `docs/reference/milestones.md` for milestone scope and `.claude/skills/mvp-implement/SKILL.md` for the MVP implementation authority.
+The current push is the first PyPI release of 0.2.0. Public issues
+[#30](https://github.com/breachsafe/qureddy/issues/30) through
+[#36](https://github.com/breachsafe/qureddy/issues/36) are the release
+sequence. See `docs/reference/milestones.md` for exact status.
 
-**Issue-tracker split (issue #161):** `paul007ex/qureddy` (private staging) holds the real backlog (~150 open issues); `breachsafe/qureddy` (public) has a fresh, curated tracker. When a doc or changelog cites an issue number, check which tracker it belongs to — public links to staging numbers 404.
+**Issue-tracker split:** `breachsafe/qureddy` is the canonical public tracker.
+`paul007ex/qureddy` is private staging and retains historical planning records.
+When a document cites an issue or pull request, link the tracker that owns that
+record. Do not reuse a staging number as though it were a public reference.
 
 ## Where to look
 
@@ -80,10 +95,11 @@ See `.claude/skills/README.md` for the catalog.
 |---|---|
 | **MVP 0.1** | Shipped 2026-04-26. TLS scanner. Python via `uv`/`pipx`. Mac/Linux/Windows. No Docker. |
 | **MVP 0.2** | Shipped (initial). Cert signature-algorithm detection + legacy-protocol sweep; full cert-chain/key-size analysis still open. |
-| **MVP 0.3** | Shipped (prototype). CBOM via `--format cbom`; hardening (deterministic bom-refs, full protocol inventory) in open issues. |
+| **MVP 0.3** | Shipped. CycloneDX 1.7 CBOM via `--format cbom`; independently validated final bytes. |
 | **MVP 0.4** | SSH scanner — shipped early as `scan ssh` (v0.2.0). |
 | **MVP 0.5 - 0.6** | Config (0.5) and source-code (0.6) scanners. Planned. |
-| **v1.0 (current push)** | Full OSS release: PyPI publish, Docker image at `ghcr.io/breachsafe/qureddy`, signed artifacts, full docs, community-ready. |
+| **0.2.0 PyPI** | Current release candidate: package proof, local release gate, documentation, and TestPyPI rehearsal. |
+| **v1.0** | Planned broader release milestone. No Docker, signature, or provenance artifact is claimed yet. |
 | **P2** | Enterprise tier (cloud scanners, SaaS, SIEM integrations, RBAC). Docker is not the differentiator. |
 
 OpenSSF Best Practices Badge target: passing by MVP 0.6, silver by v1.0.
@@ -101,11 +117,12 @@ uv pip install -e ".[dev]"
 qureddy scan tls www.google.com
 qureddy scan tls 1.1.1.1:443 --sni one.one.one.one
 qureddy scan tls TARGET --format json
-qureddy scan tls TARGET --format cbom     # CycloneDX 1.6 CBOM
+qureddy scan tls TARGET --format cbom     # CycloneDX 1.7 CBOM
 qureddy scan ssh github.com               # SSH KEXINIT probe (no OpenSSL dependency)
 
 # Tier 1 quality gates (full suite incl. pip-audit, deptry, reuse-lint)
 just gates
+just release-gate
 
 # Or run individually — verify-only, do not modify files
 ruff check .
@@ -129,12 +146,14 @@ Decisions marked **pending** in `docs/contributors/coding-rules.md` should not b
 
 | Component | Decision |
 |---|---|
-| Language | Python 3.12+ |
+| Language | Python 3.12 (`>=3.12,<3.13` package metadata) |
 | Dev tooling | `uv` |
 | CLI | Typer + Rich |
-| Async | `asyncio` + `aiosqlite` (storage deferred until diff capability lands) |
-| TLS scanner | OpenSSL 3.5 subprocess via dedicated probe module (`scanners/tls/openssl_probe.py`) |
-| Templates | Jinja2 + Tailwind CDN, single-file HTML |
+| Async | Not used by the shipped scanners |
+| TLS scanner | OpenSSL 3.5+ subprocesses behind dedicated probe modules |
+| SSH scanner | Direct bounded socket probe; no OpenSSL subprocess |
+| Storage | None in the shipped package |
+| HTML templates | Not shipped |
 | Logging | `structlog` |
 | Testing | `pytest` + `pytest-rerunfailures` (3 retries, 1s delay, every test runs every time) |
 
@@ -171,7 +190,7 @@ The user can override docs (4 over 3) but cannot override security (4 cannot ove
 
 Two escape hatches exist when you must deviate from the rules — both go in your final response, not in code comments:
 
-- `ANTIPATTERN ACCEPTED: <name>, because <reason>` — for an intentional rule violation. The known accepted one for MVP 0.1 is the CycloneDX-flavored fields on `Asset`/`Finding` (schema stability before CBOM emission).
+- `ANTIPATTERN ACCEPTED: <name>, because <reason>` — for an intentional rule violation. Current accepted exceptions are recorded beside the relevant implementation and ADR.
 - `ASSUMPTION: I am assuming X because the spec is silent on it. If wrong, change to Y.` — when the spec leaves a gap. Do not invent file paths, function names, or library APIs to fill it.
 
 ## How to start a session
@@ -184,7 +203,9 @@ If you are Claude Code starting a fresh session:
 4. Read `docs/contributors/coding-rules.md` before writing any code.
 5. Begin work. Audit your output against `docs/contributors/agent-antipatterns.md` before each response.
 
-If asked for an MVP 0.1 implementation task, the **only** operational authority is `.claude/skills/mvp-implement/SKILL.md`. The skill is self-contained — every use case, locked model, retry rule, JSON shape, and exit code lives inside it. The earlier monolithic prompt was removed from the public tree; if you genuinely need to see the original verbose draft for historical context, it is at `scratch/MVP-0.1-CLAUDE-PROMPT.md` (gitignored, local only).
+`.claude/skills/mvp-implement/SKILL.md` is historical authority for the
+original TLS-only milestone. Do not use it to override current TLS, SSH, CBOM,
+packaging, or release behavior.
 
 ## License
 

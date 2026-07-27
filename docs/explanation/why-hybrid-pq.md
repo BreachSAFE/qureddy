@@ -1,76 +1,93 @@
-# Why hybrid post-quantum?
+# Why hybrid post-quantum key exchange
 
-QuReddy probes for `X25519MLKEM768` — a hybrid of X25519 (classical elliptic curve) and ML-KEM-768 (post-quantum lattice). It does not probe for pure ML-KEM. This page explains why the hybrid construction exists and what "transitional" means as a readiness verdict.
+QuReddy's TLS readiness probe requests `X25519MLKEM768`, which combines
+classical X25519 with ML-KEM-768. The SSH scanner recognizes offered hybrid
+families containing `mlkem768x25519` or `sntrup761x25519`. Hybrid deployment
+adds post-quantum confidentiality while retaining a classical component.
 
-## The two threats hybrid defends against
+## Contents
 
-A pure post-quantum (PQ) key exchange protects against a future quantum computer. A pure classical key exchange protects against today's classical attackers. A hybrid construction combines both, so a session is secure if **either** primitive holds.
+- [Threats addressed](#threats-addressed)
+- [Why combine two primitives](#why-combine-two-primitives)
+- [Why ML-KEM-768 and X25519](#why-ml-kem-768-and-x25519)
+- [Readiness vocabulary](#readiness-vocabulary)
+- [Key exchange and authentication](#key-exchange-and-authentication)
+- [Why collection starts now](#why-collection-starts-now)
+- [Related documentation](#related-documentation)
 
-This matters because PQ algorithms are young. ML-KEM was standardized as [FIPS 203](https://csrc.nist.gov/pubs/fips/203/final) in August 2024. It is the result of a six-year NIST competition and the surviving design from the CRYSTALS-Kyber submission, but six years is short by cryptographic standards. AES had decades of analysis before deployment; RSA has had four decades; ECC almost three. ML-KEM has had less than ten.
+## Threats addressed
 
-The conservative position is: trust ML-KEM enough to **add** it as a defense, not enough to **replace** classical primitives yet. Hybrid is the conservative position.
+Classical elliptic-curve key exchange is vulnerable to Shor's algorithm on a
+sufficiently capable quantum computer. ML-KEM is standardized in
+[FIPS 203](https://csrc.nist.gov/pubs/fips/203/final) and is not based on the
+same mathematical problem.
 
-## What hybrid actually means at the protocol layer
+Hybrid key exchange derives session key material from both a classical and a
+post-quantum contribution. The security goal is that session confidentiality
+survives when at least one approved contribution remains secure.
 
-A hybrid TLS 1.3 key exchange sends two key shares in the ClientHello — one X25519 share and one ML-KEM-768 share. The server combines both shared secrets through a KDF into a single session key. An attacker has to break both X25519 *and* ML-KEM-768 to recover the session key. There is no fallback path that uses only one of them.
+## Why combine two primitives
 
-Concretely, `X25519MLKEM768`'s combined secret is derived as roughly:
+Replacing a mature classical primitive immediately would make the new
+post-quantum primitive the only protection. A hybrid combines migration
+protection with continued classical protection.
 
-```
-combined_secret = HKDF-Extract(salt=0, ikm = X25519_shared || MLKEM768_shared)
-```
+This is a transition posture, not proof that every aspect of the connection is
+post-quantum. Protocol authentication can remain classical even when key
+exchange is hybrid.
 
-(The exact KDF construction is in [RFC 9180](https://datatracker.ietf.org/doc/rfc9180/) for HPKE-style hybrids and the in-progress [draft-ietf-tls-hybrid-design](https://datatracker.ietf.org/doc/draft-ietf-tls-hybrid-design/) for TLS 1.3 specifically.)
+## Why ML-KEM-768 and X25519
 
-If quantum computing breaks elliptic curve cryptography in 2035, the X25519 half of past hybrid sessions becomes recoverable. The ML-KEM-768 half does not. The session key remains secret.
+ML-KEM-768 is the middle ML-KEM parameter set in FIPS 203. X25519 is the
+classical component used by the TLS group that QuReddy requests.
 
-If a flaw is discovered in ML-KEM-768 in 2027 (the more pressing concern, given the algorithm's youth), the X25519 half still protects sessions captured today.
+QuReddy does not choose a target's production configuration. It tests the
+named group supported by its OpenSSL collector and reports the actual
+negotiation. SSH reports recognized hybrid algorithms from the server's offer
+instead of forcing a choice.
 
-## Why X25519 + ML-KEM-768 specifically
+An algorithm name in a handshake is an observation. It is not proof that the
+remote software or cryptographic module has a FIPS validation.
 
-Of the standardized hybrids, `X25519MLKEM768` is the IETF's currently-converging choice. It pairs a well-understood classical primitive with the smallest of the standardized ML-KEM parameter sets. ML-KEM-768 corresponds to NIST security level 3 — roughly equivalent to AES-192. Sufficient for general-purpose web TLS; the larger parameter sets (ML-KEM-1024 at level 5) are reserved for higher-stakes applications.
+## Readiness vocabulary
 
-Other named hybrids (`SecP256r1MLKEM768`, `SecP384r1MLKEM1024`) exist but `X25519MLKEM768` is what major TLS implementations (OpenSSL 3.5+, Cloudflare, Google) have converged on for default deployments in 2025–2026.
+| Value | Meaning |
+| --- | --- |
+| `transitional_hybrid` | A recognized classical plus post-quantum key exchange was negotiated or offered |
+| `quantum_vulnerable` | The observed key exchange posture was classical only |
+| `classically_weak` | A separately observed classical weakness takes rollup precedence |
+| `quantum_safe` | Reserved for evidence establishing a pure post-quantum posture |
+| `unknown` | Collection could not establish a posture |
+| `not_applicable` | The readiness question does not apply to the asset |
 
-QuReddy will report any of these as `transitional_hybrid`; it specifically probes for `X25519MLKEM768` because that's what reachable test endpoints actually deploy today.
+`transitional_hybrid` is narrower than `quantum_safe`. It states the observed
+transition mechanism.
 
-## What the readiness verdicts mean
+## Key exchange and authentication
 
-The readiness vocabulary mirrors the conservative position:
+Hybrid key exchange protects session key establishment against harvest now,
+decrypt later exposure. TLS authentication can still depend on classical
+certificate signatures. SSH host keys can remain classical, and a weak host
+key offer can produce `classically_weak`.
 
-| Verdict | What it means | When it fires |
-|---|---|---|
-| `quantum_safe` | Pure PQ — no classical primitive in the key exchange | Not seen in the wild at MVP 0.1; reserved for future state |
-| `transitional_hybrid` | Hybrid (classical + PQ together) | The current best-practice deployment; what Google and Cloudflare ship |
-| `quantum_vulnerable` | Pure classical key exchange | The default state for most servers in 2026 |
-| `classically_weak` | Broken classical primitive (RSA-1024, MD5 cert sig, etc.) | Reserved for MVP 0.2 cert-chain analysis |
-| `unknown` | Couldn't probe (local capability or target unreachable) | Operator's environment or target connectivity |
-| `not_applicable` | Scan doesn't apply to this asset | Reserved |
+The TLS scanner observes the leaf certificate signature algorithm but does not
+validate the chain. It does not claim that all certificates, keys, signatures,
+or application data paths are post-quantum.
 
-`transitional_hybrid` is *not* the final destination. It's the right answer for **now** — until ML-KEM has had enough deployment exposure to justify pure-PQ defaults, and until certificate chains migrate to ML-DSA or SLH-DSA signatures.
+## Why collection starts now
 
-## Why "transitional" and not "ready"
+An adversary can retain encrypted traffic before a cryptographically relevant
+quantum computer exists. A future capability could affect the confidentiality
+of traffic captured under vulnerable key exchange today.
 
-A `transitional_hybrid` server still has a classical certificate chain (RSA-2048 or ECDSA P-256 signatures). A future quantum attacker can:
+Deployment and evidence collection therefore precede the future threat.
+QuReddy measures the current endpoint posture so an operator can identify the
+migration gap without treating a forecast date as a prerequisite.
 
-1. Recover the cert's private key from a captured signature (Shor's algorithm against ECDSA, factoring against RSA)
-2. Forge a new cert in the server's name
-3. Run an active man-in-the-middle attack against present-day TLS sessions
+## Related documentation
 
-So `transitional_hybrid` protects **session secrecy** against harvest-now-decrypt-later attacks (see [HNDL](hndl.md)) but does not protect against a future quantum attacker actively impersonating the server. Full PQ readiness requires both PQ key exchange (hybrid is sufficient) **and** PQ signatures throughout the certificate chain.
-
-QuReddy at MVP 0.1 only checks the key exchange. Cert-chain analysis lands at MVP 0.2. Until then, the readiness verdict reflects key-exchange posture only, and the recommendation copy explicitly notes that the cert chain remains classical.
-
-## Why this matters now and not in 2035
-
-The deployment timeline is driven by [HNDL](hndl.md): an attacker recording today's TLS traffic to decrypt it after a quantum breakthrough. The quantum breakthrough may be 2035 or 2045 or never. The traffic recording is happening now. Hybrid PQ key exchange is the only defense that protects sessions captured **today**. Waiting until quantum computers exist to deploy hybrid is too late by definition — the harvest happened years ago.
-
-This is why responsible TLS operators (Cloudflare, Google, Apple, Meta) deployed hybrid PQ in 2024–2025, before any quantum threat materialized. The migration is forward-looking by design.
-
-## Related
-
-- [Harvest now, decrypt later (HNDL)](hndl.md) — the threat model that drives the timeline
-- [Threat model and scope](threat-model.md) — what QuReddy assumes, what it doesn't try to defend against
-- [Reference: Failure categories](../reference/failure-categories.md) — the `unknown` verdict's two failure modes (local vs target)
-- [NIST FIPS 203 — ML-KEM](https://csrc.nist.gov/pubs/fips/203/final) — the standard
-- [draft-ietf-tls-hybrid-design](https://datatracker.ietf.org/doc/draft-ietf-tls-hybrid-design/) — the TLS 1.3 hybrid construction
+- [Harvest now, decrypt later](hndl.md)
+- [Evidence honesty](evidence-honesty.md)
+- [Threat model](threat-model.md)
+- [JSON readiness values](../reference/json-schema.md#enumerated-values)
+- [NIST FIPS 203](https://csrc.nist.gov/pubs/fips/203/final)

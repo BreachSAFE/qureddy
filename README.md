@@ -1,201 +1,207 @@
 # BreachSAFE QuReddy
 
-[![Version](https://img.shields.io/badge/version-0.2.0-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.0-blue?style=flat-square)](https://github.com/breachsafe/qureddy/blob/main/CHANGELOG.md)
 [![Python](https://img.shields.io/badge/python-3.12-blue?style=flat-square&logo=python&logoColor=white)](https://www.python.org/downloads/)
-[![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue?style=flat-square)](LICENSE)
+[![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue?style=flat-square)](https://github.com/breachsafe/qureddy/blob/main/LICENSE)
 [![Code Style: Ruff](https://img.shields.io/badge/code%20style-ruff-D7FF64?style=flat-square&logo=ruff&logoColor=black)](https://docs.astral.sh/ruff/)
 [![Type Checked: mypy strict](https://img.shields.io/badge/type%20check-mypy%20strict-blue?style=flat-square)](https://mypy-lang.org/)
 
-QuReddy scans a TLS or SSH endpoint and tells you where it stands on the move to
-post-quantum cryptography. It runs real OpenSSL handshakes against the target,
-reports what was actually negotiated, and makes only the handshakes any client
-would make.
+QuReddy is an Apache 2.0 command line scanner for post-quantum readiness at
+TLS and SSH endpoints. It records the protocol and cryptographic evidence that
+the endpoint exposes to a client, then reports the observed readiness posture.
 
-It runs in your terminal, is licensed Apache 2.0, and connects only to the host
-you name on the command line.
+TLS scans use a local OpenSSL 3.5 or newer binary. SSH scans read the server's
+cleartext KEXINIT offer directly and do not require OpenSSL.
 
 ## Contents
 
-- [What it does](#what-it-does)
 - [Install](#install)
-- [Usage](#usage)
-- [Example](#example)
-- [Output formats](#output-formats)
+- [Run the first SSH scan](#run-the-first-ssh-scan)
+- [Prepare OpenSSL for TLS](#prepare-openssl-for-tls)
+- [Run the first TLS scan](#run-the-first-tls-scan)
+- [Write JSON or CBOM output](#write-json-or-cbom-output)
+- [Interpret the evidence](#interpret-the-evidence)
 - [Exit codes](#exit-codes)
-- [How it reads a target](#how-it-reads-a-target)
-- [Scope](#scope)
+- [Network and privacy scope](#network-and-privacy-scope)
 - [Requirements](#requirements)
-- [Documentation](#documentation)
+- [Documentation and support](#documentation-and-support)
 - [Contributing](#contributing)
 - [License](#license)
 
-## What it does
-
-Point it at a host and it runs a short battery of live probes:
-
-- **Post-quantum key exchange.** Forces the `X25519MLKEM768` hybrid group and
-  reports whether the server negotiates it. This is the headline signal: a
-  server that speaks the hybrid group is protected against *harvest-now,
-  decrypt-later* interception today.
-- **Classical key exchange.** Forces classical `X25519` as a control, so the
-  report distinguishes "only classical is available" from "hybrid works and
-  classical is also still accepted."
-- **Legacy protocols.** Sweeps TLS 1.0, 1.1, and 1.2 and enumerates the cipher
-  suites each one actually accepts, so deprecated-protocol exposure shows up
-  alongside the quantum posture.
-- **Certificate signature.** Reads the leaf certificate's signature algorithm
-  and flags whether it is classical or post-quantum.
-
-The result is a two-axis verdict — quantum posture on one line, protocol
-hygiene on the other — because a server can be doing the right thing on one and
-the wrong thing on the other, and a single pass/fail hides that. When a probe
-fails, the report shows the actual OpenSSL error (for example, a
-`tlsv1 alert insufficient security` from a server that rejects the hybrid
-group) instead of a generic "try again."
-
 ## Install
+
+Install the PyPI distribution with `pipx`:
 
 ```bash
 pipx install breachsafe-qureddy
+qureddy --version
 ```
 
-`pipx` is the recommended human install because it gives the `qureddy` command
-its own environment. For a library, container, or managed virtual environment,
-use `python -m pip install breachsafe-qureddy`.
+The expected version line is:
 
-The Python package does not bundle OpenSSL. SSH scans work immediately, but TLS
-scans need a separate OpenSSL 3.5+ binary. On macOS, `/usr/bin/openssl` is
-LibreSSL and will not work; install OpenSSL and point QuReddy at it:
+```text
+BreachSAFE QuReddy 0.2.0 -- https://www.breachsafe.ai
+```
+
+`pipx` creates an isolated environment and places `qureddy` on your command
+path. See the [installation and troubleshooting guide](https://github.com/breachsafe/qureddy/blob/main/docs/how-to/install.md)
+for macOS, Linux, Windows, virtual environment, upgrade, and uninstall
+instructions.
+
+## Run the first SSH scan
+
+This command needs network access to `github.com` on TCP port 22. It does not
+need OpenSSL:
+
+```bash
+qureddy scan ssh github.com
+```
+
+The scanner observes the offered key exchange and host key algorithms. A
+successful scan exits `0` even when it reports a vulnerable posture.
+
+## Prepare OpenSSL for TLS
+
+TLS scanning requires OpenSSL 3.5 or newer with the
+`X25519MLKEM768` TLS group. LibreSSL is not supported.
+
+On macOS with Homebrew:
 
 ```bash
 brew install openssl@3
 export QUREDDY_OPENSSL="$(brew --prefix openssl@3)/bin/openssl"
+qureddy scan tls --help
 ```
 
-## Usage
+Linux and Windows installations vary by distribution. Confirm the selected
+binary before scanning:
 
 ```bash
-qureddy scan tls www.google.com
+openssl version
+openssl list -tls1_3 -tls-groups
+```
+
+If `openssl` is not the intended binary, set `QUREDDY_OPENSSL` or pass
+`--openssl PATH`. The [installation guide](https://github.com/breachsafe/qureddy/blob/main/docs/how-to/install.md) documents
+the supported resolution order and failure diagnostics.
+
+## Run the first TLS scan
+
+This command needs network access to
+`pq.cloudflareresearch.com` on TCP port 443:
+
+```bash
 qureddy scan tls pq.cloudflareresearch.com
-qureddy scan tls 1.1.1.1:443 --sni one.one.one.one
-qureddy scan tls example.com --format json
-qureddy scan tls example.com -vvv        # show the exact OpenSSL commands run
 ```
 
-Run `qureddy scan tls --help` for the full option list (SNI override, timeout,
-retries, output format, verbosity).
+A TLS scan separately checks hybrid TLS 1.3 key exchange, a classical TLS 1.3
+control, legacy TLS protocol offers, and the leaf certificate signature
+algorithm. The scan does not validate certificate trust, revocation, or the
+remote software implementation.
 
-### Scan SSH / SFTP endpoints
+For an IP target that requires Server Name Indication (SNI):
 
 ```bash
-qureddy scan ssh github.com
-qureddy scan ssh sftp.vendor.example.com:2222
-qureddy scan ssh github.com --format json
+qureddy scan tls 1.1.1.1:443 --sni one.one.one.one
 ```
 
-The SSH scanner reads the endpoint's offered key-exchange and host-key
-algorithms from the cleartext SSH handshake — no OpenSSL required (the
-LibreSSL/OpenSSL prerequisite that applies to `scan tls` does not apply). It
-reports the same readiness verdicts: `transitional_hybrid` when a post-quantum
-hybrid KEX (`mlkem768x25519` / `sntrup761x25519`) is offered, `quantum_vulnerable`
-for classical-only, and `classically_weak` when a deprecated host key (e.g.
-`ssh-dss`) is present. Run `qureddy scan ssh --help` for details.
+## Write JSON or CBOM output
 
-SFTP endpoints are typically IP-allowlisted, so run the scan from inside your
-allowlisted network.
+Use JSON for QuReddy's complete scan result:
 
-## Example
-
-```text
-$ qureddy scan tls www.google.com
-
-┏━ QuReddy scan: tls://www.google.com:443 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ PQ posture: ACCEPTABLE — X25519MLKEM768 negotiated                          ┃
-┃ Protocol hygiene: ACTION NEEDED — TLSv1, TLSv1.1                            ┃
-┃ PQ hybrid X25519MLKEM768 works. Legacy TLSv1, TLSv1.1 remain enabled;       ┃
-┃ disable them when client compatibility allows.                             ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-
- Findings
- Severity  Rule                                  Protocol  Crypto
- ────────────────────────────────────────────────────────────────────────
- medium    tls.legacy.protocol_offered           TLSv1     legacy protocol
- medium    tls.legacy.protocol_offered           TLSv1.1   legacy protocol
- low       tls.classical.negotiated_x25519       TLSv1.3   X25519
- low       tls.classical.protocol_offered        TLSv1.2   classical suites
- info      tls.hybrid.negotiated_x25519mlkem768  TLSv1.3   X25519MLKEM768
- info      tls.cert.signature_algorithm          —         ecdsa-with-SHA256
+```bash
+qureddy scan ssh github.com --format json > github-ssh.json
 ```
 
-The full output also includes a Scan details block (protocol, cipher suite,
-per-probe result) and a Run details block (scan ID, timestamps, duration, and
-the exact OpenSSL binary used).
+Use CBOM for a CycloneDX 1.7 Cryptography Bill of Materials containing the
+positively observed cryptographic assets:
 
-## Output formats
+```bash
+qureddy scan ssh github.com --format cbom > github-ssh.cdx.json
+```
 
-| `--format` | What you get |
-|---|---|
-| `rich` (default) | The colored terminal report above. |
-| `json` | A stable machine document, schema `qureddy.scan.v1` — findings, evidence, and per-probe results. See the [JSON schema reference](docs/reference/json-schema.md). |
-| `cbom` | A validated CycloneDX 1.7 Cryptography Bill of Materials of positively observed crypto assets. |
+Machine modes write one parseable document to standard output. Without an
+explicit verbosity flag, successful scans keep standard error empty.
+
+See [generate and validate a CBOM](https://github.com/breachsafe/qureddy/blob/main/docs/how-to/generate-a-cbom.md),
+[JSON output](https://github.com/breachsafe/qureddy/blob/main/docs/reference/json-schema.md), and
+[CBOM output](https://github.com/breachsafe/qureddy/blob/main/docs/reference/cbom.md)
+for the exact contracts.
+
+## Interpret the evidence
+
+QuReddy separates four kinds of statement:
+
+- An observation records what the endpoint returned.
+- A local capability record describes the scanner host, such as its OpenSSL
+  version.
+- A finding interprets one or more observations under a named rule.
+- `unknown` or `not_testable` preserves a missing or failed observation.
+
+The scanner does not claim a complete cryptographic inventory, FIPS
+validation, remote implementation identity, certificate trust, or revocation
+status. See [evidence honesty](https://github.com/breachsafe/qureddy/blob/main/docs/explanation/evidence-honesty.md).
 
 ## Exit codes
 
-| Code | Meaning |
-|---|---|
-| `0` | Scan completed. |
-| `2` | The target scan failed (handshake, parse, connection). |
-| `3` | The local OpenSSL is missing or unusable for PQC probing. |
-| `4` | Usage or configuration error. |
-| `70` | Internal error in QuReddy itself. |
+| Code | Meaning | Scanner |
+| --- | --- | --- |
+| `0` | Scan completed; inspect the reported readiness | TLS and SSH |
+| `2` | Target connection, handshake, or parse failed | TLS and SSH |
+| `3` | Local OpenSSL is missing or unusable | TLS only |
+| `4` | Usage or configuration error | TLS and SSH |
+| `70` | Internal QuReddy error | Process wide |
 
-Full detail: [exit codes](docs/reference/exit-codes.md) and
-[failure categories](docs/reference/failure-categories.md).
+Scripts must branch on the exit code instead of treating a readiness finding
+as process failure. See the [exit code reference](https://github.com/breachsafe/qureddy/blob/main/docs/reference/exit-codes.md).
 
-## How it reads a target
+## Network and privacy scope
 
-QuReddy accepts a hostname, `host:port`, a `tls://` URL, or an IP address. For
-an IP target, pass `--sni` so the server knows which certificate to present.
-OpenSSL path resolution is `--openssl PATH`, then the `QUREDDY_OPENSSL`
-environment variable, then `openssl` on your `PATH`.
+QuReddy connects only to the target named on the command line. TLS scans make
+bounded TLS handshakes. SSH scans read the server identification and KEXINIT
+offer without authenticating or opening an SSH session.
 
-## Scope
-
-QuReddy is read-only: it observes handshakes and reports what it saw. It leaves
-the target unchanged, and the only network traffic it generates is the
-handshakes to the host you name. It reports the cryptography it observed and
-stops there — turning that into a compliance pass/fail is a separate step that
-lives outside the scanner.
+The scanner does not change the target, send telemetry, store scan history, or
+contact a BreachSAFE service. Redirected JSON and CBOM files remain on the
+operator's system unless the operator sends them elsewhere.
 
 ## Requirements
 
-- Python 3.12 (the currently tested and supported minor release)
-- OpenSSL 3.5+ (LibreSSL is not supported — it lacks the PQC groups)
+- Python `>=3.12,<3.13`
 - macOS, Linux, or Windows
+- Network reachability to the named target
+- OpenSSL 3.5 or newer for TLS scans only
 
-## Documentation
+The clean artifact matrix installs the wheel, source distribution, and pipx
+application on Linux, macOS, and Windows. Platform support does not imply that
+every operating system package repository supplies a suitable OpenSSL build.
 
-Docs follow the [Diátaxis](https://diataxis.fr) structure — see
-[`docs/README.md`](docs/README.md) for the full map.
+## Documentation and support
 
-- [Your first scan](docs/tutorials/your-first-scan.md) — start here
-- [Scan an IP with custom SNI](docs/how-to/scan-ip-with-sni.md)
-- [JSON output for CI](docs/how-to/json-output-for-ci.md)
-- [CLI reference](docs/reference/cli.md)
-- [Why hybrid PQ?](docs/explanation/why-hybrid-pq.md) · [Harvest now, decrypt later](docs/explanation/hndl.md)
+- [Documentation index](https://github.com/breachsafe/qureddy/blob/main/docs/README.md)
+- [CLI reference](https://github.com/breachsafe/qureddy/blob/main/docs/reference/cli.md)
+- [Install and troubleshoot](https://github.com/breachsafe/qureddy/blob/main/docs/how-to/install.md)
+- [Scan SSH or SFTP](https://github.com/breachsafe/qureddy/blob/main/docs/how-to/scan-ssh.md)
+- [Security policy and private disclosure](https://github.com/breachsafe/qureddy/blob/main/SECURITY.md)
+- [Public issue tracker](https://github.com/breachsafe/qureddy/issues)
+
+Do not file security vulnerabilities in the public issue tracker. Follow
+[`SECURITY.md`](https://github.com/breachsafe/qureddy/blob/main/SECURITY.md)
+for private reporting.
 
 ## Contributing
 
-See [`CONTRIBUTING.md`](CONTRIBUTING.md) and
-[`docs/contributors/`](docs/contributors/). The project runs ruff,
-mypy `--strict`, bandit, and pytest; the engineering standards are in
-[`docs/contributors/coding-rules.md`](docs/contributors/coding-rules.md).
-
-Report bugs and request features through
-[GitHub Issues](https://github.com/breachsafe/qureddy/issues). Security reports
-go through [`SECURITY.md`](SECURITY.md).
+See [`CONTRIBUTING.md`](https://github.com/breachsafe/qureddy/blob/main/CONTRIBUTING.md)
+and the
+[contributor documentation](https://github.com/breachsafe/qureddy/tree/main/docs/contributors/).
+The repository enforces
+formatting, lint, strict type checking, tests, security scans, dependency
+audits, license metadata, file size policy, CBOM conformance, and release
+artifact checks.
 
 ## License
 
-Apache 2.0 — see [`LICENSE`](LICENSE) and [`LICENSES/`](LICENSES/).
-REUSE-compliant ([`REUSE.toml`](REUSE.toml)).
+Apache License 2.0. See
+[`LICENSE`](https://github.com/breachsafe/qureddy/blob/main/LICENSE),
+[`LICENSES/`](https://github.com/breachsafe/qureddy/tree/main/LICENSES/), and
+[`REUSE.toml`](https://github.com/breachsafe/qureddy/blob/main/REUSE.toml).

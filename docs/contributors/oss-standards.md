@@ -2,7 +2,15 @@
 
 This project commits to the following standards. Pull requests that violate them will be revised before merge.
 
----
+## Contents
+
+- [Agent working standard](#agent-working-standard)
+- [Repository hygiene](#repository-hygiene)
+- [Documentation hygiene](#documentation-hygiene)
+- [Code hygiene](#code-hygiene)
+- [Community hygiene](#community-hygiene)
+- [Release hygiene](#release-hygiene)
+- [Things we do not do](#things-we-do-not-do)
 
 ## Agent working standard
 
@@ -61,13 +69,17 @@ Agents working on this repo follow the contract in `docs/contributors/agent-anti
 
 - CI must pass before merge to main.
 - main is always releasable.
-- Releases are signed with Sigstore.
+- Release signing with Sigstore is a planned hardening step, not a claim about
+  the current candidate.
 - Each release has a release note with what-changed-and-why.
-- Release artifacts are built by CI, not manually from a maintainer laptop.
+- The repository-owned local release gate builds and verifies the candidate
+  artifacts. Hosted CI mirrors that gate on supported platforms before merge.
+- Publication uses the exact verified candidate artifacts and requires explicit
+  release authorization.
 
 ---
 
-## Things we don't do
+## Things we do not do
 
 - We don't merge to main without CI passing.
 - We don't ship features without tests.

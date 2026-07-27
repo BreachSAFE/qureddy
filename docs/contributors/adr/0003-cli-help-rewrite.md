@@ -1,12 +1,19 @@
 # ADR 0003 — CLI `--help` rewrite per best-practice patterns
 
-**Status:** Implementing — slices 1–3 of 4 shipped (#41); slice 4 in progress
+**Status:** Accepted and implemented
 **Date:** 2026-04-26
 **Deciders:** Paul Volosen, project lead
 **Consulted:** Claude (review)
 **Informed:** Codex
 **Supersedes:** none
 **Superseded by:** none
+
+**Implementation evidence:** The installed 0.2.0 root, `scan`, `scan tls`, and
+`scan ssh` help surfaces include short help, examples, exit codes, and
+environment guidance. Public
+[PR #24](https://github.com/breachsafe/qureddy/pull/24) completed the TLS and
+SSH help copy. Historical issue numbers in the decision narrative refer to the
+pre-cutover staging tracker and are not public release references.
 
 ---
 

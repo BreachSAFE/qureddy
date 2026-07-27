@@ -1,9 +1,7 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
 # SPDX-License-Identifier: Apache-2.0
-# Pre-MVP skeleton. The [project] block stays minimal until MVP 0.1
-# implementation lands real source files. The [tool.*] blocks lock
-# the enterprise-grade gates from day 0 so they apply to the first
-# line of code anyone writes.
+# Release metadata and quality-tool configuration for the shipped TLS and SSH
+# scanner package. Keep the project table aligned with the tested wheel.
 
 [project]
 name = "breachsafe-qureddy"

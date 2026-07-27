@@ -2,6 +2,15 @@
 
 This directory follows **[Diátaxis](https://diataxis.fr)** — every documentation page belongs to exactly one of four quadrants. Mixing types in the same page is the primary doc smell Diátaxis is designed to prevent, so each page below has one job.
 
+## Contents
+
+- [The four quadrants](#the-four-quadrants)
+- [QuReddy documentation](#qureddy-documentation)
+- [Contributor documentation](#contributor-documentation)
+- [Editorial rules](#editorial-rules)
+- [Add a page](#add-a-page)
+- [Why Diátaxis](#why-diátaxis)
+
 ## The four quadrants
 
 |  | Theoretical (concept) | Practical (action) |
@@ -18,7 +27,7 @@ The split is more useful than it looks. Each quadrant answers a different reader
 
 A page that does two of these jobs is doing neither well. When in doubt, split it.
 
-## What's in each quadrant for QuReddy
+## QuReddy documentation
 
 ### [Tutorials](tutorials/)
 Learning-oriented walkthroughs for someone new to the tool.
@@ -28,15 +37,19 @@ Learning-oriented walkthroughs for someone new to the tool.
 ### [How-to guides](how-to/)
 Task-oriented recipes for someone who already knows the basics.
 
+- [Install and troubleshoot QuReddy](how-to/install.md)
 - [Scan an IP target with a custom SNI](how-to/scan-ip-with-sni.md)
+- [Scan an SSH or SFTP endpoint](how-to/scan-ssh.md)
 - [Capture machine-readable output for CI](how-to/json-output-for-ci.md)
+- [Generate a CBOM](how-to/generate-a-cbom.md)
 
 ### [Reference](reference/)
 Look-it-up information. Comprehensive, accurate, dry.
 
 - [CLI options](reference/cli.md) — every flag, every default, every value
-- [Exit codes](reference/exit-codes.md) — 0, 2, 3, 4 and what triggers each
+- [Exit codes](reference/exit-codes.md) — 0, 2, 3, 4, 70 and what triggers each
 - [JSON output schema](reference/json-schema.md) — the locked top-level keys, every field type
+- [CycloneDX CBOM output](reference/cbom.md) — emitted 1.7 components, references, metadata, and limits
 - [Failure categories](reference/failure-categories.md) — the `FailureCategory` enum, what each value means, retry eligibility
 - [Project milestones](reference/milestones.md) — what's shipped, what's planned
 - [Editions](reference/editions.md) — capability matrix: OSS vs BreachSAFE QuReddy Enterprise (planned, P2)
@@ -48,9 +61,10 @@ Conceptual discussion. Why we made the choices we did.
 - [Why hybrid post-quantum?](explanation/why-hybrid-pq.md) — the X25519MLKEM768 design call
 - [Harvest now, decrypt later (HNDL)](explanation/hndl.md) — the threat model that drives the timeline
 - [Threat model and scope](explanation/threat-model.md) — what QuReddy assumes, what it doesn't try to defend against
+- [Evidence honesty](explanation/evidence-honesty.md) — observation, local capability, interpretation, and unknown states
 - [Why QuReddy is open-core](explanation/oss-vs-enterprise.md) — what stays in OSS vs Enterprise (P2), and why
 
-## Contributor docs
+## Contributor documentation
 
 The rules and conventions for working *on* QuReddy (not *with* it) live separately from user-facing docs:
 
@@ -58,6 +72,7 @@ The rules and conventions for working *on* QuReddy (not *with* it) live separate
 - [`contributors/coding-rules.md`](contributors/coding-rules.md) — Python authoring standards (size, types, security, structlog, exceptions). Source of truth for *how the code is written*.
 - [`contributors/cli-design-rules.md`](contributors/cli-design-rules.md) — CLI conventions (flags, exit codes, help, stdout/stderr contract, NO_COLOR). Source of truth for *how the CLI behaves*.
 - [`contributors/review-process.md`](contributors/review-process.md) — how a fix lands: reviewer / validator / arbiter pipeline + label tiers
+- [`contributors/adr/`](contributors/adr/) — accepted, proposed, implemented, and superseded architecture decisions
 - [`contributors/agents/`](contributors/agents/) — agent role specifications and bootstrap prompts
 
 These follow Diátaxis internally too — `coding-rules.md` is reference, `examples.md` is how-to, etc. — but they sit under `contributors/` because they're not for end users of the `qureddy` CLI.
@@ -74,7 +89,7 @@ These keep Diátaxis from drifting:
 6. **Front-load the answer.** Every page starts with what it covers in 1–2 sentences. The reader should know in five seconds whether they're in the right place.
 7. **No marketing voice.** This is technical documentation. "QuReddy makes PQ easy!" — no.
 
-## Adding new docs
+## Add a page
 
 When you add a doc, ask:
 

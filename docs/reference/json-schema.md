@@ -1,213 +1,346 @@
-# Reference: JSON output schema
+# JSON output reference
 
-This page documents the JSON shape produced by `qureddy scan tls TARGET --format json`. The top-level keys are locked and appear in this exact order; nested objects may grow optional fields without bumping `schema_version`.
+`qureddy scan tls TARGET --format json` and
+`qureddy scan ssh TARGET --format json` emit the same top-level
+`qureddy.scan.v1` contract. TLS and SSH populate different evidence,
+dependency, and protocol fields.
 
-## Schema version
+## Contents
 
-```json
-{ "schema_version": "qureddy.scan.v1", ... }
+- [Document contract](#document-contract)
+- [Top-level fields](#top-level-fields)
+- [Scan metadata](#scan-metadata)
+- [Target](#target)
+- [Dependencies](#dependencies)
+- [Assets](#assets)
+- [Evidence](#evidence)
+- [Probe result](#probe-result)
+- [Findings](#findings)
+- [Summary](#summary)
+- [Enumerated values](#enumerated-values)
+- [SSH example](#ssh-example)
+- [Stability rules](#stability-rules)
+- [Related documentation](#related-documentation)
+
+## Document contract
+
+Machine mode writes one UTF-8 JSON document and a trailing newline to standard
+output. The top-level keys appear in this order:
+
+```text
+schema_version, scan, target, dependencies, assets, evidence, findings, summary
 ```
 
-`v1` is stable for QuReddy 0.1.x. Additive changes (new optional fields) land in v1; breaking changes bump to v2. Consumers should pin against the field names they read and tolerate optional fields they don't recognize.
+The order of nested object fields is not a consumer contract. Standard output
+remains parseable on successful and typed failed scans. Use the process exit
+code to distinguish completion from failure.
 
-## Top-level shape
+## Top-level fields
 
-The order is contractual:
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `schema_version` | string | Always `qureddy.scan.v1` in version 0.2.0 |
+| `scan` | object | Run identity, timing, producer, and status |
+| `target` | object | Normalized endpoint |
+| `dependencies` | array | Local collector dependencies; empty for SSH |
+| `assets` | array | Endpoint assets represented in QuReddy's scan model |
+| `evidence` | array | Observations and failed observation attempts |
+| `findings` | array | Rule interpretations linked to evidence |
+| `summary` | object | Rolled-up readiness and failure state |
 
-| # | Key | Type | What it is |
-|---|---|---|---|
-| 1 | `schema_version` | string | Always `"qureddy.scan.v1"` for this release |
-| 2 | `scan` | `ScanMetadata` object | Run-level metadata (id, timing, status) |
-| 3 | `target` | `ScanTarget` object | What was scanned (host, port, sni, locator) |
-| 4 | `dependencies` | array of `OpenSSLDependency` | Local-capability info; usually one element |
-| 5 | `assets` | array of `Asset` | The crypto assets observed (TLS endpoint at MVP 0.1) |
-| 6 | `evidence` | array of `Evidence` | Probe outcomes; one per probe attempt |
-| 7 | `findings` | array of `Finding` | Policy verdicts; zero or more |
-| 8 | `summary` | `ScanSummary` object | Top-line verdict (readiness, finding count, failure category) |
+## Scan metadata
 
-## Nested objects
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `scan_id` | string | Per-run identifier |
+| `started_at` | RFC 3339 date-time string | UTC start time |
+| `completed_at` | RFC 3339 date-time string | UTC completion time |
+| `scanner_name` | string | `tls` or `ssh` |
+| `scanner_version` | string | Installed QuReddy version |
+| `status` | string | `completed` or the top-level failure category |
+| `total_attempts` | integer | Number of scanner probe attempts represented |
 
-### `ScanMetadata` (`scan`)
+Identifiers and timestamps are intentionally different across runs.
 
-| Field | Type | Notes |
-|---|---|---|
-| `scan_id` | string | `scan-<uuid>` |
-| `started_at` | ISO 8601 string | UTC |
-| `completed_at` | ISO 8601 string | UTC |
-| `scanner_name` | string | `"tls"` at MVP 0.1 |
-| `scanner_version` | string | `"0.1.0"` at MVP 0.1 |
-| `status` | string | `"completed"` on success, or a `FailureCategory` value on failure |
-| `total_attempts` | int | Number of probe invocations (≥ 2 for a successful scan) |
+## Target
 
-### `ScanTarget` (`target`)
+| Field | Type | TLS | SSH |
+| --- | --- | --- | --- |
+| `original_input` | string | Raw command argument | Raw command argument |
+| `host` | string | Normalized hostname or IP | Normalized hostname or IP |
+| `port` | integer `1..65535` | Default `443` | Default `22` |
+| `sni` | string or null | Hostname, override, or null for an IP | null |
+| `scheme` | string | `tls` | `ssh` |
+| `locator` | string | Canonical `tls://host:port` | Canonical `ssh://host:port` |
 
-| Field | Type | Notes |
-|---|---|---|
-| `original_input` | string | Raw user input |
-| `host` | string | Normalized hostname or IP |
-| `port` | int | 1–65535 |
-| `sni` | string \| null | What's sent in the TLS SNI extension; `null` for IP targets without `--sni` |
-| `scheme` | string | Always `"tls"` at MVP 0.1 |
-| `locator` | string | `"tls://host:port"` |
+## Dependencies
 
-### `OpenSSLDependency` (`dependencies[]`)
+TLS emits one local OpenSSL dependency record. SSH emits an empty array.
 
-| Field | Type | Notes |
-|---|---|---|
-| `name` | string | Always `"openssl"` |
-| `path` | string \| null | Resolved path; `null` if missing |
-| `version` | string \| null | e.g. `"3.5.6"` |
-| `supports_tls13_groups` | bool | Whether `openssl list -tls1_3 -tls-groups` produced output |
-| `supports_x25519mlkem768` | bool | Whether the hybrid group appears in the supported list |
-| `failure_category` | string \| null | One of `local_openssl_missing`, `local_openssl_broken`, `local_openssl_version_unreadable`, `local_openssl_too_old`, `local_openssl_lacks_group`, or `null` if usable |
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `name` | string | `openssl` |
+| `path` | string or null | Resolved local executable |
+| `version` | string or null | Parsed OpenSSL version |
+| `supports_tls13_groups` | boolean | Capability command returned a TLS 1.3 group list |
+| `supports_x25519mlkem768` | boolean | Required hybrid group appeared in the list |
+| `failure_category` | string or null | Local capability failure |
 
-### `Asset` (`assets[]`)
+This record describes the scanner host. It is not the remote endpoint's TLS
+implementation identity.
 
-| Field | Type | Notes |
-|---|---|---|
-| `id` | string | `asset-<uuid>` |
-| `asset_type` | string | `"tls.endpoint"` at MVP 0.1 |
-| `locator` | string | Mirrors `target.locator` |
-| `display_name` | string | `"host:port"` |
-| `protocol` | string | Always `"tls"` at MVP 0.1 |
-| `protocol_version` | string \| null | e.g. `"TLSv1.3"` |
-| `algorithm` | string \| null | (CycloneDX-flavored, unused at MVP 0.1) |
-| `primitive` | string \| null | (CycloneDX-flavored, unused at MVP 0.1) |
-| `parameter_set_identifier` | string \| null | (CycloneDX-flavored, unused at MVP 0.1) |
-| `key_size` | int \| null | (CycloneDX-flavored, unused at MVP 0.1) |
-| `negotiated_group` | string \| null | TLS 1.3 group name |
-| `bom_ref` | string \| null | (CycloneDX-flavored, unused at MVP 0.1) |
-| `oid` | string \| null | (CycloneDX-flavored, unused at MVP 0.1) |
-| `nist_quantum_security_level` | int \| null | 0–5 (CycloneDX-flavored, unused at MVP 0.1) |
+## Assets
 
-The CycloneDX-flavored fields are locked into the schema now to avoid a JSON schema migration when CBOM emission lands at MVP 0.3. They are always `null` at MVP 0.1.
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `id` | string | Per-run asset identifier |
+| `asset_type` | string | `tls.endpoint` or `ssh.endpoint` |
+| `locator` | string | Canonical target locator |
+| `display_name` | string | Endpoint display name |
+| `protocol` | string | `tls` or `ssh` |
+| `protocol_version` | string or null | Observed version when assigned at asset level |
+| `algorithm` | string or null | Algorithm name when assigned at asset level |
+| `primitive` | string or null | Primitive classification when known |
+| `parameter_set_identifier` | string or null | Standard parameter identifier when known |
+| `key_size` | integer or null | Key size when observed |
+| `negotiated_group` | string or null | Negotiated group when assigned at asset level |
+| `bom_ref` | string or null | Cross-format reference when assigned |
+| `oid` | string or null | Object identifier when observed |
+| `nist_quantum_security_level` | integer `0..5` or null | Security level when established |
 
-### `Evidence` (`evidence[]`)
+Null means that the scan did not establish the value at this model location.
+It is not a favorable or unfavorable result.
 
-| Field | Type | Notes |
-|---|---|---|
-| `id` | string | `ev-<uuid>` |
-| `asset_id` | string | References an `Asset.id` |
-| `evidence_type` | string | E.g. `"tls.negotiation"`, `"tls.probe.failure"`, `"tls.probe.parse"`, `"tls.capability"` |
-| `observation_type` | string | One of `negotiated`, `offered`, `observed`, `inferred`, `not_testable` |
-| `source` | string | E.g. `"qureddy.openssl_probe"`, `"qureddy.scanners.tls.parse"` |
-| `protocol` | string | `"tls"` |
-| `protocol_version` | string \| null | E.g. `"TLSv1.3"` |
-| `cipher_suite` | string \| null | E.g. `"TLS_AES_256_GCM_SHA384"` |
-| `negotiated_group` | string \| null | The actual group selected |
-| `probe_result` | `ProbeResult` \| null | The subprocess invocation that produced this evidence (see below) |
-| `failure_category` | string \| null | A `FailureCategory` value when this evidence is a failure record |
-| `confidence` | string | `high`, `medium`, or `low` |
-| `notes` | array of string | Human-readable annotations |
+## Evidence
 
-### `ProbeResult` (`evidence[].probe_result`)
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `id` | string | Per-run evidence identifier |
+| `asset_id` | string | Reference to `assets[].id` |
+| `evidence_type` | string | Producer-defined evidence class |
+| `observation_type` | enum | How the fact was obtained |
+| `source` | string | QuReddy producer module |
+| `protocol` | string | `tls` or `ssh` |
+| `protocol_version` | string or null | Observed protocol version |
+| `cipher_suite` | string or null | Observed cipher suite |
+| `negotiated_group` | string or null | Negotiated or offered group |
+| `probe_role` | string or null | `hybrid_readiness` or `classical_control` for relevant TLS probes |
+| `expected_group` | string or null | Group requested by a TLS probe |
+| `probe_result` | object or null | Local OpenSSL invocation record |
+| `failure_category` | string or null | Failure that prevented or qualified observation |
+| `confidence` | enum | `high`, `medium`, or `low` |
+| `notes` | array of strings | Bounded human-readable annotations |
 
-| Field | Type | Notes |
-|---|---|---|
-| `command` | `ProbeCommand` object | The subprocess args |
-| `return_code` | int | OpenSSL exit code |
-| `stdout_sha256` | string | SHA-256 of full stdout |
-| `stderr_sha256` | string | SHA-256 of full stderr |
-| `stdout_excerpt` | string | First 4096 bytes of stdout |
-| `stderr_excerpt` | string | First 4096 bytes of stderr |
-| `duration_ms` | int | Wall time |
-| `attempt_number` | int | 1-based; > 1 means this was a retry |
-| `failure_category` | string \| null | Stderr-classified failure |
+The internal typed certificate observation is intentionally excluded from
+this JSON contract. Certificate facts appear through public evidence and
+finding fields and through the CycloneDX certificate component.
 
-### `ProbeCommand` (`evidence[].probe_result.command`)
+## Probe result
 
-| Field | Type | Notes |
-|---|---|---|
-| `executable` | string | Resolved OpenSSL path |
-| `args` | array of string | Argv minus the executable |
-| `timeout_seconds` | int | What `--timeout` was set to |
-| `redacted` | bool | False at MVP 0.1; reserved for future redaction |
+`probe_result` is present for OpenSSL subprocess evidence.
 
-### `Finding` (`findings[]`)
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `command` | object | Executable, argument array, timeout, and redaction flag |
+| `return_code` | integer | Local process exit code |
+| `stdout_sha256` | string | Digest of complete standard output |
+| `stderr_sha256` | string | Digest of complete standard error |
+| `stdout_excerpt` | string | Bounded diagnostic excerpt |
+| `stderr_excerpt` | string | Bounded diagnostic excerpt |
+| `duration_ms` | integer | Observed process duration |
+| `attempt_number` | integer | One-based attempt number |
+| `failure_category` | string or null | Classified process failure |
 
-| Field | Type | Notes |
-|---|---|---|
-| `id` | string | `finding-<uuid>` |
-| `asset_id` | string | References an `Asset.id` |
-| `evidence_ids` | array of string | One or more `Evidence.id` references; never empty |
-| `rule_id` | string | E.g. `tls.hybrid.negotiated_x25519mlkem768`, `tls.classical.negotiated_x25519`, `tls.hybrid.not_testable`, `tls.hybrid.probe_failed` |
-| `finding_type` | string | E.g. `tls.kex.hybrid` |
-| `title` | string | Short rule title |
-| `description` | string | Longer rule description |
-| `severity` | string | `critical`, `high`, `medium`, `low`, `info` |
-| `readiness` | string | `quantum_vulnerable`, `classically_weak`, `transitional_hybrid`, `quantum_safe`, `unknown`, `not_applicable` |
-| `confidence` | string | `high`, `medium`, `low` |
-| `algorithm`, `primitive`, `parameter_set_identifier`, `key_size`, `bom_ref`, `oid`, `nist_quantum_security_level` | various \| null | (CycloneDX-flavored, unused at MVP 0.1) |
-| `protocol` | string | `"tls"` |
-| `protocol_version` | string \| null | E.g. `"TLSv1.3"` |
-| `negotiated_group` | string \| null | The group this finding is about |
+`command` contains:
 
-### `ScanSummary` (`summary`)
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `executable` | string | Resolved local OpenSSL path |
+| `args` | array of strings | Argument vector without the executable |
+| `timeout_seconds` | integer | Probe timeout |
+| `redacted` | boolean | Whether sensitive arguments were removed |
 
-| Field | Type | Notes |
-|---|---|---|
-| `target` | string | Mirrors `target.locator` |
-| `finding_count` | int | Number of findings |
-| `highest_severity` | string \| null | Highest severity across all findings |
-| `readiness` | string | The rolled-up readiness verdict |
-| `failure_category` | string \| null | The canonical reason the scan didn't succeed; `null` on success |
+The parser's internal input field is excluded from serialized JSON.
 
-## Sample (truncated)
+## Findings
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `id` | string | Per-run finding identifier |
+| `asset_id` | string | Reference to `assets[].id` |
+| `evidence_ids` | non-empty array | References to supporting evidence |
+| `rule_id` | string | Stable rule identifier |
+| `finding_type` | string | Finding class |
+| `title` | string | Short interpretation |
+| `description` | string | Interpretation and consequence |
+| `severity` | enum | `critical`, `high`, `medium`, `low`, or `info` |
+| `readiness` | enum | Readiness interpretation |
+| `confidence` | enum | `high`, `medium`, or `low` |
+| `algorithm` | string or null | Interpreted algorithm |
+| `primitive` | string or null | Interpreted primitive |
+| `parameter_set_identifier` | string or null | Parameter identifier |
+| `key_size` | integer or null | Key size |
+| `protocol` | string | `tls` or `ssh` |
+| `protocol_version` | string or null | Protocol version |
+| `negotiated_group` | string or null | Group linked to the finding |
+| `bom_ref` | string or null | Cross-format reference |
+| `oid` | string or null | Object identifier |
+| `nist_quantum_security_level` | integer `0..5` or null | Established security level |
+
+## Summary
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `target` | string | Canonical target locator |
+| `finding_count` | integer | Number of findings |
+| `highest_severity` | enum or null | Highest finding severity |
+| `readiness` | enum | Rolled-up readiness |
+| `failure_category` | string or null | Canonical top-level failure reason |
+
+## Enumerated values
+
+`observation_type`:
+
+```text
+negotiated
+offered
+observed
+inferred
+not_testable
+```
+
+`readiness`:
+
+```text
+quantum_vulnerable
+classically_weak
+transitional_hybrid
+quantum_safe
+unknown
+not_applicable
+```
+
+Failure values are listed in the
+[failure category reference](failure-categories.md).
+
+## SSH example
+
+This is a valid illustrative document. IDs and timestamps are fixed examples,
+not a captured current posture for the target.
 
 ```json
 {
   "schema_version": "qureddy.scan.v1",
   "scan": {
-    "scan_id": "scan-7c4a8d09e3b1",
-    "started_at": "2026-04-26T22:00:00.123Z",
-    "completed_at": "2026-04-26T22:00:00.456Z",
-    "scanner_name": "tls",
-    "scanner_version": "0.1.0",
+    "scan_id": "scan-example",
+    "started_at": "2026-07-27T00:00:00Z",
+    "completed_at": "2026-07-27T00:00:01Z",
+    "scanner_name": "ssh",
+    "scanner_version": "0.2.0",
     "status": "completed",
-    "total_attempts": 2
+    "total_attempts": 1
   },
   "target": {
-    "original_input": "www.google.com",
-    "host": "www.google.com",
-    "port": 443,
-    "sni": "www.google.com",
-    "scheme": "tls",
-    "locator": "tls://www.google.com:443"
+    "original_input": "ssh.example",
+    "host": "ssh.example",
+    "port": 22,
+    "sni": null,
+    "scheme": "ssh",
+    "locator": "ssh://ssh.example:22"
   },
-  "dependencies": [
+  "dependencies": [],
+  "assets": [
     {
-      "name": "openssl",
-      "path": "/opt/homebrew/opt/openssl@3/bin/openssl",
-      "version": "3.5.6",
-      "supports_tls13_groups": true,
-      "supports_x25519mlkem768": true,
-      "failure_category": null
+      "id": "asset-example",
+      "asset_type": "ssh.endpoint",
+      "locator": "ssh://ssh.example:22",
+      "display_name": "ssh.example:22",
+      "protocol": "ssh",
+      "protocol_version": null,
+      "algorithm": null,
+      "primitive": null,
+      "parameter_set_identifier": null,
+      "key_size": null,
+      "negotiated_group": null,
+      "bom_ref": null,
+      "oid": null,
+      "nist_quantum_security_level": null
     }
   ],
-  "assets": [
-    { "id": "asset-...", "asset_type": "tls.endpoint", "locator": "tls://www.google.com:443", ... }
-  ],
   "evidence": [
-    { "id": "ev-...", "evidence_type": "tls.negotiation", "negotiated_group": "X25519MLKEM768", ... },
-    { "id": "ev-...", "evidence_type": "tls.negotiation", "negotiated_group": "X25519", ... }
+    {
+      "id": "ev-example",
+      "asset_id": "asset-example",
+      "evidence_type": "ssh.kex",
+      "observation_type": "offered",
+      "source": "qureddy.scanners.ssh.probe",
+      "protocol": "ssh",
+      "protocol_version": "2.0",
+      "cipher_suite": null,
+      "negotiated_group": "sntrup761x25519-sha512",
+      "probe_role": null,
+      "expected_group": null,
+      "probe_result": null,
+      "failure_category": null,
+      "confidence": "high",
+      "notes": [
+        "PQ hybrid KEX offered: sntrup761x25519-sha512"
+      ]
+    }
   ],
   "findings": [
-    { "id": "finding-...", "rule_id": "tls.hybrid.negotiated_x25519mlkem768", "readiness": "transitional_hybrid", ... },
-    { "id": "finding-...", "rule_id": "tls.classical.negotiated_x25519", "readiness": "quantum_vulnerable", ... }
+    {
+      "id": "finding-example",
+      "asset_id": "asset-example",
+      "evidence_ids": [
+        "ev-example"
+      ],
+      "rule_id": "ssh.kex.hybrid_offered",
+      "finding_type": "ssh.kex.hybrid",
+      "title": "SSH offers post-quantum hybrid key exchange (sntrup761x25519-sha512)",
+      "description": "Server offers a PQ hybrid KEX group; protects against harvest-now-decrypt-later.",
+      "severity": "info",
+      "readiness": "transitional_hybrid",
+      "confidence": "high",
+      "algorithm": "sntrup761x25519-sha512",
+      "primitive": null,
+      "parameter_set_identifier": null,
+      "key_size": null,
+      "protocol": "ssh",
+      "protocol_version": null,
+      "negotiated_group": "sntrup761x25519-sha512",
+      "bom_ref": null,
+      "oid": null,
+      "nist_quantum_security_level": null
+    }
   ],
   "summary": {
-    "target": "tls://www.google.com:443",
-    "finding_count": 2,
-    "highest_severity": "low",
+    "target": "ssh://ssh.example:22",
+    "finding_count": 1,
+    "highest_severity": "info",
     "readiness": "transitional_hybrid",
     "failure_category": null
   }
 }
 ```
 
-## Related
+## Stability rules
 
-- [Reference: CLI options](cli.md) — `--format json`
-- [Reference: Exit codes](exit-codes.md) — when JSON is and isn't produced
-- [Reference: Failure categories](failure-categories.md) — the enum values you'll see in `summary.failure_category` and `evidence[].failure_category`
-- [How-to: Capture machine-readable output for CI](../how-to/json-output-for-ci.md) — `jq` recipes against this schema
+Breaking changes require a new `schema_version`. Version 1 may add optional
+nested fields. Consumers must:
+
+- select fields by name;
+- accept additional nested fields;
+- tolerate null optional values;
+- resolve `asset_id` and `evidence_ids` instead of assuming array position;
+- use the process exit code for scan completion;
+- preserve `unknown` and `not_testable`.
+
+## Related documentation
+
+- [CLI reference](cli.md)
+- [Failure categories](failure-categories.md)
+- [Exit codes](exit-codes.md)
+- [CBOM output](cbom.md)
+- [Machine output in CI](../how-to/json-output-for-ci.md)
+- [Evidence honesty](../explanation/evidence-honesty.md)

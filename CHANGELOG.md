@@ -1,84 +1,132 @@
 # Changelog
 
 [![Status: Alpha](https://img.shields.io/badge/status-alpha-blue?style=flat-square)](docs/reference/milestones.md)
-[![Version](https://img.shields.io/badge/version-0.1.0-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.0-blue?style=flat-square)](CHANGELOG.md)
 [![Keep a Changelog](https://img.shields.io/badge/keep%20a%20changelog-1.1.0-orange?style=flat-square)](https://keepachangelog.com/en/1.1.0/)
 [![SemVer](https://img.shields.io/badge/SemVer-2.0.0-blue?style=flat-square)](https://semver.org/spec/v2.0.0.html)
 
-All notable changes to QuReddy are documented in this file.
+All notable user-visible changes to QuReddy are recorded here. The format
+follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and version
+numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). QuReddy uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## Contents
 
-OpenSSF Best Practices Badge target: passing tier by MVP 0.6, silver by v1.0.
+- [Unreleased](#unreleased)
+- [0.2.0 release candidate](#020---unreleased-release-candidate)
+- [0.1.0](#010---2026-05-10)
 
-## [Unreleased]
+## Unreleased
+
+The remaining first-PyPI-release gates are tracked in public issues
+[#34](https://github.com/breachsafe/qureddy/issues/34),
+[#35](https://github.com/breachsafe/qureddy/issues/35), and
+[#36](https://github.com/breachsafe/qureddy/issues/36).
+
+## [0.2.0] - UNRELEASED (release candidate)
+
+Version 0.2.0 adds SSH scanning, certificate signature observation, legacy TLS
+enumeration, and CycloneDX 1.7 CBOM output. It also completes the repository
+cutover and proves the wheel and source distribution across supported
+platforms.
 
 ### Added
 
-- `--version` / `-V` flag at the root and on every subcommand, printing the locked `BreachSAFE QuReddy <version> -- https://www.breachsafe.ai` banner. PR [#55](https://github.com/breachsafe/qureddy/pull/55).
-- `qureddy scan tls --help` now includes `EXAMPLES`, `EXIT CODES`, and `ENVIRONMENT` sections in the epilog, rendered with literal newline preservation (Click `\b` form-feed convention). Closes [#71](https://github.com/breachsafe/qureddy/issues/71). PR [#73](https://github.com/breachsafe/qureddy/pull/73).
-- Exit code **70** (`EXIT_INTERNAL_ERROR`, BSD `sysexits.h` `EX_SOFTWARE`) for internal qureddy bugs. CI scripts branching on `$? == 2` can now trust that 2 means "target scan failed", not "qureddy crashed". Closes [#12](https://github.com/breachsafe/qureddy/issues/12). Implementation in PR [#51](https://github.com/breachsafe/qureddy/pull/51).
-- Failure category classification for unreadable OpenSSL version output — capability checks against ancient or non-standard OpenSSL builds now produce a typed `local_dependency_unusable` outcome rather than crashing. Closes [#16](https://github.com/breachsafe/qureddy/issues/16). PR [#83](https://github.com/breachsafe/qureddy/pull/83).
-- Failure category classification for broken OpenSSL capability checks (segfaults, wrong-binary-name, missing PQ groups) — these now route through the typed exception hierarchy instead of bubbling raw subprocess errors. Closes [#10](https://github.com/breachsafe/qureddy/issues/10). PR [#81](https://github.com/breachsafe/qureddy/pull/81).
-- Diátaxis documentation structure: `docs/{tutorials,how-to,reference,explanation,contributors}/`. Standard recorded in [ADR 0002](docs/contributors/adr/0002-diataxis-documentation-standard.md).
-- Tutorial: `docs/tutorials/your-first-scan.md`.
-- How-to guides: `docs/how-to/scan-ip-with-sni.md`, `docs/how-to/json-output-for-ci.md`.
-- Reference docs: `docs/reference/cli.md`, `docs/reference/exit-codes.md`, `docs/reference/failure-categories.md`, `docs/reference/json-schema.md`, `docs/reference/milestones.md`.
-- Explanation docs: `docs/explanation/why-hybrid-pq.md`, `docs/explanation/hndl.md`, `docs/explanation/threat-model.md`.
-- ADR 0001 — `--trace` flag and verbosity refactor (Accepted; implementation pending).
-- ADR 0003 — CLI `--help` rewrite per best-practice patterns (Implementing; slices 1–3 of #41 shipped, slice 4 in progress).
-- ADR 0004 — multi-scanner architecture for MVP 0.2 (Proposed).
-- ADR 0005 — splitting oversized files (Proposed; tracks the cli.py + openssl_probe.py refactor).
-
-### Fixed
-
-- `--version` / `-V` on a subcommand (e.g. `qureddy scan tls --version`) now prints a clear error pointing the user at the root-level form, instead of Click's default cryptic "no such option" message. Closes [#64](https://github.com/breachsafe/qureddy/issues/64). PR [#65](https://github.com/breachsafe/qureddy/pull/65).
-- `--v`, `--vv`, `--vvv`, `--verbos` typos at the root level now produce a helpful hint pointing the user at the single-dash POSIX-stacking form (`-v`, `-vv`, `-vvv`), instead of Click's default "no such option" message. Closes [#74](https://github.com/breachsafe/qureddy/issues/74). PR [#80](https://github.com/breachsafe/qureddy/pull/80).
-- TLS scanner parser now strictly validates input contract (no trailing whitespace surprises, no NUL-byte injection paths, no silent fallback on unparseable group lines). Closes [#8](https://github.com/breachsafe/qureddy/issues/8) and [#9](https://github.com/breachsafe/qureddy/issues/9). PR [#87](https://github.com/breachsafe/qureddy/pull/87).
+- SSH and SFTP endpoint scanning through `qureddy scan ssh TARGET`. The scanner
+  reads the server identification and KEXINIT offer through a direct socket,
+  classifies hybrid key exchange and weak host keys, and requires no OpenSSL.
+  See [PR #22](https://github.com/breachsafe/qureddy/pull/22).
+- Leaf certificate signature algorithm observation in the TLS scan, including
+  ML-DSA recognition. See
+  [issue #7](https://github.com/breachsafe/qureddy/issues/7) and
+  [PR #8](https://github.com/breachsafe/qureddy/pull/8).
+- TLS 1.0, 1.1, and 1.2 enumeration with observed cipher suites in the default
+  TLS scan. See [issue #11](https://github.com/breachsafe/qureddy/issues/11).
+- CycloneDX 1.7 CBOM output for TLS and SSH through `--format cbom`. The
+  endpoint is the metadata root, local collector software is tool provenance,
+  positively observed crypto assets use stable references, and scan status is
+  retained in metadata properties. See
+  [issue #31](https://github.com/breachsafe/qureddy/issues/31) and
+  [PR #48](https://github.com/breachsafe/qureddy/pull/48).
+- Final-byte CBOM conformance against pinned CycloneDX 1.7.1 schemas,
+  `cyclonedx-cli` 0.33.1, semantic reference and secret checks, positive and
+  negative fixtures, installed-console canaries, and deterministic renders.
+  See [issue #32](https://github.com/breachsafe/qureddy/issues/32) and
+  [PR #51](https://github.com/breachsafe/qureddy/pull/51).
+- Root `-V` and `--version`, `-h` help, TLS and SSH help examples, and exit
+  code `70` for an unhandled internal error. The installed entry point remains
+  `qureddy.cli:main` so usage errors map to exit `4`.
 
 ### Changed
 
-- `src/qureddy/cli.py` (936 lines) split into the `src/qureddy/cli/` package per [ADR 0005](docs/contributors/adr/0005-splitting-oversized-files.md) (now Accepted): `_errors`, `_execute`, `_help`, `_options`, `_render`, `main`, `scan`, `ssh`. No behavior change — `qureddy.cli:main` entry point, `from qureddy.cli import app`, all help output, and every exit code are identical; ADR 0005's `_fail(message, code)` helper consolidation included. Part of [#30](https://github.com/breachsafe/qureddy/issues/30).
-- Engineering and agent docs moved from `docs/` root into `docs/contributors/` per Diátaxis. `git mv` preserves blame. See ADR 0002 for the full move table.
-- All internal markdown links updated to the new paths.
+- The package name is `breachsafe-qureddy`, the installed command is
+  `qureddy`, and the version is single-sourced as `0.2.0`.
+- Canonical repository, issue, documentation, and package metadata URLs now
+  use `github.com/breachsafe/qureddy`. See
+  [PR #21](https://github.com/breachsafe/qureddy/pull/21).
+- `src/qureddy/cli.py` is now a focused `src/qureddy/cli/` package without
+  changing the installed entry point. Oversized scanner and renderer paths
+  were split behind the repository size policy. See
+  [issue #30](https://github.com/breachsafe/qureddy/issues/30) and
+  [PR #47](https://github.com/breachsafe/qureddy/pull/47).
+- The source distribution uses an explicit include allowlist.
+- Rich output shows separate readiness and protocol facts and includes the
+  observed SSH hybrid group when available. See
+  [PR #23](https://github.com/breachsafe/qureddy/pull/23),
+  [PR #24](https://github.com/breachsafe/qureddy/pull/24),
+  [PR #25](https://github.com/breachsafe/qureddy/pull/25),
+  [PR #26](https://github.com/breachsafe/qureddy/pull/26),
+  [PR #27](https://github.com/breachsafe/qureddy/pull/27),
+  [PR #28](https://github.com/breachsafe/qureddy/pull/28), and
+  [PR #29](https://github.com/breachsafe/qureddy/pull/29).
+- Build dependencies and release tools are pinned where deterministic artifact
+  evidence requires it. The exact wheel and source distribution pass archive
+  purity, metadata, runtime-only vulnerability audit, and clean wheel, source,
+  and pipx installation on Linux, macOS, and Windows. See
+  [issue #33](https://github.com/breachsafe/qureddy/issues/33) and
+  [PR #50](https://github.com/breachsafe/qureddy/pull/50).
 
-## [0.1.0] - 2026-04-26
+### Fixed
 
-Initial shipping release of QuReddy. The TLS scanner — MVP 0.1.
+- Machine JSON and CBOM modes default to quiet logging and keep standard
+  output parseable under normal and merged-stream failure paths. Explicit
+  verbosity still produces diagnostics on standard error. See
+  [issue #15](https://github.com/breachsafe/qureddy/issues/15) and
+  [PR #18](https://github.com/breachsafe/qureddy/pull/18).
+- LibreSSL has a distinct local capability failure and remediation message.
+  See [issue #10](https://github.com/breachsafe/qureddy/issues/10) and
+  [PR #17](https://github.com/breachsafe/qureddy/pull/17).
+- Certificate self-signed status requires signature verification; name
+  equality alone is not accepted.
+- OpenSSL capability, TLS probe, legacy protocol, and certificate subprocesses
+  preserve bounded timeouts and typed failure categories.
+- SSH target parsing rejects foreign schemes, credentials, paths, query
+  strings, fragments, ambiguous IPv6, and noncanonical numeric IP forms before
+  network access. See [issue #40](https://github.com/breachsafe/qureddy/issues/40).
+- Live policy tests assert the target-specific finding that the fixture
+  establishes instead of a mutable aggregate posture. See
+  [issue #39](https://github.com/breachsafe/qureddy/issues/39).
+- Runtime dependency resolution, formatting, strict type checking, dependency
+  declarations, and REUSE metadata are green on the release stack. See
+  [issue #30](https://github.com/breachsafe/qureddy/issues/30).
+
+## [0.1.0] - 2026-05-10
+
+Initial public release of the TLS 1.3 readiness scanner. The public
+[`v0.1.0`](https://github.com/breachsafe/qureddy/releases/tag/v0.1.0) tag
+contains:
 
 ### Added
 
-- TLS scanner. `qureddy scan tls TARGET` runs hybrid (`X25519MLKEM768`) and classical (`X25519`) probes against a TLS 1.3 endpoint via `openssl s_client -brief`, parses the negotiated group, and reports a readiness verdict.
-- Output formats: Rich console (default; verdict panel + summary table + findings table + dependencies table; honors `NO_COLOR` per [no-color.org](https://no-color.org)) and JSON (machine-readable; locked top-level shape `qureddy.scan.v1`).
-- Verbosity ladder: `-v` (INFO logs), `-vv` (DEBUG logs), `-vvv` (DEBUG + "Commands run" panel on stdout for traceability).
-- Capability detection. `qureddy` checks the local OpenSSL binary for version 3.5+ and `X25519MLKEM768` group support before probing. Carries the detected `OpenSSLDependency` through exceptions to avoid re-probe.
-- Retry policy. `--retry-on CATEGORIES --retries N --retry-delay SECONDS` for transient failures; allowlist gates which `FailureCategory` values are eligible (local-OpenSSL failures are never retryable).
-- Exit codes. 0 (succeeded), 2 (target failed), 3 (local OpenSSL missing/unsupported), 4 (usage/configuration error). The `cli:main` wrapper translates Click `UsageError` to exit 4 so usage errors don't collide with target-failure (2).
-- Target string parser. Accepts hostname, `host:port`, `https://` URLs, IPv4 literals, IPv6 bracketed literals. SNI auto-derived from hostname; required (`--sni`) for IP targets.
-- Locked Pydantic model surface (`frozen=True, extra="forbid"`) for `ScanResult`, `ScanMetadata`, `ScanTarget`, `OpenSSLDependency`, `Asset`, `Evidence`, `ProbeCommand`, `ProbeResult`, `Finding`, `ScanSummary`. Top-level JSON keys are contractually ordered.
-- Stderr classification. Maps OpenSSL nonzero exits to typed `FailureCategory` values: `target_connect_failed`, `tls_handshake_failed`, `sni_required_or_wrong`, `middlebox_or_mtu_failure`, `parse_no_group`, `parse_ambiguous`, `unexpected_group`.
-- Structured logging via `structlog`. Logs to stderr (never stdout). Context vars (`scan_id`, `target`) propagate across modules. `--json-logs` for log-aggregator consumption; `--quiet` to suppress non-error logs.
-- Quality-gate-clean CI surface: ruff (curated rule set with documented per-rule ignores), mypy --strict, bandit (MEDIUM threshold), pip-audit (HIGH/CRITICAL block; documented MODERATE ignore for `GHSA-58qw-9mgm-455v`), deptry, reuse lint, gitleaks. `pytest-rerunfailures` with 3 retries / 1s delay absorbs transient network flakes.
-- Test suite: 186 unit tests + 6 live tests, 86%+ coverage. Includes regression tests for the no-double-probe property and the timeout partial-output preservation property.
+- forced `X25519MLKEM768` hybrid and `X25519` classical control probes through
+  OpenSSL 3.5 or newer;
+- Rich and `qureddy.scan.v1` JSON output;
+- typed target, handshake, SNI, middlebox, parser, and local OpenSSL failures;
+- bounded retry configuration for selected transient TLS failures;
+- normalized hostname, port, URL, IPv4, IPv6, and SNI target handling;
+- exit codes `0`, `2`, `3`, `4`, and `70`;
+- structured diagnostics on standard error;
+- Apache 2.0 licensing and repository quality gates.
 
-### Repository scaffolding (pre-merged into 0.1.0 via main)
-
-These landed during the pre-MVP phase and ship as part of 0.1.0:
-
-- `pyproject.toml` with locked tool configs, `.gitattributes`, `.editorconfig`, `justfile`.
-- Engineering standards: `docs/contributors/coding-rules.md` (full Python authoring rules + 7-phase CI + security bar + OpenSSF alignment).
-- Agent contracts: `docs/contributors/agent-antipatterns.md`, `docs/contributors/agents/claude-developer-prompt.md`.
-- Operational skills: `mvp-implement`, `audit-pr`, `write-test-fixture`, `run-quality-gates`.
-- Code examples gallery: `docs/contributors/examples.md`.
-- Test target catalog: `tests/fixtures/openssl/TARGETS.md`.
-- REUSE compliance: `LICENSES/Apache-2.0.txt`, `REUSE.toml`, `.reuseignore`, SPDX headers on every source file.
-- GitHub workflows: `ci.yml` (7-phase pipeline), `codeql.yml`, `scorecard.yml`, Dependabot config.
-- Issue + PR templates: `.github/ISSUE_TEMPLATE/`, `.github/PULL_REQUEST_TEMPLATE.md`.
-
-## [0.0.0] - 2026-04-26
-
-Initial repository setup. Pre-MVP. No installable package. Superseded by 0.1.0 on the same day.
-
-[Unreleased]: https://github.com/breachsafe/qureddy/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/breachsafe/qureddy/releases/tag/v0.1.0
-[0.0.0]: https://github.com/breachsafe/qureddy/releases/tag/v0.0.0
+The `v0.1.0` tag and the promoted `main` branch have unrelated Git history.
+This changelog therefore links the tag directly instead of publishing a
+misleading commit comparison.

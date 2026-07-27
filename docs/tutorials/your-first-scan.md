@@ -1,161 +1,139 @@
-# Your first PQ readiness scan
+# Your first post-quantum readiness scan
 
-This tutorial walks you through installing QuReddy, running your first TLS scan, and reading the output. It takes about 10 minutes. By the end you will have:
+This tutorial starts with an SSH endpoint because that path has no OpenSSL
+prerequisite. It then adds the local OpenSSL collector and runs a TLS scan.
+You will finish with one human report and one parseable JSON result.
 
-- Installed `qureddy` from source
-- Scanned a real post-quantum-enabled server
-- Read the verdict, the per-probe findings, and the dependency information
+## Contents
 
-You don't need to know post-quantum cryptography — the [Why hybrid post-quantum?](../explanation/why-hybrid-pq.md) explanation covers the concepts after you've seen the tool work.
+- [Install QuReddy](#install-qureddy)
+- [Check the command](#check-the-command)
+- [Scan an SSH endpoint](#scan-an-ssh-endpoint)
+- [Read the SSH result](#read-the-ssh-result)
+- [Prepare OpenSSL](#prepare-openssl)
+- [Scan a TLS endpoint](#scan-a-tls-endpoint)
+- [Capture JSON](#capture-json)
+- [What you verified](#what-you-verified)
+- [Next steps](#next-steps)
 
-## What you need
+## Install QuReddy
 
-- Python 3.12 or newer (`python3 --version` to check)
-- `git` and `uv` ([install uv](https://docs.astral.sh/uv/getting-started/installation/))
-- OpenSSL 3.5 or newer (`openssl version` to check — Homebrew's `openssl@3` works on macOS)
-- About 10 minutes
-- A network connection (the tutorial scans a real server)
-
-## Step 1 — Install QuReddy from source
-
-```bash
-git clone https://github.com/breachsafe/qureddy.git
-cd qureddy
-uv venv
-source .venv/bin/activate
-uv pip install -e .
-```
-
-Confirm the install:
+QuReddy requires Python `>=3.12,<3.13`.
 
 ```bash
-qureddy --help
+pipx install breachsafe-qureddy
 ```
 
-You should see the help text with a `scan` subcommand.
+If `pipx` or Python 3.12 is not available, follow the
+[installation guide](../how-to/install.md).
 
-## Step 2 — Scan a PQ-enabled server
+## Check the command
 
-Cloudflare's frontends support hybrid post-quantum key exchange. Scan one:
+This command is offline:
 
 ```bash
-qureddy scan tls www.cloudflare.com
+qureddy --version
 ```
 
-The tool runs its probes — hybrid and classical key exchange, a legacy-protocol sweep, and a look at the certificate signature — then prints a verdict panel. You should see something like:
+The release candidate prints:
 
-```
-QuReddy 0.1.0 by BreachSAFE OSS
-
-┏━ QuReddy scan: tls://www.cloudflare.com:443 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ READY — PQ hybrid X25519MLKEM768 negotiated                                  ┃
-┃ Monitor; key exchange is PQ-hybrid but the certificate signature             ┃
-┃ (ecdsa-with-SHA256) remains classical.                                       ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-
- Scan details
- schema_version    qureddy.scan.v1
- status            completed
- readiness         transitional_hybrid
- protocol          TLSv1.3
- cipher_suite      TLS_AES_256_GCM_SHA384
- hybrid_probe      negotiated X25519MLKEM768
- classical_probe   negotiated X25519
- findings          4
- attempts          6
+```text
+BreachSAFE QuReddy 0.2.0 -- https://www.breachsafe.ai
 ```
 
-The big banner at the top is the at-a-glance verdict. Green border + "READY" means Cloudflare's TLS endpoint negotiates a hybrid post-quantum key exchange when the client offers it.
+## Scan an SSH endpoint
 
-## Step 3 — Read the output
-
-Three things to notice in the output:
-
-**The readiness verdict** (`transitional_hybrid`)
-The server negotiated `X25519MLKEM768` — a hybrid of X25519 (classical) and ML-KEM-768 (post-quantum). "Transitional" because the certificate signature is still classical (here `ecdsa-with-SHA256`), so a future quantum attacker could still impersonate the server by forging a cert. Hybrid key exchange protects the *session secret* against harvest-now-decrypt-later attacks.
-
-**The two key-exchange probes** (hybrid + classical)
-QuReddy always runs both. The hybrid probe asks for `X25519MLKEM768`; the classical probe asks for `X25519`. The classical probe is the *control* — it tells you what the server falls back to. A server that accepts only hybrid (rare today) and refuses classical is the strongest posture; a server that accepts both (most common in 2026) is `transitional_hybrid`.
-
-**The findings count** (4)
-One finding per observation that matched a policy rule — here the hybrid negotiation, the classical control, the classical TLS 1.2 fallback, and the classical certificate signature. All findings are visible in the JSON output (Step 5). If the server also offered a deprecated protocol like TLS 1.0 or 1.1, that would appear as an additional finding and the headline would add a `Protocol hygiene: ACTION NEEDED` line.
-
-## Step 4 — Compare with a non-PQ server
-
-Now scan a server that does not yet support hybrid PQ:
+The following command opens a read-only connection to `github.com` on TCP
+port 22:
 
 ```bash
-qureddy scan tls example.com
+qureddy scan ssh github.com
 ```
 
-The verdict changes:
+The scan reads the server identification and the offered SSH key exchange and
+host key algorithms. It does not authenticate or open a shell.
 
-```
-┏━ QuReddy scan: tls://example.com:443 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ NOT READY — classical only (X25519)                                          ┃
-┃ Plan PQ migration. Move TLS termination behind an edge that supports         ┃
-┃ X25519MLKEM768, or upgrade to OpenSSL 3.5+ with PQ groups enabled.           ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-```
+## Read the SSH result
 
-Yellow border + "NOT READY" means the hybrid probe failed to negotiate. The classical probe succeeded (X25519), so the server itself works fine — it just hasn't enabled PQ yet. The recommendation gives concrete next steps.
+The report separates key exchange posture from host key posture:
 
-## Step 5 — Get machine-readable output
+- `transitional_hybrid` means the server offered a recognized post-quantum
+  hybrid key exchange.
+- `quantum_vulnerable` means the observed key exchange offer was classical
+  only.
+- `classically_weak` means the server offered a deprecated weak host key
+  algorithm such as `ssh-dss`.
+- `unknown` means the available evidence could not establish the posture.
 
-For automation, ask for JSON:
+Exit `0` means the scan completed. It does not mean that the target received a
+favorable readiness result.
+
+## Prepare OpenSSL
+
+TLS scans require OpenSSL 3.5 or newer with the `X25519MLKEM768` group. Check
+the selected binary:
 
 ```bash
-qureddy scan tls www.google.com --format json
+openssl version
+openssl list -tls1_3 -tls-groups
 ```
 
-The output is a single JSON document with a locked top-level shape. The first 10 lines look like:
-
-```json
-{
-  "schema_version": "qureddy.scan.v1",
-  "scan": {
-    "scan_id": "scan-...",
-    "started_at": "2026-04-26T...",
-    "completed_at": "2026-04-26T...",
-    "scanner_name": "tls",
-    "scanner_version": "0.1.0",
-    "status": "completed",
-    "total_attempts": 2
-  },
-```
-
-The full schema is in [Reference: JSON output schema](../reference/json-schema.md).
-
-## Step 6 — See what OpenSSL was asked to do
-
-For traceability, run with three `-v` flags:
+On macOS with Homebrew:
 
 ```bash
-qureddy scan tls www.google.com -vvv
+brew install openssl@3
+export QUREDDY_OPENSSL="$(brew --prefix openssl@3)/bin/openssl"
 ```
 
-This adds a "Commands run" panel at the bottom showing the exact OpenSSL invocations:
+Use the [installation guide](../how-to/install.md) for Linux and Windows.
 
+## Scan a TLS endpoint
+
+The following command opens bounded TLS handshakes to
+`pq.cloudflareresearch.com` on TCP port 443:
+
+```bash
+qureddy scan tls pq.cloudflareresearch.com
 ```
-Commands run (-vvv)
- $ /opt/homebrew/opt/openssl@3/bin/openssl s_client -connect www.google.com:443 -tls1_3 -groups X25519MLKEM768 -brief -servername www.google.com
-     return_code=0 duration_ms=140 attempt=1
- $ /opt/homebrew/opt/openssl@3/bin/openssl s_client -connect www.google.com:443 -tls1_3 -groups X25519 -brief -servername www.google.com
-     return_code=0 duration_ms=120 attempt=1
+
+The scan records:
+
+- hybrid TLS 1.3 key exchange behavior;
+- a classical TLS 1.3 control;
+- offered TLS 1.0, 1.1, and 1.2 protocols and cipher suites;
+- the observed leaf certificate signature algorithm.
+
+The result does not establish certificate trust, revocation, remote software
+identity, or a complete cryptographic inventory.
+
+## Capture JSON
+
+Run the SSH scan in machine mode:
+
+```bash
+qureddy scan ssh github.com --format json > github-ssh.json
+python -m json.tool github-ssh.json > /dev/null
 ```
 
-Use this when you want to verify what the scanner actually did, or to reproduce a probe by hand.
+The document begins with `schema_version: "qureddy.scan.v1"` and contains the
+scan, target, dependencies, assets, evidence, findings, and summary objects.
+Identifiers and timestamps change on every run, so automation should select
+named fields instead of comparing the whole document byte for byte.
 
-## What you've learned
+## What you verified
 
-- QuReddy installs from source via `uv pip install -e .`
-- `qureddy scan tls <target>` runs two probes and prints a verdict
-- Output formats: `--format rich` (default, terminal panel) or `--format json` (machine-readable)
-- Verbosity flags: `-v` (INFO logs), `-vv` (DEBUG logs), `-vvv` (DEBUG + commands panel on stdout)
-- Two readiness verdicts you've seen: `transitional_hybrid` (PQ available) and `quantum_vulnerable` (classical only)
+You used an installed command to:
 
-## What to do next
+1. scan SSH without OpenSSL;
+2. distinguish scan completion from readiness;
+3. select a suitable local OpenSSL binary for TLS;
+4. run the TLS evidence pipeline;
+5. capture one parseable JSON document.
 
-- **Have a goal in mind?** → [How-to guides](../how-to/) for task-oriented recipes (scanning IPs, wiring into CI, etc.)
-- **Want to understand the verdicts more deeply?** → [Why hybrid post-quantum?](../explanation/why-hybrid-pq.md) and [Harvest now, decrypt later](../explanation/hndl.md)
-- **Looking up a specific flag or exit code?** → [Reference](../reference/)
+## Next steps
+
+- [Generate and validate a CycloneDX 1.7 CBOM](../how-to/generate-a-cbom.md)
+- [Scan an SSH or SFTP endpoint](../how-to/scan-ssh.md)
+- [Capture machine output for CI](../how-to/json-output-for-ci.md)
+- [Review every CLI option](../reference/cli.md)
+- [Understand the evidence boundary](../explanation/evidence-honesty.md)

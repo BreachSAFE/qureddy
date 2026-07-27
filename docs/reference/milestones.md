@@ -1,57 +1,104 @@
-# Reference: Project milestones
+# Project milestone reference
 
-This page is the canonical record of what's shipped, what's planned, and which skill drives the active milestone. Reference, not roadmap-essay — for the *why* behind a milestone, see the relevant ADR or [explanation](../explanation/) page.
+This page records shipped, verified, and planned scope. It does not treat a
+planned milestone, open issue, or accepted design as a delivered artifact.
 
-## Status table
+## Contents
 
-| Milestone | Status | Scope | Released |
-|---|---|---|---|
-| **MVP 0.1** | **Shipped** | TLS scanner. Hybrid + classical probes against `X25519MLKEM768` / `X25519` via `openssl s_client -brief`. Rich, JSON, and CBOM output. Exit codes 0/2/3/4/70. Capability detection. | 2026-04-26 |
-| MVP 0.2 | **Shipped (initial)** | Certificate signature-algorithm detection (classical vs post-quantum) and a legacy-protocol sweep (TLS 1.0/1.1/1.2 with per-protocol cipher enumeration), both wired into the default scan. Full cert-chain and key-size analysis still to come. | 2026-07 |
-| MVP 0.3 | **Shipped (prototype)** | CBOM emission via `--format cbom` — CycloneDX 1.6 through `cyclonedx-python-lib`, validated against the official schema and Qurum's parser. Hardening (deterministic bom-refs, graph direction, full protocol inventory) tracked in open issues. | 2026-07 |
-| MVP 0.4 | Planned | SSH scanner (host keys, KEX algorithms). | TBD |
-| MVP 0.5 | Planned | Local crypto config scanner. | TBD |
-| MVP 0.6 | Planned | Source-code scanner. OpenSSF Best Practices passing tier target. | TBD |
-| v1.0 | Planned | Full OSS release. PyPI publish. Docker image at `ghcr.io/breachsafe/qureddy`. Signed artifacts. OpenSSF Best Practices silver tier target. | TBD |
-| **P2** | Planned | **BreachSAFE QuReddy Enterprise** — separate commercial product. Cloud scanners, fleet/batch operation, SaaS dashboard, SIEM integrations, compliance attestation reports, support contracts. Capability split documented in [`editions.md`](editions.md); design locked in [ADR 0006](../contributors/adr/0006-oss-vs-enterprise-split.md). | TBD |
+- [Status definitions](#status-definitions)
+- [Milestone table](#milestone-table)
+- [Current release program](#current-release-program)
+- [Non-goals](#non-goals)
+- [Historical implementation material](#historical-implementation-material)
+- [Decision records](#decision-records)
+- [Related documentation](#related-documentation)
 
-## Active skill
+## Status definitions
 
-The implementation authority for the current milestone is the skill at:
+| Status | Meaning |
+| --- | --- |
+| Shipped | Present in the package version and public source |
+| Verified | Shipped behavior has named local, hosted, schema, or live proof |
+| Release candidate | Code and metadata are staged for publication; registry rehearsal is incomplete |
+| Planned | Tracked intent without a shipped implementation |
 
-**`.claude/skills/mvp-implement/SKILL.md`**
+## Milestone table
 
-Claude Code loads this skill when the active task matches its scope. The skill is self-contained — it includes locked Pydantic model definitions, build order, scope rules, and quality gates.
+| Milestone | Status | Scope | Evidence date |
+| --- | --- | --- | --- |
+| MVP 0.1 | Shipped | TLS 1.3 hybrid and classical control probes, Rich and JSON output, typed failures | Public `v0.1.0` tag, 2026-05-10 |
+| MVP 0.2 | Shipped | Leaf certificate signature observation and legacy TLS 1.0, 1.1, and 1.2 enumeration | Current 0.2.0 source and tests |
+| MVP 0.3 | Shipped and independently verified | CycloneDX 1.7 CBOM output with pinned schema, CLI, semantic, and determinism checks | Public PRs #48 and #51, 2026-07-27 |
+| MVP 0.4 | Shipped | SSH and SFTP endpoint scanner with key exchange and host key observations | Public PR #22, 2026-07-23 |
+| MVP 0.5 | Planned | Local cryptographic configuration scanner | No shipped artifact |
+| MVP 0.6 | Planned | Source-code scanner | No shipped artifact |
+| PyPI 0.2.0 | Release candidate | Installable wheel and source distribution, release gate, documentation, TestPyPI rehearsal | Public issues #33 through #36 |
+| Enterprise P2 | Planned | Operated fleet, persistence, integrations, tenancy, and support | No shipped product in this repository |
 
-When MVP 0.2 work begins, the current skill moves to `.claude/skills/done/mvp-0.1/` and a new `.claude/skills/mvp-implement/SKILL.md` is created for the next milestone. This file is updated to point at the new skill.
+## Current release program
 
-## Out of scope (explicit non-goals)
+The public release sequence is:
 
-These never ship in either OSS or Enterprise — see [`editions.md`](editions.md) "Never shipped" section for the full canonical list:
+1. [#30](https://github.com/breachsafe/qureddy/issues/30): truthful green main,
+   complete;
+2. [#31](https://github.com/breachsafe/qureddy/issues/31): CycloneDX 1.7
+   observation contract, complete;
+3. [#32](https://github.com/breachsafe/qureddy/issues/32): independent CBOM
+   conformance, complete;
+4. [#33](https://github.com/breachsafe/qureddy/issues/33): package artifact
+   proof, complete;
+5. [#34](https://github.com/breachsafe/qureddy/issues/34): repository-owned
+   local release gate, in progress;
+6. [#35](https://github.com/breachsafe/qureddy/issues/35): documentation
+   truth-up, in progress;
+7. [#36](https://github.com/breachsafe/qureddy/issues/36): TestPyPI rehearsal,
+   not started.
 
-- Binary scanning (`.exe` / `.dll` / `.jar` / firmware)
-- Remediation (QuReddy reads, never writes)
-- Continuous monitoring as an always-on agent (cron is the answer)
-- AI / NHI inventory (different product)
-- Telemetry, ever
-- EOL platforms (Windows XP/7/8.1, RHEL 6, Ubuntu 16.04 and earlier)
-- Docker requirement at MVP scale (ships at v1.0)
-- Reinventing crypto primitives in the OSS core
+Publication is not complete until issue #36 records the registry installation
+and rendering evidence.
 
-## Bootstrap prompt for fresh agent sessions
+## Non-goals
 
-[`docs/contributors/agents/mvp-0.1-bootstrap-prompt.md`](../contributors/agents/mvp-0.1-bootstrap-prompt.md) is the pasteable session bootstrap. It tells a fresh Claude session to read the contracts, then load the skill, then begin work.
+QuReddy does not provide:
 
-## Related
+- binary or firmware scanning;
+- automated remediation;
+- an always-on endpoint agent;
+- AI or non-human identity inventory;
+- hidden telemetry;
+- support for end-of-life platforms;
+- a hosted multi-tenant service in this repository.
 
-- [`editions.md`](editions.md) — capability matrix for OSS vs Enterprise (canonical answer for "what's in each tier")
-- [Explanation: Why QuReddy is open-core](../explanation/oss-vs-enterprise.md) — the reasoning behind the P2 split
-- [`.claude/skills/mvp-implement/SKILL.md`](../../.claude/skills/mvp-implement/SKILL.md) — current skill
-- [`docs/contributors/coding-rules.md`](../contributors/coding-rules.md) — engineering standards
-- [`docs/contributors/oss-standards.md`](../contributors/oss-standards.md) — OSS conventions
-- [ADR 0001 — `--trace` flag](../contributors/adr/0001-trace-and-verbosity.md) — accepted, not yet implemented
-- [ADR 0002 — Diátaxis docs standard](../contributors/adr/0002-diataxis-documentation-standard.md)
-- [ADR 0003 — CLI `--help` rewrite](../contributors/adr/0003-cli-help-rewrite.md) — proposed
-- [ADR 0004 — Multi-scanner architecture](../contributors/adr/0004-multi-scanner-architecture.md)
-- [ADR 0005 — Splitting oversized files](../contributors/adr/0005-splitting-oversized-files.md)
-- [ADR 0006 — OSS vs Enterprise split](../contributors/adr/0006-oss-vs-enterprise-split.md) — locks the P2 design
+## Historical implementation material
+
+`.claude/skills/mvp-implement/SKILL.md` and
+`docs/contributors/agents/mvp-0.1-bootstrap-prompt.md` describe the original
+TLS-only implementation milestone. They are retained for history and are not
+authority for the shipped SSH, CBOM, packaging, or release surfaces.
+
+Current changes must follow the repository contributor rules, accepted ADRs,
+public issue acceptance criteria, code, tests, and installed artifact
+behavior.
+
+## Decision records
+
+The [ADR ledger](../contributors/adr/) records current status and historical
+supersession. Key release decisions are:
+
+- [ADR 0002](../contributors/adr/0002-diataxis-documentation-standard.md):
+  documentation structure;
+- [ADR 0004](../contributors/adr/0004-multi-scanner-architecture.md): TLS and
+  SSH scanner composition;
+- [ADR 0005 size](../contributors/adr/0005-splitting-oversized-files.md):
+  purpose-organized file splits;
+- [ADR 0006](../contributors/adr/0006-oss-vs-enterprise-split.md): product
+  boundary;
+- [ADR 0007](../contributors/adr/0007-cyclonedx-1.7-observation-contract.md):
+  CycloneDX 1.7 output.
+
+## Related documentation
+
+- [Edition reference](editions.md)
+- [Changelog](../../CHANGELOG.md)
+- [Local release gate](../contributors/local-release-gate.md)
+- [CBOM conformance](../contributors/cbom-conformance.md)

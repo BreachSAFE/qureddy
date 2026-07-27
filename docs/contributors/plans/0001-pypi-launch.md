@@ -1,15 +1,36 @@
 # Plan 0001 — PyPI launch
 
-**Status:** Draft
+**Status:** Superseded by public release issues
 **Date:** 2026-04-26
 **Owner:** Paul Volosen
-**Target version:** v0.1.0-public (or v0.1.1, depending on what ships in MVP 0.2)
+**Superseded by:** [public issues #30–#36](https://github.com/breachsafe/qureddy/issues)
+
+> Historical plan. It records the original launch thinking, but its version,
+> issue-number, workflow-action, and release-authority details are not current.
+> Use public issues #30–#36 for the first-PyPI-release gate and sequence.
+
+## Contents
+
+- [Why a plan](#why-a-plan-not-an-issue)
+- [Pre-launch gate](#pre-launch-gate-the-rock-solid-bar)
+- [Phase 1: Name reservation](#phase-1--name-reservation-do-today-low-cost)
+- [Phase 2: Trusted Publisher](#phase-2--trusted-publisher-oidc-setup-30-min)
+- [Phase 3: Release workflow](#phase-3--release-workflow-1-hour)
+- [Phase 4: Pre-publish dry run](#phase-4--pre-publish-dry-run-30-min)
+- [Phase 5: Production publish](#phase-5--production-publish-10-min-once-gates-clear)
+- [Phase 6: Launch window](#phase-6--launch-window-1-day-all-in-one-focused-session)
+- [Phase 7: Post-launch monitoring](#phase-7--post-launch-monitoring-first-2-weeks)
+- [Risks and mitigations](#risks-and-mitigations)
+- [Pending decisions](#decisions-still-pending)
+- [Acceptance criteria](#acceptance-criteria-for-this-plan)
+- [Related documentation](#related-documentation)
 
 ## Why a plan, not an issue
 
 Publishing to PyPI is the project's first public-installability event. It's irreversible (every version stays on PyPI forever), it sets first impressions for every operator who `pip install`s the tool, and it touches code, docs, infra, and external outreach. That's plan-shaped, not issue-shaped.
 
-This document is the canonical reference for the launch. Issues track individual tasks; this doc explains how they connect.
+This document was the original connecting reference for the launch. The public
+release issues now define the current gates, order, and authority.
 
 ## Pre-launch gate (the "rock-solid" bar)
 
@@ -177,7 +198,7 @@ This plan is "done" when:
 - [ ] At least one external party has acknowledged the launch (HN comment, retweet, email reply)
 - [ ] The first 5 GitHub issues from external users are responded to within 24h
 
-## Related
+## Related documentation
 
 - [PyPI documentation](https://docs.pypi.org/)
 - [Trusted Publishers](https://docs.pypi.org/trusted-publishers/)

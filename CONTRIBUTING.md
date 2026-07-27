@@ -9,6 +9,20 @@
 
 Thanks for considering a contribution. This document covers what you need to know.
 
+## Contents
+
+- [Before you contribute](#before-you-contribute)
+- [Project state](#project-state)
+- [Set up a development environment](#set-up-a-development-environment)
+- [Workflow](#workflow)
+- [Coding style](#coding-style)
+- [Testing](#testing)
+- [Dependencies](#dependencies)
+- [Security](#security)
+- [Commits](#commits)
+- [License](#license)
+- [Code of Conduct](#code-of-conduct)
+
 ## Before you contribute
 
 Read these in order:
@@ -21,17 +35,20 @@ Read these in order:
 
 If you are an AI coding agent (Claude Code, Codex, Cursor, etc.):
 - Read `.claude/skills/README.md` to find the right skill for your task.
-- Use `mvp-implement` for MVP 0.1 implementation work.
+- Treat `mvp-implement` as historical authority for the original TLS slice.
 - Use `audit-pr` before opening a PR.
 - Use `run-quality-gates` before final response on any code change.
 
 ## Project state
 
-QuReddy is **pre-MVP**. The package is not installable yet. The first milestone (MVP 0.1) implements a TLS scanner; everything else (cert scanner, SSH scanner, CBOM emission, HNDL scoring, reports) is roadmap, not delivered.
+QuReddy 0.2.0 ships TLS and SSH scanners with Rich, JSON, and CycloneDX 1.7
+CBOM output. Certificate signature observation and legacy TLS enumeration are
+part of the TLS scan. Full certificate chain analysis, config scanning, source
+scanning, hosted operation, and remediation are not shipped.
 
 The current milestone is named in [`docs/reference/milestones.md`](docs/reference/milestones.md).
 
-## Setting up a dev environment
+## Set up a development environment
 
 ```bash
 # Clone
@@ -51,7 +68,7 @@ uv pip install -e ".[dev]"
 uv run pre-commit install
 
 # Verify
-uv run qureddy --help    # works once MVP 0.1 implementation lands
+uv run qureddy --help
 just gates               # runs the full Tier 1 gate suite
 just hooks               # runs pre-commit hooks against all files (CI-equivalent local check)
 ```
@@ -59,8 +76,8 @@ just hooks               # runs pre-commit hooks against all files (CI-equivalen
 You also need OpenSSL 3.5+ on your `PATH` for the TLS scanner to work end-to-end:
 
 - macOS: `brew install openssl@3` (gets 3.5+)
-- Linux: build from source from openssl.org/source (Ubuntu apt currently has 3.0)
-- Windows: `choco install openssl --version 3.5.x` or equivalent
+- Linux: use a supported vendor build or the official OpenSSL source
+- Windows: install a trusted OpenSSL 3.5 or newer build and set its path
 
 QuReddy's capability check exits 3 with a clear message when OpenSSL is missing or too old.
 
@@ -78,11 +95,20 @@ QuReddy's capability check exits 3 with a clear message when OpenSSL is missing 
 7. **CI must pass on all three platforms** (ubuntu, macos, windows) before merge.
 8. **Squash-and-merge** is the default merge strategy.
 
+Before release work, run the repository-owned local gate:
+
+```bash
+just release-gate
+```
+
+The gate builds and audits exact wheel and source distribution bytes. See the
+[local release gate](docs/contributors/local-release-gate.md).
+
 ## Coding style
 
 Read `docs/contributors/coding-rules.md` and `docs/contributors/examples.md`. The short version:
 
-- Python 3.12+, typed (`mypy --strict`), formatted (`ruff format`), linted (`ruff check`)
+- Python 3.12, typed (`mypy --strict`), formatted (`ruff format`), linted (`ruff check`)
 - Functions ≤ 30 lines normal, 50 ceiling
 - Files ≤ 300 lines normal, 400 ceiling
 - Classes ≤ 200 lines
@@ -112,7 +138,9 @@ Adding a runtime dependency requires PR justification per Rule 13.1:
 - Apache 2.0-compatible license (no GPL, no AGPL, no LGPL)
 - Recognizable maintainer
 
-GPL/AGPL/LGPL dependencies are **rejected** by `pip-licenses` in CI.
+GPL, AGPL, and LGPL dependencies do not meet the documented dependency policy.
+Reviewers verify license compatibility before accepting a runtime dependency;
+the current CI does not automate that decision with `pip-licenses`.
 
 ## Security
 

@@ -1,6 +1,6 @@
 # ADR 0007 — Emit CycloneDX 1.7 from captured observations
 
-**Status:** Accepted
+**Status:** Accepted and implemented
 **Date:** 2026-07-26
 **Deciders:** Paul Volosen (project lead)
 **Supersedes:** ADR 0005's producer-version and attribution decisions only

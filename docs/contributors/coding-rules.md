@@ -57,7 +57,12 @@ Same edge bands apply to functions per Rule 2.1, scaled to the 50-line ceiling: 
 
 The CI workflow `.github/workflows/file-size-gate.yml` enforces Red-band breaches in `src/qureddy/`. Yellow and Orange bands surface as warnings in the workflow output and reviewer skill output; they are not gate-blocking by themselves but are mandatory PR-review items. **Test-file splits follow [ADR 0005 Rule H.1](adr/0005-splitting-oversized-files.md): split by tested module mirroring the production package, or by behavior cluster when production is single-file. The CI gate currently does not check `tests/`; the rule still applies and is enforced at PR review.**
 
-**Rationale.** The cliff version of Rule 2.2 was honor-system. The post-PR-#83 audit (cli.py 429 / openssl_probe.py 424) showed that good-faith adherence to "no file over 400 lines" still ships breaches when authors measure the *delta* their PR adds rather than the *post-merge* file size. Edge bands surface the trajectory, not just the threshold.
+**Rationale.** The cliff version of Rule 2.2 was honor-system. A historical
+staging audit after PR #83 (`cli.py` 429 lines and `openssl_probe.py` 424 lines)
+showed that good-faith adherence to "no file over 400 lines" still ships
+breaches when authors measure the *delta* their PR adds rather than the
+*post-merge* file size. Edge bands surface the trajectory, not just the
+threshold.
 
 **Rule 2.3 — Modules have one responsibility.**
 A file named `parse.py` parses. It does not also fetch, classify, or render. If the module name has "and" or "utils" in it, the responsibility is wrong.
@@ -723,7 +728,7 @@ Once the scanner exists for a target type, the release workflow runs `qureddy` a
 **Rule 24.4 — Self-scan results are saved as CI artifacts.**
 Each release workflow uploads:
 - `qureddy-self-scan.json` — output of QuReddy run against project's targets
-- `qureddy-self-scan.cbom.json` — CBOM artifact (when CBOM emission ships at v0.3)
+- `qureddy-self-scan.cbom.json` - validated CycloneDX 1.7 CBOM artifact
 - `pip-audit.json`, `bandit.json`, `pip-licenses.json`
 
 Retained for at least 90 days. Linked from GitHub release notes.
@@ -973,6 +978,6 @@ In addition to Tier 1:
 - [ ] CHANGELOG entry for the release
 - [ ] Release notes drafted
 - [ ] No expired `SELF-SCAN ACCEPTED` or `SECURITY EXCEPTION ACCEPTED` markers
-- [ ] SBOM/CBOM generated and validated (when CBOM emission ships)
+- [ ] SBOM/CBOM generated and validated
 - [ ] Sigstore signing succeeded
 - [ ] PyPI trusted publisher configuration verified

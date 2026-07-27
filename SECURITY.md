@@ -5,23 +5,33 @@
 [![Secret Scan: gitleaks](https://img.shields.io/badge/secret%20scan-gitleaks-red?style=flat-square)](https://github.com/gitleaks/gitleaks)
 [![SPDX: reuse](https://img.shields.io/badge/license%20headers-reuse-green?style=flat-square)](https://reuse.software/)
 [![OpenSSF Best Practices](https://img.shields.io/badge/OpenSSF-passing%20%28target%20MVP%200.6%29-yellow?style=flat-square)](https://www.bestpractices.dev/)
-[![Disclosure SLA](https://img.shields.io/badge/disclosure%20SLA-5%20business%20days-brightgreen?style=flat-square)](#response-sla)
+[![Disclosure SLA](https://img.shields.io/badge/disclosure%20SLA-5%20business%20days-brightgreen?style=flat-square)](#response-targets)
 
 QuReddy is a security tool. We take vulnerability reports seriously.
 
-## Supported Versions
+## Contents
 
-Pre-MVP. No releases yet. Once releases ship:
+- [Supported versions](#supported-versions)
+- [Report a vulnerability](#report-a-vulnerability)
+- [Response targets](#response-targets)
+- [Disclosure policy](#disclosure-policy)
+- [Scope](#scope)
+- [Enforced security checks](#enforced-security-checks)
+- [Planned release controls](#planned-release-controls)
+- [Security exceptions](#security-exceptions)
+
+## Supported Versions
 
 | Version | Supported |
 |---|---|
 | `main` (development) | Yes |
-| latest tagged release | Yes |
-| any prior release | No |
+| `0.2.x` release candidates and latest published `0.2.x` | Yes |
+| `0.1.x` and earlier | No |
 
-We do not backport security fixes to prior tagged releases. Upgrade to the latest release.
+Security fixes target `main` and the latest `0.2.x` release. No backport
+commitment exists for earlier versions.
 
-## Reporting a Vulnerability
+## Report a vulnerability
 
 **Do not file a public GitHub issue for vulnerabilities.**
 
@@ -36,7 +46,7 @@ If you cannot use GitHub Security Advisories, email the maintainer; the contact 
 - The version (commit SHA or release tag) you tested against
 - Your contact info for follow-up
 
-### Response SLA
+## Response targets
 
 We commit to:
 
@@ -73,20 +83,26 @@ Out of scope:
 - Social engineering of contributors
 - Denial of service against the QuReddy maintainers
 
-## Security Hygiene Commitments
+## Enforced security checks
 
-QuReddy commits to:
+The repository enforces:
 
 - **No `verify=False`, `shell=True`, `eval`/`exec`, or `pickle.loads`** in shipped code (`docs/contributors/coding-rules.md` §26 security bar)
 - **No logging of secrets, full PEMs, or full subprocess output** (`docs/contributors/coding-rules.md` Rule 8.5)
 - **No insecure shortcuts even when requested by users or AI agents** (`docs/contributors/coding-rules.md` Rule 26.13)
-- **`pip-audit` runs as a per-PR Tier 2 gate** to catch known vulnerable dependencies
-- **`bandit` runs at MEDIUM threshold as a per-PR Tier 1 gate** to catch Python security footguns
-- **Secret scanning (`gitleaks` or `trufflehog`)** on every PR diff
-- **SPDX license headers verified by `reuse lint`** on every source file
-- **Branch protection on `main`** — no direct pushes, all changes go through reviewed PRs
-- **OpenSSF Best Practices Badge** — passing tier by MVP 0.6, silver by v1.0
-- **Sigstore-signed release artifacts** at v1.0 with SLSA provenance
+- **`pip-audit`** against the installed runtime dependency path with no ignored advisories
+- **`bandit`** at the repository's configured threshold
+- **Gitleaks** over full Git history in the local release gate
+- **`reuse lint`** for SPDX and license metadata
+- **CycloneDX 1.7 final-byte conformance** against pinned schemas, an independent validator, and semantic checks
+- **Exact artifact inspection and clean installation** for the wheel and source distribution
+
+## Planned release controls
+
+OpenSSF badge advancement, Sigstore signatures, SLSA provenance, Docker
+publication, and hosted release settings remain release work until their
+artifacts or repository settings provide external proof. This policy does not
+claim those controls are active.
 
 ## Security Exceptions
 
@@ -96,4 +112,6 @@ Time-bounded security exceptions are documented in `docs/SECURITY_EXCEPTIONS.md`
 SECURITY EXCEPTION ACCEPTED: <rule>, because <reason>, expires <date or issue link>
 ```
 
-The release workflow checks for expired exceptions and fails if any have lapsed. Permanent silent exceptions do not exist.
+No exception exists until it is recorded in that file and reviewed in the
+pull request that introduces it. An automated expiry gate is planned but is
+not currently enforced. Permanent silent exceptions do not exist.

@@ -1,6 +1,7 @@
 # ADR 0005 — Consume CycloneDX 1.6 CBOM schema verbatim, promote the prototype to MVP 0.2/0.3
 
-**Status:** Accepted
+**Status:** Accepted historically; producer-version and attribution decisions
+superseded by ADR 0007
 **Date:** 2026-07-23
 **Deciders:** Paul Volosen (project lead)
 **Consulted:** Claude (implementation, this ADR), Codex (architect role per `CLAUDE.md` Governance — schema-fidelity review pending on the follow-up scope in `## Not yet done`)
