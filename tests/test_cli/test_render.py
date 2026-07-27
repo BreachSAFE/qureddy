@@ -14,8 +14,8 @@ from typer.testing import CliRunner
 
 import qureddy.scanners.tls.openssl_probe._capability_io as capability_io
 from qureddy._branding import HEADER
-from qureddy.cli import app, main
 from qureddy.cli import _render as render_module
+from qureddy.cli import app, main
 from tests._fake_openssl import fake_openssl
 
 
