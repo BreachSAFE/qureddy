@@ -20,8 +20,8 @@ assignees: []
 <!-- QuReddy is scoped tightly. See CLAUDE.md "Explicit non-goals" before
      filing. Examples of scope:
 
-     IN scope: TLS/cert/SSH/code/config crypto-readiness scanning, CBOM
-     emission, HNDL scoring, NIST/CycloneDX/RFC alignment.
+     IN scope: endpoint, certificate, configuration, and source-code
+     crypto-readiness observation; standard JSON and CBOM evidence.
 
      OUT of scope: binary scanning, remediation, continuous monitoring,
      multi-tenant SaaS, AI/NHI inventory, telemetry, EOL platform support.
@@ -29,21 +29,22 @@ assignees: []
      If your request is in the "out of scope" list, it will be closed.
      Open it anyway if you have a strong case for changing scope. -->
 
-## Roadmap fit
+## Surface
 
-Which milestone is the right home for this?
+Which surface does the request affect?
 
-- [ ] MVP 0.1 (TLS scanner) — currently being built
-- [ ] MVP 0.2 (cert scanner)
-- [ ] MVP 0.3 (CBOM emission)
-- [ ] MVP 0.4 (SSH scanner)
-- [ ] MVP 0.5 (config scanner)
-- [ ] MVP 0.6 (source code scanner)
-- [ ] v1.0 (release polish)
+- [ ] Shipped TLS scanner
+- [ ] Shipped SSH scanner
+- [ ] Shipped JSON output
+- [ ] Shipped CycloneDX 1.7 CBOM output
+- [ ] Planned config scanner
+- [ ] Planned source-code scanner
+- [ ] Release or packaging work
 - [ ] P2 (enterprise tier)
-- [ ] Not sure — please advise
+- [ ] Not sure
 
-See [`CLAUDE.md`](../../CLAUDE.md) for the roadmap.
+See the [milestone reference](../../docs/reference/milestones.md) for the
+current shipped and planned surface.
 
 ## Alternatives considered
 

@@ -23,8 +23,8 @@ assignees: []
 
 **Command:**
 
-```
-qureddy scan tls <target> --format json ...
+```text
+qureddy scan tls <target> --format json
 ```
 
 **Steps:**
@@ -41,7 +41,7 @@ qureddy scan tls <target> --format json ...
 
 <!-- What actually happened. Paste the output below if relevant. -->
 
-```
+```text
 <paste output here>
 ```
 
@@ -50,15 +50,16 @@ qureddy scan tls <target> --format json ...
 - QuReddy version (commit SHA or release tag):
 - Python version (`python --version`):
 - OS and version:
-- OpenSSL version (`openssl version`):
-- Install method: `pipx` / `uv pip install -e .` / `docker` / source
+- Scanner: TLS / SSH
+- OpenSSL path and version for TLS (`openssl version`), or not applicable for SSH:
+- Install method: `pipx` / virtual environment / editable source
 
 ## Logs
 
 <!-- If running with `-v`, `-vv`, or `-vvv`, paste the relevant log lines.
      Do NOT paste secrets, full PEMs, or full subprocess output. Sanitize before posting. -->
 
-```
+```text
 <paste sanitized logs>
 ```
 

@@ -1,85 +1,104 @@
-# Reference: Failure categories
+# Failure category reference
 
-The `FailureCategory` enum is QuReddy's typed failure surface. Every probe, parser verdict, and summary failure carries one of these values. The same enum drives:
+`FailureCategory` is the typed reason that a scan or probe did not produce a
+clean observation. It appears in JSON and CBOM status metadata and determines
+the process exit code. TLS retries accept a strict subset.
 
-- The `summary.failure_category` field in JSON output
-- The `--retry-on` flag's allowlist
-- The exit code mapping (categories prefixed `LOCAL_OPENSSL_` map to exit 3; the rest to exit 2)
+## Contents
 
-## Routing diagram
+- [Category table](#category-table)
+- [SSH failure mapping](#ssh-failure-mapping)
+- [TLS retry allowlist](#tls-retry-allowlist)
+- [Retry behavior](#retry-behavior)
+- [JSON and CBOM locations](#json-and-cbom-locations)
+- [Related documentation](#related-documentation)
 
-```mermaid
-flowchart LR
-    fail([Failure]) --> kind{Detected where?}
+## Category table
 
-    kind -->|capability check| local["LOCAL_OPENSSL_MISSING<br/>LOCAL_OPENSSL_BROKEN<br/>LOCAL_OPENSSL_VERSION_UNREADABLE<br/>LOCAL_OPENSSL_TOO_OLD<br/>LOCAL_OPENSSL_LACKS_GROUP"]
-    kind -->|scan / probe<br/>(subprocess + stderr)| probe_cat["TARGET_SCAN_FAILED<br/>TARGET_CONNECT_FAILED<br/>TLS_HANDSHAKE_FAILED<br/>SNI_REQUIRED_OR_WRONG<br/>MIDDLEBOX_OR_MTU_FAILURE"]
-    kind -->|parser| parse_cat["PARSE_NO_GROUP<br/>PARSE_AMBIGUOUS<br/>UNEXPECTED_GROUP"]
+| Value | Exit | Retryable | Meaning |
+| --- | --- | --- | --- |
+| `local_openssl_missing` | `3` | no | No OpenSSL executable resolved |
+| `local_openssl_broken` | `3` | no | The selected executable or its linked runtime failed capability inspection |
+| `local_openssl_version_unreadable` | `3` | no | Version output did not match supported OpenSSL syntax |
+| `local_openssl_is_libressl` | `3` | no | The selected binary identified itself as LibreSSL |
+| `local_openssl_too_old` | `3` | no | OpenSSL version is below 3.5 |
+| `local_openssl_lacks_group` | `3` | no | OpenSSL does not list `X25519MLKEM768` as a TLS 1.3 group |
+| `target_scan_failed` | `2` | no | The scanner caught a typed target failure without a more specific category |
+| `target_connect_failed` | `2` | yes for TLS | DNS, TCP connection, route, refusal, or timeout failure |
+| `tls_handshake_failed` | `2` | yes | TLS handshake failed without a more specific classification |
+| `sni_required_or_wrong` | `2` | no | Target rejected missing or incorrect SNI |
+| `middlebox_or_mtu_failure` | `2` | yes | Connection reset, premature close, broken pipe, or MTU related failure |
+| `parse_no_group` | `2` | yes | Successful OpenSSL output omitted a parseable group |
+| `parse_ambiguous` | `2` | no | Response contained conflicting group evidence or a malformed SSH KEXINIT |
+| `unexpected_group` | `2` | no | TLS selected a group other than the requested group |
 
-    local --> exit3[Exit 3<br/>local dependency]
-    probe_cat --> exit2[Exit 2<br/>target failed]
-    parse_cat --> exit2
+The `local_openssl_*` categories apply only to TLS. SSH does not resolve or run
+OpenSSL.
 
-    local -.->|never retryable| not_retry[Not in<br/>--retry-on allowlist]
-    probe_cat -.->|TARGET_CONNECT_FAILED<br/>TLS_HANDSHAKE_FAILED<br/>MIDDLEBOX_OR_MTU_FAILURE<br/>retryable| retry[--retry-on allowlist]
-    probe_cat -.->|SNI_REQUIRED_OR_WRONG<br/>not retryable| not_retry
-    parse_cat -.->|PARSE_NO_GROUP<br/>retryable| retry
-    parse_cat -.->|PARSE_AMBIGUOUS<br/>UNEXPECTED_GROUP<br/>not retryable| not_retry
-```
+## SSH failure mapping
 
-## The values
+The SSH probe maps socket and timeout causes to `target_connect_failed`.
+Malformed identification or KEXINIT responses map to `parse_ambiguous`.
 
-| Category | Source | Triggers exit | Retryable | Meaning |
-|---|---|---|---|---|
-| `local_openssl_missing` | capability check | 3 | no | `openssl` binary not found at any expected path. Resolution: `--openssl PATH` → `QUREDDY_OPENSSL` env var → `openssl` on PATH. |
-| `local_openssl_broken` | capability check | 3 | no | OpenSSL exists and is executable, but exits nonzero during capability detection. The binary or its linked libraries are unusable. |
-| `local_openssl_version_unreadable` | capability check | 3 | no | OpenSSL exits successfully but its version output cannot be parsed. Confirm the binary is OpenSSL-compatible and prints a standard `openssl version` line. |
-| `local_openssl_too_old` | capability check | 3 | no | OpenSSL is below 3.5.0. Hybrid PQ groups landed in 3.5. |
-| `local_openssl_lacks_group` | capability check | 3 | no | OpenSSL 3.5+ is present but doesn't list `X25519MLKEM768` as a TLS 1.3 group. The build was compiled without PQ support. |
-| `target_scan_failed` | scan | 2 | no | A typed scan error occurred before QuReddy could assign a more specific target, TLS, or parser category. The original error is preserved in the result note. |
-| `target_connect_failed` | probe | 2 | **yes** | TCP-level failure: connection refused, DNS lookup failed, network unreachable, no route to host, operation timed out. |
-| `tls_handshake_failed` | probe | 2 | **yes** | TLS handshake failed for an unidentified reason. Generic fallback when stderr doesn't match a more specific pattern. |
-| `sni_required_or_wrong` | probe | 2 | no | Server returned `unrecognized_name` or required SNI was missing. Re-run with `--sni`. |
-| `middlebox_or_mtu_failure` | probe | 2 | **yes** | Connection reset, broken pipe, message-too-long, fragmentation needed, premature close. Often signals a middlebox dropping large hybrid PQ ClientHellos that exceed the path MTU. |
-| `parse_no_group` | parser | 2 | **yes** | OpenSSL completed the handshake but the `-brief` output didn't include a parseable group line. Re-running often produces the line. |
-| `parse_ambiguous` | parser | 2 | no | Conflicting group evidence (e.g., `Negotiated TLS1.3 group:` says one group, `Peer Temp Key:` says another). Not transient — investigate the OpenSSL output by hand. |
-| `unexpected_group` | parser | 2 | no | Server selected a different group than the probe requested. The server is not honoring the offered groups list. |
+SSH exposes no retry options in version 0.2.0. An operator or calling system
+may invoke the command again, but QuReddy does not retry SSH internally.
 
-## Retryable allowlist
+## TLS retry allowlist
 
-Only four categories are valid for `--retry-on`. Local-capability failures are deliberately excluded — retrying them does nothing because the operator's environment hasn't changed:
+`--retry-on` accepts only:
 
-```
+```text
 target_connect_failed
 tls_handshake_failed
 middlebox_or_mtu_failure
 parse_no_group
 ```
 
-`--retry-on local_openssl_missing`, `--retry-on local_openssl_broken`, and `--retry-on local_openssl_version_unreadable` raise an error and exit 4.
+Unknown categories and non-retryable categories fail argument validation with
+exit `4`. Local capability failures are not retryable because waiting does not
+change the selected OpenSSL installation.
 
-## Local vs probe vs parser
+## Retry behavior
 
-The category prefix tells you where the failure was detected:
+The first TLS probe result selects the triggering category. QuReddy retries
+only when that category is in both the built-in allowlist and the operator's
+`--retry-on` set.
 
-- **`local_openssl_*`** — detected by the capability check before any target probe runs. Exit 3.
-- **`target_scan_*`, `target_connect_*`, `tls_*`, `sni_*`, `middlebox_*`** — detected during scan execution or by the probe (subprocess + stderr classification). Exit 2.
-- **`parse_*`, `unexpected_*`** — detected by the parser after a successful probe. Exit 2.
+Retries stop when:
 
-## How `--retry-on` interacts
+- a probe succeeds;
+- the failure category changes;
+- the configured number of additional attempts is exhausted.
 
-The retry loop uses the *first attempt's* failure category as the trigger. If attempt 1 fails with `target_connect_failed` (in `--retry-on`) and attempt 2 fails with `tls_handshake_failed` (also in `--retry-on`), the loop **stops** — the change in category is treated as a different failure, not the same transient.
+`--retries` accepts `0..3`. `--retry-delay` accepts `0.0..10.0` seconds.
+Supplying a positive retry count without `--retry-on` exits `4`.
 
-This is deliberate. Two different failure modes back-to-back almost never reflect a flaky network; usually the second is informative about why the first happened.
+## JSON and CBOM locations
 
-## Mapping in JSON output
+JSON can contain a category in:
 
-`summary.failure_category` is the canonical reason a scan didn't reach a clean `transitional_hybrid` or `quantum_vulnerable` finding. The summary preserves the *exact* category from the matching evidence record rather than collapsing local-capability failures and target-side probe failures into one bucket.
+- `scan.status`;
+- `summary.failure_category`;
+- `dependencies[].failure_category`;
+- `evidence[].failure_category`;
+- `evidence[].probe_result.failure_category`.
 
-Local-capability failures take precedence over probe failures so a consumer can distinguish "your openssl is broken" from "the server we tried isn't reachable". Within each tier, the first matching evidence record wins.
+The summary is the canonical top-level reason. More specific records preserve
+where the failure arose.
 
-## Related
+CBOM stores the scan state in CycloneDX metadata properties:
 
-- [Reference: CLI options](cli.md) — `--retry-on` syntax
-- [Reference: Exit codes](exit-codes.md) — how categories map to exits
-- [Reference: JSON output schema](json-schema.md) — where `failure_category` appears
+```text
+qureddy:scan.status
+qureddy:scan.failure_category
+```
+
+The failure property is absent when no top-level failure category exists.
+
+## Related documentation
+
+- [CLI options](cli.md)
+- [Exit codes](exit-codes.md)
+- [JSON output](json-schema.md)
+- [CBOM output](cbom.md)
+- [Install and troubleshoot](../how-to/install.md)

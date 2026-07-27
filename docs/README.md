@@ -37,6 +37,7 @@ Learning-oriented walkthroughs for someone new to the tool.
 ### [How-to guides](how-to/)
 Task-oriented recipes for someone who already knows the basics.
 
+- [Install and troubleshoot QuReddy](how-to/install.md)
 - [Scan an IP target with a custom SNI](how-to/scan-ip-with-sni.md)
 - [Scan an SSH or SFTP endpoint](how-to/scan-ssh.md)
 - [Capture machine-readable output for CI](how-to/json-output-for-ci.md)
@@ -48,6 +49,7 @@ Look-it-up information. Comprehensive, accurate, dry.
 - [CLI options](reference/cli.md) — every flag, every default, every value
 - [Exit codes](reference/exit-codes.md) — 0, 2, 3, 4, 70 and what triggers each
 - [JSON output schema](reference/json-schema.md) — the locked top-level keys, every field type
+- [CycloneDX CBOM output](reference/cbom.md) — emitted 1.7 components, references, metadata, and limits
 - [Failure categories](reference/failure-categories.md) — the `FailureCategory` enum, what each value means, retry eligibility
 - [Project milestones](reference/milestones.md) — what's shipped, what's planned
 - [Editions](reference/editions.md) — capability matrix: OSS vs BreachSAFE QuReddy Enterprise (planned, P2)
@@ -59,6 +61,7 @@ Conceptual discussion. Why we made the choices we did.
 - [Why hybrid post-quantum?](explanation/why-hybrid-pq.md) — the X25519MLKEM768 design call
 - [Harvest now, decrypt later (HNDL)](explanation/hndl.md) — the threat model that drives the timeline
 - [Threat model and scope](explanation/threat-model.md) — what QuReddy assumes, what it doesn't try to defend against
+- [Evidence honesty](explanation/evidence-honesty.md) — observation, local capability, interpretation, and unknown states
 - [Why QuReddy is open-core](explanation/oss-vs-enterprise.md) — what stays in OSS vs Enterprise (P2), and why
 
 ## Contributor documentation
