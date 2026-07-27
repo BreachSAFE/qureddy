@@ -20,6 +20,10 @@ jobs:
   build:
     name: build wheel + sdist
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write        # OIDC for the SLSA provenance attestation
+      attestations: write    # write the attestation to the repo's attestation store
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -32,6 +36,13 @@ jobs:
       - name: Check with twine
         run: |
           uv tool run --from "twine==6.2.0" twine check dist/*
+      # SLSA build provenance for the wheel + sdist (#85). Verifiable with
+      # `gh attestation verify <file> --repo breachsafe/qureddy`. The TestPyPI/PyPI
+      # publish also emits PEP 740 attestations via OIDC (id-token in that job).
+      - name: Attest build provenance for the distributions
+        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
+        with:
+          subject-path: "dist/*"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: dist
