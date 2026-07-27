@@ -2,8 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 """The `qureddy scan tls` command body and orchestration.
 
-Becomes a sibling of `cli/ssh.py` (and future `cli/cert.py` at MVP 0.2)
-per ADR 0005 Rule D: public entry points at the top level of the package.
+The TLS scanner has a dedicated public entry point alongside `cli/ssh.py`.
 """
 
 from __future__ import annotations

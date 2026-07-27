@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
 # SPDX-License-Identifier: Apache-2.0
-"""Hardcoded MVP 0.1 policy. Seven rules, no YAML loading."""
+"""Current hardcoded readiness policy. Seven rules, no YAML loading."""
 
 from __future__ import annotations
 

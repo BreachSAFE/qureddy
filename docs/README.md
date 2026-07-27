@@ -51,7 +51,6 @@ Look-it-up information. Comprehensive, accurate, dry.
 - [JSON output schema](reference/json-schema.md) — the locked top-level keys, every field type
 - [CycloneDX CBOM output](reference/cbom.md) — emitted 1.7 components, references, metadata, and limits
 - [Failure categories](reference/failure-categories.md) — the `FailureCategory` enum, what each value means, retry eligibility
-- [Project milestones](reference/milestones.md) — what's shipped, what's planned
 
 ### [Explanation](explanation/)
 Conceptual discussion. Why we made the choices we did.

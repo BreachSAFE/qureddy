@@ -70,7 +70,7 @@ deptry:
 reuse-lint:
     uv run --locked reuse lint
 
-# Semgrep is report-only at MVP 0.1 and runs in an isolated tool environment.
+# Semgrep is report-only and runs in an isolated tool environment.
 # It is deliberately outside the release/dev lock because Semgrep 1.171.0
 # exact-pins a vulnerable MCP SDK that QuReddy does not use.
 semgrep:
@@ -96,7 +96,7 @@ secrets:
     fi
 
 # ---------------------------------------------------------------------------
-# Run the scanner (once MVP 0.1 implementation lands)
+# Run the scanner.
 # ---------------------------------------------------------------------------
 
 # Scan a single TLS endpoint.

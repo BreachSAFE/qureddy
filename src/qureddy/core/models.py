@@ -2,12 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 """Domain models for QuReddy.
 
-Locked by .agents/skills/breachsafe-implement/SKILL.md. Field set is fixed for
-MVP 0.1; do not add or remove fields without updating the skill first.
-
-ANTIPATTERN ACCEPTED: speculative generality, because CycloneDX field
-names will land at MVP 0.3 and JSON schema stability matters for early
-adopters. Mirrored verbatim from the skill's "Model notes" section.
+The field set is part of the 0.2 JSON compatibility contract; changes require
+an accompanying schema and compatibility review.
 """
 
 from __future__ import annotations

@@ -18,7 +18,7 @@ QuReddy's CLI is **Typer + Rich + structlog** running on top of **Click 8**. Rul
 > and the canonical public
 > [release documentation issue](https://github.com/breachsafe/qureddy/issues/35).
 
-> **Why now.** MVP 0.1 ships as `scan tls`. MVP 0.2–0.6 add `scan cert`, `scan ssh`, `scan config`, `scan source`. Every new scanner is a new subcommand and a new flag set. Without a written standard, every scanner author re-invents the conventions and every reviewer re-litigates them. This document locks the conventions before the surface scales.
+> **Why this matters.** The shipped `scan tls` and `scan ssh` commands share one command-group convention, output contract, and exit-code surface. New scanner work must follow the same reviewable rules.
 
 ---
 
@@ -33,10 +33,10 @@ A user running `qureddy --help` is asking for information; that is success. Help
 Both `--version` and the short form `-V` (capital, per GNU §4.7) print the version banner and nothing else. The banner must be machine-parseable: a single line, predictable shape, version string at a fixed offset. Implementation reference: PR [#55](https://github.com/paul007ex/qureddy/pull/55).
 
 **Rule 1.3 — Three-tier help structure.**
-`qureddy --help` is the root help: subcommand list, global flags, environment variables, exit-code summary. `qureddy scan tls --help` is the subcommand help: every flag for that command, examples, exit codes that command can emit. There is no third tier (no `--help-full` or man-page generator at MVP 0.1; reconsider at v1.0). Citation: [clig.dev "Tiered help"](https://clig.dev/#help).
+`qureddy --help` is the root help: subcommand list, global flags, environment variables, exit-code summary. `qureddy scan tls --help` and `qureddy scan ssh --help` are subcommand help: every flag for that command, examples, and exit codes that command can emit. Citation: [clig.dev "Tiered help"](https://clig.dev/#help).
 
 **Rule 1.4 — Subcommand naming is verb-noun.**
-`scan tls`, `scan cert`, `scan ssh`. Not `tls-scan`, not `tls scan`. The verb is constant across MVP 0.1–0.6 (`scan`); the noun varies per scanner. Citation: [clig.dev "Subcommands"](https://clig.dev/#subcommands).
+`scan tls`, `scan ssh`. The verb is constant (`scan`); the noun identifies the endpoint protocol. Citation: [clig.dev "Subcommands"](https://clig.dev/#subcommands).
 
 **Rule 1.5 — Long flags spell out; short flags are mnemonic.**
 `--verbose`/`-v`, `--quiet`/`-q`, `--version`/`-V`, `--format`/`-f`. Long flags are self-documenting at the shell prompt; short flags exist for interactive use only. Every short flag has a long form. Not every long flag has a short form (the bar is high — short letters run out). Citation: [POSIX `getopt(3)`](https://pubs.opengroup.org/onlinepubs/9699919799/functions/getopt.html), [GNU §4.7](https://www.gnu.org/prep/standards/html_node/Command_002dLine-Interfaces.html).

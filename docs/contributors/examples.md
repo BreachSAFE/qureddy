@@ -606,7 +606,7 @@ def render_json(result):  # no types
 
 ## How to use this document
 
-When you start writing a new file in MVP 0.1:
+When you start writing a new file:
 
 1. Find the section above that matches what you're writing (Pydantic model? subprocess call? CLI command?).
 2. Read the **Why** explanation. The patterns aren't arbitrary — each one prevents a specific failure mode named in `docs/contributors/coding-rules.md`.

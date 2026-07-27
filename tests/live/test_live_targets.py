@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
 # SPDX-License-Identifier: Apache-2.0
-"""Live network tests against the canonical MVP 0.1 targets.
+"""Live network tests against the canonical authorized targets.
 
 Per docs/contributors/coding-rules.md Rule 9.4 these run as part of the default
 suite. pytest-rerunfailures absorbs transient internet hiccups

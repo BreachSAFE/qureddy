@@ -1,4 +1,4 @@
-# TLS Test Targets — MVP 0.1
+# TLS Test Targets
 
 Live targets used by two things:
 
@@ -34,7 +34,7 @@ Targets in this file are the canonical set the suite hits. When CI fails because
 
 The canonical TLS edge-case test surface. Stable, public, exhaustive.
 
-### MVP 0.1: TLS-version edge cases (in scope)
+### TLS-version edge cases (in scope)
 
 These fail at the TLS layer and are observable without certificate chain parsing.
 
@@ -44,9 +44,9 @@ These fail at the TLS layer and are observable without certificate chain parsing
 | `tls-v1-1.badssl.com:1011` | Forces TLS 1.1 only | `tls_handshake_failed` |
 | `tls-v1-2.badssl.com:1012` | Forces TLS 1.2 only | `tls_handshake_failed` (we require TLS 1.3) |
 
-### Future cert-scanner targets (NOT MVP 0.1)
+### Certificate-chain targets
 
-These targets exercise certificate-chain validity. MVP 0.1 explicitly excludes certificate chain parsing, so the scanner cannot record cert-chain findings yet. These targets are recorded here so the future cert scanner (MVP 0.2+) has a known target list ready.
+These targets exercise certificate-chain validity and certificate observations in the current TLS scanner.
 
 | Target | Tests at cert-scanner stage |
 |---|---|
@@ -56,7 +56,7 @@ These targets exercise certificate-chain validity. MVP 0.1 explicitly excludes c
 | `wrong.host.badssl.com` | Common-name / SAN mismatch |
 | `revoked.badssl.com` | OCSP-revoked cert |
 
-The "Disabled TLS verification" anti-pattern in `docs/contributors/agent-antipatterns.md` is non-negotiable: when MVP 0.2 wires up these targets, the scanner records cert problems as findings, not as workarounds via `verify=False`.
+The scanner records certificate problems as findings, not as workarounds via `verify=False`.
 
 ## Failure categories — fixture mapping
 

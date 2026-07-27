@@ -37,14 +37,14 @@ Which surface does the request affect?
 - [ ] Shipped SSH scanner
 - [ ] Shipped JSON output
 - [ ] Shipped CycloneDX 1.7 CBOM output
-- [ ] Planned config scanner
-- [ ] Planned source-code scanner
+- [ ] Proposed config scanner
+- [ ] Proposed source-code scanner
 - [ ] Release or packaging work
 - [ ] P2 (enterprise tier)
 - [ ] Not sure
 
 See the [milestone reference](../../docs/reference/milestones.md) for the
-current shipped and planned surface.
+current shipped and proposed surface.
 
 ## Alternatives considered
 

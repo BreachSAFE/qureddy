@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
 # SPDX-License-Identifier: Apache-2.0
-"""Scanner subpackages. MVP 0.1 ships only the TLS scanner."""
+"""Scanner subpackages for TLS and SSH endpoint collection."""
 
 from __future__ import annotations
