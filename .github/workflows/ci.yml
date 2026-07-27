@@ -14,6 +14,9 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+  schedule:
+    # Live public-network probes are an advisory signal, never a PR prerequisite.
+    - cron: "23 7 * * 2"
 
 permissions:
   contents: read
@@ -171,6 +174,7 @@ jobs:
   # ===========================================================================
   phase-4-live:
     name: "Phase 4: Live (${{ matrix.os }})"
+    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
     runs-on: ${{ matrix.os }}
     needs: phase-3-integration
     strategy:
@@ -212,6 +216,7 @@ jobs:
   # ===========================================================================
   phase-5-self-scan:
     name: "Phase 5: Self-scan"
+    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     needs: phase-4-live
 
@@ -240,6 +245,7 @@ jobs:
           uv run --locked qureddy scan tls www.google.com --format json > phase-5-self-scan/google.json
           uv run --locked qureddy scan tls example.com --format json > phase-5-self-scan/example.json
           uv run --locked qureddy scan tls 1.1.1.1:443 --sni one.one.one.one --format json > phase-5-self-scan/1111.json
+          uv run --locked qureddy scan ssh github.com --format json > phase-5-self-scan/github-ssh.json
           set +e
           uv run --locked qureddy scan tls tls-v1-2.badssl.com:1012 --format json > phase-5-self-scan/tls12.json
           tls12_exit=$?
@@ -261,7 +267,7 @@ jobs:
   phase-6-build:
     name: "Phase 6: Build"
     runs-on: ubuntu-latest
-    needs: phase-5-self-scan
+    needs: phase-3-integration
 
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -306,8 +312,9 @@ jobs:
   phase-7-audit:
     name: "Phase 7: Audit"
     runs-on: ubuntu-latest
-    needs: phase-6-build
-    if: always()  # always run even if prior phases failed; audit reports the gaps
+    needs: [phase-4-live, phase-5-self-scan, phase-6-build]
+    # The audit covers live artifacts, so it is an advisory scheduled/manual signal too.
+    if: ${{ always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') }}
 
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -517,7 +524,7 @@ jobs:
           "$wheel_qureddy" scan tls --help > /dev/null
           "$wheel_qureddy" scan ssh --help > /dev/null
 
-      - name: Exercise installed network and failure contracts
+      - name: Exercise installed hermetic scan and failure contracts
         run: |
           if [[ "$RUNNER_OS" == "Windows" ]]; then
             qureddy="wheel-env/Scripts/qureddy"
@@ -528,7 +535,11 @@ jobs:
             python_bin="wheel-env/bin/python"
             old_openssl="tests/fixtures/openssl/fake/openssl_too_old.sh"
           fi
-          "$qureddy" scan ssh github.com --format json > ssh.json
+          set +e
+          "$qureddy" scan ssh 127.0.0.1:1 --format json > ssh.json
+          ssh_exit=$?
+          set -e
+          test "$ssh_exit" -eq 2
           "$python_bin" -c \
             'import json; assert json.load(open("ssh.json"))["scan"]["scanner_name"] == "ssh"'
           set +e
