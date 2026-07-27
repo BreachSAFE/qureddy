@@ -8,7 +8,8 @@ import subprocess
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
-from qureddy.core.errors import LocalOpenSSLMissing
+from qureddy.core.errors import LocalOpenSSLBroken, LocalOpenSSLMissing
+from qureddy.core.models import FailureCategory, OpenSSLDependency
 from qureddy.scanners.tls._classify import classify_failure
 from qureddy.scanners.tls._net import build_connect_target
 from qureddy.scanners.tls.openssl_probe._constants import (
@@ -104,6 +105,14 @@ def _run_probe(
         return result_from_timeout(args, exc, started, timeout_seconds, attempt_number)
     except FileNotFoundError as exc:
         raise LocalOpenSSLMissing(str(exc)) from exc
+    except OSError as exc:
+        raise LocalOpenSSLBroken(
+            f"openssl became unlaunchable after capability detection: {exc}",
+            dependency=OpenSSLDependency(
+                path=args[0],
+                failure_category=FailureCategory.LOCAL_OPENSSL_BROKEN,
+            ),
+        ) from exc
     duration_ms = int((datetime.now(UTC) - started).total_seconds() * 1000)
     failure = classify_failure(completed.stderr) if completed.returncode else None
     log_subprocess_complete(args, completed.returncode, duration_ms, attempt_number, failure)

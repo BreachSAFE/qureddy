@@ -1,0 +1,98 @@
+{
+  "$schema": "http://cyclonedx.org/schema/bom-1.6.schema.json",
+  "bomFormat": "CycloneDX",
+  "components": [
+    {
+      "bom-ref": "<normalized-generated-bom-ref>",
+      "name": "example.com:443",
+      "type": "application",
+      "version": "0.2.0"
+    },
+    {
+      "bom-ref": "crypto/protocol/tls-tlsv1.3",
+      "cryptoProperties": {
+        "assetType": "protocol",
+        "protocolProperties": {
+          "cipherSuites": [
+            {
+              "algorithms": [
+                "crypto/algorithm/x25519",
+                "crypto/algorithm/x25519mlkem768"
+              ],
+              "name": "TLS_AES_256_GCM_SHA384"
+            }
+          ],
+          "type": "tls",
+          "version": "TLSv1.3"
+        }
+      },
+      "name": "TLSv1.3",
+      "type": "cryptographic-asset"
+    },
+    {
+      "bom-ref": "crypto/algorithm/x25519",
+      "cryptoProperties": {
+        "assetType": "algorithm"
+      },
+      "name": "X25519",
+      "type": "cryptographic-asset"
+    },
+    {
+      "bom-ref": "crypto/algorithm/x25519mlkem768",
+      "cryptoProperties": {
+        "assetType": "algorithm"
+      },
+      "name": "X25519MLKEM768",
+      "type": "cryptographic-asset"
+    },
+    {
+      "bom-ref": "crypto-library/openssl",
+      "name": "openssl",
+      "type": "library",
+      "version": "3.5.6"
+    }
+  ],
+  "dependencies": [
+    {
+      "dependsOn": [
+        "crypto-library/openssl"
+      ],
+      "ref": "<normalized-generated-bom-ref>"
+    },
+    {
+      "provides": [
+        "crypto/algorithm/x25519",
+        "crypto/algorithm/x25519mlkem768",
+        "crypto/protocol/tls-tlsv1.3"
+      ],
+      "ref": "crypto-library/openssl"
+    },
+    {
+      "ref": "crypto/algorithm/x25519"
+    },
+    {
+      "ref": "crypto/algorithm/x25519mlkem768"
+    },
+    {
+      "ref": "crypto/protocol/tls-tlsv1.3"
+    }
+  ],
+  "metadata": {
+    "component": {
+      "bom-ref": "<normalized-generated-bom-ref>",
+      "name": "example.com:443",
+      "type": "application",
+      "version": "0.2.0"
+    },
+    "properties": [
+      {
+        "name": "qureddy:scan.status",
+        "value": "completed"
+      }
+    ],
+    "timestamp": "<normalized-timestamp>"
+  },
+  "serialNumber": "<normalized-serial-number>",
+  "specVersion": "1.6",
+  "version": 1
+}

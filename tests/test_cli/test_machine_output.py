@@ -27,6 +27,7 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
+import qureddy.cli._errors as errors_module
 from qureddy.cli import app
 from qureddy.cli._errors import _stderr_merged_into_stdout
 from tests._fake_openssl import fake_openssl
@@ -208,6 +209,8 @@ class TestStderrMergedDetection:
         with (tmp_path / "merged.log").open("w") as stream:
             monkeypatch.setattr(sys, "stdout", stream)
             monkeypatch.setattr(sys, "stderr", stream)
+            if os.name == "nt":
+                monkeypatch.setattr(errors_module, "_windows_standard_handles_match", lambda: True)
             assert _stderr_merged_into_stdout() is True
 
     def test_false_for_separate_files(
@@ -219,6 +222,8 @@ class TestStderrMergedDetection:
         ):
             monkeypatch.setattr(sys, "stdout", out_stream)
             monkeypatch.setattr(sys, "stderr", err_stream)
+            if os.name == "nt":
+                monkeypatch.setattr(errors_module, "_windows_standard_handles_match", lambda: False)
             assert _stderr_merged_into_stdout() is False
 
     def test_false_for_streams_without_a_file_descriptor(

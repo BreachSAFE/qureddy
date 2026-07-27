@@ -91,6 +91,18 @@ class TestProbeCapability:
         ):
             probe_capability(fake_openssl("openssl_ok"))
 
+    def test_probe_launch_oserror_is_typed_local_failure(self) -> None:
+        with (
+            patch("subprocess.run", side_effect=OSError(193, "not a valid application")),
+            pytest.raises(LocalOpenSSLBroken, match="became unlaunchable"),
+        ):
+            run_hybrid_probe(
+                fake_openssl("openssl_ok"),
+                host="example.invalid",
+                port=443,
+                sni="example.invalid",
+            )
+
     def test_too_old_version_flagged(self) -> None:
         dep = probe_capability(fake_openssl("openssl_too_old"))
         assert dep.failure_category is FailureCategory.LOCAL_OPENSSL_TOO_OLD
