@@ -30,11 +30,11 @@ from typer.testing import CliRunner
 from qureddy.cli import app
 from qureddy.cli._errors import _stderr_merged_into_stdout
 
-FAKE_DIR = Path(__file__).parent / "fixtures" / "openssl" / "fake"
+FAKE_DIR = Path(__file__).parent.parent / "fixtures" / "openssl" / "fake"
 # Resolved once to a full path so subprocess calls below satisfy Bandit's
 # S607 (partial executable path), matching tests/test_cli.py.
 _QUREDDY_BIN = shutil.which("qureddy") or "qureddy"
-_SUBPROCESS_INJECT_DIR = Path(__file__).parent / "subprocess_inject"
+_SUBPROCESS_INJECT_DIR = Path(__file__).parent.parent / "subprocess_inject"
 # Generous ceiling: every scenario here fails fast (fake openssl binary or
 # refused loopback connect); the timeout only guards against a hang.
 _SUBPROCESS_TIMEOUT = 60

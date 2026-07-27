@@ -13,7 +13,7 @@ from typer.testing import CliRunner
 from qureddy._branding import HEADER
 from qureddy.cli import app, main
 
-FAKE_DIR = Path(__file__).parent / "fixtures" / "openssl" / "fake"
+FAKE_DIR = Path(__file__).parent.parent / "fixtures" / "openssl" / "fake"
 
 
 def test_json_output_top_level_keys_in_locked_order() -> None:

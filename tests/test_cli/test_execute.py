@@ -15,7 +15,7 @@ import qureddy.cli.ssh as ssh_cli_module
 from qureddy.cli import app, main
 from qureddy.core import retry as retry_module
 
-FAKE_DIR = Path(__file__).parent / "fixtures" / "openssl" / "fake"
+FAKE_DIR = Path(__file__).parent.parent / "fixtures" / "openssl" / "fake"
 
 
 def test_invalid_target_exits_4() -> None:
