@@ -64,14 +64,9 @@ jobs:
 
       - name: mypy --strict
         run: uv run --locked mypy src/qureddy --strict
-        # mypy will currently fail until src/qureddy exists (MVP 0.1).
-        # Treat as expected pre-implementation; CI will turn green once
-        # the package skeleton lands. Do not silence.
-        continue-on-error: true
 
       - name: bandit
         run: uv run --locked bandit -r -ll src/qureddy scripts/
-        continue-on-error: true  # same as mypy: src/qureddy not yet present
 
       - name: pip-audit
         run: |
@@ -79,22 +74,18 @@ jobs:
             --ignore-vuln PYSEC-2026-3481 \
             --ignore-vuln PYSEC-2026-3482 \
             --ignore-vuln PYSEC-2026-3483
-        continue-on-error: true  # do not block CI on upstream CVE noise at MVP scale
 
       - name: deptry
         run: uv run --locked deptry .
-        continue-on-error: true  # blank src/ produces no signal yet
 
       - name: reuse lint
         run: uv run --locked reuse lint
-        continue-on-error: true  # SPDX coverage still in progress
 
       - name: gitleaks (Linux only)
         if: matrix.os == 'ubuntu-latest'
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
 
   # ===========================================================================
   # Phase 2 — Unit tests (hermetic, no network, no real OpenSSL).
@@ -124,13 +115,7 @@ jobs:
         run: uv sync --locked --extra dev
 
       - name: pytest (unit only, with coverage)
-        run: |
-          if [ -d "tests" ] && find tests -maxdepth 2 -name "test_*.py" -not -path "tests/live/*" | grep -q .; then
-            uv run --locked pytest --ignore=tests/live --cov=qureddy --cov-fail-under=80
-          else
-            echo "No unit tests yet (pre-MVP); skipping pytest invocation."
-          fi
-        continue-on-error: true
+        run: uv run --locked pytest --ignore=tests/live --cov=qureddy --cov-fail-under=80
 
       - name: Upload coverage
         if: always()
@@ -197,28 +182,29 @@ jobs:
           # URL that disappears when Shining Light rotates releases. Install
           # the maintained current package, then verify the capability below.
           choco install openssl --no-progress -y
-          $opensslBin = Join-Path $env:ProgramFiles "OpenSSL-Win64\bin"
-          if (-not (Test-Path (Join-Path $opensslBin "openssl.exe"))) {
-            throw "Chocolatey installed OpenSSL outside the expected location"
+          $candidates = @(
+            (Join-Path $env:ProgramFiles "OpenSSL\bin\openssl.exe"),
+            (Join-Path $env:ProgramFiles "OpenSSL-Win64\bin\openssl.exe"),
+            (Join-Path $env:ChocolateyInstall "bin\openssl.exe")
+          )
+          $opensslExe = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $opensslExe) {
+            throw "Chocolatey installed OpenSSL but no openssl.exe was discoverable"
           }
+          $opensslBin = Split-Path -Parent $opensslExe
           $opensslBin | Out-File -FilePath $env:GITHUB_PATH -Append
 
       - name: Verify OpenSSL version
         run: |
           openssl version
-          openssl list -tls1_3 -tls-groups || echo "tls-groups not yet supported in this OpenSSL"
+          openssl list -tls1_3 -tls-groups | tee openssl-groups.txt
+          grep -qi X25519MLKEM768 openssl-groups.txt
 
       - name: Install project (dev extras)
         run: uv sync --locked --extra dev
 
       - name: pytest tests/test_openssl_probe.py
-        run: |
-          if [ -f "tests/test_openssl_probe.py" ]; then
-            uv run --locked pytest tests/test_openssl_probe.py -v
-          else
-            echo "tests/test_openssl_probe.py does not exist yet (pre-MVP); skipping."
-          fi
-        continue-on-error: true
+        run: uv run --locked pytest tests/test_openssl_probe.py -v
 
   # ===========================================================================
   # Phase 4 — Live tests (network required, real targets).
@@ -270,27 +256,32 @@ jobs:
         shell: pwsh
         run: |
           choco install openssl --no-progress -y
-          $opensslBin = Join-Path $env:ProgramFiles "OpenSSL-Win64\bin"
-          if (-not (Test-Path (Join-Path $opensslBin "openssl.exe"))) {
-            throw "Chocolatey installed OpenSSL outside the expected location"
+          $candidates = @(
+            (Join-Path $env:ProgramFiles "OpenSSL\bin\openssl.exe"),
+            (Join-Path $env:ProgramFiles "OpenSSL-Win64\bin\openssl.exe"),
+            (Join-Path $env:ChocolateyInstall "bin\openssl.exe")
+          )
+          $opensslExe = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $opensslExe) {
+            throw "Chocolatey installed OpenSSL but no openssl.exe was discoverable"
           }
+          $opensslBin = Split-Path -Parent $opensslExe
           $opensslBin | Out-File -FilePath $env:GITHUB_PATH -Append
 
       - name: Install project (dev extras)
         run: uv sync --locked --extra dev
 
-      - name: pytest tests/live/
+      - name: Verify OpenSSL capability
         run: |
-          if [ -d "tests/live" ] && find tests/live -name "test_*.py" | grep -q .; then
-            uv run --locked pytest tests/live/ -v
-          else
-            echo "tests/live/ does not exist yet (pre-MVP); skipping."
-          fi
-        continue-on-error: true
+          openssl version
+          openssl list -tls1_3 -tls-groups | tee openssl-groups.txt
+          grep -qi X25519MLKEM768 openssl-groups.txt
+
+      - name: pytest tests/live/
+        run: uv run --locked pytest tests/live/ -v
 
   # ===========================================================================
-  # Phase 5 — Self-scan (qureddy scans qureddy's own canonical targets).
-  # No-op until the scanner exists. Runs on Linux only (network-bound).
+  # Phase 5 — Self-scan (qureddy scans qureddy's canonical targets).
   # ===========================================================================
   phase-5-self-scan:
     name: "Phase 5: Self-scan"
@@ -325,21 +316,19 @@ jobs:
       - name: Install project
         run: uv sync --locked --extra dev
 
-      - name: Scan canonical targets (when qureddy CLI exists)
+      - name: Scan canonical targets
         run: |
           mkdir -p phase-5-self-scan
-          if uv run --locked qureddy --help >/dev/null 2>&1; then
-            uv run --locked qureddy scan tls www.cloudflare.com --format json > phase-5-self-scan/cloudflare.json || true
-            uv run --locked qureddy scan tls pq.cloudflareresearch.com --format json > phase-5-self-scan/pq-cloudflare.json || true
-            uv run --locked qureddy scan tls www.google.com --format json > phase-5-self-scan/google.json || true
-            uv run --locked qureddy scan tls example.com --format json > phase-5-self-scan/example.json || true
-            uv run --locked qureddy scan tls 1.1.1.1:443 --sni one.one.one.one --format json > phase-5-self-scan/1111.json || true
-            uv run --locked qureddy scan tls tls-v1-2.badssl.com:1012 --format json > phase-5-self-scan/tls12.json || true
-          else
-            echo "qureddy CLI not yet available (pre-MVP); skipping self-scan."
-            echo '{"status": "scanner_not_yet_present"}' > phase-5-self-scan/PENDING.json
-          fi
-        continue-on-error: true
+          uv run --locked qureddy scan tls www.cloudflare.com --format json > phase-5-self-scan/cloudflare.json
+          uv run --locked qureddy scan tls pq.cloudflareresearch.com --format json > phase-5-self-scan/pq-cloudflare.json
+          uv run --locked qureddy scan tls www.google.com --format json > phase-5-self-scan/google.json
+          uv run --locked qureddy scan tls example.com --format json > phase-5-self-scan/example.json
+          uv run --locked qureddy scan tls 1.1.1.1:443 --sni one.one.one.one --format json > phase-5-self-scan/1111.json
+          set +e
+          uv run --locked qureddy scan tls tls-v1-2.badssl.com:1012 --format json > phase-5-self-scan/tls12.json
+          tls12_exit=$?
+          set -e
+          test "$tls12_exit" -eq 2
 
       - name: Upload self-scan artifacts
         if: always()
@@ -372,12 +361,7 @@ jobs:
       - name: uv build
         run: |
           uv sync --locked --extra dev
-          if [ -d "src/qureddy" ]; then
-            uv build
-          else
-            echo "src/qureddy does not exist yet (pre-MVP); skipping uv build."
-          fi
-        continue-on-error: true
+          uv build
 
       - name: Upload built artifacts
         if: always()
@@ -397,7 +381,6 @@ jobs:
           format: table
           exit-code: 0  # do not block PRs at MVP scale; promote to blocking at v1.0
           skip-dirs: scratch,.git
-        continue-on-error: true
 
   # ===========================================================================
   # Phase 7 — Audit. Reads prior phase artifacts. Asserts on counts.
@@ -426,10 +409,4 @@ jobs:
         run: ls -laR ci-artifacts/ || echo "no artifacts collected"
 
       - name: Run audit script
-        run: |
-          if [ -f scripts/audit_phase.py ]; then
-            python scripts/audit_phase.py --artifacts-dir ci-artifacts/
-          else
-            echo "scripts/audit_phase.py does not exist yet (pre-MVP); audit phase deferred."
-          fi
-        continue-on-error: true
+        run: python scripts/audit_phase.py --artifacts-dir ci-artifacts/
