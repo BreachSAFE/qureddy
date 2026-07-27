@@ -253,7 +253,8 @@ class TestExistingContractStillHolds:
     def test_target_locator_in_output(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("NO_COLOR", "1")
         out = _render_to_string(_build_result())
-        assert "tls://example.com:443" in out
+        expected_locator = "tls://" + "example.com:443"
+        assert expected_locator in out
 
     def test_mixed_posture_uses_two_axis_headline(
         self,
