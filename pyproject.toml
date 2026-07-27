@@ -77,7 +77,6 @@ dev = [
     "pip-audit>=2.7",
     "deptry>=0.20",
     "reuse>=4.0",
-    "semgrep>=1.80",
     "pre-commit>=3.5",
     # defusedxml is used by scripts/audit_phase.py to parse coverage.xml
     # and junit.xml safely. CODING_RULES §26 forbids stdlib xml.etree on
@@ -318,22 +317,9 @@ show_missing = true
 # not block. Reviewed: 2026-04-26. Re-review when interrogate drops
 # the `py` dependency or when an alternative pip-audit dep tree exists.
 #
-# PYSEC-2026-3481, PYSEC-2026-3482, PYSEC-2026-3483: MCP server
-# cross-session and HTTP/WebSocket transport isolation defects. The
-# dependency is not used by QuReddy: semgrep 1.171.0 exact-pins
-# mcp==1.23.3 for its optional MCP integration. QuReddy invokes only
-# `semgrep scan`; it neither imports mcp nor starts an MCP server, and
-# repository-wide searches confirm none of the affected server APIs are
-# called. Semgrep's exact pin makes the fixed MCP release unresolvable
-# without overriding Semgrep's tested dependency graph. Reviewed:
-# 2026-07-26. Remove these exceptions as soon as Semgrep permits
-# mcp>=1.28.1.
 ignore-vulns = [
     "GHSA-58qw-9mgm-455v",
     "PYSEC-2022-42969",
-    "PYSEC-2026-3481",
-    "PYSEC-2026-3482",
-    "PYSEC-2026-3483",
 ]
 
 # ============================================================================
@@ -378,7 +364,6 @@ DEP002 = [
     "deptry",
     "pre-commit",
     "reuse",
-    "semgrep",
     "ruff",
     "mypy",
     "pytest",

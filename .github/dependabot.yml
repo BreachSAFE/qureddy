@@ -39,7 +39,6 @@ updates:
           - "pip-audit"
           - "deptry"
           - "reuse"
-          - "semgrep"
         update-types:
           - "minor"
           - "patch"
