@@ -42,7 +42,7 @@ runs:
         mkdir -p "$source"
         tar -xzf "$archive" --strip-components=1 -C "$source"
         cd "$source"
-        ./config --prefix="$prefix" --openssldir="$prefix" shared
+        ./config --prefix="$prefix" --openssldir="$prefix" shared no-tests
         make -j4 build_libs
         make -j4 apps/openssl
         make install_sw
@@ -77,7 +77,7 @@ runs:
         mkdir -p "$source"
         tar -xzf "$archive" --strip-components=1 -C "$source"
         cd "$source"
-        ./Configure mingw64 --prefix="$prefix" --openssldir="$prefix" shared
+        ./Configure mingw64 --prefix="$prefix" --openssldir="$prefix" shared no-tests
         # OpenSSL's MSYS2 app makefiles race while renaming generated
         # dependency files. Libraries parallelize safely; build apps serially.
         make -j4 build_libs

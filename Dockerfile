@@ -17,7 +17,7 @@ RUN curl --fail --location --proto '=https' --connect-timeout 30 --max-time 300 
     && mkdir /tmp/openssl-src \
     && tar --extract --gzip --strip-components=1 --file /tmp/openssl.tar.gz --directory /tmp/openssl-src \
     && cd /tmp/openssl-src \
-    && ./Configure --prefix=/opt/openssl --openssldir=/opt/openssl/ssl shared \
+    && ./Configure --prefix=/opt/openssl --openssldir=/opt/openssl/ssl shared no-tests \
     && make -j"$(nproc)" build_libs \
     && make -j"$(nproc)" apps/openssl \
     && make install_sw \
