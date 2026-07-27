@@ -18,6 +18,7 @@ from __future__ import annotations
 import io
 import json
 import os
+import re
 import shutil
 import socket
 import subprocess
@@ -77,6 +78,40 @@ _TLS_EXIT3_ARGS = (
     "--openssl",
     fake_openssl("openssl_too_old"),
 )
+
+
+def test_installed_cbom_final_bytes_are_repeatable() -> None:
+    """The installed console produces identical bytes except document identity."""
+    outputs: list[str] = []
+    for _ in range(2):
+        result = _run_qureddy(
+            "scan",
+            "tls",
+            "192.0.2.1",
+            "--openssl",
+            fake_openssl("openssl_connect_refused"),
+            "--format",
+            "cbom",
+            merge_stderr=False,
+        )
+        assert result.returncode == 2
+        assert result.stderr == ""
+        assert json.loads(result.stdout)["specVersion"] == "1.7"
+        outputs.append(result.stdout)
+
+    def _without_document_identity(output: str) -> str:
+        output = re.sub(
+            r'("serialNumber": )"urn:uuid:[^"]+"',
+            r'\1"<document-serial>"',
+            output,
+        )
+        return re.sub(
+            r'("timestamp": )"[^"]+"',
+            r'\1"<document-timestamp>"',
+            output,
+        )
+
+    assert _without_document_identity(outputs[0]) == _without_document_identity(outputs[1])
 
 
 @pytest.mark.parametrize("output_format", ["json", "cbom"])

@@ -24,7 +24,7 @@ import re
 import sys
 import warnings
 from datetime import UTC, datetime
-from typing import IO, Any
+from typing import IO, TYPE_CHECKING, Any
 
 from cyclonedx.model import Property
 from cyclonedx.model.bom import Bom
@@ -41,7 +41,10 @@ from cyclonedx.model.crypto import (
 from cyclonedx.model.tool import ToolRepository
 from cyclonedx.output.json import JsonV1Dot7
 
-from qureddy.core.models import CertificateObservation, ObservationType, ScanResult
+from qureddy.core.models import ObservationType, ScanResult
+
+if TYPE_CHECKING:
+    from qureddy.core.certificate import CertificateObservation
 
 _ENDPOINT_REF = "endpoint"
 _QUREDDY_TOOL_REF = "tool/qureddy"
@@ -51,8 +54,18 @@ _POSITIVE_OBSERVATIONS = frozenset(
     {ObservationType.NEGOTIATED, ObservationType.OFFERED, ObservationType.OBSERVED}
 )
 _SECRET_PATTERNS = (
-    re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----", re.IGNORECASE),
-    re.compile(r"-----BEGIN ENCRYPTED PRIVATE KEY-----", re.IGNORECASE),
+    re.compile(
+        r"-----BEGIN (?:[A-Z0-9]+ )*PRIVATE KEY(?: BLOCK)?-----",
+        re.IGNORECASE,
+    ),
+    re.compile(r"\bBearer\s+[A-Za-z0-9._~+/=-]{16,}", re.IGNORECASE),
+    re.compile(r"\bgh[pousr]_[A-Za-z0-9]{20,}\b"),
+    re.compile(r"\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b"),
+)
+_SECRET_FIELD = re.compile(
+    r"^(?:access[_ -]?token|refresh[_ -]?token|api[_ -]?key|session[_ -]?key|"
+    r"password|credential|secret)$",
+    re.IGNORECASE,
 )
 
 
@@ -121,7 +134,7 @@ def _add_tool_provenance(bom: Bom, result: ScanResult) -> None:
             version=result.scan.scanner_version,
         )
     ]
-    if result.dependencies:
+    if result.dependencies and result.dependencies[0].failure_category is None:
         dependency = result.dependencies[0]
         tools.append(
             Component(
@@ -374,13 +387,17 @@ def _validate_cbom_semantics(payload: dict[str, Any]) -> None:
     metadata_component = payload.get("metadata", {}).get("component", {})
     graph_refs = [metadata_component.get("bom-ref")]
     graph_refs.extend(component.get("bom-ref") for component in payload.get("components", []))
-    present_refs = [ref for ref in graph_refs if isinstance(ref, str)]
-    duplicates = sorted({ref for ref in present_refs if present_refs.count(ref) > 1})
+    tool_refs = [
+        tool.get("bom-ref")
+        for tool in payload.get("metadata", {}).get("tools", {}).get("components", [])
+    ]
+    declared_refs = [ref for ref in (*graph_refs, *tool_refs) if isinstance(ref, str)]
+    duplicates = sorted({ref for ref in declared_refs if declared_refs.count(ref) > 1})
     if duplicates:
         msg = f"duplicate bom-ref values: {', '.join(duplicates)}"
         raise ValueError(msg)
 
-    known_refs = set(present_refs)
+    known_refs = {ref for ref in graph_refs if isinstance(ref, str)}
     dangling: set[str] = set()
     for dependency in payload.get("dependencies", []):
         dependency_ref = dependency.get("ref")
@@ -394,7 +411,31 @@ def _validate_cbom_semantics(payload: dict[str, Any]) -> None:
         msg = f"dangling dependency references: {', '.join(sorted(dangling))}"
         raise ValueError(msg)
 
-    serialized = json.dumps(payload, sort_keys=True)
-    if any(pattern.search(serialized) for pattern in _SECRET_PATTERNS):
-        msg = "CBOM contains private-key material"
+    if _contains_secret_like_material(payload):
+        msg = "CBOM contains secret-like material"
         raise ValueError(msg)
+
+
+def _contains_secret_like_material(value: object) -> bool:
+    """Detect key blocks, token shapes, and populated secret-named fields."""
+    if isinstance(value, dict):
+        populated_secret_field = any(
+            _SECRET_FIELD.fullmatch(str(key)) and nested not in (None, "", [], {})
+            for key, nested in value.items()
+        )
+        property_name = value.get("name")
+        populated_secret_property = (
+            isinstance(property_name, str)
+            and _SECRET_FIELD.fullmatch(property_name) is not None
+            and value.get("value") not in (None, "", [], {})
+        )
+        return (
+            populated_secret_field
+            or populated_secret_property
+            or any(_contains_secret_like_material(nested) for nested in value.values())
+        )
+    if isinstance(value, list):
+        return any(_contains_secret_like_material(item) for item in value)
+    if isinstance(value, str):
+        return any(pattern.search(value) for pattern in _SECRET_PATTERNS)
+    return False

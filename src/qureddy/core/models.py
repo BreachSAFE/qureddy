@@ -20,6 +20,7 @@ from enum import Enum
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from qureddy import __version__ as _version
+from qureddy.core.certificate import CertificateObservation  # noqa: TC001
 
 FROZEN = ConfigDict(frozen=True, extra="forbid")
 
@@ -288,28 +289,6 @@ class Asset(BaseModel):
     bom_ref: str | None = None
     oid: str | None = None
     nist_quantum_security_level: int | None = Field(default=None, ge=0, le=5)
-
-
-class CertificateObservation(BaseModel):
-    """Certificate facts captured by the scan's single certificate probe.
-
-    This typed, excluded observation lets alternate renderers reuse the
-    exact bytes-derived result without performing another network fetch.
-    It is deliberately excluded from ``qureddy.scan.v1`` until that public
-    schema has a separately reviewed certificate-observation contract.
-    """
-
-    model_config = FROZEN
-
-    subject: str
-    issuer: str
-    not_before: str
-    not_after: str
-    serial: str
-    signature_algorithm: str
-    public_key_summary: str
-    is_self_signed: bool
-    is_post_quantum_signature: bool
 
 
 class Evidence(BaseModel):

@@ -10,10 +10,11 @@ from datetime import UTC, datetime
 
 import pytest
 
+from qureddy.core.certificate import CertificateObservation
 from qureddy.core.models import (
     Asset,
-    CertificateObservation,
     Evidence,
+    FailureCategory,
     Finding,
     ObservationType,
     OpenSSLDependency,
@@ -25,6 +26,7 @@ from qureddy.core.models import (
     Severity,
 )
 from qureddy.output.cbom import _validate_cbom_semantics, render_cbom
+from qureddy.scanners.tls.scanner import build_capability_failure_result
 
 
 def _build_result() -> ScanResult:
@@ -140,12 +142,12 @@ class TestCycloneDx17Contract:
         assert "crypto/algorithm/x25519mlkem768" in deps_by_ref["endpoint"]["provides"]
 
     def test_missing_local_openssl_does_not_fabricate_crypto_assets(self) -> None:
-        failed = _build_result().model_copy(
-            update={
-                "dependencies": (),
-                "evidence": (),
-                "findings": (),
-            }
+        result = _build_result()
+        failed = build_capability_failure_result(
+            result.target,
+            OpenSSLDependency(
+                failure_category=FailureCategory.LOCAL_OPENSSL_MISSING,
+            ),
         )
         payload = _render(failed)
 
@@ -183,6 +185,7 @@ class TestCycloneDx17Contract:
             source="qureddy.scanners.tls.cert_sig",
             certificate=certificate,
         )
+        assert "certificate" not in certificate_evidence.model_dump(mode="json")
         result = _build_result().model_copy(
             update={"evidence": (*_build_result().evidence, certificate_evidence)}
         )
@@ -250,14 +253,33 @@ class TestCbomSemanticGuard:
         with pytest.raises(ValueError, match="duplicate"):
             _validate_cbom_semantics(payload)
 
-    def test_rejects_private_key_material(self) -> None:
+    def test_rejects_duplicate_tool_reference(self) -> None:
+        payload = self._base()
+        duplicate = dict(payload["metadata"]["tools"]["components"][0])
+        duplicate["bom-ref"] = "endpoint"
+        payload["metadata"]["tools"]["components"].append(duplicate)
+
+        with pytest.raises(ValueError, match="duplicate"):
+            _validate_cbom_semantics(payload)
+
+    @pytest.mark.parametrize(
+        ("name", "value"),
+        [
+            ("note", "-----BEGIN DSA PRIVATE KEY-----"),
+            ("note", "-----BEGIN OPENSSH PRIVATE KEY-----"),
+            ("access_token", "not-a-real-token-but-still-secret"),
+            ("credential", "username:password"),
+            ("session_key", "session-secret-value"),
+        ],
+    )
+    def test_rejects_secret_like_material(self, name: str, value: str) -> None:
         payload = self._base()
         payload["metadata"]["properties"].append(
             {
-                "name": "test",
-                "value": "-----BEGIN PRIVATE KEY-----",
+                "name": name,
+                "value": value,
             }
         )
 
-        with pytest.raises(ValueError, match="private-key"):
+        with pytest.raises(ValueError, match="secret-like"):
             _validate_cbom_semantics(payload)

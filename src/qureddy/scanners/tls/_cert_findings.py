@@ -23,9 +23,9 @@ from __future__ import annotations
 import uuid
 from typing import TYPE_CHECKING
 
+from qureddy.core.certificate import CertificateObservation
 from qureddy.core.models import (
     Asset,
-    CertificateObservation,
     Confidence,
     Evidence,
     Finding,
