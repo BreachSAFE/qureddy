@@ -51,7 +51,7 @@ dependencies = [
 
 [project.optional-dependencies]
 # Enterprise-grade gates from day 0. See:
-# .claude/skills/mvp-implement/SKILL.md "Quality gates" section.
+# .agents/skills/breachsafe-implement/SKILL.md "Quality gates" section.
 dev = [
     "pytest>=8.0",
     "pytest-cov>=5.0",

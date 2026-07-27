@@ -62,12 +62,12 @@ Read these in priority order. Skim only the first; the rest you read when releva
 | `docs/contributors/examples.md` | Before writing the first file in a new module. Good vs bad code patterns for Pydantic models, tests, subprocess, logging, exceptions, docstrings, CLI, JSON output. |
 | `docs/contributors/adr/` | When making or reviewing a load-bearing decision. ADRs 0001 (`--trace`), 0002 (Diátaxis), 0003 (`--help` rewrite), 0004 (multi-scanner architecture), 0005 (splitting oversized files). |
 | `docs/reference/milestones.md` | When asked "what's shipped" or "what's next". |
-| `.claude/skills/<skill>/SKILL.md` | When the active task matches a skill. Skills are loaded lazily. |
+| `.agents/skills/<skill>/SKILL.md` | When the active task matches a skill. Skills are loaded lazily. |
 | `tests/fixtures/openssl/TARGETS.md` | When writing or extending TLS scanner tests. |
 
 ## Skills
 
-Operational workflows live under `.claude/skills/`. Read each skill's `SKILL.md` only when the current task matches the skill's scope.
+Operational workflows live under `.agents/skills/`. Read each skill's `SKILL.md` only when the current task matches the skill's scope.
 
 | Skill | Use when |
 |---|---|
@@ -87,7 +87,7 @@ Operational workflows live under `.claude/skills/`. Read each skill's `SKILL.md`
 
 The five `breachsafe-*` skills are installed copies from the canonical library at `github.com/paul007ex/breachsafe-skills` — edit them there and re-run its `scripts/sync.py`, never edit the installed copies here (`scripts/drift_check.py` in that repo flags divergence).
 
-See `.claude/skills/README.md` for the catalog.
+See `.agents/skills/` for the active skill catalog.
 
 ## Roadmap
 
@@ -198,13 +198,12 @@ Two escape hatches exist when you must deviate from the rules — both go in you
 If you are Claude Code starting a fresh session:
 
 1. You have already read this file (auto-loaded).
-2. Read `docs/contributors/agent-antipatterns.md` for the pre-response audit rules.
-3. If the user names a task that matches a skill in `.claude/skills/`, read that skill's `SKILL.md` next.
+2. Apply the anti-pattern checks in the active quality-review skill.
+3. If the user names a task that matches a skill in `.agents/skills/`, read that skill's `SKILL.md` next.
 4. Read `docs/contributors/coding-rules.md` before writing any code.
 5. Begin work. Audit your output against `docs/contributors/agent-antipatterns.md` before each response.
 
-`.claude/skills/mvp-implement/SKILL.md` is historical authority for the
-original TLS-only milestone. Do not use it to override current TLS, SSH, CBOM,
+The historical MVP-implement guidance is retained locally. Do not use it to override current TLS, SSH, CBOM,
 packaging, or release behavior.
 
 ## License

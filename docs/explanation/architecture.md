@@ -230,6 +230,4 @@ The exact categories and retry state machine are documented in the
 - [CycloneDX CBOM output](../reference/cbom.md)
 - [CLI reference](../reference/cli.md)
 - [Evidence honesty](evidence-honesty.md)
-- [Multi-scanner ADR](../contributors/adr/0004-multi-scanner-architecture.md)
-- [CycloneDX 1.7 ADR](../contributors/adr/0007-cyclonedx-1.7-observation-contract.md)
 - [Contributor coding rules](../contributors/coding-rules.md)

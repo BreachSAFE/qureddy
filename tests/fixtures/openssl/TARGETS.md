@@ -46,7 +46,7 @@ These fail at the TLS layer and are observable without certificate chain parsing
 
 ### Future cert-scanner targets (NOT MVP 0.1)
 
-These targets exercise certificate-chain validity. MVP 0.1 explicitly excludes certificate chain parsing (see the "Hard scope rules" section of `.claude/skills/mvp-implement/SKILL.md`), so the scanner cannot record cert-chain findings yet. These targets are recorded here so the future cert scanner (MVP 0.2+) has a known target list ready.
+These targets exercise certificate-chain validity. MVP 0.1 explicitly excludes certificate chain parsing, so the scanner cannot record cert-chain findings yet. These targets are recorded here so the future cert scanner (MVP 0.2+) has a known target list ready.
 
 | Target | Tests at cert-scanner stage |
 |---|---|
@@ -60,7 +60,7 @@ The "Disabled TLS verification" anti-pattern in `docs/contributors/agent-antipat
 
 ## Failure categories — fixture mapping
 
-Every failure category enumerated in `.claude/skills/mvp-implement/SKILL.md` needs at least one captured fixture. Suggested target for each:
+Every failure category enumerated by the scanner needs at least one captured fixture. Suggested target for each:
 
 | Failure category | Capture from |
 |---|---|
@@ -77,7 +77,7 @@ Every failure category enumerated in `.claude/skills/mvp-implement/SKILL.md` nee
 
 ## Fixture capture protocol
 
-1. Run the probe command from `.claude/skills/mvp-implement/SKILL.md` ("Locked Pydantic model definitions" precedes the probe section) against the target.
+1. Run the documented probe command against the target.
 2. Save raw output to `tests/fixtures/openssl/<descriptive_name>.txt`.
 3. Redact anything host-specific that the parser doesn't need (cert PEM bodies, IP addresses in cert subjects).
 4. Add a one-line comment at the top of the fixture noting source target and date captured.

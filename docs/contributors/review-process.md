@@ -2,7 +2,7 @@
 
 # Review process
 
-How a bug fix lands in QuReddy. This is the operational form of the multi-tier reviewer/arbiter pattern; the policy/rationale lives in [`python-oss-crypto-reviewer/SKILL.md`](../../.claude/skills/python-oss-crypto-reviewer/SKILL.md) and [`validate-fix/SKILL.md`](../../.claude/skills/validate-fix/SKILL.md).
+How a bug fix lands in QuReddy. This is the operational form of the multi-tier reviewer/arbiter pattern; the policy and rationale live in the active `.agents/skills/` library.
 
 For *why* the project uses three label tiers (Reviewer / Arbiter / Decision), see the reviewer skill. This document is just the diagram + the cookbook.
 

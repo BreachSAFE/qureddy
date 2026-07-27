@@ -113,6 +113,19 @@ scratch/
 Scratch/
 /Scratch/
 
+# Local evidence-honesty working document; keep it out of the public tree.
+/docs/explanation/evidence-honesty.md
+/docs/contributors/agent-antipatterns.md
+/docs/contributors/agents/mvp-0.1-bootstrap-prompt.md
+/docs/contributors/agents/claude-developer-prompt.md
+/docs/contributors/adr/0006-oss-vs-enterprise-split.md
+/docs/contributors/adr/0005-splitting-oversized-files.md
+/docs/contributors/adr/
+/docs/adr/
+/docs/contributors/plans/
+/docs/explanation/oss-vs-enterprise.md
+/.claude/skills/
+
 # Secrets, never commit
 .env
 .env.*

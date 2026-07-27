@@ -71,7 +71,7 @@ QuReddy does not provide:
 
 ## Historical implementation material
 
-`.claude/skills/mvp-implement/SKILL.md` and
+`.agents/skills/breachsafe-implement/SKILL.md` and
 `docs/contributors/agents/mvp-0.1-bootstrap-prompt.md` describe the original
 TLS-only implementation milestone. They are retained for history and are not
 authority for the shipped SSH, CBOM, packaging, or release surfaces.
@@ -80,21 +80,10 @@ Current changes must follow the repository contributor rules, accepted ADRs,
 public issue acceptance criteria, code, tests, and installed artifact
 behavior.
 
-## Decision records
+## Maintainer decision records
 
-The [ADR ledger](../contributors/adr/) records current status and historical
-supersession. Key release decisions are:
-
-- [ADR 0002](../contributors/adr/0002-diataxis-documentation-standard.md):
-  documentation structure;
-- [ADR 0004](../contributors/adr/0004-multi-scanner-architecture.md): TLS and
-  SSH scanner composition;
-- [ADR 0005 size](../contributors/adr/0005-splitting-oversized-files.md):
-  purpose-organized file splits;
-- [ADR 0006](../contributors/adr/0006-oss-vs-enterprise-split.md): product
-  boundary;
-- [ADR 0007](../contributors/adr/0007-cyclonedx-1.7-observation-contract.md):
-  CycloneDX 1.7 output.
+Architecture decision records are maintained locally for contributors and are
+not part of the customer documentation or release artifacts.
 
 ## Related documentation
 

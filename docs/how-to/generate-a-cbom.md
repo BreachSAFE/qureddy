@@ -80,4 +80,3 @@ or revocation validation.
 - [CLI options](../reference/cli.md)
 - [Exit codes](../reference/exit-codes.md)
 - [Capture machine-readable output for CI](json-output-for-ci.md)
-- [CycloneDX 1.7 observation contract](../contributors/adr/0007-cyclonedx-1.7-observation-contract.md)
