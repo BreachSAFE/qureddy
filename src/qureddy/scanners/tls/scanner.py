@@ -23,7 +23,6 @@ from qureddy.core.models import (
     Evidence,
     FailureCategory,
     Finding,
-    ObservationType,
     OpenSSLDependency,
     ProbeResult,
     ProbeRole,
@@ -42,6 +41,11 @@ from qureddy.scanners.tls._evidence import build_asset, evidence_from_probe
 from qureddy.scanners.tls._legacy_findings import (
     evidence_from_legacy_result,
     finding_from_legacy_result,
+)
+from qureddy.scanners.tls._scan_failures import (
+    build_capability_failure_result,
+    build_scan_failure_result,
+    target_appears_unreachable,
 )
 from qureddy.scanners.tls._summary import (
     build_summary,
@@ -116,7 +120,7 @@ class TLSScanner:
             timeout_seconds=timeout_seconds,
         )
         findings = classify_evidence(asset, evidence)
-        if _target_appears_unreachable(evidence):
+        if target_appears_unreachable(evidence):
             # Issue #192/#183 follow-up: the legacy-protocol sweep (3
             # protocols) and cert fetch each open their own connection
             # with their own timeout_seconds budget. Against a target
@@ -332,108 +336,6 @@ class TLSScanner:
             retry_delay=self._retry.retry_delay,
             retry_on=self._retry.retry_on,
         )
-
-
-def build_capability_failure_result(
-    target: ScanTarget,
-    dependency: OpenSSLDependency,
-) -> ScanResult:
-    """Build a `ScanResult` for the local-capability-failure exit-3 path."""
-    started = datetime.now(UTC)
-    asset = build_asset(target)
-    failure_category = dependency.failure_category or FailureCategory.LOCAL_OPENSSL_MISSING
-    evidence = Evidence(
-        id=f"ev-{uuid.uuid4().hex[:12]}",
-        asset_id=asset.id,
-        evidence_type="tls.capability",
-        observation_type=ObservationType.NOT_TESTABLE,
-        source="qureddy.openssl_probe",
-        failure_category=failure_category,
-        notes=("local OpenSSL is unusable for X25519MLKEM768 hybrid probing",),
-    )
-    findings = classify_evidence(asset, [evidence])
-    summary = build_summary(target, list(findings), [evidence]).model_copy(
-        update={"failure_category": failure_category}
-    )
-    return ScanResult(
-        scan=ScanMetadata(
-            scan_id=f"scan-{uuid.uuid4().hex[:12]}",
-            started_at=started,
-            completed_at=datetime.now(UTC),
-            status=failure_category.value,
-            total_attempts=0,
-        ),
-        target=target,
-        dependencies=(dependency,),
-        assets=(asset,),
-        evidence=(evidence,),
-        findings=tuple(findings),
-        summary=summary,
-    )
-
-
-def build_scan_failure_result(
-    target: ScanTarget,
-    failure_category: FailureCategory,
-    *,
-    note: str,
-) -> ScanResult:
-    """Build a structured TLS result for a typed target-scan exception."""
-    started = datetime.now(UTC)
-    asset = build_asset(target)
-    evidence = Evidence(
-        id=f"ev-{uuid.uuid4().hex[:12]}",
-        asset_id=asset.id,
-        evidence_type="tls.scan",
-        observation_type=ObservationType.NOT_TESTABLE,
-        source="qureddy.scanners.tls.scanner",
-        failure_category=failure_category,
-        notes=(note,),
-    )
-    findings = classify_evidence(asset, [evidence])
-    summary = build_summary(target, list(findings), [evidence]).model_copy(
-        update={"failure_category": failure_category}
-    )
-    return ScanResult(
-        scan=ScanMetadata(
-            scan_id=f"scan-{uuid.uuid4().hex[:12]}",
-            started_at=started,
-            completed_at=datetime.now(UTC),
-            status=failure_category.value,
-            total_attempts=0,
-        ),
-        target=target,
-        dependencies=(),
-        assets=(asset,),
-        evidence=(evidence,),
-        findings=tuple(findings),
-        summary=summary,
-    )
-
-
-_UNREACHABLE_FAILURE_CATEGORIES = frozenset({FailureCategory.TARGET_CONNECT_FAILED})
-
-
-def _target_appears_unreachable(evidence: list[Evidence]) -> bool:
-    """True when every hybrid/classical probe attempt never even connected.
-
-    Issue #216: TLS_HANDSHAKE_FAILED used to be in this set too, on the
-    theory that it meant the target couldn't be talked to. Wrong —
-    confirmed live against badssl.com: the *forced-group* TLS 1.3
-    handshake fails with TLS_HANDSHAKE_FAILED both when a target is
-    genuinely dead AND when it's alive, responding, and simply doesn't
-    support that specific forced group — exactly the servers #192's
-    legacy-protocol sweep exists to catch (badssl.com genuinely
-    negotiates TLS 1.0/1.2 with different flags, confirmed independently
-    with raw openssl). TARGET_CONNECT_FAILED is the only category that's
-    unambiguous: the TCP connection itself never completed, so no
-    OpenSSL flag combination would help. Requires ALL evidence records
-    to match, not just one, so a single flaky attempt among successful
-    retries doesn't trigger a skip.
-    """
-    if not evidence:
-        return False
-    return all(ev.failure_category in _UNREACHABLE_FAILURE_CATEGORIES for ev in evidence)
 
 
 __all__ = [
