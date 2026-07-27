@@ -17,7 +17,7 @@ BreachSAFE GitHub Container Registry (GHCR).
 ## Pull the release image
 
 ```bash
-docker pull ghcr.io/breachsafe/qureddy:0.2.0
+docker pull ghcr.io/breachsafe/qureddy:latest
 ```
 
 The image includes the TLS collector. A host OpenSSL installation and
@@ -26,21 +26,21 @@ The image includes the TLS collector. A host OpenSSL installation and
 ## Run a TLS scan
 
 ```bash
-docker run --rm ghcr.io/breachsafe/qureddy:0.2.0 \
+docker run --rm ghcr.io/breachsafe/qureddy:latest \
   scan tls pq.cloudflareresearch.com
 ```
 
 For an IP target that requires SNI:
 
 ```bash
-docker run --rm ghcr.io/breachsafe/qureddy:0.2.0 \
+docker run --rm ghcr.io/breachsafe/qureddy:latest \
   scan tls 1.1.1.1:443 --sni one.one.one.one
 ```
 
 ## Run an SSH scan
 
 ```bash
-docker run --rm ghcr.io/breachsafe/qureddy:0.2.0 \
+docker run --rm ghcr.io/breachsafe/qureddy:latest \
   scan ssh github.com
 ```
 
@@ -49,10 +49,10 @@ SSH scans need outbound TCP 22 access and do not invoke OpenSSL.
 ## Write JSON or CBOM output
 
 ```bash
-docker run --rm ghcr.io/breachsafe/qureddy:0.2.0 \
+docker run --rm ghcr.io/breachsafe/qureddy:latest \
   scan tls pq.cloudflareresearch.com --format json > scan.json
 
-docker run --rm ghcr.io/breachsafe/qureddy:0.2.0 \
+docker run --rm ghcr.io/breachsafe/qureddy:latest \
   scan ssh github.com --format cbom > github-ssh.cdx.json
 ```
 
@@ -65,8 +65,8 @@ failure.
 ## Pin the image digest
 
 ```bash
-docker pull ghcr.io/breachsafe/qureddy:0.2.0
-docker image inspect ghcr.io/breachsafe/qureddy:0.2.0 \
+docker pull ghcr.io/breachsafe/qureddy:latest
+docker image inspect ghcr.io/breachsafe/qureddy:latest \
   --format '{{index .RepoDigests 0}}'
 ```
 

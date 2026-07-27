@@ -11,9 +11,25 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Contents
 
+- [0.2.2](#022---2026-07-27)
 - [0.2.1](#021---2026-07-27)
 - [0.2.0](#020---2026-07-27)
 - [0.1.0](#010---2026-05-10)
+
+## [0.2.2] - 2026-07-27
+
+### Changed
+
+- Documentation Docker examples reference the floating `:latest` tag instead of
+  a pinned version, so they do not go stale on each release (pin an explicit
+  `:X.Y.Z` in production).
+- The container publish workflow also tags `:latest`.
+
+### Added
+
+- `scripts/bump_version.py` — single-source version bump driven by
+  `pyproject.toml`, updating the README version badge so a release touches one
+  number.
 
 ## [0.2.1] - 2026-07-27
 

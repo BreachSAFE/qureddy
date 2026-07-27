@@ -93,5 +93,6 @@ jobs:
           docker buildx build --builder qureddy-builder \
             --platform linux/amd64,linux/arm64 \
             --tag "$IMAGE" \
+            --tag "ghcr.io/breachsafe/qureddy:latest" \
             --tag "ghcr.io/breachsafe/qureddy:sha-${GITHUB_SHA::12}" \
             --push .
