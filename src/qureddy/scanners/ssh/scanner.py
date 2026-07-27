@@ -102,109 +102,112 @@ def build_ssh_failure_result(
     )
 
 
-def scan_ssh(target: ScanTarget, *, timeout_seconds: int = 8) -> ScanResult:
-    """Scan an SSH endpoint for post-quantum readiness. Raises SSHProbeError on probe failure."""
-    started = datetime.now(UTC)
-    offer = read_kexinit_offer(target.host, target.port, timeout_seconds=timeout_seconds)
+def _hybrid_kex_observation(asset: Asset, pq: tuple[str, ...]) -> tuple[Evidence, Finding]:
+    """Build evidence and finding for an offered PQ-hybrid KEX."""
+    evidence = Evidence(
+        id=_uid("ev"),
+        asset_id=asset.id,
+        evidence_type="ssh.kex",
+        observation_type=ObservationType.OFFERED,
+        source="qureddy.scanners.ssh.probe",
+        protocol="ssh",
+        protocol_version="2.0",
+        negotiated_group=pq[0],
+        notes=(f"PQ hybrid KEX offered: {', '.join(pq)}",),
+    )
+    finding = Finding(
+        id=_uid("finding"),
+        asset_id=asset.id,
+        evidence_ids=(evidence.id,),
+        rule_id="ssh.kex.hybrid_offered",
+        finding_type="ssh.kex.hybrid",
+        title=f"SSH offers post-quantum hybrid key exchange ({pq[0]})",
+        description="Server offers a PQ hybrid KEX group; protects against harvest-now-decrypt-later.",
+        severity=Severity.INFO,
+        readiness=Readiness.TRANSITIONAL_HYBRID,
+        confidence=Confidence.HIGH,
+        algorithm=pq[0],
+        negotiated_group=pq[0],
+        protocol="ssh",
+    )
+    return evidence, finding
 
-    asset = _build_ssh_asset(target)
 
-    evidence: list[Evidence] = []
-    findings: list[Finding] = []
+def _classical_kex_observation(asset: Asset) -> tuple[Evidence, Finding]:
+    """Build evidence and finding when no PQ-hybrid KEX is offered."""
+    evidence = Evidence(
+        id=_uid("ev"),
+        asset_id=asset.id,
+        evidence_type="ssh.kex",
+        observation_type=ObservationType.OFFERED,
+        source="qureddy.scanners.ssh.probe",
+        protocol="ssh",
+        protocol_version="2.0",
+        notes=("no PQ hybrid KEX offered",),
+    )
+    finding = Finding(
+        id=_uid("finding"),
+        asset_id=asset.id,
+        evidence_ids=(evidence.id,),
+        rule_id="ssh.kex.classical_only",
+        finding_type="ssh.kex.classical",
+        title="SSH offers classical key exchange only",
+        description="No PQ hybrid KEX offered; exposed to harvest-now-decrypt-later.",
+        severity=Severity.LOW,
+        readiness=Readiness.QUANTUM_VULNERABLE,
+        confidence=Confidence.HIGH,
+        protocol="ssh",
+    )
+    return evidence, finding
 
-    # axis 1 — key exchange
-    pq = classify.pq_hybrid_kex(offer.kex_algorithms)
-    if pq:
-        ev = Evidence(
-            id=_uid("ev"),
-            asset_id=asset.id,
-            evidence_type="ssh.kex",
-            observation_type=ObservationType.OFFERED,
-            source="qureddy.scanners.ssh.probe",
-            protocol="ssh",
-            protocol_version="2.0",
-            negotiated_group=pq[0],
-            notes=(f"PQ hybrid KEX offered: {', '.join(pq)}",),
-        )
-        evidence.append(ev)
-        findings.append(
-            Finding(
-                id=_uid("finding"),
-                asset_id=asset.id,
-                evidence_ids=(ev.id,),
-                rule_id="ssh.kex.hybrid_offered",
-                finding_type="ssh.kex.hybrid",
-                title=f"SSH offers post-quantum hybrid key exchange ({pq[0]})",
-                description="Server offers a PQ hybrid KEX group; protects against harvest-now-decrypt-later.",
-                severity=Severity.INFO,
-                readiness=Readiness.TRANSITIONAL_HYBRID,
-                confidence=Confidence.HIGH,
-                algorithm=pq[0],
-                # negotiated_group is what output/cbom.py reads to emit a
-                # cryptographic-asset component; without it the SSH KEX
-                # (e.g. sntrup761x25519-sha512) was absent from --format cbom.
-                negotiated_group=pq[0],
-                protocol="ssh",
-            )
-        )
-    else:
-        ev = Evidence(
-            id=_uid("ev"),
-            asset_id=asset.id,
-            evidence_type="ssh.kex",
-            observation_type=ObservationType.OFFERED,
-            source="qureddy.scanners.ssh.probe",
-            protocol="ssh",
-            protocol_version="2.0",
-            notes=("no PQ hybrid KEX offered",),
-        )
-        evidence.append(ev)
-        findings.append(
-            Finding(
-                id=_uid("finding"),
-                asset_id=asset.id,
-                evidence_ids=(ev.id,),
-                rule_id="ssh.kex.classical_only",
-                finding_type="ssh.kex.classical",
-                title="SSH offers classical key exchange only",
-                description="No PQ hybrid KEX offered; exposed to harvest-now-decrypt-later.",
-                severity=Severity.LOW,
-                readiness=Readiness.QUANTUM_VULNERABLE,
-                confidence=Confidence.HIGH,
-                protocol="ssh",
-            )
-        )
 
-    # axis 2 — host-key signature (weak DSA?)
-    weak = classify.weak_host_keys(offer.host_key_algorithms)
-    if weak:
-        ev2 = Evidence(
-            id=_uid("ev"),
-            asset_id=asset.id,
-            evidence_type="ssh.hostkey",
-            observation_type=ObservationType.OFFERED,
-            source="qureddy.scanners.ssh.probe",
-            protocol="ssh",
-            protocol_version="2.0",
-            notes=(f"weak host-key algorithm offered: {', '.join(weak)}",),
-        )
-        evidence.append(ev2)
-        findings.append(
-            Finding(
-                id=_uid("finding"),
-                asset_id=asset.id,
-                evidence_ids=(ev2.id,),
-                rule_id="ssh.hostkey.weak",
-                finding_type="ssh.hostkey.weak",
-                title=f"Weak SSH host-key algorithm offered ({', '.join(weak)})",
-                description="DSA host keys are deprecated and cryptographically weak.",
-                severity=Severity.MEDIUM,
-                readiness=Readiness.CLASSICALLY_WEAK,
-                confidence=Confidence.HIGH,
-                protocol="ssh",
-            )
-        )
+def _kex_observation(asset: Asset, algorithms: tuple[str, ...]) -> tuple[Evidence, Finding]:
+    """Classify the offered KEX list and build its result pair."""
+    pq = classify.pq_hybrid_kex(algorithms)
+    return _hybrid_kex_observation(asset, pq) if pq else _classical_kex_observation(asset)
 
+
+def _weak_host_key_observation(
+    asset: Asset, algorithms: tuple[str, ...]
+) -> tuple[Evidence, Finding] | None:
+    """Build the weak-host-key result pair, if a weak algorithm is offered."""
+    weak = classify.weak_host_keys(algorithms)
+    if not weak:
+        return None
+    evidence = Evidence(
+        id=_uid("ev"),
+        asset_id=asset.id,
+        evidence_type="ssh.hostkey",
+        observation_type=ObservationType.OFFERED,
+        source="qureddy.scanners.ssh.probe",
+        protocol="ssh",
+        protocol_version="2.0",
+        notes=(f"weak host-key algorithm offered: {', '.join(weak)}",),
+    )
+    finding = Finding(
+        id=_uid("finding"),
+        asset_id=asset.id,
+        evidence_ids=(evidence.id,),
+        rule_id="ssh.hostkey.weak",
+        finding_type="ssh.hostkey.weak",
+        title=f"Weak SSH host-key algorithm offered ({', '.join(weak)})",
+        description="DSA host keys are deprecated and cryptographically weak.",
+        severity=Severity.MEDIUM,
+        readiness=Readiness.CLASSICALLY_WEAK,
+        confidence=Confidence.HIGH,
+        protocol="ssh",
+    )
+    return evidence, finding
+
+
+def _build_ssh_success_result(
+    target: ScanTarget,
+    asset: Asset,
+    evidence: list[Evidence],
+    findings: list[Finding],
+    started: datetime,
+) -> ScanResult:
+    """Build the completed SSH result and deterministic rollup."""
     rset = {f.readiness for f in findings}
     readiness = next((r for r in _PRECEDENCE if r in rset), Readiness.UNKNOWN)
     highest = max((f.severity for f in findings), key=lambda s: _SEV_ORDER.index(s.value))
@@ -232,3 +235,19 @@ def scan_ssh(target: ScanTarget, *, timeout_seconds: int = 8) -> ScanResult:
             failure_category=None,
         ),
     )
+
+
+def scan_ssh(target: ScanTarget, *, timeout_seconds: int = 8) -> ScanResult:
+    """Scan an SSH endpoint for post-quantum readiness. Raises SSHProbeError on probe failure."""
+    started = datetime.now(UTC)
+    offer = read_kexinit_offer(target.host, target.port, timeout_seconds=timeout_seconds)
+    asset = _build_ssh_asset(target)
+    kex_evidence, kex_finding = _kex_observation(asset, offer.kex_algorithms)
+    evidence = [kex_evidence]
+    findings = [kex_finding]
+    weak_result = _weak_host_key_observation(asset, offer.host_key_algorithms)
+    if weak_result is not None:
+        weak_evidence, weak_finding = weak_result
+        evidence.append(weak_evidence)
+        findings.append(weak_finding)
+    return _build_ssh_success_result(target, asset, evidence, findings, started)

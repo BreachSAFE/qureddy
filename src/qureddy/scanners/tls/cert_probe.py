@@ -215,6 +215,46 @@ def _is_self_signed(
     return completed.returncode == 0
 
 
+def _x509_value(
+    openssl_path: str,
+    pem: str,
+    flag: str,
+    prefix: str,
+    timeout_seconds: int,
+) -> str:
+    """Read one scalar x509 field and remove OpenSSL's field prefix."""
+    return (
+        _x509(openssl_path, pem, flag, timeout_seconds=timeout_seconds).removeprefix(prefix).strip()
+    )
+
+
+def _certificate_dates(openssl_path: str, pem: str, timeout_seconds: int) -> tuple[str, str]:
+    """Read the not-before and not-after fields from one x509 call."""
+    dates = _x509(openssl_path, pem, "-dates", timeout_seconds=timeout_seconds)
+    values = {
+        name: next(
+            (line.removeprefix(prefix) for line in dates.splitlines() if line.startswith(prefix)),
+            "",
+        )
+        for name, prefix in (("before", "notBefore="), ("after", "notAfter="))
+    }
+    return values["before"], values["after"]
+
+
+def _certificate_text_details(
+    openssl_path: str, pem: str, timeout_seconds: int
+) -> tuple[str, str, bool]:
+    """Read signature and public-key details from the x509 text output."""
+    text = _x509(openssl_path, pem, "-text", timeout_seconds=timeout_seconds)
+    cert_sig = parse_certificate_signature(text)
+    public_key_line = next((line for line in text.splitlines() if "Public-Key:" in line), "")
+    return (
+        cert_sig.raw_algorithm or "UNKNOWN",
+        public_key_line.strip() or "UNKNOWN",
+        cert_sig.is_post_quantum,
+    )
+
+
 def parse_certificate(
     openssl_path: str, pem: str, *, timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS
 ) -> CertificateInfo:
@@ -238,47 +278,13 @@ def parse_certificate(
     if not pem.strip():
         msg = "cannot parse empty certificate PEM"
         raise ValueError(msg)
-    subject = (
-        _x509(openssl_path, pem, "-subject", timeout_seconds=timeout_seconds)
-        .removeprefix("subject=")
-        .strip()
+    subject = _x509_value(openssl_path, pem, "-subject", "subject=", timeout_seconds)
+    issuer = _x509_value(openssl_path, pem, "-issuer", "issuer=", timeout_seconds)
+    not_before, not_after = _certificate_dates(openssl_path, pem, timeout_seconds)
+    serial = _x509_value(openssl_path, pem, "-serial", "serial=", timeout_seconds)
+    sig_alg, pubkey_summary, is_post_quantum = _certificate_text_details(
+        openssl_path, pem, timeout_seconds
     )
-    issuer = (
-        _x509(openssl_path, pem, "-issuer", timeout_seconds=timeout_seconds)
-        .removeprefix("issuer=")
-        .strip()
-    )
-    dates = _x509(openssl_path, pem, "-dates", timeout_seconds=timeout_seconds)
-    not_before = next(
-        (
-            line.removeprefix("notBefore=")
-            for line in dates.splitlines()
-            if line.startswith("notBefore=")
-        ),
-        "",
-    )
-    not_after = next(
-        (
-            line.removeprefix("notAfter=")
-            for line in dates.splitlines()
-            if line.startswith("notAfter=")
-        ),
-        "",
-    )
-    serial = (
-        _x509(openssl_path, pem, "-serial", timeout_seconds=timeout_seconds)
-        .removeprefix("serial=")
-        .strip()
-    )
-    pubkey_text = _x509(openssl_path, pem, "-text", timeout_seconds=timeout_seconds)
-    # cert_sig.py's regex replaces the previous hand-rolled substring search
-    # ("Signature Algorithm" in line) — same source text, but anchored
-    # (^...$, MULTILINE) rather than a loose substring match, and it also
-    # classifies PQC vs classical in the same pass (issue #183).
-    cert_sig = parse_certificate_signature(pubkey_text)
-    sig_alg = cert_sig.raw_algorithm or "UNKNOWN"
-    pubkey_line = next((line for line in pubkey_text.splitlines() if "Public-Key:" in line), "")
-    pubkey_summary = pubkey_line.strip() or "UNKNOWN"
     return CertificateInfo(
         subject=subject,
         issuer=issuer,
@@ -287,7 +293,7 @@ def parse_certificate(
         serial=serial,
         signature_algorithm=sig_alg,
         public_key_summary=pubkey_summary,
-        is_post_quantum_signature=cert_sig.is_post_quantum,
+        is_post_quantum_signature=is_post_quantum,
         # Issue #224: subject==issuer proves only "self-issued" — a real
         # cryptographic signature check (_is_self_signed) is required to
         # tell that apart from "self-issued but signed by a different key".
