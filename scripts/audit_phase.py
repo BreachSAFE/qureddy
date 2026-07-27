@@ -44,6 +44,16 @@ EXIT_BAD_ARTIFACTS = 2
 MIN_COVERAGE_PERCENT = 80.0
 MIN_UNIT_TEST_COUNT_AT_MVP = 20
 EXPECTED_PLATFORMS = ("ubuntu-latest", "macos-latest", "windows-latest")
+EXPECTED_LIVE_TESTS = frozenset(
+    {
+        "test_pq_cloudflareresearch_hybrid",
+        "test_example_com_classical_control_fires",
+        "test_one_one_one_one_with_sni",
+        "test_tls12_only_handshake_failure",
+        "test_www_cloudflare_completes_within_timeout",
+        "test_www_google_completes_within_timeout",
+    }
+)
 EXPECTED_LIVE_TARGETS = (
     "www.cloudflare.com",
     "pq.cloudflareresearch.com",
@@ -137,6 +147,12 @@ def _check_phase_2_unit(artifacts: Path, result: AuditResult) -> None:
 
 def _count_tests_in_junit(junit_path: Path) -> int:
     """Read a validated JUnit XML file and return its test count."""
+    count, _failures, _errors, _skipped, _names = _read_junit(junit_path)
+    return count
+
+
+def _read_junit(junit_path: Path) -> tuple[int, int, int, int, set[str]]:
+    """Return counts and exact testcase names from validated JUnit XML."""
     try:
         tree = ET.parse(junit_path)
     except ET.ParseError as exc:
@@ -144,9 +160,15 @@ def _count_tests_in_junit(junit_path: Path) -> int:
         raise ValueError(msg) from exc
 
     root_elem = tree.getroot()
-    # JUnit XML may have <testsuites> wrapping <testsuite> or just <testsuite>.
     suites = root_elem.findall(".//testsuite") or [root_elem]
-    return sum(int(s.get("tests", "0")) for s in suites)
+    names = {case.get("name", "") for case in root_elem.iter("testcase")}
+    return (
+        sum(int(s.get("tests", "0")) for s in suites),
+        sum(int(s.get("failures", "0")) for s in suites),
+        sum(int(s.get("errors", "0")) for s in suites),
+        sum(int(s.get("skipped", "0")) for s in suites),
+        names,
+    )
 
 
 def _check_phase_4_live(artifacts: Path, result: AuditResult) -> None:
@@ -167,17 +189,24 @@ def _check_phase_4_live(artifacts: Path, result: AuditResult) -> None:
             result.fail(f"phase-4: missing live-results.xml at {live_dir.name}")
             continue
         try:
-            count = _count_tests_in_junit(junit_file)
+            count, failures, errors, skipped, names = _read_junit(junit_file)
         except ValueError as exc:
             result.fail(f"phase-4: {exc}")
             continue
-        if count < len(EXPECTED_LIVE_TARGETS):
+        missing_tests = sorted(EXPECTED_LIVE_TESTS - names)
+        unexpected_tests = sorted(names - EXPECTED_LIVE_TESTS)
+        if count != len(EXPECTED_LIVE_TESTS) or missing_tests or unexpected_tests:
             result.fail(
-                f"phase-4: only {count} live tests recorded at {live_dir.name}; "
-                f"required {len(EXPECTED_LIVE_TARGETS)}"
+                f"phase-4: testcase mismatch at {live_dir.name}: count={count}, "
+                f"missing={missing_tests}, unexpected={unexpected_tests}"
+            )
+        elif failures or errors or skipped:
+            result.fail(
+                f"phase-4: non-passing live cases at {live_dir.name}: "
+                f"failures={failures}, errors={errors}, skipped={skipped}"
             )
         else:
-            result.ok(f"phase-4: {count} live tests recorded at {live_dir.name}")
+            result.ok(f"phase-4: all {count} exact live testcases passed at {live_dir.name}")
 
 
 def _check_phase_5_self_scan(artifacts: Path, result: AuditResult) -> None:

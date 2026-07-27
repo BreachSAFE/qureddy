@@ -12,6 +12,10 @@ from unittest.mock import patch
 
 import pytest
 
+import qureddy.scanners.tls.openssl_probe as openssl_probe_api
+import qureddy.scanners.tls.openssl_probe._constants as constants_module
+import qureddy.scanners.tls.openssl_probe.capability as capability_module
+import qureddy.scanners.tls.openssl_probe.probe as probe_module
 from qureddy.core.errors import (
     LocalOpenSSLBroken,
     LocalOpenSSLIsLibreSSL,
@@ -29,6 +33,34 @@ from qureddy.scanners.tls.openssl_probe import (
     run_hybrid_probe,
 )
 from tests._fake_openssl import fake_openssl
+
+
+def test_public_api_exports_exact_adr_symbols_by_identity() -> None:
+    """ADR 0005 compatibility symbols remain real re-exports, not copies."""
+    expected = {
+        "CLASSICAL_GROUP",
+        "DEFAULT_TIMEOUT_SECONDS",
+        "EXCERPT_LIMIT",
+        "HYBRID_GROUP",
+        "MIN_OPENSSL_VERSION",
+        "_classify_failure",
+        "probe_capability",
+        "raise_if_unusable",
+        "resolve_openssl_path",
+        "run_classical_probe",
+        "run_hybrid_probe",
+    }
+    assert set(openssl_probe_api.__all__) == expected
+    assert openssl_probe_api.MIN_OPENSSL_VERSION is constants_module.MIN_OPENSSL_VERSION
+    assert openssl_probe_api.EXCERPT_LIMIT is constants_module.EXCERPT_LIMIT
+    assert openssl_probe_api.DEFAULT_TIMEOUT_SECONDS is constants_module.DEFAULT_TIMEOUT_SECONDS
+    assert openssl_probe_api.CLASSICAL_GROUP is constants_module.CLASSICAL_GROUP
+    assert openssl_probe_api.HYBRID_GROUP is constants_module.HYBRID_GROUP
+    assert openssl_probe_api.run_classical_probe is probe_module.run_classical_probe
+    assert openssl_probe_api.run_hybrid_probe is probe_module.run_hybrid_probe
+    assert openssl_probe_api.probe_capability is capability_module.probe_capability
+    assert openssl_probe_api.raise_if_unusable is capability_module.raise_if_unusable
+    assert openssl_probe_api.resolve_openssl_path is capability_module.resolve_openssl_path
 
 
 class TestResolveOpenSSLPath:
