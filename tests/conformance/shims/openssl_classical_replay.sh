@@ -6,7 +6,7 @@ set -eu
 fixture_root="$(cd "$(dirname "$0")/../.." && pwd)"
 case "$1" in
     version)
-        echo "OpenSSL 3.5.6 7 Apr 2026"
+        echo "OpenSSL 3.6.3 7 Apr 2026"
         ;;
     list)
         echo "TLS 1.3 supported groups:"

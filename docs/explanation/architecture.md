@@ -229,5 +229,4 @@ The exact categories and retry state machine are documented in the
 - [JSON output](../reference/json-schema.md)
 - [CycloneDX CBOM output](../reference/cbom.md)
 - [CLI reference](../reference/cli.md)
-- [Evidence honesty](evidence-honesty.md)
 - [Contributor coding rules](../contributors/coding-rules.md)

@@ -4,7 +4,7 @@
 #
 # Scorecard scans the repo for OSS supply-chain best practices and
 # publishes a score. We target the OpenSSF Best Practices Badge:
-# passing tier by MVP 0.6, silver by v1.0. Per CODING_RULES §29.
+# OpenSSF Scorecard evidence is collected on every main-branch change.
 #
 # Reference: https://github.com/ossf/scorecard-action
 

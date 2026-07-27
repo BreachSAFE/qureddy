@@ -6,9 +6,9 @@ This document is concrete enough to be a checklist. The default is: when your co
 
 This document covers Python authoring rules, CI/CD gates, security bar, and self-scanning discipline. Agent behavior rules (operating discipline, anti-patterns, the pre-response audit) live in `docs/contributors/agent-antipatterns.md`. Project orientation lives in `CLAUDE.md`.
 
-QuReddy targets **OpenSSF Best Practices Badge — passing tier** by MVP 0.6, **silver tier** by v1.0. Rules below are mapped to OpenSSF criteria where applicable.
+QuReddy targets the **OpenSSF Best Practices passing tier**. Rules below are mapped to OpenSSF criteria where applicable.
 
-> **Note on planned files.** Two rules below reference files that do not yet exist in the repo: `docs/SECURITY_EXCEPTIONS.md` and `docs/STANDARDS.md`. They are referenced because the rules will be active once those files land. **Do not create empty placeholder files just to satisfy a doc reference.** When you need to refer to a planned file in code or docs, mark it as planned. The rules become enforced when their backing files exist. The previously planned `scripts/audit_phase.py`, `SECURITY.md`, `.github/PULL_REQUEST_TEMPLATE.md`, and the CI workflow files have all landed.
+> **Note on repository-only references.** Two rules reference `docs/SECURITY_EXCEPTIONS.md` and `docs/STANDARDS.md`; keep those references explicit until the corresponding repository files exist. Do not create empty placeholder files.
 
 ---
 
@@ -55,7 +55,7 @@ Files that approach the ceiling without crossing it accumulate silently across P
 
 Same edge bands apply to functions per Rule 2.1, scaled to the 50-line ceiling: Green ≤30, Yellow 31–40, Orange 41–50, Red 51+.
 
-The CI workflow `.github/workflows/file-size-gate.yml` enforces Red-band breaches in `src/qureddy/`. Yellow and Orange bands surface as warnings in the workflow output and reviewer skill output; they are not gate-blocking by themselves but are mandatory PR-review items. **Test-file splits follow [ADR 0005 Rule H.1](adr/0005-splitting-oversized-files.md): split by tested module mirroring the production package, or by behavior cluster when production is single-file. The CI gate currently does not check `tests/`; the rule still applies and is enforced at PR review.**
+The CI workflow `.github/workflows/file-size-gate.yml` enforces Red-band breaches in `src/qureddy/`. Yellow and Orange bands surface as warnings in the workflow output and reviewer skill output; they are not gate-blocking by themselves but are mandatory PR-review items. Test-file splits should mirror the production package or group a coherent behavior when production is single-file. The CI gate currently does not check `tests/`; the rule still applies and is enforced at PR review.
 
 **Rationale.** The cliff version of Rule 2.2 was honor-system. A historical
 staging audit after PR #83 (`cli.py` 429 lines and `openssl_probe.py` 424 lines)
@@ -347,13 +347,13 @@ Restated from Rule 8.7 because of how often this gets violated.
 
 **Rule 11.3 — CLI errors produce specific exit codes.**
 - 0: scan completed successfully
-- 1: reserved for future high-severity findings
+- 1: reserved for high-severity findings when that policy is enabled
 - 2: target scan failed
 - 3: local dependency missing or unsupported
 - 4: usage/configuration error
 - 70: internal qureddy error (BSD `sysexits.h` `EX_SOFTWARE`)
 
-The CLI must never exit with code 1 in MVP 0.1 (current policy max severity is `low`). Adding a new severity to policy may unblock exit 1.
+The current policy does not emit code 1 because its maximum severity is `low`. Adding a high-severity policy rule may enable exit 1.
 
 Code 70 is reserved for internal qureddy bugs (an unhandled exception
 escaping `main()`'s last-resort catch). It is distinct from code 2 so
@@ -427,20 +427,20 @@ QuReddy is Apache 2.0. AGPL and GPL dependencies make the project derivative-lic
 
 ## Section 14 — Distribution and Platform Support
 
-QuReddy ships in two forms at v1.0 (see Roadmap in `CLAUDE.md`). Until v1.0, only the Python path exists. Do not add a `Dockerfile` during MVP 0.1 - 0.6.
+QuReddy ships as a native Python package. A container image is tracked separately in issue #72 and must pass its own reproducibility, SBOM, vulnerability, and multi-architecture gates before publication.
 
 1. Native Python package via `pipx install breachsafe-qureddy`. macOS 14+, modern Linux distributions, Windows 10 22H2+.
-2. Container image at `ghcr.io/breachsafe/qureddy:latest`. Ships at v1.0.
+2. Container image published at an immutable release tag and digest after issue #72 passes.
 
 Both paths target the same modern platforms. Neither runs on EOL operating systems (Windows XP/7/8.1, RHEL 6, Ubuntu 16.04 and earlier).
 
-CI runs the full test suite on **all three platforms** (ubuntu-latest, macos-latest, windows-latest) from MVP 0.1. If it doesn't run on all three, it's a real bug, not a "fix at v1.0."
+CI runs the full test suite on **all three platforms** (ubuntu-latest, macos-latest, windows-latest).
 
 Code is written to work on both install paths:
 - File paths use `pathlib.Path`, never hardcoded `/tmp` or `/usr/local`
 - Subprocess calls find tools via `PATH`, not absolute paths
 - Configuration locations are platform-aware (use `platformdirs`)
-- Tests run on both bare-metal Python and inside the Docker image (when v1.0 ships)
+- Container black-box tests run when the image work in issue #72 is enabled.
 
 ---
 
@@ -604,7 +604,7 @@ qureddy scan tls tls-v1-2.badssl.com:1012 --format json > self-scan-tls12.json
 
 Artifact: `phase-5-self-scan/*.json`
 
-This phase is a no-op until MVP 0.1 implementation lands. The audit checks "does the scanner exist? if yes, did self-scan run?"
+This phase verifies the shipped scanners against the authorized target matrix.
 
 ### Phase 6 — Build Verification
 
@@ -658,20 +658,20 @@ CI quality gates are split into two tiers based on cost-benefit at MVP scale.
 | Live tests | 4 | `pytest tests/live/` | needs network; 3 retries via `pytest-rerunfailures` |
 | Audit | 7 | `scripts/audit_phase.py` | reads phase artifacts, asserts on counts |
 
-**Tier 2 — every release tag.** Heavier gates that gate-block release artifacts but are too noisy or slow for per-PR cycles at MVP scale.
+**Tier 2 — every release tag.** Heavier gates that block release artifacts but are too noisy or slow for per-PR cycles.
 
 | Gate | Tool | Notes |
 |---|---|---|
 | Dependency CVEs | `pip-audit` (HIGH/CRITICAL block) | per-PR generates noise from upstream CVEs you don't control; fix on release cadence |
 | License compatibility | `pip-licenses` (AGPL/GPL/LGPL block) | runs on `pyproject.toml` change at minimum; full sweep on release |
-| Self-scan | `qureddy scan tls <target>` × 6 targets | requires scanner to exist (MVP 0.1+) |
+| Self-scan | `qureddy scan tls <target>` × 6 targets | runs against the authorized target matrix |
 | Build verification | `uv build` (sdist + wheel) | |
 | Filesystem scan | `trivy fs` (HIGH/CRITICAL block) | release-time only |
 | Internal link check | `lychee` on `*.md` | release-time + when docs change |
 
-**Rationale for the split:** at MVP 0.1 there is no scanner, no release cadence, and a small dependency tree. Running every Tier 2 gate on every PR creates more red CI from upstream noise than it catches in our own code. Tier 1 catches what we can fix; Tier 2 catches what we ship.
+**Rationale for the split:** release-only checks are expensive and depend on final artifacts. Tier 1 catches changes during review; Tier 2 verifies what we ship.
 
-**At v1.0**, Tier 2 gates promote to Tier 1 on a case-by-case basis as the dependency tree, release cadence, and threat model justify the per-PR cost.
+Promote a Tier 2 gate to per-PR execution when its runtime and signal justify the cost.
 
 CI runs on the matrix: **ubuntu-latest × macos-latest × windows-latest × Python 3.12**. All three platforms must pass for both tiers. OpenSSL 3.6.3+ is installed per-platform during CI setup.
 
@@ -900,9 +900,9 @@ CI changes are not "infrastructure" exempt from review. Adding or removing jobs 
 
 QuReddy targets OpenSSF Best Practices Badge. Tier targets:
 
-- **Passing** — by MVP 0.6
-- **Silver** — by v1.0
-- **Gold** — stretch goal post v1.0
+- **Passing** — current target
+- **Silver** — subsequent improvement
+- **Gold** — longer-term improvement
 
 The rules above are written to satisfy the badge criteria. Specific OpenSSF requirements explicitly addressed:
 
@@ -921,7 +921,7 @@ The rules above are written to satisfy the badge criteria. Specific OpenSSF requ
 | TLS for all HTTPS | Implicit; we are a TLS scanner |
 | No hardcoded credentials | Rule 26.3 + secrets scanning |
 | Continuous integration | Section 21 (7-phase CI) |
-| Documentation of architecture | `CLAUDE.md`, `docs/STANDARDS.md` (when MVP 0.1 implementation lands) |
+| Documentation of architecture | `CLAUDE.md` and repository architecture documentation |
 
 ---
 

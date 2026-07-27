@@ -70,7 +70,7 @@ favorable readiness result.
 
 ## Prepare OpenSSL
 
-TLS scans require OpenSSL 3.6.3 or newer with the `X25519MLKEM768` group. Check
+TLS scans require OpenSSL 3.5 LTS or newer with the `X25519MLKEM768` group. Check
 the selected binary:
 
 ```bash
@@ -81,8 +81,8 @@ openssl list -tls1_3 -tls-groups
 On macOS with Homebrew:
 
 ```bash
-brew install openssl@3
-export QUREDDY_OPENSSL="$(brew --prefix openssl@3)/bin/openssl"
+brew install openssl@3.5
+export QUREDDY_OPENSSL="$(brew --prefix openssl@3.5)/bin/openssl"
 ```
 
 Use the [installation guide](../how-to/install.md) for Linux and Windows.
@@ -136,4 +136,3 @@ You used an installed command to:
 - [Scan an SSH or SFTP endpoint](../how-to/scan-ssh.md)
 - [Capture machine output for CI](../how-to/json-output-for-ci.md)
 - [Review every CLI option](../reference/cli.md)
-- [Understand the evidence boundary](../explanation/evidence-honesty.md)

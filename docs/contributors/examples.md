@@ -186,7 +186,7 @@ OpenSSL subprocess calls live **only** in `src/qureddy/scanners/tls/openssl_prob
 
 ```python
 # SPDX-License-Identifier: Apache-2.0
-"""OpenSSL 3.6.3+ subprocess probe for TLS scans."""
+"""OpenSSL 3.5 LTS+ subprocess probe for TLS scans."""
 from __future__ import annotations
 
 import hashlib
@@ -373,7 +373,7 @@ class LocalOpenSSLMissing(QureddyError):
 
 
 class LocalOpenSSLTooOld(QureddyError):
-    """OpenSSL found but version is below 3.6.3.
+    """OpenSSL found but version is below 3.5.0.
 
     Raised by the capability check. Maps to FailureCategory.LOCAL_OPENSSL_TOO_OLD.
     """
@@ -403,7 +403,7 @@ class OpenSSLError(QureddyException):
 def find_openssl() -> str:
     if not path:
         raise OpenSSLError("openssl missing")
-    if version < "3.6.3":
+    if version < "3.5.0":
         raise OpenSSLError("openssl old")  # caller can't tell these apart (Rule 6.1)
 ```
 
@@ -606,7 +606,7 @@ def render_json(result):  # no types
 
 ## How to use this document
 
-When you start writing a new file in MVP 0.1:
+When you start writing a new file:
 
 1. Find the section above that matches what you're writing (Pydantic model? subprocess call? CLI command?).
 2. Read the **Why** explanation. The patterns aren't arbitrary — each one prevents a specific failure mode named in `docs/contributors/coding-rules.md`.

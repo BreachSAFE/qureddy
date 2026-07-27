@@ -69,8 +69,7 @@ Agents working on this repo follow the contract in `docs/contributors/agent-anti
 
 - CI must pass before merge to main.
 - main is always releasable.
-- Release signing with Sigstore is a planned hardening step, not a claim about
-  the current candidate.
+- Release signing with Sigstore is not enabled for the current candidate.
 - Each release has a release note with what-changed-and-why.
 - The repository-owned local release gate builds and verifies the candidate
   artifacts. Hosted CI mirrors that gate on supported platforms before merge.

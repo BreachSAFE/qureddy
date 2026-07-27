@@ -1,5 +1,5 @@
 # synthesized: handshake completed without producing a parseable group
-# line. Modeled on a real OpenSSL 3.5.6 -brief capture with the
+# line. Modeled on a real OpenSSL 3.6.3 -brief capture with the
 # `Negotiated TLS1.3 group:` and `Peer Temp Key:` lines removed.
 # Used to verify the parser returns PARSE_NO_GROUP rather than
 # inferring a group from cipher or protocol context.

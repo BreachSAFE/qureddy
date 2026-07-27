@@ -8,7 +8,7 @@ Where a rule below carries no citation, it is a **QuReddy-specific decision** wi
 
 This document covers *how the CLI behaves*. It does not cover *what the CLI scans* (that is the scanner code under `src/qureddy/scanners/`) or *what the help text says* (that is per-PR copywriting). Rule changes here go through ADR + reviewer pass per [`review-process.md`](review-process.md).
 
-QuReddy's CLI is **Typer + Rich + structlog** running on top of **Click 8**. Rules below cite the Typer/Click idioms they translate to. When in doubt, the rule wins; the framework adapts.
+QuReddy's CLI is **Typer + Rich + structlog** running on top of **Click 8**. Rules below cite the Typer/Click idioms they translate to. When in doubt, the rule wins; the implementation follows it.
 
 > **Tracker provenance.** Links to `paul007ex/qureddy` in this document are
 > historical implementation records in the private staging tracker. They are
@@ -18,7 +18,7 @@ QuReddy's CLI is **Typer + Rich + structlog** running on top of **Click 8**. Rul
 > and the canonical public
 > [release documentation issue](https://github.com/breachsafe/qureddy/issues/35).
 
-> **Why now.** MVP 0.1 ships as `scan tls`. MVP 0.2–0.6 add `scan cert`, `scan ssh`, `scan config`, `scan source`. Every new scanner is a new subcommand and a new flag set. Without a written standard, every scanner author re-invents the conventions and every reviewer re-litigates them. This document locks the conventions before the surface scales.
+> **Why this matters.** The shipped `scan tls` and `scan ssh` commands share one command-group convention, output contract, and exit-code surface. New scanner work must follow the same reviewable rules.
 
 ---
 
@@ -30,13 +30,13 @@ These rules apply to every Unix-style CLI. They are **not** QuReddy-specific.
 A user running `qureddy --help` is asking for information; that is success. Help is grep-able and pipe-able. Citation: [clig.dev "Help"](https://clig.dev/#help).
 
 **Rule 1.2 — `--version` is a required surface, exits 0, writes to stdout.**
-Both `--version` and the short form `-V` (capital, per GNU §4.7) print the version banner and nothing else. The banner must be machine-parseable: a single line, predictable shape, version string at a fixed offset. Implementation reference: PR [#55](https://github.com/paul007ex/qureddy/pull/55) and [ADR 0003](adr/0003-cli-help-rewrite.md).
+Both `--version` and the short form `-V` (capital, per GNU §4.7) print the version banner and nothing else. The banner must be machine-parseable: a single line, predictable shape, version string at a fixed offset. Implementation reference: PR [#55](https://github.com/paul007ex/qureddy/pull/55).
 
 **Rule 1.3 — Three-tier help structure.**
-`qureddy --help` is the root help: subcommand list, global flags, environment variables, exit-code summary. `qureddy scan tls --help` is the subcommand help: every flag for that command, examples, exit codes that command can emit. There is no third tier (no `--help-full` or man-page generator at MVP 0.1; reconsider at v1.0). Citation: [clig.dev "Tiered help"](https://clig.dev/#help).
+`qureddy --help` is the root help: subcommand list, global flags, environment variables, exit-code summary. `qureddy scan tls --help` and `qureddy scan ssh --help` are subcommand help: every flag for that command, examples, and exit codes that command can emit. Citation: [clig.dev "Tiered help"](https://clig.dev/#help).
 
 **Rule 1.4 — Subcommand naming is verb-noun.**
-`scan tls`, `scan cert`, `scan ssh`. Not `tls-scan`, not `tls scan`. The verb is constant across MVP 0.1–0.6 (`scan`); the noun varies per scanner. Citation: [clig.dev "Subcommands"](https://clig.dev/#subcommands).
+`scan tls`, `scan ssh`. The verb is constant (`scan`); the noun identifies the endpoint protocol. Citation: [clig.dev "Subcommands"](https://clig.dev/#subcommands).
 
 **Rule 1.5 — Long flags spell out; short flags are mnemonic.**
 `--verbose`/`-v`, `--quiet`/`-q`, `--version`/`-V`, `--format`/`-f`. Long flags are self-documenting at the shell prompt; short flags exist for interactive use only. Every short flag has a long form. Not every long flag has a short form (the bar is high — short letters run out). Citation: [POSIX `getopt(3)`](https://pubs.opengroup.org/onlinepubs/9699919799/functions/getopt.html), [GNU §4.7](https://www.gnu.org/prep/standards/html_node/Command_002dLine-Interfaces.html).
@@ -57,7 +57,7 @@ The contract that makes `qureddy scan tls TARGET --format json | jq` work. Logs 
 A contributor wanting colorless output sets `NO_COLOR=1` in their environment, not `--no-color` per-invocation. The env-var form composes (CI runners set it once); the flag form forces every invocation site to decide. QuReddy has no `--no-color` flag and should not gain one. Citation: [no-color.org](https://no-color.org).
 
 **Rule 1.11 — Exit codes are a public contract; document deviation from `sysexits.h`.**
-QuReddy uses **0 / 2 / 3 / 4 / 70**, NOT BSD `sysexits.h`. The full surface lives in [`docs/reference/exit-codes.md`](../reference/exit-codes.md). When a code is added, ADR + maintainer sign-off are required (see [ADR 0001](adr/0001-trace-and-verbosity.md) for the canonical decision shape, and [#12](https://github.com/paul007ex/qureddy/issues/12) for the addition of code 70). Reviewing this rule's violation is one of the harder catches because exit-code drift is invisible until a CI script `if $? -eq 2` script breaks. The PR template's exit-code checklist exists for exactly this reason.
+QuReddy uses **0 / 2 / 3 / 4 / 70**, NOT BSD `sysexits.h`. The full surface lives in [`docs/reference/exit-codes.md`](../reference/exit-codes.md). When a code is added, maintainer sign-off and a documented compatibility decision are required; see [#12](https://github.com/paul007ex/qureddy/issues/12) for the addition of code 70. Reviewing this rule's violation is one of the harder catches because exit-code drift is invisible until a CI script `if $? -eq 2` script breaks. The PR template's exit-code checklist exists for exactly this reason.
 
 **Rule 1.12 — Helpful errors on common typos.**
 When the user types `--v`, `--vv`, `--verbos`, or applies `--version` to a subcommand instead of root, the error message names the right form. Click's default "no such option" message is too cryptic. PR [#80](https://github.com/paul007ex/qureddy/pull/80) and PR [#65](https://github.com/paul007ex/qureddy/pull/65) are the implementations.
@@ -90,19 +90,19 @@ The `Annotated` form is what Typer's docs recommend for >0.9. It separates type 
 When the same `Annotated[type, typer.Option(...)]` appears in three or more commands, extract it. `VersionOpt`, `SniOpt`, `FormatOpt` are the existing examples. New scanners should add their own aliases as new commands grow. The aliases live near the top of `cli.py` (or its split-out package post-#60); the type expression is the documentation.
 
 **Rule 2.3 — Range constraints on the type, not in the body.**
-`Annotated[int, typer.Option(min=0, max=10, clamp=False)]` for a flag that takes a bounded integer. Click validates at usage-error time and exits 4. Validating in the function body forces a non-zero exit code that the framework would have given for free.
+`Annotated[int, typer.Option(min=0, max=10, clamp=False)]` for a flag that takes a bounded integer. Click validates at usage-error time and exits 4. Validating in the function body changes the usage-error contract.
 
 **Rule 2.4 — Use `typer.Exit(code=N)` from inside commands; not `sys.exit(N)`.**
 Typer needs to unwind cleanly so resource cleanup runs (Rich's progress bars, structlog handlers, async loops). `sys.exit` raises `SystemExit` which Typer treats as an unexpected crash and may report internal-error exit code 70 instead of the intended target-failure code 2.
 
 **Rule 2.5 — Typer's `--help` is auto-generated; expand `help=` strings, don't subclass.**
-Long, multi-paragraph help with `EXAMPLES` and `EXIT CODES` sections lives in Typer's `epilog=` parameter using the Click `\b` form-feed convention to preserve literal newlines (Rich's default is to collapse single newlines). Do not subclass `typer.Typer` to override help rendering; that breaks the framework's update path. Implementation reference: PR [#73](https://github.com/paul007ex/qureddy/pull/73) (closes [#71](https://github.com/paul007ex/qureddy/issues/71)).
+Long, multi-paragraph help with `EXAMPLES` and `EXIT CODES` sections lives in Typer's `epilog=` parameter using the Click `\b` form-feed convention to preserve literal newlines (Rich's default is to collapse single newlines). Do not subclass `typer.Typer` to override help rendering; that breaks Typer's update path. Implementation reference: PR [#73](https://github.com/paul007ex/qureddy/pull/73) (closes [#71](https://github.com/paul007ex/qureddy/issues/71)).
 
 **Rule 2.6 — Validation at usage-error time exits 4, not 2.**
 The `cli:main` wrapper translates Click's `UsageError` to exit code 4. Pointing the install-time entrypoint at `cli:app` directly would let Click default to exit 2 — colliding with target-scan-failure. The wrapper is non-negotiable; see `pyproject.toml [project.scripts]` and PR [#51](https://github.com/paul007ex/qureddy/pull/51) for the surrounding history.
 
 **Rule 2.7 — No stack traces in CLI mode unless the user asked.**
-A user running `qureddy scan tls badtarget.example` gets a one-line error and exit 2, not a 40-line Python traceback. Tracebacks are a developer signal; the CLI is for operators. The escape hatch is the `--trace` flag from [ADR 0001](adr/0001-trace-and-verbosity.md) (verbosity ladder; implementation pending).
+A user running `qureddy scan tls badtarget.example` gets a one-line error and exit 2, not a 40-line Python traceback. Tracebacks are a developer signal; the CLI is for operators. The escape hatch is the `--trace` flag (verbosity ladder; implementation pending).
 
 **Rule 2.8 — Logging through `structlog`, never `print()` or `typer.echo`.**
 `print()` writes to stdout, which violates Rule 1.9 for any non-result output. `typer.echo` is `print()` in a wrapper. `structlog` writes to stderr (Rule 1.9 ✓), supports key/value structure (machine-parseable per Rule 6 of [`coding-rules.md`](coding-rules.md)), and respects `NO_COLOR` (Rule 1.10). The only place stdout gets written from is the output renderer (`src/qureddy/output/`).
@@ -114,7 +114,7 @@ A user running `qureddy scan tls badtarget.example` gets a one-line error and ex
 Decisions that diverge from defaults or shared conventions, with rationale.
 
 **Rule 3.1 — Custom exit codes 0 / 2 / 3 / 4 / 70, not `sysexits.h`.**
-`sysexits.h` defines codes 64–78 with semantics like `EX_USAGE=64`, `EX_DATAERR=65`. QuReddy uses **0 (success), 2 (target scan failed), 3 (local dependency missing/broken), 4 (usage error), 70 (internal qureddy bug)**. Decision rationale: CI scripts in the wild assume `0 = good, !0 = bad` and frequently `if $? -eq 2; then alert`. Surfacing five codes from the small end of the integer space makes the contract memorable; surfacing five codes from `sysexits.h`'s middle range (64, 65, 70, 78) loses the distinction between "target failed" and "dataerr." Code 70 reuses the BSD `EX_SOFTWARE` value because internal bugs *are* software errors and CI scripts that already know `sysexits.h` will recognize it. ADR [#0001](adr/0001-trace-and-verbosity.md) and issue [#12](https://github.com/paul007ex/qureddy/issues/12) are the formal decisions.
+`sysexits.h` defines codes 64–78 with semantics like `EX_USAGE=64`, `EX_DATAERR=65`. QuReddy uses **0 (success), 2 (target scan failed), 3 (local dependency missing/broken), 4 (usage error), 70 (internal qureddy bug)**. Decision rationale: CI scripts in the wild assume `0 = good, !0 = bad` and frequently `if $? -eq 2; then alert`. Surfacing five codes from the small end of the integer space makes the contract memorable; surfacing five codes from `sysexits.h`'s middle range (64, 65, 70, 78) loses the distinction between "target failed" and "dataerr." Code 70 reuses the BSD `EX_SOFTWARE` value because internal bugs *are* software errors and CI scripts that already know `sysexits.h` will recognize it. Issue [#12](https://github.com/paul007ex/qureddy/issues/12) records the formal decision.
 
 **Rule 3.2 — Adding a new exit code is a contract change.**
 The exit-code surface is a public contract. New codes need (a) a documented use case where existing codes are wrong, (b) an ADR, (c) reference doc update, (d) PR-template checkbox. Issue [#12](https://github.com/paul007ex/qureddy/issues/12) is the canonical add-a-code issue; reviewers should treat any new code addition the same way.

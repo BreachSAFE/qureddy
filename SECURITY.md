@@ -4,7 +4,7 @@
 [![pip-audit](https://img.shields.io/badge/dep%20scan-pip--audit-blue?style=flat-square)](https://pypi.org/project/pip-audit/)
 [![Secret Scan: gitleaks](https://img.shields.io/badge/secret%20scan-gitleaks-red?style=flat-square)](https://github.com/gitleaks/gitleaks)
 [![SPDX: reuse](https://img.shields.io/badge/license%20headers-reuse-green?style=flat-square)](https://reuse.software/)
-[![OpenSSF Best Practices](https://img.shields.io/badge/OpenSSF-passing%20%28target%20MVP%200.6%29-yellow?style=flat-square)](https://www.bestpractices.dev/)
+[![OpenSSF Best Practices](https://img.shields.io/badge/OpenSSF-passing-yellow?style=flat-square)](https://www.bestpractices.dev/)
 [![Disclosure SLA](https://img.shields.io/badge/disclosure%20SLA-5%20business%20days-brightgreen?style=flat-square)](#response-targets)
 
 QuReddy is a security tool. We take vulnerability reports seriously.
@@ -17,7 +17,7 @@ QuReddy is a security tool. We take vulnerability reports seriously.
 - [Disclosure policy](#disclosure-policy)
 - [Scope](#scope)
 - [Enforced security checks](#enforced-security-checks)
-- [Planned release controls](#planned-release-controls)
+- [Release controls](#release-controls)
 - [Security exceptions](#security-exceptions)
 
 ## Supported Versions
@@ -73,7 +73,7 @@ We will not retaliate against reporters acting in good faith. We will not pursue
 
 In scope:
 - The QuReddy CLI and Python package (`breachsafe-qureddy`)
-- Distributed Docker images (when v1.0 ships)
+- Distributed Docker images when published
 - The 7-phase CI pipeline if it produces unsigned or compromised artifacts
 - Documentation that misleads users about cryptographic posture
 
@@ -97,12 +97,11 @@ The repository enforces:
 - **CycloneDX 1.7 final-byte conformance** against pinned schemas, an independent validator, and semantic checks
 - **Exact artifact inspection and clean installation** for the wheel and source distribution
 
-## Planned release controls
+## Release controls
 
 OpenSSF badge advancement, Sigstore signatures, SLSA provenance, Docker
-publication, and hosted release settings remain release work until their
-artifacts or repository settings provide external proof. This policy does not
-claim those controls are active.
+publication, and hosted release settings require externally verifiable
+artifacts or repository settings before they are treated as active controls.
 
 ## Security Exceptions
 
@@ -113,5 +112,5 @@ SECURITY EXCEPTION ACCEPTED: <rule>, because <reason>, expires <date or issue li
 ```
 
 No exception exists until it is recorded in that file and reviewed in the
-pull request that introduces it. An automated expiry gate is planned but is
-not currently enforced. Permanent silent exceptions do not exist.
+pull request that introduces it. Automated expiry is not currently enforced;
+permanent silent exceptions do not exist.

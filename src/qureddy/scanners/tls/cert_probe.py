@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
 # SPDX-License-Identifier: Apache-2.0
-"""Certificate fetch + parse via OpenSSL subprocess only — MVP 0.2.
+"""Certificate fetch and parse via the OpenSSL subprocess only.
 
 Promoted from prototype status by ADR 0005
 (docs/contributors/adr/0005-cbom-schema-source-of-truth.md). Read-only — no

@@ -64,7 +64,7 @@ Validation verdicts: `validated`, `partial`, `failed`, `needs-clarification`.
 
 ## Why three tiers
 
-**Reviewer asks: "is this fix the right approach?"**
+**Reviewer asks: "does this implementation address the root cause?"**
 Root cause vs symptom. Schema stability. Security invariants. Rejects fixes that paper over bugs or violate contracts.
 
 **Validator asks: "does this fix actually work?"**

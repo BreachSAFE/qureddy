@@ -209,15 +209,15 @@ def unknown_recommendation(failure: FailureCategory | None) -> str:
         return (
             "The openssl on this machine is LibreSSL, not OpenSSL — macOS ships "
             "LibreSSL as /usr/bin/openssl by default. Install real OpenSSL and "
-            "point at it: brew install openssl@3, then pass "
-            "--openssl $(brew --prefix openssl@3)/bin/openssl or export "
+            "point at it: brew install openssl@3.5, then pass "
+            "--openssl $(brew --prefix openssl@3.5)/bin/openssl or export "
             "QUREDDY_OPENSSL to the same path."
         )
     if failure is FailureCategory.LOCAL_OPENSSL_BROKEN:
         # Issue #249: this category now also covers a capability check
         # that timed out (binary present and executable, just
         # unresponsive) as well as one that exited nonzero — "Install
-        # OpenSSL 3.5+" is actively wrong for the first case (there's
+        # OpenSSL 3.5 LTS+" is actively wrong for the first case (there's
         # nothing to install) and unhelpfully vague for the second.
         return (
             "OpenSSL failed the capability check — it either exited with an "
@@ -228,7 +228,7 @@ def unknown_recommendation(failure: FailureCategory | None) -> str:
         )
     if failure in LOCAL_CAPABILITY_CATEGORIES:
         return (
-            "Install OpenSSL 3.5+ with PQ group support and re-run. "
+            "Install OpenSSL 3.5 LTS+ with PQ group support and re-run. "
             "The target's PQ posture is genuinely unknown until then."
         )
     return "Re-run the scan. Check connectivity, SNI, and that the target accepts TLS 1.3."

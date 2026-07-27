@@ -29,7 +29,7 @@ Fixes #
 
 <!-- If the linked issue has a "### Suggested fix" section, this PR must
      either implement it or explain divergence. Reviewers compare the diff
-     to the suggested fix; silently picking a different approach without
+     to the suggested fix; silently choosing a different implementation without
      justification is a re-review trigger. -->
 
 - [ ] This PR implements the issue's `### Suggested fix` as written
@@ -88,7 +88,7 @@ This is the **Tier 1 PR audit** from `docs/contributors/coding-rules.md` Quick R
 - [ ] No new `@pytest.mark.skip`, `@pytest.mark.acceptance`, or `tests/integration/` carve-outs
 - [ ] Fixtures under `tests/fixtures/` use real captured outputs (no synthetic stubs without comment justification)
 - [ ] Live tests pass on local network OR transient failure documented
-- [ ] (MVP 0.1 scanner code only) Use case coverage from `.claude/skills/mvp-implement/SKILL.md` checked
+- [ ] Scanner use-case coverage and applicable implementation guidance checked
 - [ ] **Rerun-mask check**: ran the relevant tests 3× (`pytest <path> --count=3` or three back-to-back invocations). All three runs pass without `Rerun:` markers. `pytest-rerunfailures` must only swallow flakes that change verdict, never deterministic failures.
 
 ### Security bar (`docs/contributors/coding-rules.md` §26 — hard merge blockers)

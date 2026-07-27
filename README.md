@@ -10,7 +10,7 @@ QuReddy is an Apache 2.0 command line scanner for post-quantum readiness at
 TLS and SSH endpoints. It records the protocol and cryptographic evidence that
 the endpoint exposes to a client, then reports the observed readiness posture.
 
-TLS scans use a local OpenSSL 3.6.3 or newer binary. SSH scans read the server's
+TLS scans use a local OpenSSL 3.5 LTS or newer binary. SSH scans read the server's
 cleartext KEXINIT offer directly and do not require OpenSSL.
 
 ## Contents
@@ -62,14 +62,14 @@ successful scan exits `0` even when it reports a vulnerable posture.
 
 ## Prepare OpenSSL for TLS
 
-TLS scanning requires OpenSSL 3.6.3 or newer with the
+TLS scanning requires OpenSSL 3.5 LTS or newer with the
 `X25519MLKEM768` TLS group. LibreSSL is not supported.
 
 On macOS with Homebrew:
 
 ```bash
-brew install openssl@3
-export QUREDDY_OPENSSL="$(brew --prefix openssl@3)/bin/openssl"
+brew install openssl@3.5
+export QUREDDY_OPENSSL="$(brew --prefix openssl@3.5)/bin/openssl"
 qureddy scan tls --help
 ```
 
@@ -166,7 +166,7 @@ operator's system unless the operator sends them elsewhere.
 - Python `>=3.12,<3.13`
 - macOS, Linux, or Windows
 - Network reachability to the named target
-- OpenSSL 3.6.3 or newer for TLS scans only
+- OpenSSL 3.5 LTS or newer for TLS scans only
 
 The clean artifact matrix installs the wheel, source distribution, and pipx
 application on Linux, macOS, and Windows. Platform support does not imply that

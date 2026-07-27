@@ -87,7 +87,6 @@ migration gap without treating a forecast date as a prerequisite.
 ## Related documentation
 
 - [Harvest now, decrypt later](hndl.md)
-- [Evidence honesty](evidence-honesty.md)
 - [Threat model](threat-model.md)
 - [JSON readiness values](../reference/json-schema.md#enumerated-values)
 - [NIST FIPS 203](https://csrc.nist.gov/pubs/fips/203/final)

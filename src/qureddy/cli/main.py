@@ -76,15 +76,11 @@ qureddy --version          # show version
 Project: {PROJECT_URL}
 """)
 
-# Issue #266: `qureddy scan --help` previously said only "Run scans." — the
-# weakest link in the help hierarchy, not even naming `tls` as the thing to
-# run. `scan` is a group (not `tls` directly) because more scan types are
-# planned per the roadmap (ssh, config, source-code) — this epilog says so,
-# rather than leaving a user to wonder why there's an extra level at all.
+# Issue #266: `qureddy scan --help` names the available scanner commands and
+# explains why the CLI uses a scan command group.
 _SCAN_EPILOG = _colorize_help_text("""\
-qureddy scans TLS and SSH endpoints; more scan types (config, source-code)
-are on the roadmap, which is why "scan" is a group rather than a single
-command.
+qureddy scans TLS and SSH endpoints. "scan" is a command group so each
+scanner has its own options, output formats, and exit-code behavior.
 
 \b
 qureddy scan tls <target>            # TLS endpoint (OpenSSL handshakes)

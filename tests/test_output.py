@@ -55,7 +55,7 @@ def _build_result(
     )
     hybrid_probe = ProbeResult(
         command=ProbeCommand(
-            executable="/opt/homebrew/opt/openssl@3.5/bin/openssl",
+            executable="/opt/homebrew/opt/openssl@3/bin/openssl",
             args=(
                 "s_client",
                 "-connect",
@@ -73,7 +73,7 @@ def _build_result(
     )
     classical_probe = ProbeResult(
         command=ProbeCommand(
-            executable="/opt/homebrew/opt/openssl@3.5/bin/openssl",
+            executable="/opt/homebrew/opt/openssl@3/bin/openssl",
             args=("s_client", "-connect", "example.com:443", "-tls1_3", "-groups", "X25519"),
             timeout_seconds=30,
         ),
@@ -145,8 +145,8 @@ def _build_result(
         target=target,
         dependencies=(
             OpenSSLDependency(
-                path="/opt/homebrew/opt/openssl@3.5/bin/openssl",
-                version="3.5.6",
+                path="/opt/homebrew/opt/openssl@3/bin/openssl",
+                version="3.6.3",
                 supports_tls13_groups=True,
                 supports_x25519mlkem768=True,
             ),

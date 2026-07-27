@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 ---
 name: Feature request
-about: Propose new functionality
+about: Propose a new capability
 title: "[feat] "
 labels: ["enhancement", "triage"]
 assignees: []
@@ -11,7 +11,7 @@ assignees: []
 
 <!-- What problem does this feature solve? Who has the problem? -->
 
-## Proposed solution
+## Proposed change
 
 <!-- What you want QuReddy to do. Be specific. -->
 
@@ -37,14 +37,14 @@ Which surface does the request affect?
 - [ ] Shipped SSH scanner
 - [ ] Shipped JSON output
 - [ ] Shipped CycloneDX 1.7 CBOM output
-- [ ] Planned config scanner
-- [ ] Planned source-code scanner
+- [ ] Proposed config scanner
+- [ ] Proposed source-code scanner
 - [ ] Release or packaging work
 - [ ] P2 (enterprise tier)
 - [ ] Not sure
 
 See the [milestone reference](../../docs/reference/milestones.md) for the
-current shipped and planned surface.
+current shipped and proposed surface.
 
 ## Alternatives considered
 

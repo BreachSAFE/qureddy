@@ -343,4 +343,3 @@ nested fields. Consumers must:
 - [Exit codes](exit-codes.md)
 - [CBOM output](cbom.md)
 - [Machine output in CI](../how-to/json-output-for-ci.md)
-- [Evidence honesty](../explanation/evidence-honesty.md)

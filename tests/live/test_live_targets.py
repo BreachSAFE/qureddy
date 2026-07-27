@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
 # SPDX-License-Identifier: Apache-2.0
-"""Live network tests against the canonical MVP 0.1 targets.
+"""Live network tests against the canonical authorized targets.
 
 Per docs/contributors/coding-rules.md Rule 9.4 these run as part of the default
 suite. pytest-rerunfailures absorbs transient internet hiccups
@@ -22,14 +22,14 @@ from qureddy.scanners.tls.scanner import TLSScanner
 
 
 def _openssl_path() -> str:
-    """Resolve a real OpenSSL 3.5+ binary that supports X25519MLKEM768.
+    """Resolve a real OpenSSL 3.5 LTS+ binary that supports X25519MLKEM768.
 
-    Order: explicit homebrew openssl@3.5 → `QUREDDY_OPENSSL` → `PATH`.
+    Order: explicit homebrew openssl@3 → `QUREDDY_OPENSSL` → `PATH`.
     Live tests fail if no capable binary is present. CI provisions the
     dependency explicitly, and a missing prerequisite must remain visible.
     """
     candidates = [
-        "/opt/homebrew/opt/openssl@3.5/bin/openssl",
+        "/opt/homebrew/opt/openssl@3/bin/openssl",
         os.environ.get("QUREDDY_OPENSSL"),
         shutil.which("openssl"),
     ]
@@ -46,8 +46,8 @@ def _openssl_path() -> str:
             if dep.failure_category is None and dep.supports_x25519mlkem768:
                 return resolved
     pytest.fail(
-        "no OpenSSL 3.5+ binary with X25519MLKEM768 found "
-        "(install openssl@3.5 or set QUREDDY_OPENSSL)",
+        "no OpenSSL 3.5 LTS+ binary with X25519MLKEM768 found "
+        "(install openssl@3 or set QUREDDY_OPENSSL)",
     )
     raise RuntimeError("unreachable")
 

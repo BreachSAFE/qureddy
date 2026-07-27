@@ -13,7 +13,7 @@ The same bytes must pass three independent layers:
 3. BreachSAFE semantic checks for exact `specVersion`, duplicate and dangling
    references, and secret-like prohibited material.
 
-`rfc3339-validator` is an explicit development dependency. The harness first
+`rfc3339-validator` is an explicit development dependency. The conformance check first
 proves that malformed `date-time` values are rejected; missing format support
 therefore fails closed instead of silently weakening schema validation.
 

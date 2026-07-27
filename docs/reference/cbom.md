@@ -233,8 +233,9 @@ The CBOM is an observation artifact for one target and one scan. It is not:
 - a compliance conclusion;
 - a claim about algorithms that the endpoint did not expose to the probe.
 
-See [evidence honesty](../explanation/evidence-honesty.md) for the interpretation
-boundary.
+Interpret CBOM entries as observations from the selected collector. The output does
+not establish complete inventory, remote implementation identity, certificate trust,
+or revocation status.
 
 ## Related documentation
 

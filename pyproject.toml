@@ -112,11 +112,10 @@ packages = ["src/qureddy"]
 # `CLAUDE.md`, the agent scaffolding) shipped into the public sdist by
 # default — 51 internal files on the PyPI source view. Use an
 # include-allowlist instead: the sdist ships only what a source consumer
-# needs to build, install, test, and satisfy the license, and any new
+# needs to build, install, and satisfy the license, and any new
 # internal file is excluded by default rather than leaked by default.
 include = [
     "/src/qureddy",
-    "/tests",
     "/README.md",
     "/CHANGELOG.md",
     "/CONTRIBUTING.md",
@@ -357,7 +356,7 @@ extend_exclude = ["scratch"]
 # DEP002 = unused dependency. Some dev deps are CLI tools invoked by
 # CI workflow, not imported by Python code. pytest, pytest-cov, and
 # pytest-rerunfailures will satisfy themselves once src/ + tests/
-# import them at MVP 0.1; ruff and mypy are pure CLI tools and stay
+# import them from the test suite; ruff and mypy are pure CLI tools and stay
 # in this list permanently. The jsonschema/RFC3339 packages and their
 # stubs are imported only by tests/conformance/, which deptry does not
 # scan; they are required by the independent final-byte test gate.
