@@ -81,6 +81,14 @@ dev = [
     "deptry>=0.20",
     "reuse>=4.0",
     "pre-commit>=3.5",
+    # Final-byte CBOM conformance gate. jsonschema validates the vendored,
+    # pinned official CycloneDX schemas; rfc3339-validator makes
+    # FormatChecker enforce date-time rather than silently treating it as
+    # an unknown format.
+    "jsonschema>=4.25,<5",
+    "rfc3339-validator>=0.1.4,<1",
+    "types-jsonschema>=4.25",
+    "types-rfc3339-validator>=0.1.0.20260408",
     # defusedxml is used by scripts/audit_phase.py to parse coverage.xml
     # and junit.xml safely. CODING_RULES §26 forbids stdlib xml.etree on
     # any input; defusedxml is the project-mandated alternative.
