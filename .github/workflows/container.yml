@@ -1,0 +1,95 @@
+# SPDX-FileCopyrightText: 2026 BreachSAFE
+# SPDX-License-Identifier: Apache-2.0
+
+name: Container
+
+on:
+  pull_request:
+    paths:
+      - Dockerfile
+      - .dockerignore
+      - .github/workflows/container.yml
+      - pyproject.toml
+      - src/**
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Image version to publish
+        required: true
+        default: 0.2.0
+      publish:
+        description: Push the multi-architecture image to GHCR
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: Container smoke gate
+    if: github.event_name == 'pull_request' || inputs.publish == false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Build release wheel
+        run: python -m pip install --disable-pip-version-check build && python -m build --wheel
+      - name: Build image
+        run: docker build --tag qureddy-container:smoke .
+      - name: Verify runtime identity and capability
+        run: |
+          test "$(docker run --rm --entrypoint sh qureddy-container:smoke -c 'id -u')" = "1000"
+          docker run --rm --entrypoint sh qureddy-container:smoke -c \
+            'openssl version | grep -E "^OpenSSL 3\\.5\\." && openssl list -tls1_3 -tls-groups | grep -q X25519MLKEM768'
+      - name: Verify TLS CBOM and streams
+        run: |
+          set -euo pipefail
+          docker run --rm qureddy-container:smoke scan tls pq.cloudflareresearch.com --format cbom > cbom.json 2> cbom.err
+          test ! -s cbom.err
+          python -c 'import json; d=json.load(open("cbom.json")); assert d["specVersion"] == "1.7"; assert d["components"]'
+          docker run --rm qureddy-container:smoke scan tls pq.cloudflareresearch.com --format cbom > combined.json 2>&1
+          python -c 'import json; json.load(open("combined.json"))'
+      - name: Verify JSON, rich, SSH, IP/SNI, and expected failure
+        run: |
+          set -euo pipefail
+          docker run --rm qureddy-container:smoke scan tls example.com --format json > tls.json
+          python -c 'import json; json.load(open("tls.json"))'
+          docker run --rm qureddy-container:smoke scan tls 1.1.1.1:443 --sni one.one.one.one > ip.txt
+          docker run --rm qureddy-container:smoke scan ssh github.com --format cbom > ssh.json
+          python -c 'import json; d=json.load(open("ssh.json")); assert d["specVersion"] == "1.7"'
+          set +e
+          docker run --rm qureddy-container:smoke scan tls badssl.com --format json > badssl.json
+          rc=$?
+          set -e
+          test "$rc" = 2
+
+  publish:
+    name: Publish GHCR image
+    if: github.event_name == 'workflow_dispatch' && inputs.publish == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Build release wheel
+        run: python -m pip install --disable-pip-version-check build && python -m build --wheel
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io --username "${{ github.actor }}" --password-stdin
+      - name: Build and publish immutable image
+        env:
+          IMAGE: ghcr.io/breachsafe/qureddy:${{ inputs.version }}
+        run: |
+          docker buildx create --name qureddy-builder --use
+          docker buildx build --builder qureddy-builder \
+            --platform linux/amd64,linux/arm64 \
+            --tag "$IMAGE" \
+            --tag "ghcr.io/breachsafe/qureddy:sha-${GITHUB_SHA::12}" \
+            --push .
