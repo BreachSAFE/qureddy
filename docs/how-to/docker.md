@@ -25,6 +25,21 @@ The image includes the TLS collector. A host OpenSSL installation and
 The published `0.2.0` tag targets `linux/amd64`; Docker Desktop on Apple
 Silicon runs it through its standard amd64 emulation.
 
+On Windows, Docker Desktop uses its Linux container backend. Run the image
+from PowerShell with the same explicit platform selector:
+
+```powershell
+docker pull --platform linux/amd64 ghcr.io/breachsafe/qureddy:0.2.0
+docker run --rm --platform linux/amd64 `
+  ghcr.io/breachsafe/qureddy:0.2.0 `
+  scan tls pq.cloudflareresearch.com --format cbom
+docker run --rm --platform linux/amd64 `
+  ghcr.io/breachsafe/qureddy:0.2.0 `
+  scan ssh github.com --format cbom
+```
+
+The `0.2.0` release does not publish a native Windows-container image.
+
 ## Run a TLS scan
 
 ```bash

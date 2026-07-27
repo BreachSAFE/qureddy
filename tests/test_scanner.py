@@ -432,7 +432,7 @@ class TestScanReadinessRollupPrecedence:
 class TestHighestSeverity:
     """`highest_severity` rolls per-finding severities to one scan-level value.
 
-    Lifted from claude-app's pre-archive test suite. Specifically covers
+    Lifted from the pre-release test suite. Specifically covers
     the all-info path that was previously untested — when every finding
     is `INFO`, the rollup must surface `INFO`, not fall through or
     return None.

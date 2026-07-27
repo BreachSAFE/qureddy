@@ -4,7 +4,7 @@ This project commits to the following standards. Pull requests that violate them
 
 ## Contents
 
-- [Agent working standard](#agent-working-standard)
+- [Contributor working standard](#contributor-working-standard)
 - [Repository hygiene](#repository-hygiene)
 - [Documentation hygiene](#documentation-hygiene)
 - [Code hygiene](#code-hygiene)
@@ -12,15 +12,15 @@ This project commits to the following standards. Pull requests that violate them
 - [Release hygiene](#release-hygiene)
 - [Things we do not do](#things-we-do-not-do)
 
-## Agent working standard
+## Contributor working standard
 
-Agents working on this repo follow the contract in `docs/contributors/agent-antipatterns.md`. The summary commitment:
+Contributors working on this repo follow the engineering rules and release gates. The summary commitment:
 
 - Read relevant code, tests, and config before editing.
 - Keep changes scoped to the user's request.
 - Preserve unrelated user work and avoid broad formatting churn.
 - Follow existing project patterns unless there is a clear reason to change them.
-- Verify the change. The full definition of "narrowest meaningful check" lives in `docs/contributors/agent-antipatterns.md` under "Verify behavior".
+- Verify the change with the narrowest meaningful check that exercises the affected behavior.
 - Final responses state what changed, what was verified, and any remaining risk.
 
 ---
@@ -30,7 +30,7 @@ Agents working on this repo follow the contract in `docs/contributors/agent-anti
 - Every source file has an SPDX-License-Identifier header.
 - Every release is tagged with semver and has a changelog entry.
 - Every commit follows Conventional Commits format.
-- The repo never contains commented-out code, secrets, or local-only config. Generated artifacts are checked in only if they are reproducible build outputs (lockfiles, recorded test fixtures); never agent scratch files or local environment dumps.
+- The repo never contains commented-out code, secrets, or local-only config. Generated artifacts are checked in only if they are reproducible build outputs (lockfiles, recorded test fixtures); never scratch files or local environment dumps.
 
 ---
 

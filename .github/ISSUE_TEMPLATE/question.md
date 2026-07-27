@@ -16,7 +16,7 @@ assignees: []
 <!-- What docs did you read? What commands did you run? What didn't work? -->
 
 - [ ] [`README.md`](../../README.md)
-- [ ] [`CLAUDE.md`](../../CLAUDE.md) (project orientation)
+- [ ] [`README.md`](../../README.md) (project orientation)
 - [ ] [`docs/contributors/coding-rules.md`](../../docs/contributors/coding-rules.md) (engineering standards)
 - [ ] Existing GitHub issues (search before filing)
 

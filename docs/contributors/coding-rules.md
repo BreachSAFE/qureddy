@@ -4,7 +4,7 @@ These are the engineering standards for QuReddy. They apply to every contributor
 
 This document is concrete enough to be a checklist. The default is: when your code disagrees with this document, change the code. But this document is sometimes wrong (engineering rules age, projects evolve, edge cases exist). When you genuinely believe a rule is wrong for the situation in front of you, surface the conflict per Section 20 ("When You Disagree With This Document") rather than silently violating or silently following.
 
-This document covers Python authoring rules, CI/CD gates, security bar, and self-scanning discipline. Agent behavior rules (operating discipline, anti-patterns, the pre-response audit) live in `docs/contributors/agent-antipatterns.md`. Project orientation lives in `CLAUDE.md`.
+This document covers Python authoring rules, CI/CD gates, security bar, and self-scanning discipline. Project orientation lives in the repository architecture documentation.
 
 QuReddy targets the **OpenSSF Best Practices passing tier**. Rules below are mapped to OpenSSF criteria where applicable.
 
@@ -541,7 +541,7 @@ The rules are stricter than the average Python project on purpose. Crypto-touchi
 
 CI runs as 7 sequential phases. Each phase produces an artifact. Phase 7 (Audit) reads every prior phase's artifact and verifies the run was complete and clean. **A passing exit code from `pytest` is not enough.** The audit phase asserts on specific facts: test count, coverage percent, scanned file count, security finding count, etc.
 
-This structure exists because skim-passing is the failure mode. Claude can write code that makes `pytest` exit 0 by skipping tests. The audit phase catches that.
+This structure exists because skim-passing is the failure mode. A contributor can make `pytest` exit 0 by skipping tests. The audit phase catches that.
 
 ### Phase 1 — Static Analysis
 
@@ -673,7 +673,7 @@ CI quality gates are split into two tiers based on cost-benefit at MVP scale.
 
 Promote a Tier 2 gate to per-PR execution when its runtime and signal justify the cost.
 
-CI runs on the matrix: **ubuntu-latest × macos-latest × windows-latest × Python 3.12**. All three platforms must pass for both tiers. OpenSSL 3.6.3+ is installed per-platform during CI setup.
+CI runs on **ubuntu-latest × macos-latest × Python 3.12**. Both platforms must pass for the blocking tiers. OpenSSL 3.5.7 and 3.6.3 are exercised on Linux and macOS during CI setup.
 
 ---
 
@@ -921,7 +921,7 @@ The rules above are written to satisfy the badge criteria. Specific OpenSSF requ
 | TLS for all HTTPS | Implicit; we are a TLS scanner |
 | No hardcoded credentials | Rule 26.3 + secrets scanning |
 | Continuous integration | Section 21 (7-phase CI) |
-| Documentation of architecture | `CLAUDE.md` and repository architecture documentation |
+| Documentation of architecture | Repository architecture documentation |
 
 ---
 

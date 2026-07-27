@@ -17,7 +17,7 @@ assignees: []
 
 ## Why this fits the project
 
-<!-- QuReddy is scoped tightly. See CLAUDE.md "Explicit non-goals" before
+<!-- QuReddy is scoped tightly. See the README "Requirements" section before
      filing. Examples of scope:
 
      IN scope: endpoint, certificate, configuration, and source-code
