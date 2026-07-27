@@ -1,0 +1,102 @@
+# SPDX-FileCopyrightText: 2026 BreachSAFE
+# SPDX-License-Identifier: Apache-2.0
+name: Set up pinned OpenSSL
+description: Build or restore the checksum-pinned OpenSSL used by QuReddy live tests
+
+runs:
+  using: composite
+  steps:
+    - name: Restore compiled OpenSSL
+      id: cache
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      with:
+        path: ${{ runner.temp }}/qureddy-openssl-3.5.1
+        key: qureddy-openssl-3.5.1-${{ runner.os }}-${{ runner.arch }}-529043b15cffa5f36077a4d0af83f3de399807181d607441d734196d889b641f
+
+    - name: Build pinned OpenSSL on Linux or macOS
+      if: steps.cache.outputs.cache-hit != 'true' && runner.os != 'Windows'
+      shell: bash
+      run: |
+        set -euo pipefail
+        version="3.5.1"
+        expected="529043b15cffa5f36077a4d0af83f3de399807181d607441d734196d889b641f"
+        archive="$RUNNER_TEMP/openssl-${version}.tar.gz"
+        source="$RUNNER_TEMP/openssl-${version}-source"
+        prefix="$RUNNER_TEMP/qureddy-openssl-${version}"
+        curl --fail --location --proto '=https' \
+          "https://www.openssl.org/source/openssl-${version}.tar.gz" \
+          --output "$archive"
+        actual="$(shasum -a 256 "$archive" | cut -d ' ' -f 1)"
+        test "$actual" = "$expected"
+        rm -rf "$source" "$prefix"
+        mkdir -p "$source"
+        tar -xzf "$archive" --strip-components=1 -C "$source"
+        cd "$source"
+        ./config --prefix="$prefix" --openssldir="$prefix" shared
+        make -j2
+        make install_sw
+
+    - name: Set up pinned Windows build environment
+      if: steps.cache.outputs.cache-hit != 'true' && runner.os == 'Windows'
+      uses: msys2/setup-msys2@66cd2cce69caa17b53920067426061ca1de3a884 # v2
+      with:
+        msystem: MINGW64
+        update: false
+        install: >-
+          make
+          mingw-w64-x86_64-gcc
+          perl
+
+    - name: Build pinned OpenSSL on Windows
+      if: steps.cache.outputs.cache-hit != 'true' && runner.os == 'Windows'
+      shell: msys2 {0}
+      run: |
+        set -euo pipefail
+        version="3.5.1"
+        expected="529043b15cffa5f36077a4d0af83f3de399807181d607441d734196d889b641f"
+        runner_temp="$(cygpath -u "$RUNNER_TEMP")"
+        archive="$runner_temp/openssl-${version}.tar.gz"
+        source="$runner_temp/openssl-${version}-source"
+        prefix="$runner_temp/qureddy-openssl-${version}"
+        curl --fail --location --proto '=https' \
+          "https://www.openssl.org/source/openssl-${version}.tar.gz" \
+          --output "$archive"
+        echo "$expected  $archive" | sha256sum --check --strict
+        rm -rf "$source" "$prefix"
+        mkdir -p "$source"
+        tar -xzf "$archive" --strip-components=1 -C "$source"
+        cd "$source"
+        ./Configure mingw64 --prefix="$prefix" --openssldir="$prefix" shared
+        make -j2
+        make install_sw
+
+    - name: Expose and verify OpenSSL on Linux or macOS
+      if: runner.os != 'Windows'
+      shell: bash
+      run: |
+        set -euo pipefail
+        prefix="$RUNNER_TEMP/qureddy-openssl-3.5.1"
+        test -x "$prefix/bin/openssl"
+        "$prefix/bin/openssl" version
+        "$prefix/bin/openssl" list -tls1_3 -tls-groups | tee openssl-groups.txt
+        grep -qi X25519MLKEM768 openssl-groups.txt
+        echo "$prefix/bin" >> "$GITHUB_PATH"
+        echo "LD_LIBRARY_PATH=$prefix/lib64:$prefix/lib:${LD_LIBRARY_PATH:-}" >> "$GITHUB_ENV"
+        echo "DYLD_LIBRARY_PATH=$prefix/lib64:$prefix/lib:${DYLD_LIBRARY_PATH:-}" >> "$GITHUB_ENV"
+
+    - name: Expose and verify OpenSSL on Windows
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        $prefix = Join-Path $env:RUNNER_TEMP "qureddy-openssl-3.5.1"
+        $openssl = Join-Path $prefix "bin\openssl.exe"
+        if (-not (Test-Path $openssl)) {
+          throw "Pinned OpenSSL cache/build did not produce openssl.exe"
+        }
+        & $openssl version
+        $groups = & $openssl list -tls1_3 -tls-groups
+        $groups | Out-File -FilePath openssl-groups.txt
+        if (-not ($groups | Select-String -Quiet "X25519MLKEM768")) {
+          throw "Pinned OpenSSL lacks X25519MLKEM768"
+        }
+        (Join-Path $prefix "bin") | Out-File -FilePath $env:GITHUB_PATH -Append

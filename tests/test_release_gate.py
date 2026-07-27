@@ -285,9 +285,9 @@ def test_gitleaks_false_positive_classification_is_exactly_scoped() -> None:
 
 
 def test_all_github_actions_are_commit_pinned() -> None:
-    workflow_root = Path(__file__).parents[1] / ".github" / "workflows"
+    github_root = Path(__file__).parents[1] / ".github"
     unpinned = []
-    for workflow in sorted(workflow_root.glob("*.yml")):
+    for workflow in sorted(github_root.rglob("*.yml")):
         for line_number, line in enumerate(workflow.read_text(encoding="utf-8").splitlines(), 1):
             if "uses:" not in line or "uses: ./" in line:
                 continue
