@@ -33,9 +33,11 @@ classifiers = [
 # typer upper bound (issue #186): 0.16+ vendors its own internal
 # exception module instead of re-raising real click exceptions, which
 # silently broke the exit-code-4 usage-error contract in cli.py. Code
-# now handles this explicitly up to the currently-tested version; an
-# upper bound forces a deliberate re-verification on the next bump
-# instead of silent drift.
+# now handles this explicitly through 0.26. Typer 0.27 changed its
+# CliRunner stream-capture contract and breaks QuReddy's stdout/stderr
+# separation tests, so the upper bound forces a deliberate compatibility
+# fix before that upgrade. Click 8.3.3 is the first release containing
+# the fix for PYSEC-2026-2132.
 #
 # cyclonedx-python-lib: used unconditionally by output/cbom.py, wired into
 # the CLI's --format cbom (prowler-rapid-prototype branch). Was missing
@@ -47,8 +49,8 @@ classifiers = [
 # this is prototype code, not yet the tracked MVP 0.3 implementation
 # (qureddy#61) — revisit the floor when that lands.
 dependencies = [
-    "typer>=0.12,<0.28",
-    "click>=8.1",
+    "typer>=0.23.1,<0.27",
+    "click>=8.3.3",
     "rich>=13.7",
     "pydantic>=2.7",
     "structlog>=24.1",
@@ -306,7 +308,24 @@ show_missing = true
 # touch SVN repos. Per the quality-gate rules, MEDIUM and below do
 # not block. Reviewed: 2026-04-26. Re-review when interrogate drops
 # the `py` dependency or when an alternative pip-audit dep tree exists.
-ignore-vulns = ["GHSA-58qw-9mgm-455v", "PYSEC-2022-42969"]
+#
+# PYSEC-2026-3481, PYSEC-2026-3482, PYSEC-2026-3483: MCP server
+# cross-session and HTTP/WebSocket transport isolation defects. The
+# dependency is not used by QuReddy: semgrep 1.171.0 exact-pins
+# mcp==1.23.3 for its optional MCP integration. QuReddy invokes only
+# `semgrep scan`; it neither imports mcp nor starts an MCP server, and
+# repository-wide searches confirm none of the affected server APIs are
+# called. Semgrep's exact pin makes the fixed MCP release unresolvable
+# without overriding Semgrep's tested dependency graph. Reviewed:
+# 2026-07-26. Remove these exceptions as soon as Semgrep permits
+# mcp>=1.28.1.
+ignore-vulns = [
+    "GHSA-58qw-9mgm-455v",
+    "PYSEC-2022-42969",
+    "PYSEC-2026-3481",
+    "PYSEC-2026-3482",
+    "PYSEC-2026-3483",
+]
 
 # ============================================================================
 # bandit
@@ -348,6 +367,7 @@ DEP002 = [
     "bandit",
     "pip-audit",
     "deptry",
+    "pre-commit",
     "reuse",
     "semgrep",
     "ruff",

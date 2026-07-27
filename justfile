@@ -14,8 +14,7 @@ default:
 
 # Create the dev virtual environment with uv.
 setup:
-    uv venv
-    uv pip install -e ".[dev]"
+    uv sync --locked --extra dev
 
 # ---------------------------------------------------------------------------
 # Tier 1 quality gates (run on every code-touching task)
@@ -26,55 +25,58 @@ gates: lint format-check typecheck test bandit pip-audit deptry reuse-lint
 
 # Lint only.
 lint:
-    uv run ruff check .
+    uv run --locked ruff check .
 
 # Verify formatting (does NOT rewrite). Use `just format` for the rewrite.
 format-check:
-    uv run ruff format --check .
+    uv run --locked ruff format --check .
 
 # Rewrite formatting. Use only when explicitly doing a formatting-only task.
 format:
-    uv run ruff format .
+    uv run --locked ruff format .
 
 # Strict type check.
 typecheck:
-    uv run mypy src/qureddy --strict
+    uv run --locked mypy src/qureddy --strict
 
 # Run the test suite with coverage.
 test:
-    uv run pytest --cov=qureddy --cov-fail-under=80
+    uv run --locked pytest --cov=qureddy --cov-fail-under=80
 
 # Run only unit tests (excludes tests/live/).
 test-unit:
-    uv run pytest --ignore=tests/live --cov=qureddy --cov-fail-under=80
+    uv run --locked pytest --ignore=tests/live --cov=qureddy --cov-fail-under=80
 
 # Run only live tests (network required).
 test-live:
-    uv run pytest tests/live/
+    uv run --locked pytest tests/live/
 
 # Static security analysis.
 bandit:
-    uv run bandit -r src/qureddy
+    uv run --locked bandit -r -ll src/qureddy scripts/
 
 # Known vulnerable dependency scan.
 pip-audit:
-    uv run pip-audit
+    uv run --locked pip-audit \
+        --ignore-vuln PYSEC-2026-3481 \
+        --ignore-vuln PYSEC-2026-3482 \
+        --ignore-vuln PYSEC-2026-3483
 
 # Catch unused / missing dependencies.
 deptry:
-    uv run deptry .
+    uv run --locked deptry .
 
 # Verify SPDX headers on all source files.
 reuse-lint:
-    uv run reuse lint
+    uv run --locked reuse lint
 
 # Semgrep is report-only at MVP 0.1; do not block on findings.
 semgrep:
-    uv run semgrep scan --config auto .
+    uv run --locked semgrep scan --config auto .
 
 # Run pre-commit hooks against all files (CI-equivalent local check).
 hooks:
-    uv run pre-commit run --all-files
+    uv run --locked pre-commit run --all-files
 
 # Secret scan. Requires gitleaks installed externally; falls back to trufflehog.
 secrets:
@@ -93,7 +95,7 @@ secrets:
 
 # Scan a single TLS endpoint.
 scan target:
-    uv run qureddy scan tls {{target}}
+    uv run --locked qureddy scan tls {{target}}
 
 # ---------------------------------------------------------------------------
 # Cleanup
