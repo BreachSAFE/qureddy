@@ -38,7 +38,10 @@ def _static_commands(uv: Path, gitleaks: Path, gate: Gate) -> None:
         ("bandit", [*run, "bandit", "-r", "-ll", "src/qureddy", "scripts"]),
         ("deptry", [*run, "deptry", "."]),
         ("reuse", [*run, "reuse", "lint"]),
-        ("secrets", [str(gitleaks), "git", "--no-banner", str(ROOT)]),
+        (
+            "secrets",
+            [str(gitleaks), "git", "--no-banner", "--log-opts=HEAD", str(ROOT)],
+        ),
     )
     for name, command in commands:
         gate.run(name, command)
