@@ -5,7 +5,9 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
+from urllib.parse import urlsplit
 
 import pytest
 from typer.testing import CliRunner
@@ -57,7 +59,11 @@ def test_rich_format_renders_header() -> None:
         ],
     )
     assert HEADER in result.stdout
-    assert "tls://example.com:443" in result.stdout
+    rendered_urls = {
+        urlsplit(match.group(0))
+        for match in re.finditer(r"[a-z][a-z0-9+.-]*://[A-Za-z0-9.-]+(?::[0-9]+)?", result.stdout)
+    }
+    assert urlsplit("tls://example.com:443") in rendered_urls
 
 
 def test_invalid_format_value_is_rejected() -> None:

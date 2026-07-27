@@ -115,7 +115,13 @@ jobs:
         run: uv sync --locked --extra dev
 
       - name: pytest (unit only, with coverage)
-        run: uv run --locked pytest --ignore=tests/live --cov=qureddy --cov-fail-under=80
+        run: |
+          uv run --locked pytest --ignore=tests/live \
+            --cov=qureddy \
+            --cov-report=term-missing \
+            --cov-report=xml:coverage.xml \
+            --cov-fail-under=80 \
+            --junitxml=pytest-results.xml
 
       - name: Upload coverage
         if: always()
@@ -125,7 +131,9 @@ jobs:
           path: |
             .coverage
             coverage.xml
-          if-no-files-found: ignore
+            pytest-results.xml
+          include-hidden-files: true
+          if-no-files-found: error
           retention-days: 14
 
   # ===========================================================================
@@ -278,7 +286,16 @@ jobs:
           grep -qi X25519MLKEM768 openssl-groups.txt
 
       - name: pytest tests/live/
-        run: uv run --locked pytest tests/live/ -v
+        run: uv run --locked pytest tests/live/ -v --junitxml=live-results.xml
+
+      - name: Upload live-test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-results-${{ matrix.os }}
+          path: live-results.xml
+          if-no-files-found: error
+          retention-days: 14
 
   # ===========================================================================
   # Phase 5 — Self-scan (qureddy scans qureddy's canonical targets).
@@ -336,7 +353,7 @@ jobs:
         with:
           name: phase-5-self-scan
           path: phase-5-self-scan/
-          if-no-files-found: ignore
+          if-no-files-found: error
           retention-days: 90
 
   # ===========================================================================
@@ -369,7 +386,7 @@ jobs:
         with:
           name: phase-6-dist
           path: dist/
-          if-no-files-found: ignore
+          if-no-files-found: error
           retention-days: 90
 
       - name: trivy fs scan

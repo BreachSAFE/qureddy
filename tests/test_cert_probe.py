@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import subprocess
 from pathlib import Path
-from shutil import which
 from unittest.mock import patch
 
 import pytest
@@ -25,14 +24,28 @@ from qureddy.scanners.tls.cert_probe import (
 )
 
 FIXTURE_PEM = (Path(__file__).parent / "fixtures" / "certs" / "self_signed.pem").read_text()
-SYSTEM_OPENSSL = which("openssl")
 
 
-def _system_openssl() -> str:
-    """Return the platform OpenSSL used by offline certificate parser tests."""
-    if SYSTEM_OPENSSL is None:
-        pytest.fail("certificate parser tests require openssl on PATH")
-    return SYSTEM_OPENSSL
+def _x509_fixture(
+    _openssl_path: str,
+    _pem: str,
+    flag: str,
+    *,
+    timeout_seconds: int,
+) -> str:
+    """Return deterministic OpenSSL x509 output without invoking a binary."""
+    del timeout_seconds
+    outputs = {
+        "-subject": "subject=CN = test.example.invalid",
+        "-issuer": "issuer=CN = test.example.invalid",
+        "-dates": "notBefore=Jul 1 00:00:00 2026 GMT\nnotAfter=Jul 1 00:00:00 2027 GMT",
+        "-serial": "serial=0123456789ABCDEF",
+        "-text": (
+            "    Signature Algorithm: sha256WithRSAEncryption\n"
+            "                Public-Key: (2048 bit)"
+        ),
+    }
+    return outputs[flag]
 
 
 class TestFetchCertificatePem:
@@ -64,13 +77,21 @@ class TestParseCertificate:
     """Parsing logic against a real, offline, deterministic fixture."""
 
     def test_self_signed_detected(self) -> None:
-        info = parse_certificate(_system_openssl(), FIXTURE_PEM)
+        with (
+            patch("qureddy.scanners.tls.cert_probe._x509", side_effect=_x509_fixture),
+            patch("qureddy.scanners.tls.cert_probe._is_self_signed", return_value=True),
+        ):
+            info = parse_certificate("/fixture/openssl", FIXTURE_PEM)
         assert info.is_self_signed is True
         assert "test.example.invalid" in info.subject
         assert info.subject == info.issuer
 
     def test_fields_are_populated_not_unknown_placeholders(self) -> None:
-        info = parse_certificate(_system_openssl(), FIXTURE_PEM)
+        with (
+            patch("qureddy.scanners.tls.cert_probe._x509", side_effect=_x509_fixture),
+            patch("qureddy.scanners.tls.cert_probe._is_self_signed", return_value=True),
+        ):
+            info = parse_certificate("/fixture/openssl", FIXTURE_PEM)
         assert info.serial
         assert info.signature_algorithm != "UNKNOWN"
         assert info.public_key_summary != "UNKNOWN"
@@ -80,7 +101,7 @@ class TestParseCertificate:
         made every failed fetch look like a self-signed cert. Must fail
         loud, not compute a silently-wrong answer (trap #11 shape)."""
         with pytest.raises(ValueError, match="empty"):
-            parse_certificate(_system_openssl(), "")
+            parse_certificate("/fixture/openssl", "")
 
 
 class TestBuildConnectTarget:

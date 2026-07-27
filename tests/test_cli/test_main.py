@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+from urllib.parse import urlsplit
+
 import pytest
 from typer.testing import CliRunner
 
@@ -37,7 +39,9 @@ def test_scan_tls_help_carries_examples_block() -> None:
     result = runner.invoke(app, ["scan", "tls", "--help"])
     assert result.exit_code == 0
     assert "EXAMPLES" in result.stdout
-    assert "google.com" in result.stdout, "expected the google.com example"
+    assert any(
+        line.strip() == "qureddy scan tls google.com" for line in result.stdout.splitlines()
+    ), "expected the google.com example"
 
 
 def _line_with_substring(stdout: str, needle: str) -> str:
@@ -176,8 +180,13 @@ def test_version_banner_includes_breachsafe_name_and_url() -> None:
     """
     assert "BreachSAFE QuReddy" in VERSION_BANNER
     assert __version__ in VERSION_BANNER
-    assert "https://www.breachsafe.ai" in VERSION_BANNER
-    assert " -- " in VERSION_BANNER, "expected '--' separator (not em-dash)"
+    name_and_version, separator, url = VERSION_BANNER.partition(" -- ")
+    assert separator == " -- ", "expected '--' separator (not em-dash)"
+    assert name_and_version == f"BreachSAFE QuReddy {__version__}"
+    parsed_url = urlsplit(url)
+    assert parsed_url.scheme == "https"
+    assert parsed_url.hostname == "www.breachsafe.ai"
+    assert parsed_url.path in ("", "/")
 
 
 def test_version_on_subcommand_suggests_root_form(
