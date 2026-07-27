@@ -55,7 +55,7 @@ Files that approach the ceiling without crossing it accumulate silently across P
 
 Same edge bands apply to functions per Rule 2.1, scaled to the 50-line ceiling: Green ≤30, Yellow 31–40, Orange 41–50, Red 51+.
 
-The CI workflow `.github/workflows/file-size-gate.yml` enforces Red-band breaches in `src/qureddy/`. Yellow and Orange bands surface as warnings in the workflow output and reviewer skill output; they are not gate-blocking by themselves but are mandatory PR-review items. **Test-file splits follow [ADR 0005 Rule H.1](adr/0005-splitting-oversized-files.md): split by tested module mirroring the production package, or by behavior cluster when production is single-file. The CI gate currently does not check `tests/`; the rule still applies and is enforced at PR review.**
+The CI workflow `.github/workflows/file-size-gate.yml` enforces Red-band breaches in `src/qureddy/`. Yellow and Orange bands surface as warnings in the workflow output and reviewer skill output; they are not gate-blocking by themselves but are mandatory PR-review items. Test-file splits should mirror the production package or group a coherent behavior when production is single-file. The CI gate currently does not check `tests/`; the rule still applies and is enforced at PR review.
 
 **Rationale.** The cliff version of Rule 2.2 was honor-system. A historical
 staging audit after PR #83 (`cli.py` 429 lines and `openssl_probe.py` 424 lines)

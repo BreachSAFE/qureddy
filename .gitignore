@@ -113,8 +113,8 @@ scratch/
 Scratch/
 /Scratch/
 
-# Local evidence-honesty working document; keep it out of the public tree.
-/docs/explanation/evidence-honesty.md
+# Local working document; keep it out of the public tree.
+/docs/explanation/evidence-*.md
 /docs/contributors/agent-antipatterns.md
 /docs/contributors/agents/mvp-0.1-bootstrap-prompt.md
 /docs/contributors/agents/claude-developer-prompt.md
