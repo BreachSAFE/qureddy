@@ -62,16 +62,23 @@ def _validate_fixture_matrix(binary: Path) -> None:
         )
 
 
-def _capture_final_bytes(console: Path, output: Path) -> dict[str, Any]:
+def _capture_final_bytes(
+    console: Path,
+    output: Path,
+    *,
+    openssl: Path,
+    target: str,
+    expected_exit: int,
+) -> dict[str, Any]:
     command = [
         str(console),
         "scan",
         "tls",
-        "192.0.2.1",
+        target,
         "--format",
         "cbom",
         "--openssl",
-        str(ROOT / "tests/fixtures/openssl/fake/openssl_connect_refused.sh"),
+        str(openssl),
     ]
     completed = subprocess.run(  # noqa: S603 - CI supplies the installed console path.
         command,
@@ -80,7 +87,7 @@ def _capture_final_bytes(console: Path, output: Path) -> dict[str, Any]:
         text=True,
         timeout=30,
     )
-    if completed.returncode != _TARGET_FAILURE_EXIT or completed.stderr:
+    if completed.returncode != expected_exit or completed.stderr:
         msg = (
             f"installed console contract failed: exit={completed.returncode}, "
             f"stderr={completed.stderr!r}"
@@ -93,20 +100,58 @@ def _capture_final_bytes(console: Path, output: Path) -> dict[str, Any]:
 def _validate_installed_console(binary: Path, console: Path) -> None:
     with tempfile.TemporaryDirectory(prefix="qureddy-cbom-conformance-") as directory:
         root = Path(directory)
-        first_path = root / "first.cbom.json"
-        second_path = root / "second.cbom.json"
-        first = _capture_final_bytes(console, first_path)
-        second = _capture_final_bytes(console, second_path)
+        first_path = root / "classical-first.cbom.json"
+        second_path = root / "classical-second.cbom.json"
+        failure_path = root / "failed-target.cbom.json"
+        classical_replay = ROOT / "tests/conformance/shims/openssl_classical_replay.sh"
+        first = _capture_final_bytes(
+            console,
+            first_path,
+            openssl=classical_replay,
+            target="192.0.2.10",
+            expected_exit=0,
+        )
+        second = _capture_final_bytes(
+            console,
+            second_path,
+            openssl=classical_replay,
+            target="192.0.2.10",
+            expected_exit=0,
+        )
+        failure = _capture_final_bytes(
+            console,
+            failure_path,
+            openssl=ROOT / "tests/fixtures/openssl/fake/openssl_connect_refused.sh",
+            target="192.0.2.1",
+            expected_exit=_TARGET_FAILURE_EXIT,
+        )
         if normalized_volatile_fields(first) != normalized_volatile_fields(second):
             msg = "installed console output is nondeterministic beyond serialNumber and timestamp"
             raise RuntimeError(msg)
-        for path, payload in ((first_path, first), (second_path, second)):
+        _assert_positive_inventory(first)
+        for path, payload in (
+            (first_path, first),
+            (second_path, second),
+            (failure_path, failure),
+        ):
             if errors := official_errors(payload):
                 raise RuntimeError(f"{path.name}: official schema errors: {errors!r}")
             if errors := semantic_errors(payload):
                 raise RuntimeError(f"{path.name}: semantic errors: {errors!r}")
             if errors := independent_cli_errors(binary, path):
                 raise RuntimeError(f"{path.name}: cyclonedx-cli errors: {errors!r}")
+
+
+def _assert_positive_inventory(payload: dict[str, Any]) -> None:
+    component_refs = {component["bom-ref"] for component in payload.get("components", [])}
+    if "crypto/algorithm/x25519" not in component_refs:
+        msg = "installed positive canary omitted the observed classical algorithm"
+        raise RuntimeError(msg)
+    dependencies = {entry["ref"]: entry for entry in payload.get("dependencies", [])}
+    endpoint = dependencies.get("endpoint", {})
+    if "crypto/algorithm/x25519" not in endpoint.get("provides", []):
+        msg = "installed positive canary omitted the endpoint provides relationship"
+        raise RuntimeError(msg)
 
 
 def main() -> None:

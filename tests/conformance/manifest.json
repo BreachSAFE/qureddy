@@ -11,6 +11,11 @@
       "spdx.schema.json": "ea6e844ee6fba1e93473d94834d0ee0996970533497935f932f73d488ffdf4a3"
     }
   },
+  "producer": {
+    "commit": "bdaa5669bff7b46a8b6e6c48f1003a3acb26808a",
+    "installed_wheel_sha256": "ddb96f9e62e16805dba045483eaa55c2f7ac4bc4f63397a7dfd80207ab82dc38",
+    "version": "0.2.0"
+  },
   "fixtures": {
     "p1-hybrid-tls": {
       "kind": "positive",

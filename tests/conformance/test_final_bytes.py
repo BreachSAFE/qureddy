@@ -33,6 +33,16 @@ def _load(name: str, details: dict[str, object]) -> dict[str, object]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def _sidecar(name: str, details: dict[str, object]) -> dict[str, str]:
+    path = FIXTURE_DIR / str(details["kind"]) / f"{name}.provenance.txt"
+    entries = (
+        line.split(":", maxsplit=1)
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if ":" in line
+    )
+    return {key.strip(): value.strip() for key, value in entries}
+
+
 def test_vendored_schema_hashes_match_pinned_manifest() -> None:
     verify_schema_assets()
 
@@ -56,10 +66,48 @@ def test_negative_fixture_detection_matrix(name: str, details: dict[str, object]
 
 
 @pytest.mark.parametrize(("name", "details"), _cases("positive") + _cases("negative"))
-def test_fixture_has_explicit_provenance(name: str, details: dict[str, object]) -> None:
-    path = FIXTURE_DIR / str(details["kind"]) / f"{name}.provenance.txt"
-    text = path.read_text(encoding="utf-8")
+def test_fixture_has_exact_provenance(name: str, details: dict[str, object]) -> None:
+    sidecar = _sidecar(name, details)
 
-    assert f"fixture: {name}" in text
-    assert f"classification: {details['classification']}" in text
-    assert "sha256:" in text
+    assert sidecar["fixture"] == name
+    assert sidecar["classification"] == details["classification"]
+    assert sidecar["sha256"] == details["sha256"]
+    if details["kind"] == "positive":
+        producer = load_manifest()["producer"]
+        assert sidecar["producer_commit"] == producer["commit"]
+        assert sidecar["installed_wheel_sha256"] == producer["installed_wheel_sha256"]
+        assert sidecar["captured_utc"].endswith("Z")
+        assert "command" in sidecar
+        assert "exit_code" in sidecar
+    else:
+        positive = load_manifest()["fixtures"]["p2-classical-tls"]
+        assert sidecar["not_network_evidence"] == "true"
+        assert sidecar["base_sha256"] == positive["sha256"]
+        assert sidecar["derived_from"] == "fixtures/positive/p2-classical-tls.cbom.json"
+        assert sidecar["mutation"]
+
+
+def test_positive_fixture_inventory_matrix() -> None:
+    fixtures = {
+        name: _load(name, details)
+        for name, details in load_manifest()["fixtures"].items()
+        if details["kind"] == "positive"
+    }
+    component_refs = {
+        name: {component["bom-ref"] for component in payload.get("components", [])}
+        for name, payload in fixtures.items()
+    }
+
+    assert "crypto/algorithm/x25519mlkem768" in component_refs["p1-hybrid-tls"]
+    assert "crypto/algorithm/x25519mlkem768" not in component_refs["p2-classical-tls"]
+    assert "crypto/protocol/ssh-2.0" in component_refs["p3-ssh-hybrid"]
+    assert component_refs["p4-sparse-unknown"] == set()
+    assert component_refs["p5-failed-target"] == set()
+    assert component_refs["p6-missing-openssl"] == set()
+    assert "crypto/certificate/leaf" in component_refs["p7-leaf-cert"]
+    certificate = next(
+        component
+        for component in fixtures["p7-leaf-cert"]["components"]
+        if component["bom-ref"] == "crypto/certificate/leaf"
+    )
+    assert certificate["cryptoProperties"]["certificateProperties"]["serialNumber"]
