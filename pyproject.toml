@@ -71,6 +71,7 @@ dev = [
     "deptry>=0.20",
     "reuse>=4.0",
     "pre-commit>=3.5",
+    "twine==6.2.0",
     # Final-byte CBOM conformance gate. jsonschema validates the vendored,
     # pinned official CycloneDX schemas; rfc3339-validator makes
     # FormatChecker enforce date-time rather than silently treating it as
@@ -342,7 +343,7 @@ exclude_dirs = ["tests", "scratch"]
 # deptry
 # ============================================================================
 [tool.deptry]
-known_first_party = ["qureddy"]
+known_first_party = ["qureddy", "release_support"]
 # Distribution name (`breachsafe-qureddy`) differs from import name
 # (`qureddy`); declare the mapping so deptry doesn't flag the dist as
 # missing-an-import.
@@ -373,6 +374,7 @@ DEP002 = [
     "pytest",
     "pytest-cov",
     "pytest-rerunfailures",
+    "twine",
     "jsonschema",
     "rfc3339-validator",
     "types-jsonschema",

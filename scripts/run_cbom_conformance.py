@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -103,7 +104,8 @@ def _validate_installed_console(binary: Path, console: Path) -> None:
         first_path = root / "classical-first.cbom.json"
         second_path = root / "classical-second.cbom.json"
         failure_path = root / "failed-target.cbom.json"
-        classical_replay = ROOT / "tests/conformance/shims/openssl_classical_replay.sh"
+        suffix = ".cmd" if os.name == "nt" else ".sh"
+        classical_replay = ROOT / f"tests/conformance/shims/openssl_classical_replay{suffix}"
         first = _capture_final_bytes(
             console,
             first_path,
@@ -121,7 +123,7 @@ def _validate_installed_console(binary: Path, console: Path) -> None:
         failure = _capture_final_bytes(
             console,
             failure_path,
-            openssl=ROOT / "tests/fixtures/openssl/fake/openssl_connect_refused.sh",
+            openssl=ROOT / f"tests/fixtures/openssl/fake/openssl_connect_refused{suffix}",
             target="192.0.2.1",
             expected_exit=_TARGET_FAILURE_EXIT,
         )
