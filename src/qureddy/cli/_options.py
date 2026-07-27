@@ -52,7 +52,9 @@ SshTargetArg = Annotated[
 SniOpt = Annotated[
     str | None, typer.Option("--sni", help="SNI override (required for IP targets).")
 ]
-OpenSSLOpt = Annotated[str | None, typer.Option("--openssl", help="Path to OpenSSL 3.5 LTS+ binary.")]
+OpenSSLOpt = Annotated[
+    str | None, typer.Option("--openssl", help="Path to OpenSSL 3.5 LTS+ binary.")
+]
 FormatOpt = Annotated[
     OutputFormat,
     # Issue #266: this string had drifted out of sync with OutputFormat

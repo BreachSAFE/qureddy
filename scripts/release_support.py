@@ -312,8 +312,7 @@ def inspect_archives(artifacts: list[Path]) -> None:
         if artifact.name.endswith(".tar.gz"):
             inner = [name.split("/", 1)[1] for name in names if "/" in name]
             if any(
-                name not in allowed_files
-                and not name.startswith(("src/qureddy/", "LICENSES/"))
+                name not in allowed_files and not name.startswith(("src/qureddy/", "LICENSES/"))
                 for name in inner
             ):
                 raise RuntimeError(f"unexpected sdist content in {artifact.name}")
