@@ -65,6 +65,22 @@ docker run --rm --platform linux/amd64 ghcr.io/breachsafe/qureddy:0.2.0 \
 See the [Docker and GHCR guide](https://github.com/breachsafe/qureddy/blob/main/docs/how-to/docker.md)
 for digest pinning, local builds, output redirection, and publication policy.
 
+On Windows, run these commands from PowerShell. Docker Desktop runs the
+published Linux image through its Linux container backend:
+
+```powershell
+docker pull --platform linux/amd64 ghcr.io/breachsafe/qureddy:0.2.0
+docker run --rm --platform linux/amd64 `
+  ghcr.io/breachsafe/qureddy:0.2.0 `
+  scan tls pq.cloudflareresearch.com --format cbom
+docker run --rm --platform linux/amd64 `
+  ghcr.io/breachsafe/qureddy:0.2.0 `
+  scan ssh github.com --format cbom
+```
+
+The `0.2.0` release publishes a Linux container image; Docker Desktop is the
+supported Windows path for this release.
+
 ## Run the first SSH scan
 
 This command needs network access to `github.com` on TCP port 22. It does not
