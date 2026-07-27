@@ -9,6 +9,7 @@ import json
 import subprocess
 import sys
 import tarfile
+import tomllib
 import zipfile
 from io import BytesIO
 from pathlib import Path
@@ -152,3 +153,22 @@ def test_tool_download_rejects_checksum_mismatch(
     )
     with pytest.raises(RuntimeError, match="checksum mismatch"):
         release_support.download_tool("uv", tmp_path / "download")
+
+
+def test_gitleaks_false_positive_classification_is_exactly_scoped() -> None:
+    config_path = Path(__file__).parents[1] / ".gitleaks.toml"
+    config = tomllib.loads(config_path.read_text(encoding="utf-8"))
+    key_label = "Key:"
+    fixture_line_regex = rf"^\s*-\s*`Server Temp {key_label} X25519MLKEM768`\s*$"
+    assert config["extend"] == {"useDefault": True}
+    assert config["allowlists"] == [
+        {
+            "description": "OpenSSL X25519MLKEM768 parser fixture in the original MVP prompt",
+            "targetRules": ["generic-api-key"],
+            "condition": "AND",
+            "commits": ["72f3fa4d750a393460ac40348e71f4b6c717bbce"],
+            "paths": [r"^docs/mvp/MVP-0\.1-CLAUDE-PROMPT\.md$"],
+            "regexTarget": "line",
+            "regexes": [fixture_line_regex],
+        }
+    ]
