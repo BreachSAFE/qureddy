@@ -5,10 +5,12 @@
 from __future__ import annotations
 
 import io
+import json
 from unittest.mock import patch
 
 from qureddy.core.models import Readiness
 from qureddy.core.targets import parse_ssh_target
+from qureddy.output.cbom import render_cbom
 from qureddy.output.console import render_rich
 from qureddy.scanners.ssh.probe import SSHOffer
 from qureddy.scanners.ssh.scanner import scan_ssh
@@ -55,6 +57,20 @@ def test_scanner_name_and_scheme() -> None:
 def test_sntrup_also_counts_as_hybrid() -> None:
     r = _run(("sntrup761x25519-sha512@openssh.com", "curve25519-sha256"), ("ssh-ed25519",))
     assert r.summary.readiness is Readiness.TRANSITIONAL_HYBRID
+
+
+def test_ssh_hybrid_observation_emits_17_crypto_assets() -> None:
+    result = _run(("mlkem768x25519-sha256", "curve25519-sha256"), ("ssh-ed25519",))
+    stream = io.StringIO()
+
+    render_cbom(result, stream)
+
+    payload = json.loads(stream.getvalue())
+    components = {item["bom-ref"]: item for item in payload["components"]}
+    assert payload["specVersion"] == "1.7"
+    assert "crypto/algorithm/mlkem768x25519-sha256" in components
+    protocol = components["crypto/protocol/ssh-2.0"]["cryptoProperties"]["protocolProperties"]
+    assert protocol == {"type": "ssh", "version": "2.0"}
 
 
 def test_ssh_rich_output_has_no_tls_cert_recommendation() -> None:

@@ -14,6 +14,7 @@ from typer.testing import CliRunner
 
 import qureddy.scanners.tls.openssl_probe._capability_io as capability_io
 from qureddy._branding import HEADER
+from qureddy.cli import _render as render_module
 from qureddy.cli import app, main
 from tests._fake_openssl import fake_openssl
 
@@ -184,24 +185,11 @@ class TestCapabilityFailureNoDoubleProbe:
         )
 
 
-def test_cbom_capability_failure_never_fetches_cert_with_rejected_binary(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Issue #274: a rejected local OpenSSL must not be used for the CBOM cert fetch.
-
-    The capability check rejects LibreSSL (exit 3), but `_fetch_cert_for_cbom`
-    previously guarded only on `dependencies[0].path` — which a *rejected*
-    dependency still has — so the CBOM path shelled out to the rejected
-    binary anyway and emitted a plausible certificate component (with
-    LibreSSL's divergent slash-separated DN serialization). The fetch must
-    never be attempted once `failure_category` is set.
-    """
-
-    def _must_not_be_called(*args: object, **kwargs: object) -> str:
-        msg = "fetch_certificate_pem called despite rejected capability check"
-        raise AssertionError(msg)
-
-    monkeypatch.setattr("qureddy.cli._render.fetch_certificate_pem", _must_not_be_called)
+def test_cbom_capability_failure_has_no_certificate_observation() -> None:
+    """A rejected OpenSSL cannot yield a captured certificate observation."""
+    assert not hasattr(render_module, "_fetch_cert_for_cbom"), (
+        "CBOM rendering must not perform a second certificate fetch"
+    )
     runner = CliRunner()
     result = runner.invoke(
         app,
@@ -215,9 +203,7 @@ def test_cbom_capability_failure_never_fetches_cert_with_rejected_binary(
             "cbom",
         ],
     )
-    assert result.exception is None or isinstance(result.exception, SystemExit), (
-        f"cert fetch ran against the rejected binary: {result.exception!r}"
-    )
+    assert result.exception is None or isinstance(result.exception, SystemExit)
     assert result.exit_code == 3
     payload = json.loads(result.stdout)
     cert_components = [

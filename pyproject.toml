@@ -55,7 +55,10 @@ dependencies = [
     "pydantic>=2.7",
     "structlog>=24.1",
     "packaging>=24.0",
-    "cyclonedx-python-lib>=11.11",
+    # Final producer bytes and the independent conformance fixtures are
+    # validated against the 11.x model/serializer contract. A 12.x upgrade
+    # must deliberately refresh those byte-level expectations.
+    "cyclonedx-python-lib>=11.11,<12",
 ]
 
 [project.optional-dependencies]

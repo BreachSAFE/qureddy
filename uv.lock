@@ -131,7 +131,7 @@ dev = [
 requires-dist = [
     { name = "bandit", marker = "extra == 'dev'", specifier = ">=1.7" },
     { name = "click", specifier = ">=8.3.3,<8.5" },
-    { name = "cyclonedx-python-lib", specifier = ">=11.11" },
+    { name = "cyclonedx-python-lib", specifier = ">=11.11,<12" },
     { name = "defusedxml", marker = "extra == 'dev'", specifier = ">=0.7" },
     { name = "deptry", marker = "extra == 'dev'", specifier = ">=0.20" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.10" },

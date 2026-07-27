@@ -6,7 +6,7 @@
 **Consulted:** Claude (implementation, this ADR), Codex (architect role per `CLAUDE.md` Governance — schema-fidelity review pending on the follow-up scope in `## Not yet done`)
 **Informed:** BreachSAFE co-founder
 **Supersedes:** none
-**Superseded by:** none
+**Superseded by:** ADR 0007 (producer version and attribution decisions only)
 
 ---
 

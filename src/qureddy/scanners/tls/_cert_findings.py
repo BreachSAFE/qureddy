@@ -23,6 +23,7 @@ from __future__ import annotations
 import uuid
 from typing import TYPE_CHECKING
 
+from qureddy.core.certificate import CertificateObservation
 from qureddy.core.models import (
     Asset,
     Confidence,
@@ -68,6 +69,17 @@ def evidence_from_certificate(asset: Asset, certificate: CertificateInfo | None)
         observation_type=ObservationType.OBSERVED,
         source="qureddy.scanners.tls.cert_sig",
         notes=(f"signature algorithm: {certificate.signature_algorithm}",),
+        certificate=CertificateObservation(
+            subject=certificate.subject,
+            issuer=certificate.issuer,
+            not_before=certificate.not_before,
+            not_after=certificate.not_after,
+            serial=certificate.serial,
+            signature_algorithm=certificate.signature_algorithm,
+            public_key_summary=certificate.public_key_summary,
+            is_self_signed=certificate.is_self_signed,
+            is_post_quantum_signature=certificate.is_post_quantum_signature,
+        ),
     )
 
 

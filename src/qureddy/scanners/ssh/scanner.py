@@ -122,6 +122,7 @@ def scan_ssh(target: ScanTarget, *, timeout_seconds: int = 8) -> ScanResult:
             observation_type=ObservationType.OFFERED,
             source="qureddy.scanners.ssh.probe",
             protocol="ssh",
+            protocol_version="2.0",
             negotiated_group=pq[0],
             notes=(f"PQ hybrid KEX offered: {', '.join(pq)}",),
         )
@@ -154,6 +155,7 @@ def scan_ssh(target: ScanTarget, *, timeout_seconds: int = 8) -> ScanResult:
             observation_type=ObservationType.OFFERED,
             source="qureddy.scanners.ssh.probe",
             protocol="ssh",
+            protocol_version="2.0",
             notes=("no PQ hybrid KEX offered",),
         )
         evidence.append(ev)
@@ -183,6 +185,7 @@ def scan_ssh(target: ScanTarget, *, timeout_seconds: int = 8) -> ScanResult:
             observation_type=ObservationType.OFFERED,
             source="qureddy.scanners.ssh.probe",
             protocol="ssh",
+            protocol_version="2.0",
             notes=(f"weak host-key algorithm offered: {', '.join(weak)}",),
         )
         evidence.append(ev2)

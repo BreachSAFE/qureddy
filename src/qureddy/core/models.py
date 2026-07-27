@@ -20,6 +20,7 @@ from enum import Enum
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from qureddy import __version__ as _version
+from qureddy.core.certificate import CertificateObservation  # noqa: TC001
 
 FROZEN = ConfigDict(frozen=True, extra="forbid")
 
@@ -168,8 +169,7 @@ class OutputFormat(str, Enum):
     RICH = "rich"
     JSON = "json"
     CBOM = "cbom"
-    """Rapid-prototype CycloneDX 1.6 CBOM export — see qureddy.output.cbom
-    module docstring. Not the tracked MVP 0.3 implementation (issue #61)."""
+    """CycloneDX 1.7 CBOM export — see qureddy.output.cbom."""
 
 
 class ScanTarget(BaseModel):
@@ -318,6 +318,7 @@ class Evidence(BaseModel):
     failure_category: FailureCategory | None = None
     confidence: Confidence = Confidence.HIGH
     notes: tuple[str, ...] = Field(default_factory=tuple)
+    certificate: CertificateObservation | None = Field(default=None, exclude=True, repr=False)
 
 
 class Finding(BaseModel):

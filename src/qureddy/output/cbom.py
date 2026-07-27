@@ -1,34 +1,20 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
 # SPDX-License-Identifier: Apache-2.0
-"""CycloneDX 1.6 CBOM output adapter — MVP 0.3.
+"""Render scan observations as a CycloneDX 1.7 CBOM.
 
-Schema decision locked in ADR 0005 (docs/contributors/adr/0005-cbom-schema-source-of-truth.md,
-qureddy#61): emit CycloneDX 1.6 verbatim via `cyclonedx-python-lib`'s native model
-classes, never a hand-rolled or forked dialect. A CBOM emitted by this module has
-been independently validated against the official CycloneDX 1.6 JSON Schema with
-zero violations (ADR 0005's Evidence section) and round-trips through Qurum's real
-parser, not just this repo's own tests.
-
-Closes the two gaps found when this output was piped through Qurum
-(qurum cbom --knowledge): every asset came back with crypto_library_name
-and crypto_library_version = UNKNOWN, because the library-linkage graph
-was never emitted. Qurum's `_linked_libraries` (src/qurum/cbom.py) looks
-for: product --dependsOn--> library component --provides--> crypto asset.
-`cyclonedx-python-lib`'s Python API (`Bom.register_dependency`) exposes
-`depends_on` but not `provides` — confirmed via `inspect.signature`, this
-is a real gap in the library's Python bindings, not an oversight here.
-Worked around with a documented, minimal raw-JSON patch for the one
-missing edge type rather than avoiding the fix or hand-rolling full BOM
-serialization.
+The official CycloneDX model is the output contract. QuReddy and its local
+OpenSSL runtime are collection-tool provenance under ``metadata.tools``;
+neither is attributed to the remote endpoint. The endpoint is the stable
+``metadata.component`` root and provides the cryptographic assets QuReddy
+positively observed.
 
 ANTIPATTERN ACCEPTED: raw-json-post-processing, because
 `cyclonedx-python-lib`'s `Bom.register_dependency` has no `provides`
 parameter (confirmed via `inspect.signature(Dependency.__init__)` — only
-`ref`/`dependencies` exist) despite `provides` being valid CycloneDX 1.6.
-The alternative is hand-rolling BOM serialization ourselves, which is
-strictly worse: it reintroduces exactly the schema-drift risk the library
-exists to prevent. This patch touches only the one field the library
-doesn't expose; everything else stays fully delegated to `JsonV1Dot6`.
+`ref`/`dependencies` exist) despite `provides` being valid CycloneDX 1.7,
+and its `CertificateProperties` model does not yet expose 1.7's native
+``serialNumber`` field. The final-byte patch is limited to those two
+upstream API gaps; everything else is delegated to ``JsonV1Dot7``.
 """
 
 from __future__ import annotations
@@ -51,22 +37,29 @@ from cyclonedx.model.crypto import (
     ProtocolPropertiesCipherSuite,
     ProtocolPropertiesType,
 )
-from cyclonedx.output.json import JsonV1Dot6
+from cyclonedx.model.tool import ToolRepository
+from cyclonedx.output.json import JsonV1Dot7
+
+from qureddy.core.models import ObservationType, ScanResult
+from qureddy.output.cbom_semantics import validate_cbom_semantics
 
 if TYPE_CHECKING:
-    from qureddy.core.models import ScanResult
-    from qureddy.scanners.tls.cert_probe import CertificateInfo
+    from qureddy.core.certificate import CertificateObservation
 
 _ENDPOINT_REF = "endpoint"
-_LIBRARY_REF = "crypto-library/openssl"
+_QUREDDY_TOOL_REF = "tool/qureddy"
+_OPENSSL_TOOL_REF = "tool/openssl"
+_CERTIFICATE_REF = "crypto/certificate/leaf"
+_POSITIVE_OBSERVATIONS = frozenset(
+    {ObservationType.NEGOTIATED, ObservationType.OFFERED, ObservationType.OBSERVED}
+)
 
 
 def render_cbom(
     result: ScanResult,
     stream: IO[str] | None = None,
-    certificate: CertificateInfo | None = None,
 ) -> None:
-    """Render a ScanResult (+ optional fetched certificate) as a CycloneDX 1.6 CBOM.
+    """Render typed scan observations as CycloneDX 1.7.
 
     Issue #239: `stream: IO[str] = sys.stdout` as a default is resolved
     once at function-definition time, not per call — same root cause as
@@ -76,39 +69,74 @@ def render_cbom(
     bom = Bom()
     provides_edges: dict[str, list[str]] = {}
 
-    # The endpoint IS the metadata.component (the "product" this BOM describes),
-    # not a separate node — Qurum's dependency traversal starts from
-    # metadata.component's own bom-ref, so a disconnected endpoint node never
-    # gets found. Confirmed by testing: a separate node left crypto_library_name
-    # UNKNOWN even with a correct dependsOn/provides graph elsewhere.
+    # WHY: adding this same object to bom.components makes the library's
+    # BomRefDiscriminator visit it twice and replace "endpoint" with a random
+    # ref. metadata.component already establishes the document root.
     endpoint = Component(
         name=f"{result.target.host}:{result.target.port}",
         type=ComponentType.APPLICATION,
         bom_ref=_ENDPOINT_REF,
-        version=result.scan.scanner_version,
     )
-    bom.components.add(endpoint)
     bom.metadata.component = endpoint
+    _add_tool_provenance(bom, result)
     _add_scan_status_properties(bom, result)
 
     algorithm_refs = _add_algorithm_components(bom, result, provides_edges)
     _add_protocol_components(bom, result, algorithm_refs, provides_edges)
+    certificate = _captured_certificate(result)
     if certificate is not None:
         _add_certificate_component(bom, certificate, provides_edges)
 
-    if result.dependencies:
-        dep = result.dependencies[0]
-        library = Component(
-            name=dep.name,
-            type=ComponentType.LIBRARY,
-            bom_ref=_LIBRARY_REF,
-            version=dep.version,
-        )
-        bom.components.add(library)
-        bom.register_dependency(endpoint, [library])
-        provides_edges[_LIBRARY_REF] = list(provides_edges.get(_LIBRARY_REF, []))
+    bom.register_dependency(endpoint)
+    _write_with_library_gap_patches(
+        bom,
+        provides_edges,
+        certificate.serial if certificate is not None else None,
+        target_stream,
+    )
 
-    _write_with_provides(bom, provides_edges, target_stream)
+
+def _captured_certificate(result: ScanResult) -> CertificateObservation | None:
+    """Return the certificate already captured by the scan, never refetch it."""
+    observations = [
+        evidence.certificate
+        for evidence in result.evidence
+        if evidence.observation_type is ObservationType.OBSERVED
+        and evidence.certificate is not None
+    ]
+    if len(observations) > 1:
+        msg = f"expected at most one captured leaf certificate, got {len(observations)}"
+        raise ValueError(msg)
+    return observations[0] if observations else None
+
+
+def _add_tool_provenance(bom: Bom, result: ScanResult) -> None:
+    """Record QuReddy and local OpenSSL as collection tools."""
+    tools = [
+        Component(
+            name="qureddy",
+            type=ComponentType.APPLICATION,
+            bom_ref=_QUREDDY_TOOL_REF,
+            version=result.scan.scanner_version,
+        )
+    ]
+    if result.dependencies and result.dependencies[0].failure_category is None:
+        dependency = result.dependencies[0]
+        tools.append(
+            Component(
+                name=dependency.name,
+                type=ComponentType.APPLICATION,
+                bom_ref=_OPENSSL_TOOL_REF,
+                version=dependency.version,
+                properties=[
+                    Property(
+                        name="qureddy:collector.role",
+                        value="local-probe-runtime",
+                    )
+                ],
+            )
+        )
+    bom.metadata.tools = ToolRepository(components=tools)
 
 
 def _add_scan_status_properties(bom: Bom, result: ScanResult) -> None:
@@ -137,9 +165,14 @@ def _add_scan_status_properties(bom: Bom, result: ScanResult) -> None:
 def _add_algorithm_components(
     bom: Bom, result: ScanResult, provides_edges: dict[str, list[str]]
 ) -> dict[str, str]:
-    """One cryptographic-asset component per unique negotiated group. Registers each as provided by the OpenSSL library so Qurum can resolve crypto_library_name."""
+    """Add one cryptographic asset per unique positively observed group."""
     algorithm_refs: dict[str, str] = {}
-    for group in sorted({f.negotiated_group for f in result.findings if f.negotiated_group}):
+    groups = {
+        evidence.negotiated_group
+        for evidence in result.evidence
+        if evidence.observation_type in _POSITIVE_OBSERVATIONS and evidence.negotiated_group
+    }
+    for group in sorted(groups):
         ref = f"crypto/algorithm/{group.lower()}"
         bom.components.add(
             Component(
@@ -150,7 +183,7 @@ def _add_algorithm_components(
             )
         )
         algorithm_refs[group] = ref
-        provides_edges.setdefault(_LIBRARY_REF, []).append(ref)
+        provides_edges.setdefault(_ENDPOINT_REF, []).append(ref)
     return algorithm_refs
 
 
@@ -160,46 +193,63 @@ def _add_protocol_components(
     algorithm_refs: dict[str, str],
     provides_edges: dict[str, list[str]],
 ) -> None:
-    """One protocol component per unique (protocol, version), cipher suite named from real Evidence.cipher_suite (not a synthetic placeholder)."""
-    real_cipher_suite = next((e.cipher_suite for e in result.evidence if e.cipher_suite), None)
-    seen: set[tuple[str, str]] = set()
-    for finding in result.findings:
-        if not finding.protocol_version or (finding.protocol, finding.protocol_version) in seen:
-            continue
-        seen.add((finding.protocol, finding.protocol_version))
-
-        group_refs = [
-            algorithm_refs[f.negotiated_group]
-            for f in result.findings
-            if f.protocol_version == finding.protocol_version and f.negotiated_group
+    """Add one protocol asset per unique observed protocol and version."""
+    positive_evidence = [
+        evidence
+        for evidence in result.evidence
+        if evidence.observation_type in _POSITIVE_OBSERVATIONS and evidence.protocol_version
+    ]
+    protocol_versions: set[tuple[str, str]] = set()
+    for evidence in positive_evidence:
+        if evidence.protocol_version is not None:
+            protocol_versions.add((evidence.protocol, evidence.protocol_version))
+    for protocol, protocol_version in sorted(protocol_versions):
+        matching = [
+            evidence
+            for evidence in positive_evidence
+            if (evidence.protocol, evidence.protocol_version) == (protocol, protocol_version)
         ]
-        cipher_suites = (
-            [
+        cipher_suites = []
+        for cipher_suite in sorted(
+            {evidence.cipher_suite for evidence in matching if evidence.cipher_suite}
+        ):
+            group_refs = sorted(
+                {
+                    algorithm_refs[evidence.negotiated_group]
+                    for evidence in matching
+                    if evidence.cipher_suite == cipher_suite
+                    and evidence.negotiated_group in algorithm_refs
+                }
+            )
+            cipher_suites.append(
                 ProtocolPropertiesCipherSuite(
-                    name=real_cipher_suite or f"{finding.protocol_version} negotiated groups",
-                    algorithms=[BomRef(value=ref) for ref in group_refs],
+                    name=cipher_suite,
+                    algorithms=[BomRef(value=ref) for ref in group_refs] or None,
                 )
-            ]
-            if group_refs
-            else None
-        )
-        ref = f"crypto/protocol/{finding.protocol}-{finding.protocol_version.lower()}"
+            )
+        ref = f"crypto/protocol/{protocol}-{protocol_version.lower()}"
         bom.components.add(
             Component(
-                name=finding.protocol_version,
+                name=protocol_version,
                 type=ComponentType.CRYPTOGRAPHIC_ASSET,
                 bom_ref=ref,
                 crypto_properties=CryptoProperties(
                     asset_type=CryptoAssetType.PROTOCOL,
                     protocol_properties=ProtocolProperties(
-                        type=ProtocolPropertiesType.TLS if finding.protocol == "tls" else None,
-                        version=finding.protocol_version,
-                        cipher_suites=cipher_suites,
+                        type=(
+                            ProtocolPropertiesType.TLS
+                            if protocol == "tls"
+                            else ProtocolPropertiesType.SSH
+                            if protocol == "ssh"
+                            else None
+                        ),
+                        version=protocol_version,
+                        cipher_suites=cipher_suites or None,
                     ),
                 ),
             )
         )
-        provides_edges.setdefault(_LIBRARY_REF, []).append(ref)
+        provides_edges.setdefault(_ENDPOINT_REF, []).append(ref)
 
 
 def _parse_openssl_date(text: str) -> datetime | None:
@@ -243,37 +293,30 @@ def _add_signature_algorithm_component(
             crypto_properties=CryptoProperties(asset_type=CryptoAssetType.ALGORITHM),
         )
     )
-    provides_edges.setdefault(_LIBRARY_REF, []).append(ref)
+    provides_edges.setdefault(_ENDPOINT_REF, []).append(ref)
     return BomRef(value=ref)
 
 
 def _add_certificate_component(
-    bom: Bom, certificate: CertificateInfo, provides_edges: dict[str, list[str]]
+    bom: Bom, certificate: CertificateObservation, provides_edges: dict[str, list[str]]
 ) -> None:
     """One certificate component from a real fetched+parsed cert (cert_probe.py).
 
     `subject_public_key_ref` (pubkey) stays unset pending an OID/key-type
     lookup table (larger, separate work — issue #190) rather than a fake
-    reference. `serial` has no home in CycloneDX 1.6's `certificateProperties`
-    at all (confirmed: not present in the installed library's schema) — kept
-    as a `qureddy:certificate.serial` component property instead of silently
-    dropped, same extension-point pattern as `_add_scan_status_properties`.
+    reference. The installed library model does not expose CycloneDX 1.7's
+    native ``certificateProperties.serialNumber`` field, so the final-byte
+    patch adds it after typed serialization.
     """
-    ref = "crypto/certificate/leaf"
+    ref = _CERTIFICATE_REF
     sig_alg_ref = _add_signature_algorithm_component(
         bom, certificate.signature_algorithm, provides_edges
-    )
-    properties = (
-        [Property(name="qureddy:certificate.serial", value=certificate.serial)]
-        if certificate.serial
-        else []
     )
     bom.components.add(
         Component(
             name=certificate.subject,
             type=ComponentType.CRYPTOGRAPHIC_ASSET,
             bom_ref=ref,
-            properties=properties,
             crypto_properties=CryptoProperties(
                 asset_type=CryptoAssetType.CERTIFICATE,
                 certificate_properties=CertificateProperties(
@@ -287,26 +330,34 @@ def _add_certificate_component(
             ),
         )
     )
-    provides_edges.setdefault(_LIBRARY_REF, []).append(ref)
+    provides_edges.setdefault(_ENDPOINT_REF, []).append(ref)
 
 
-def _write_with_provides(bom: Bom, provides_edges: dict[str, list[str]], stream: IO[str]) -> None:
-    """Serialize via the library, then patch in `provides` edges the Python API doesn't expose. Documented gap, not a silent hack: see module docstring."""
-    # cyclonedx-python-lib warns on serialization when the described root
-    # component has no dependency edges — true for the SSH scanner, which
-    # has no library-dependency graph (TLS depends on the openssl library;
-    # SSH is a plain socket). The CBOM is still valid; suppress the specific
-    # warning so it doesn't pollute stderr for `--format cbom | jq` consumers.
-    # (The real fix — model the endpoint as providing its own crypto — is the
-    # graph-direction rework tracked in #221.)
+def _write_with_library_gap_patches(
+    bom: Bom,
+    provides_edges: dict[str, list[str]],
+    certificate_serial: str | None,
+    stream: IO[str],
+) -> None:
+    """Serialize with the library, then fill its two missing 1.7 fields."""
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", message=".*no defined dependencies.*")
-        serialized = JsonV1Dot6(bom).output_as_string(indent=2)
+        serialized = JsonV1Dot7(bom).output_as_string(indent=2)
     payload = json.loads(serialized)
     for dependency in payload.get("dependencies", []):
         ref = dependency.get("ref")
         if ref in provides_edges:
-            dependency["provides"] = provides_edges[ref]
+            dependency["provides"] = sorted(set(provides_edges[ref]))
+    if certificate_serial:
+        certificate_component = next(
+            component
+            for component in payload["components"]
+            if component.get("bom-ref") == _CERTIFICATE_REF
+        )
+        certificate_component["cryptoProperties"]["certificateProperties"]["serialNumber"] = (
+            certificate_serial
+        )
+    validate_cbom_semantics(payload)
     # Keep final machine bytes representable on locale-dependent Windows
     # streams. JSON consumers recover the original Unicode from escapes.
     stream.write(json.dumps(payload, indent=2, ensure_ascii=True))

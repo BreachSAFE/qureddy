@@ -18,6 +18,7 @@ from __future__ import annotations
 import io
 import json
 import os
+import re
 import shutil
 import socket
 import subprocess
@@ -39,6 +40,20 @@ _SUBPROCESS_INJECT_DIR = Path(__file__).parent.parent / "subprocess_inject"
 # Generous ceiling: every scenario here fails fast (fake openssl binary or
 # refused loopback connect); the timeout only guards against a hang.
 _SUBPROCESS_TIMEOUT = 60
+
+
+def _without_document_identity(output: str) -> str:
+    """Normalize only the two document-level values allowed to vary."""
+    output = re.sub(
+        r'("serialNumber": )"urn:uuid:[^"]+"',
+        r'\1"<document-serial>"',
+        output,
+    )
+    return re.sub(
+        r'("timestamp": )"[^"]+"',
+        r'\1"<document-timestamp>"',
+        output,
+    )
 
 
 def _run_qureddy(
@@ -77,6 +92,66 @@ _TLS_EXIT3_ARGS = (
     "--openssl",
     fake_openssl("openssl_too_old"),
 )
+
+
+def test_installed_cbom_final_bytes_are_repeatable() -> None:
+    """The installed console produces identical bytes except document identity."""
+    outputs: list[str] = []
+    for _ in range(2):
+        result = _run_qureddy(
+            "scan",
+            "tls",
+            "192.0.2.1",
+            "--openssl",
+            fake_openssl("openssl_connect_refused"),
+            "--format",
+            "cbom",
+            merge_stderr=False,
+        )
+        assert result.returncode == 2
+        assert result.stderr == ""
+        assert json.loads(result.stdout)["specVersion"] == "1.7"
+        outputs.append(result.stdout)
+
+    assert _without_document_identity(outputs[0]) == _without_document_identity(outputs[1])
+
+
+def test_installed_classical_cbom_final_bytes_include_certificate() -> None:
+    """A successful installed scan emits repeatable references and certificate bytes."""
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(_SUBPROCESS_INJECT_DIR)
+    env["QUREDDY_TEST_FORCE_CLASSICAL_RESULT"] = "1"
+    outputs: list[str] = []
+    for _ in range(2):
+        result = _run_qureddy(
+            "scan",
+            "tls",
+            "classical.example.invalid",
+            "--format",
+            "cbom",
+            merge_stderr=False,
+            env=env,
+        )
+        assert result.returncode == 0
+        assert result.stderr == ""
+        payload = json.loads(result.stdout)
+        assert payload["metadata"]["component"]["bom-ref"] == "endpoint"
+        dependencies = {item["ref"]: item for item in payload["dependencies"]}
+        assert dependencies["endpoint"]["provides"] == [
+            "crypto/algorithm/ecdsa-with-sha256",
+            "crypto/algorithm/x25519",
+            "crypto/certificate/leaf",
+            "crypto/protocol/tls-tlsv1.3",
+        ]
+        certificate = next(
+            item for item in payload["components"] if item["bom-ref"] == "crypto/certificate/leaf"
+        )
+        properties = certificate["cryptoProperties"]["certificateProperties"]
+        assert properties["serialNumber"] == "0123456789ABCDEF"
+        assert properties["subjectName"] == "CN=classical.example.invalid"
+        outputs.append(result.stdout)
+
+    assert _without_document_identity(outputs[0]) == _without_document_identity(outputs[1])
 
 
 @pytest.mark.parametrize("output_format", ["json", "cbom"])
