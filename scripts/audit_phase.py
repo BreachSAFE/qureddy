@@ -62,6 +62,14 @@ EXPECTED_LIVE_TARGETS = (
     "1.1.1.1",
     "tls-v1-2.badssl.com",
 )
+EXPECTED_SELF_SCAN_STATUSES = {
+    "cloudflare.json": "completed",
+    "pq-cloudflare.json": "completed",
+    "google.json": "completed",
+    "example.json": "completed",
+    "1111.json": "completed",
+    "tls12.json": "tls_handshake_failed",
+}
 
 
 @dataclass
@@ -221,10 +229,20 @@ def _check_phase_5_self_scan(artifacts: Path, result: AuditResult) -> None:
         result.fail("phase-5: scanner directory present but no JSON outputs")
         return
 
-    found_targets = set()
+    found_names = {path.name for path in json_files}
+    expected_names = set(EXPECTED_SELF_SCAN_STATUSES)
+    missing_files = sorted(expected_names - found_names)
+    unexpected_files = sorted(found_names - expected_names)
+    if missing_files or unexpected_files:
+        result.fail(
+            f"phase-5: self-scan file mismatch: missing={missing_files}, "
+            f"unexpected={unexpected_files}"
+        )
+
+    found_targets: set[str] = set()
     for json_file in json_files:
         try:
-            data = json.loads(json_file.read_text())
+            data = json.loads(json_file.read_text(encoding="utf-8"))
         except json.JSONDecodeError as e:
             result.fail(f"phase-5: malformed JSON at {json_file.name}: {e}")
             continue
@@ -234,14 +252,24 @@ def _check_phase_5_self_scan(artifacts: Path, result: AuditResult) -> None:
 
         scan_meta = data.get("scan", {})
         status = scan_meta.get("status", "<missing>")
-        if status not in ("completed", "failed"):
-            result.fail(f"phase-5: {json_file.name} has unexpected scan.status={status}")
+        expected_status = EXPECTED_SELF_SCAN_STATUSES.get(json_file.name)
+        if expected_status is not None and status != expected_status:
+            result.fail(
+                f"phase-5: {json_file.name} has scan.status={status}; expected {expected_status}"
+            )
 
-    missing = [t for t in EXPECTED_LIVE_TARGETS if not any(t in f for f in found_targets)]
-    if missing:
-        result.fail(f"phase-5: missing self-scan results for: {', '.join(missing)}")
-    else:
-        result.ok(f"phase-5: self-scan covered {len(found_targets)} canonical targets")
+    missing_targets = sorted(set(EXPECTED_LIVE_TARGETS) - found_targets)
+    unexpected_targets = sorted(found_targets - set(EXPECTED_LIVE_TARGETS))
+    if missing_targets or unexpected_targets:
+        result.fail(
+            f"phase-5: self-scan target mismatch: missing={missing_targets}, "
+            f"unexpected={unexpected_targets}"
+        )
+    elif not missing_files and not unexpected_files:
+        result.ok(
+            f"phase-5: self-scan covered {len(found_targets)} exact canonical targets "
+            "with expected statuses"
+        )
 
 
 def _check_phase_6_build(artifacts: Path, result: AuditResult) -> None:
