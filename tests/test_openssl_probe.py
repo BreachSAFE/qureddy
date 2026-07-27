@@ -7,6 +7,7 @@ Use Case 4 (Detect Unsupported Local OpenSSL) is covered here.
 
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 from unittest.mock import patch
 
@@ -311,16 +312,20 @@ class TestTimeoutPreservesPartialOutput:
     """
 
     def test_timeout_preserves_partial_stdout_hash(self) -> None:
-        # The fake binary writes "partial-stdout-marker\n" then sleeps
-        # 30s. With a 1s timeout, subprocess.TimeoutExpired fires while
-        # the partial output is in the pipe.
-        result = run_hybrid_probe(
-            fake_openssl("openssl_slow_with_partial_output"),
-            "192.0.2.99",
-            443,
-            None,
-            timeout_seconds=1,
+        timeout = subprocess.TimeoutExpired(
+            cmd=["openssl"],
+            timeout=1,
+            output=b"partial-stdout-marker\n",
+            stderr=b"CONNECTION ESTABLISHED\n",
         )
+        with patch("subprocess.run", side_effect=timeout):
+            result = run_hybrid_probe(
+                fake_openssl("openssl_ok"),
+                "192.0.2.99",
+                443,
+                None,
+                timeout_seconds=1,
+            )
         empty_hash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
         assert result.failure_category is FailureCategory.TLS_HANDSHAKE_FAILED
         assert result.return_code == -1
@@ -331,13 +336,20 @@ class TestTimeoutPreservesPartialOutput:
         assert "partial-stdout-marker" in result.stdout_excerpt
 
     def test_timeout_preserves_partial_stderr_with_marker(self) -> None:
-        result = run_hybrid_probe(
-            fake_openssl("openssl_slow_with_partial_output"),
-            "192.0.2.99",
-            443,
-            None,
-            timeout_seconds=1,
+        timeout = subprocess.TimeoutExpired(
+            cmd=["openssl"],
+            timeout=1,
+            output=b"partial-stdout-marker\n",
+            stderr=b"CONNECTION ESTABLISHED\n",
         )
+        with patch("subprocess.run", side_effect=timeout):
+            result = run_hybrid_probe(
+                fake_openssl("openssl_ok"),
+                "192.0.2.99",
+                443,
+                None,
+                timeout_seconds=1,
+            )
         # stderr captured the connection lines AND the timeout marker
         # the probe added on the timeout branch.
         assert "CONNECTION ESTABLISHED" in result.stderr_excerpt
