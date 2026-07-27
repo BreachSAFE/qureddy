@@ -71,7 +71,7 @@ QuReddy does not provide:
 
 ## Historical implementation material
 
-`.claude/skills/mvp-implement/SKILL.md` and
+`.agents/skills/breachsafe-implement/SKILL.md` and
 `docs/contributors/agents/mvp-0.1-bootstrap-prompt.md` describe the original
 TLS-only implementation milestone. They are retained for history and are not
 authority for the shipped SSH, CBOM, packaging, or release surfaces.

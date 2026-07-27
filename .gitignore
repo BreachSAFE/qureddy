@@ -122,6 +122,9 @@ Scratch/
 /docs/contributors/adr/0005-splitting-oversized-files.md
 /docs/contributors/adr/
 /docs/adr/
+/docs/contributors/plans/
+/docs/explanation/oss-vs-enterprise.md
+/.claude/skills/
 
 # Secrets, never commit
 .env

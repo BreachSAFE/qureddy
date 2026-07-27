@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 """Domain models for QuReddy.
 
-Locked by .claude/skills/mvp-implement/SKILL.md. Field set is fixed for
+Locked by .agents/skills/breachsafe-implement/SKILL.md. Field set is fixed for
 MVP 0.1; do not add or remove fields without updating the skill first.
 
 ANTIPATTERN ACCEPTED: speculative generality, because CycloneDX field

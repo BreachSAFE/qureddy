@@ -62,7 +62,6 @@ Conceptual discussion. Why we made the choices we did.
 - [Harvest now, decrypt later (HNDL)](explanation/hndl.md) — the threat model that drives the timeline
 - [Threat model and scope](explanation/threat-model.md) — what QuReddy assumes, what it doesn't try to defend against
 - [Evidence honesty](explanation/evidence-honesty.md) — observation, local capability, interpretation, and unknown states
-- [Why QuReddy is open-core](explanation/oss-vs-enterprise.md) — what stays in OSS vs Enterprise (P2), and why
 
 ## Contributor documentation
 

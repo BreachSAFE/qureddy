@@ -34,7 +34,7 @@ Read these in order:
 5. [`docs/contributors/examples.md`](docs/contributors/examples.md) — good-vs-bad code patterns. Read before writing the first file in a new module.
 
 If you are an AI coding agent (Claude Code, Codex, Cursor, etc.):
-- Read `.claude/skills/README.md` to find the right skill for your task.
+- Read `.agents/skills/` to find the right skill for your task.
 - Treat `mvp-implement` as historical authority for the original TLS slice.
 - Use `audit-pr` before opening a PR.
 - Use `run-quality-gates` before final response on any code change.

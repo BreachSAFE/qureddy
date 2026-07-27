@@ -8,7 +8,7 @@ This is companion material to `docs/contributors/coding-rules.md`. The rules doc
 
 ## 1. Pydantic models
 
-The skill-locked models in `.claude/skills/mvp-implement/SKILL.md` show the canonical shape. This is the pattern for any new model.
+The active implementation skill in `.agents/skills/` defines the canonical model shape. This is the pattern for any new model.
 
 ### Good
 

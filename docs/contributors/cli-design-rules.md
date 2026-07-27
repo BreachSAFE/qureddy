@@ -136,7 +136,7 @@ Click's default for `qureddy scan tls --version` is "no such option: --version."
 ## Section 4 — What This Document Does NOT Cover
 
 - **Help text wording.** Per-PR copywriting; not a rule.
-- **Specific scanner behavior.** Owned by the [`mvp-implement`](../../.claude/skills/mvp-implement/SKILL.md) skill.
+- **Specific scanner behavior.** Owned by the active implementation skill in `.agents/skills/`.
 - **Exit-code propagation bugs.** Tracked in issues, not rules.
 - **Input validation gaps.** Tracked in issues (e.g. [#13](https://github.com/paul007ex/qureddy/issues/13)), not rules.
 - **`--help` snapshot tests.** Tracked in [#88](https://github.com/paul007ex/qureddy/issues/88).
