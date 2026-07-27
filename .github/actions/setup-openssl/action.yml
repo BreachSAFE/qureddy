@@ -77,12 +77,21 @@ runs:
         set -euo pipefail
         prefix="$RUNNER_TEMP/qureddy-openssl-3.5.1"
         test -x "$prefix/bin/openssl"
-        "$prefix/bin/openssl" version
-        "$prefix/bin/openssl" list -tls1_3 -tls-groups | tee openssl-groups.txt
+        library_path="$prefix/lib64:$prefix/lib"
+        version="$(
+          LD_LIBRARY_PATH="$library_path:${LD_LIBRARY_PATH:-}" \
+          DYLD_LIBRARY_PATH="$library_path:${DYLD_LIBRARY_PATH:-}" \
+          "$prefix/bin/openssl" version
+        )"
+        echo "$version"
+        grep -q '^OpenSSL 3\.5\.1 ' <<< "$version"
+        LD_LIBRARY_PATH="$library_path:${LD_LIBRARY_PATH:-}" \
+          DYLD_LIBRARY_PATH="$library_path:${DYLD_LIBRARY_PATH:-}" \
+          "$prefix/bin/openssl" list -tls1_3 -tls-groups | tee openssl-groups.txt
         grep -qi X25519MLKEM768 openssl-groups.txt
         echo "$prefix/bin" >> "$GITHUB_PATH"
-        echo "LD_LIBRARY_PATH=$prefix/lib64:$prefix/lib:${LD_LIBRARY_PATH:-}" >> "$GITHUB_ENV"
-        echo "DYLD_LIBRARY_PATH=$prefix/lib64:$prefix/lib:${DYLD_LIBRARY_PATH:-}" >> "$GITHUB_ENV"
+        echo "LD_LIBRARY_PATH=$library_path:${LD_LIBRARY_PATH:-}" >> "$GITHUB_ENV"
+        echo "DYLD_LIBRARY_PATH=$library_path:${DYLD_LIBRARY_PATH:-}" >> "$GITHUB_ENV"
 
     - name: Expose and verify OpenSSL on Windows
       if: runner.os == 'Windows'
@@ -93,7 +102,11 @@ runs:
         if (-not (Test-Path $openssl)) {
           throw "Pinned OpenSSL cache/build did not produce openssl.exe"
         }
-        & $openssl version
+        $version = & $openssl version
+        $version
+        if (-not ($version -match '^OpenSSL 3\.5\.1 ')) {
+          throw "Pinned OpenSSL reported an unexpected version"
+        }
         $groups = & $openssl list -tls1_3 -tls-groups
         $groups | Out-File -FilePath openssl-groups.txt
         if (-not ($groups | Select-String -Quiet "X25519MLKEM768")) {
