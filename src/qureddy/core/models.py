@@ -168,8 +168,7 @@ class OutputFormat(str, Enum):
     RICH = "rich"
     JSON = "json"
     CBOM = "cbom"
-    """Rapid-prototype CycloneDX 1.6 CBOM export — see qureddy.output.cbom
-    module docstring. Not the tracked MVP 0.3 implementation (issue #61)."""
+    """CycloneDX 1.7 CBOM export — see qureddy.output.cbom."""
 
 
 class ScanTarget(BaseModel):
@@ -291,6 +290,28 @@ class Asset(BaseModel):
     nist_quantum_security_level: int | None = Field(default=None, ge=0, le=5)
 
 
+class CertificateObservation(BaseModel):
+    """Certificate facts captured by the scan's single certificate probe.
+
+    This typed, excluded observation lets alternate renderers reuse the
+    exact bytes-derived result without performing another network fetch.
+    It is deliberately excluded from ``qureddy.scan.v1`` until that public
+    schema has a separately reviewed certificate-observation contract.
+    """
+
+    model_config = FROZEN
+
+    subject: str
+    issuer: str
+    not_before: str
+    not_after: str
+    serial: str
+    signature_algorithm: str
+    public_key_summary: str
+    is_self_signed: bool
+    is_post_quantum_signature: bool
+
+
 class Evidence(BaseModel):
     """Observation supporting a finding.
 
@@ -318,6 +339,7 @@ class Evidence(BaseModel):
     failure_category: FailureCategory | None = None
     confidence: Confidence = Confidence.HIGH
     notes: tuple[str, ...] = Field(default_factory=tuple)
+    certificate: CertificateObservation | None = Field(default=None, exclude=True, repr=False)
 
 
 class Finding(BaseModel):

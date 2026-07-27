@@ -1,17 +1,6 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
 # SPDX-License-Identifier: Apache-2.0
-"""Tests for qureddy.output.cbom (rapid-prototype module).
-
-Regression test for a real bug caught during manual verification (piping
-output through Qurum): the scanned endpoint was built as a component
-separate from `bom.metadata.component`, so Qurum's dependency traversal
-(which starts from `metadata.component`'s own bom-ref) never found the
-`dependsOn`/`provides` path to the OpenSSL library component, and every
-crypto asset resolved as `crypto_library_name: UNKNOWN` despite a
-structurally correct graph existing elsewhere in the BOM. Fixed by making
-the endpoint component *be* metadata.component rather than a disconnected
-second node. This test pins that shape so it can't regress silently.
-"""
+"""Tests for the CycloneDX 1.7 CBOM output adapter."""
 
 from __future__ import annotations
 
@@ -19,8 +8,11 @@ import io
 import json
 from datetime import UTC, datetime
 
+import pytest
+
 from qureddy.core.models import (
     Asset,
+    CertificateObservation,
     Evidence,
     Finding,
     ObservationType,
@@ -32,7 +24,7 @@ from qureddy.core.models import (
     ScanTarget,
     Severity,
 )
-from qureddy.output.cbom import render_cbom
+from qureddy.output.cbom import _validate_cbom_semantics, render_cbom
 
 
 def _build_result() -> ScanResult:
@@ -106,29 +98,62 @@ def _render(result: ScanResult) -> dict:
     return json.loads(buf.getvalue())
 
 
-class TestLibraryLinkage:
-    """The regression this file exists to pin."""
+class TestCycloneDx17Contract:
+    """Pin the deterministic and attribution-honest CycloneDX 1.7 shape."""
 
-    def test_metadata_component_is_the_endpoint_not_a_separate_node(self) -> None:
+    def test_declares_cyclonedx_17(self) -> None:
         payload = _render(_build_result())
-        metadata_ref = payload["metadata"]["component"]["bom-ref"]
-        component_refs = {c["bom-ref"] for c in payload["components"]}
-        assert metadata_ref in component_refs, (
-            "metadata.component must be one of the real components (the endpoint), "
-            "not a synthetic node absent from the components list"
-        )
 
-    def test_endpoint_depends_on_library_which_provides_crypto_assets(self) -> None:
+        assert payload["specVersion"] == "1.7"
+        assert payload["$schema"] == "http://cyclonedx.org/schema/bom-1.7.schema.json"
+
+    def test_endpoint_is_metadata_only_with_stable_ref(self) -> None:
+        first = _render(_build_result())
+        second = _render(_build_result())
+
+        assert first["metadata"]["component"]["bom-ref"] == "endpoint"
+        assert second["metadata"]["component"]["bom-ref"] == "endpoint"
+        assert "version" not in first["metadata"]["component"]
+        component_refs = {c["bom-ref"] for c in first["components"]}
+        assert "endpoint" not in component_refs
+        for payload in (first, second):
+            payload.pop("serialNumber")
+            payload["metadata"].pop("timestamp")
+        assert first == second
+
+    def test_local_tools_are_provenance_not_endpoint_dependencies(self) -> None:
         payload = _render(_build_result())
-        metadata_ref = payload["metadata"]["component"]["bom-ref"]
+        tools = payload["metadata"]["tools"]["components"]
+        tools_by_ref = {tool["bom-ref"]: tool for tool in tools}
         deps_by_ref = {d["ref"]: d for d in payload["dependencies"]}
 
-        assert metadata_ref in deps_by_ref
-        assert "crypto-library/openssl" in deps_by_ref[metadata_ref]["dependsOn"]
+        assert tools_by_ref["tool/qureddy"]["version"] == "0.2.0"
+        assert tools_by_ref["tool/openssl"]["version"] == "3.6.3"
+        assert "crypto-library/openssl" not in json.dumps(payload)
+        assert "dependsOn" not in deps_by_ref["endpoint"]
 
-        library_dep = deps_by_ref["crypto-library/openssl"]
-        assert "crypto/protocol/tls-tlsv1.3" in library_dep["provides"]
-        assert "crypto/algorithm/x25519mlkem768" in library_dep["provides"]
+    def test_endpoint_provides_observed_crypto_assets(self) -> None:
+        payload = _render(_build_result())
+        deps_by_ref = {d["ref"]: d for d in payload["dependencies"]}
+
+        assert "crypto/protocol/tls-tlsv1.3" in deps_by_ref["endpoint"]["provides"]
+        assert "crypto/algorithm/x25519mlkem768" in deps_by_ref["endpoint"]["provides"]
+
+    def test_missing_local_openssl_does_not_fabricate_crypto_assets(self) -> None:
+        failed = _build_result().model_copy(
+            update={
+                "dependencies": (),
+                "evidence": (),
+                "findings": (),
+            }
+        )
+        payload = _render(failed)
+
+        assert payload.get("components", []) == []
+        assert [tool["bom-ref"] for tool in payload["metadata"]["tools"]["components"]] == [
+            "tool/qureddy"
+        ]
+        assert payload["dependencies"] == [{"ref": "endpoint"}]
 
     def test_real_cipher_suite_name_used_not_synthetic_placeholder(self) -> None:
         payload = _render(_build_result())
@@ -137,3 +162,102 @@ class TestLibraryLinkage:
             "name"
         ]
         assert cipher_suite_name == "TLS_AES_256_GCM_SHA384"
+
+    def test_certificate_serial_uses_native_17_field(self) -> None:
+        certificate = CertificateObservation(
+            subject="CN=example.com",
+            issuer="CN=Example CA",
+            not_before="Jul 17 07:18:11 2026 GMT",
+            not_after="Jul 17 07:18:11 2027 GMT",
+            serial="0123456789ABCDEF",
+            signature_algorithm="ecdsa-with-SHA256",
+            public_key_summary="Public Key Algorithm: id-ecPublicKey",
+            is_self_signed=False,
+            is_post_quantum_signature=False,
+        )
+        certificate_evidence = Evidence(
+            id="ev-cert",
+            asset_id="asset-1",
+            evidence_type="tls.cert.signature",
+            observation_type=ObservationType.OBSERVED,
+            source="qureddy.scanners.tls.cert_sig",
+            certificate=certificate,
+        )
+        result = _build_result().model_copy(
+            update={"evidence": (*_build_result().evidence, certificate_evidence)}
+        )
+        payload = _render(result)
+        component = next(
+            item for item in payload["components"] if item["bom-ref"] == "crypto/certificate/leaf"
+        )
+        certificate_properties = component["cryptoProperties"]["certificateProperties"]
+
+        assert certificate_properties["serialNumber"] == "0123456789ABCDEF"
+        assert all(
+            prop["name"] != "qureddy:certificate.serial" for prop in component.get("properties", [])
+        )
+
+    def test_inventory_comes_from_positive_evidence_not_findings(self) -> None:
+        result = _build_result()
+        finding_only = result.model_copy(update={"evidence": ()})
+        evidence_only = result.model_copy(update={"findings": ()})
+
+        assert _render(finding_only).get("components", []) == []
+        refs = {component["bom-ref"] for component in _render(evidence_only)["components"]}
+        assert refs == {
+            "crypto/algorithm/x25519mlkem768",
+            "crypto/protocol/tls-tlsv1.3",
+        }
+
+    def test_unknown_and_not_testable_evidence_do_not_create_assets(self) -> None:
+        result = _build_result()
+        excluded = tuple(
+            result.evidence[0].model_copy(update={"observation_type": observation})
+            for observation in (ObservationType.INFERRED, ObservationType.NOT_TESTABLE)
+        )
+
+        payload = _render(result.model_copy(update={"evidence": excluded, "findings": ()}))
+
+        assert payload.get("components", []) == []
+
+
+class TestCbomSemanticGuard:
+    """Pin BreachSAFE checks that structural validators do not all enforce."""
+
+    @staticmethod
+    def _base() -> dict:
+        return _render(_build_result())
+
+    def test_rejects_wrong_spec_version(self) -> None:
+        payload = self._base()
+        payload["specVersion"] = "1.6"
+
+        with pytest.raises(ValueError, match=r"exactly 1\.7"):
+            _validate_cbom_semantics(payload)
+
+    def test_rejects_dangling_reference(self) -> None:
+        payload = self._base()
+        endpoint = next(item for item in payload["dependencies"] if item["ref"] == "endpoint")
+        endpoint["provides"].append("crypto/algorithm/missing")
+
+        with pytest.raises(ValueError, match="dangling"):
+            _validate_cbom_semantics(payload)
+
+    def test_rejects_duplicate_reference(self) -> None:
+        payload = self._base()
+        payload["components"].append(dict(payload["components"][0]))
+
+        with pytest.raises(ValueError, match="duplicate"):
+            _validate_cbom_semantics(payload)
+
+    def test_rejects_private_key_material(self) -> None:
+        payload = self._base()
+        payload["metadata"]["properties"].append(
+            {
+                "name": "test",
+                "value": "-----BEGIN PRIVATE KEY-----",
+            }
+        )
+
+        with pytest.raises(ValueError, match="private-key"):
+            _validate_cbom_semantics(payload)

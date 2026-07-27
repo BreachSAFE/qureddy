@@ -162,7 +162,7 @@ def scan_tls(
         result, exit_code = _execute_scan(
             scanner, scan_target, timeout, machine_format=machine_format
         )
-        _render(result, output_format, verbose, timeout)
+        _render(result, output_format, verbose)
         raise typer.Exit(code=exit_code)
     finally:
         structlog.contextvars.clear_contextvars()

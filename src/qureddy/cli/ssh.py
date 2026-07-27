@@ -138,7 +138,7 @@ def scan_ssh_cmd(
     if fmt is OutputFormat.JSON:
         render_json(result, sys.stdout)
     elif fmt is OutputFormat.CBOM:
-        render_cbom(result, sys.stdout, certificate=None)
+        render_cbom(result, sys.stdout)
     else:
         render_rich(result, sys.stdout, verbosity=verbose)
     if exit_code != EXIT_OK:
