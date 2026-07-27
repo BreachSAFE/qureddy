@@ -6,16 +6,16 @@ from __future__ import annotations
 
 import json
 import re
-from pathlib import Path
+import subprocess
 from urllib.parse import urlsplit
 
 import pytest
 from typer.testing import CliRunner
 
+import qureddy.scanners.tls.openssl_probe._capability_io as capability_io
 from qureddy._branding import HEADER
 from qureddy.cli import app, main
-
-FAKE_DIR = Path(__file__).parent.parent / "fixtures" / "openssl" / "fake"
+from tests._fake_openssl import fake_openssl
 
 
 def test_json_output_top_level_keys_in_locked_order() -> None:
@@ -27,7 +27,7 @@ def test_json_output_top_level_keys_in_locked_order() -> None:
             "tls",
             "example.com",
             "--openssl",
-            str(FAKE_DIR / "openssl_too_old.sh"),
+            fake_openssl("openssl_too_old"),
             "--format",
             "json",
         ],
@@ -55,7 +55,7 @@ def test_rich_format_renders_header() -> None:
             "tls",
             "example.com",
             "--openssl",
-            str(FAKE_DIR / "openssl_too_old.sh"),
+            fake_openssl("openssl_too_old"),
         ],
     )
     assert HEADER in result.stdout
@@ -82,7 +82,7 @@ def test_invalid_format_value_is_rejected() -> None:
             "tls",
             "example.com",
             "--openssl",
-            str(FAKE_DIR / "openssl_too_old.sh"),
+            fake_openssl("openssl_too_old"),
             "--format",
             "yaml",
         ],
@@ -147,24 +147,21 @@ class TestCapabilityFailureNoDoubleProbe:
 
     def test_local_too_old_runs_capability_check_only_once(
         self,
-        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """Capability check is two subprocess calls (`openssl version` +
         `openssl list -tls1_3 -tls-groups`). If the CLI re-probed in the
         catch block we'd see four lines in the counter file.
         """
-        counter = tmp_path / "calls.txt"
-        fake = tmp_path / "fake_openssl_too_old.sh"
-        fake.write_text(
-            "#!/usr/bin/env bash\n"
-            f'echo "$@" >> "{counter}"\n'
-            'case "$1" in\n'
-            '    version) echo "OpenSSL 3.4.0 1 Jan 2026" ;;\n'
-            "    list) echo '  x25519:secp256r1' ;;\n"
-            "    *) exit 2 ;;\n"
-            "esac\n",
-        )
-        fake.chmod(0o755)
+        invocations: list[list[str]] = []
+
+        def run_fake(args: list[str], **_kwargs: object) -> subprocess.CompletedProcess[str]:
+            invocations.append(args)
+            stdout = "OpenSSL 3.4.0 1 Jan 2026" if args[1] == "version" else "x25519"
+            return subprocess.CompletedProcess(args, 0, stdout=stdout, stderr="")
+
+        monkeypatch.setattr(capability_io.subprocess, "run", run_fake)
+        fake = fake_openssl("openssl_too_old")
 
         runner = CliRunner()
         result = runner.invoke(
@@ -174,13 +171,12 @@ class TestCapabilityFailureNoDoubleProbe:
                 "tls",
                 "example.com",
                 "--openssl",
-                str(fake),
+                fake,
                 "--format",
                 "json",
             ],
         )
         assert result.exit_code == 3, result.stdout
-        invocations = counter.read_text().splitlines()
         assert len(invocations) == 2, (
             f"capability check ran {len(invocations)} times, expected 2 — "
             f"CLI is re-probing instead of consuming exc.dependency. "
@@ -214,7 +210,7 @@ def test_cbom_capability_failure_never_fetches_cert_with_rejected_binary(
             "tls",
             "example.com",
             "--openssl",
-            str(FAKE_DIR / "openssl_libressl.sh"),
+            fake_openssl("openssl_libressl"),
             "--format",
             "cbom",
         ],
@@ -252,7 +248,7 @@ def test_machine_formats_emit_stderr_hint_on_capability_failure(
             "tls",
             "example.com",
             "--openssl",
-            str(FAKE_DIR / "openssl_libressl.sh"),
+            fake_openssl("openssl_libressl"),
             "--format",
             output_format,
         ],

@@ -29,8 +29,8 @@ from typer.testing import CliRunner
 
 from qureddy.cli import app
 from qureddy.cli._errors import _stderr_merged_into_stdout
+from tests._fake_openssl import fake_openssl
 
-FAKE_DIR = Path(__file__).parent.parent / "fixtures" / "openssl" / "fake"
 # Resolved once to a full path so subprocess calls below satisfy Bandit's
 # S607 (partial executable path), matching tests/test_cli.py.
 _QUREDDY_BIN = shutil.which("qureddy") or "qureddy"
@@ -74,7 +74,7 @@ _TLS_EXIT3_ARGS = (
     "tls",
     "example.com",
     "--openssl",
-    str(FAKE_DIR / "openssl_too_old.sh"),
+    fake_openssl("openssl_too_old"),
 )
 
 

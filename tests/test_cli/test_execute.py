@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
 import pytest
 from typer.testing import CliRunner
@@ -14,8 +13,7 @@ import qureddy.cli as cli_module
 import qureddy.cli.ssh as ssh_cli_module
 from qureddy.cli import app, main
 from qureddy.core import retry as retry_module
-
-FAKE_DIR = Path(__file__).parent.parent / "fixtures" / "openssl" / "fake"
+from tests._fake_openssl import fake_openssl
 
 
 def test_invalid_target_exits_4() -> None:
@@ -191,7 +189,7 @@ def test_main_exits_70_on_internal_error(
 
 
 def test_main_exits_3_on_capability_failure(monkeypatch: pytest.MonkeyPatch) -> None:
-    fake = str(FAKE_DIR / "openssl_too_old.sh")
+    fake = fake_openssl("openssl_too_old")
     monkeypatch.setattr(
         "sys.argv",
         ["qureddy", "scan", "tls", "example.com", "--openssl", fake, "--format", "json"],
@@ -211,7 +209,7 @@ def test_local_openssl_too_old_exits_3() -> None:
             "tls",
             "example.com",
             "--openssl",
-            str(FAKE_DIR / "openssl_too_old.sh"),
+            fake_openssl("openssl_too_old"),
             "--format",
             "json",
         ],
@@ -231,7 +229,7 @@ def test_local_openssl_lacks_group_exits_3() -> None:
             "tls",
             "example.com",
             "--openssl",
-            str(FAKE_DIR / "openssl_lacks_group.sh"),
+            fake_openssl("openssl_lacks_group"),
             "--format",
             "json",
         ],
@@ -292,7 +290,7 @@ def test_local_openssl_broken_exits_3() -> None:
             "tls",
             "example.com",
             "--openssl",
-            str(FAKE_DIR / "openssl_broken_returncode.sh"),
+            fake_openssl("openssl_broken_returncode"),
             "--format",
             "json",
         ],
@@ -313,7 +311,7 @@ def test_local_openssl_version_unreadable_exits_3() -> None:
             "tls",
             "example.com",
             "--openssl",
-            str(FAKE_DIR / "openssl_unparseable_version.sh"),
+            fake_openssl("openssl_unparseable_version"),
             "--format",
             "json",
         ],

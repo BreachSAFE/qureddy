@@ -29,6 +29,14 @@ def run_openssl(args: list[str], *, timeout_seconds: int) -> str:
         )
     except FileNotFoundError as exc:
         raise LocalOpenSSLMissing(str(exc)) from exc
+    except OSError as exc:
+        # Windows reports a non-launchable file (for example WinError 193)
+        # as OSError even when the path exists. Keep that local prerequisite
+        # failure on the typed exit-3 surface instead of leaking a traceback.
+        raise LocalOpenSSLBroken(
+            f"openssl could not be launched: {exc}",
+            dependency=_broken_dependency(args[0]),
+        ) from exc
     except subprocess.TimeoutExpired as exc:
         message = (
             f"openssl did not respond within {timeout_seconds}s during capability "
