@@ -95,6 +95,5 @@ format and operated product semantics are separate concerns.
 ## Related documentation
 
 - [OSS and Enterprise boundary](../explanation/oss-vs-enterprise.md)
-- [ADR 0006](../contributors/adr/0006-oss-vs-enterprise-split.md)
 - [Project milestones](milestones.md)
 - [Security policy](../../SECURITY.md)

@@ -17,8 +17,7 @@ and organization-scale workflows.
 
 ## Boundary rule
 
-The decision in [ADR 0006](../contributors/adr/0006-oss-vs-enterprise-split.md)
-uses this division:
+The product boundary uses this division:
 
 ```text
 OSS: collect and interpret cryptographic evidence in standard formats
@@ -97,6 +96,5 @@ capability.
 ## Related documentation
 
 - [Edition matrix](../reference/editions.md)
-- [ADR 0006](../contributors/adr/0006-oss-vs-enterprise-split.md)
 - [Milestones](../reference/milestones.md)
 - [Evidence honesty](evidence-honesty.md)

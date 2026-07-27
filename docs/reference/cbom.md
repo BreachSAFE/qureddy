@@ -240,6 +240,5 @@ boundary.
 
 - [Generate and validate a CBOM](../how-to/generate-a-cbom.md)
 - [CBOM conformance gate](../contributors/cbom-conformance.md)
-- [CycloneDX 1.7 observation ADR](../contributors/adr/0007-cyclonedx-1.7-observation-contract.md)
 - [JSON output](json-schema.md)
 - [Failure categories](failure-categories.md)

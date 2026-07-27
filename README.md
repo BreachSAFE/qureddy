@@ -138,10 +138,6 @@ QuReddy separates four kinds of statement:
 - A finding interprets one or more observations under a named rule.
 - `unknown` or `not_testable` preserves a missing or failed observation.
 
-The scanner does not claim a complete cryptographic inventory, FIPS
-validation, remote implementation identity, certificate trust, or revocation
-status. See [evidence honesty](https://github.com/breachsafe/qureddy/blob/main/docs/explanation/evidence-honesty.md).
-
 ## Exit codes
 
 | Code | Meaning | Scanner |
