@@ -125,6 +125,9 @@ Scratch/
 /docs/contributors/plans/
 /docs/explanation/oss-vs-enterprise.md
 /.claude/skills/
+/.agents/skills/
+/AGENTS.md
+/CLAUDE.md
 
 # Secrets, never commit
 .env

@@ -98,7 +98,7 @@ qureddy scan tls [OPTIONS] TARGET
 | Option | Type | Default | Meaning |
 | --- | --- | --- | --- |
 | `--sni` | text | target hostname | Override TLS Server Name Indication; required for IP targets that need a virtual host |
-| `--openssl` | path | automatic | Select an OpenSSL 3.5 or newer binary |
+| `--openssl` | path | automatic | Select an OpenSSL 3.6.3 or newer binary |
 | `--format` | `rich`, `json`, or `cbom` | `rich` | Select output; repeated values use the last occurrence |
 | `--timeout` | integer `1..300` | `30` | Timeout for each probe in seconds |
 | `--retry-on` | comma separated categories | none | Retry only the named allowlisted failure categories |
