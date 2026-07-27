@@ -17,30 +17,32 @@ BreachSAFE GitHub Container Registry (GHCR).
 ## Pull the release image
 
 ```bash
-docker pull ghcr.io/breachsafe/qureddy:0.2.0
+docker pull --platform linux/amd64 ghcr.io/breachsafe/qureddy:0.2.0
 ```
 
 The image includes the TLS collector. A host OpenSSL installation and
 `QUREDDY_OPENSSL` setting are unnecessary inside the container.
+The published `0.2.0` tag targets `linux/amd64`; Docker Desktop on Apple
+Silicon runs it through its standard amd64 emulation.
 
 ## Run a TLS scan
 
 ```bash
-docker run --rm ghcr.io/breachsafe/qureddy:0.2.0 \
+docker run --rm --platform linux/amd64 ghcr.io/breachsafe/qureddy:0.2.0 \
   scan tls pq.cloudflareresearch.com
 ```
 
 For an IP target that requires SNI:
 
 ```bash
-docker run --rm ghcr.io/breachsafe/qureddy:0.2.0 \
+docker run --rm --platform linux/amd64 ghcr.io/breachsafe/qureddy:0.2.0 \
   scan tls 1.1.1.1:443 --sni one.one.one.one
 ```
 
 ## Run an SSH scan
 
 ```bash
-docker run --rm ghcr.io/breachsafe/qureddy:0.2.0 \
+docker run --rm --platform linux/amd64 ghcr.io/breachsafe/qureddy:0.2.0 \
   scan ssh github.com
 ```
 
@@ -49,10 +51,10 @@ SSH scans need outbound TCP 22 access and do not invoke OpenSSL.
 ## Write JSON or CBOM output
 
 ```bash
-docker run --rm ghcr.io/breachsafe/qureddy:0.2.0 \
+docker run --rm --platform linux/amd64 ghcr.io/breachsafe/qureddy:0.2.0 \
   scan tls pq.cloudflareresearch.com --format json > scan.json
 
-docker run --rm ghcr.io/breachsafe/qureddy:0.2.0 \
+docker run --rm --platform linux/amd64 ghcr.io/breachsafe/qureddy:0.2.0 \
   scan ssh github.com --format cbom > github-ssh.cdx.json
 ```
 
@@ -65,7 +67,7 @@ failure.
 ## Pin the image digest
 
 ```bash
-docker pull ghcr.io/breachsafe/qureddy:0.2.0
+docker pull --platform linux/amd64 ghcr.io/breachsafe/qureddy:0.2.0
 docker image inspect ghcr.io/breachsafe/qureddy:0.2.0 \
   --format '{{index .RepoDigests 0}}'
 ```
@@ -88,9 +90,8 @@ and copies only the installed runtime into the final image.
 The repository workflow at `.github/workflows/container.yml` publishes only
 through an explicit manual dispatch with `publish=true`. It authenticates to
 GHCR with the repository token, builds the verified `linux/amd64` image, and
-emits the version tag plus a commit tag. Docker Desktop on Apple Silicon can
-run this image with its standard amd64 emulation. Pull requests run the smoke
-gate but never publish.
+emits the version tag plus a commit tag. Pull requests run the smoke gate but
+never publish.
 
 See [installation and troubleshooting](install.md), [CBOM reference](../reference/cbom.md),
 and [exit codes](../reference/exit-codes.md) for the surrounding contracts.
