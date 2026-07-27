@@ -32,7 +32,7 @@ The output is a single JSON document. Top-level keys are locked and appear in th
 schema_version, scan, target, dependencies, assets, evidence, findings, summary
 ```
 
-Don't depend on field order *inside* the nested objects — only the top level is contractually stable.
+Don't depend on field order *inside* the nested objects; only the top level is contractually stable.
 
 ## Branch on the exit code
 
@@ -162,6 +162,6 @@ If you depend on a specific nested field, pin against the field name and tolerat
 
 ## Related documentation
 
-- [Reference: JSON output schema](../reference/json-schema.md) — every field, every type
-- [Reference: Exit codes](../reference/exit-codes.md) — full surface
-- [Reference: Failure categories](../reference/failure-categories.md) — what each `summary.failure_category` value means
+- [Reference: JSON output schema](../reference/json-schema.md); every field, every type
+- [Reference: Exit codes](../reference/exit-codes.md); full surface
+- [Reference: Failure categories](../reference/failure-categories.md); what each `summary.failure_category` value means

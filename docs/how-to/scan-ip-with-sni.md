@@ -35,7 +35,7 @@ In the output, the `target` row shows what QuReddy actually scanned:
  sni               one.one.one.one
 ```
 
-If the SNI line is missing or wrong, the flag was malformed — re-check the command.
+If the SNI line is missing or wrong, the flag was malformed; re-check the command.
 
 ## Inspect the OpenSSL arguments
 
@@ -68,9 +68,9 @@ qureddy scan tls 1.1.1.1:443 --sni one.one.one.one --format json
 
 When you scan a hostname like `www.google.com`, the hostname doubles as the SNI. When you scan an IP, there's no hostname to use, so QuReddy sends no SNI by default.
 
-Most modern web servers refuse to complete the handshake without a valid SNI — they don't know which virtual host's certificate to present. This is why an IP scan without `--sni` typically fails with `tls_handshake_failed` or `sni_required_or_wrong`. Specifying `--sni` tells QuReddy what to put in the TLS ClientHello so the server can route the request to the right vhost.
+Most modern web servers refuse to complete the handshake without a valid SNI; they don't know which virtual host's certificate to present. This is why an IP scan without `--sni` typically fails with `tls_handshake_failed` or `sni_required_or_wrong`. Specifying `--sni` tells QuReddy what to put in the TLS ClientHello so the server can route the request to the right vhost.
 
 ## Related documentation
 
-- [Reference: CLI options](../reference/cli.md) — full `--sni` syntax
-- [Reference: Failure categories](../reference/failure-categories.md) — what `sni_required_or_wrong` means and when it fires
+- [Reference: CLI options](../reference/cli.md); full `--sni` syntax
+- [Reference: Failure categories](../reference/failure-categories.md); what `sni_required_or_wrong` means and when it fires
