@@ -5,6 +5,7 @@
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue?style=flat-square)](https://github.com/breachsafe/qureddy/blob/main/LICENSE)
 [![Code Style: Ruff](https://img.shields.io/badge/code%20style-ruff-D7FF64?style=flat-square&logo=ruff&logoColor=black)](https://docs.astral.sh/ruff/)
 [![Type Checked: mypy strict](https://img.shields.io/badge/type%20check-mypy%20strict-blue?style=flat-square)](https://mypy-lang.org/)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/breachsafe/qureddy/badge)](https://securityscorecards.dev/viewer/?uri=github.com/breachsafe/qureddy)
 
 QuReddy is an Apache 2.0 command line scanner for post-quantum readiness at
 TLS and SSH endpoints. It records the protocol and cryptographic evidence that
@@ -53,9 +54,9 @@ pipx install breachsafe-qureddy
 qureddy --version
 ```
 
-> **Python 3.12 or newer.** QuReddy targets `>=3.12` (3.12, 3.13, …). Note: the
-> The previous `0.2.0` TestPyPI wheel had a `<3.13` cap; the `0.2.1` release
-> removes that stale upper bound.
+> **Python 3.12 or newer.** QuReddy targets `>=3.12` (3.12, 3.13, …). The previous
+> `0.2.0` TestPyPI wheel had a `<3.13` cap; the `0.2.1` release removes that stale
+> upper bound.
 
 The expected version line is:
 
