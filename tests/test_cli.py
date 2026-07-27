@@ -5,8 +5,8 @@
 from __future__ import annotations
 
 import json
-import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -19,10 +19,7 @@ from qureddy.cli import app, main
 from qureddy.core import retry as retry_module
 
 FAKE_DIR = Path(__file__).parent / "fixtures" / "openssl" / "fake"
-# Resolved once to a full path so subprocess calls below satisfy Bandit's
-# S607 (partial executable path) the same way openssl_probe.py's own
-# subprocess calls do — via an already-resolved path, not a bare name.
-_QUREDDY_BIN = shutil.which("qureddy") or "qureddy"
+_QUREDDY_COMMAND = (sys.executable, "-m", "qureddy")
 
 
 def test_help_lists_scan_subcommand() -> None:
@@ -518,70 +515,39 @@ def test_local_openssl_too_old_exits_3() -> None:
     assert payload["summary"]["readiness"] == "unknown"
 
 
-def test_json_output_clean_when_stderr_redirected_to_stdout() -> None:
-    """JSON stdout stays parseable under real OS-level `2>&1`, with --quiet.
+@pytest.mark.parametrize("output_format", ["json", "cbom"])
+def test_machine_output_and_errors_stay_on_separate_process_streams(
+    output_format: str,
+) -> None:
+    """A real process keeps machine output parseable and errors actionable.
 
-    typer.testing.CliRunner dropped `mix_stderr` (see #189) and, more
-    importantly, could never exercise genuine shell-level `2>&1` anyway —
-    that redirection happens via dup2() on the real file descriptor table
-    before the process starts, which CliRunner's in-process stream
-    capture cannot simulate. This invokes the actual installed console
-    entrypoint via subprocess with stderr=STDOUT, the only way to test
-    real fd-level merging.
-
-    Only --quiet is asserted clean here: without it, this currently FAILS
-    against production (see #194) because the kernel-fd-snapshot fix in
-    core/logging.py solves in-process stream mixing, not genuine shell
-    2>&1 (dup2() already merges the fds before Python even starts, so
-    there is no longer a separate "original stderr" left to snapshot).
+    Issue #274 intentionally restored a direct diagnostic on stderr for
+    capability failures. A caller that applies ``2>&1`` has explicitly
+    destroyed the stdout/stderr separation and cannot also require the
+    merged byte stream to remain a single JSON document.
     """
-    result = subprocess.run(  # noqa: S603 -- list-form, shell=False, resolved full path
+    result = subprocess.run(  # noqa: S603 -- list-form, shell=False
         [
-            _QUREDDY_BIN,
+            *_QUREDDY_COMMAND,
             "scan",
             "tls",
             "example.com",
             "--openssl",
             str(FAKE_DIR / "openssl_too_old.sh"),
             "--format",
-            "json",
-            "--quiet",
+            output_format,
         ],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
+        capture_output=True,
         text=True,
         check=False,
     )
     assert result.returncode == 3
     payload = json.loads(result.stdout)
-    assert payload["summary"]["failure_category"] == "local_openssl_too_old"
-
-
-def test_json_output_clean_under_2and1_without_quiet() -> None:
-    """#194 fix: --format json/cbom now default to quiet-equivalent
-    (ERROR-level) logging unless -v/-vv/-vvv is explicitly passed, so a
-    WARNING-level log never lands on stdout under real shell `2>&1` —
-    not just in-process stream mixing (CliRunner), which the #15 fix
-    already covered but which cannot protect real `2>&1` (the OS has
-    already merged fd 1/2 before Python starts)."""
-    result = subprocess.run(  # noqa: S603 -- list-form, shell=False, resolved full path
-        [
-            _QUREDDY_BIN,
-            "scan",
-            "tls",
-            "example.com",
-            "--openssl",
-            str(FAKE_DIR / "openssl_too_old.sh"),
-            "--format",
-            "json",
-        ],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-        check=False,
-    )
-    assert result.returncode == 3
-    json.loads(result.stdout)
+    assert result.stderr.startswith("qureddy: OpenSSL 3.4.0")
+    if output_format == "json":
+        assert payload["summary"]["failure_category"] == "local_openssl_too_old"
+    else:
+        assert payload["bomFormat"] == "CycloneDX"
 
 
 def test_local_openssl_lacks_group_exits_3() -> None:
