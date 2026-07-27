@@ -20,7 +20,7 @@ as `cert_probe.py`.
 OpenSSL 3.x's default security level (1) refuses TLS < 1.2 and most
 legacy ciphers outright — confirmed live: `openssl s_client -tls1`
 against a real target fails with "no protocols available" on a stock
-OpenSSL 3.6 build. This is a *security-level* gate, not a compile-time
+OpenSSL 3.x build. This is a *security-level* gate, not a compile-time
 one: appending `@SECLEVEL=0` to the `-cipher` string restores TLS 1.0/
 1.1 negotiation on the same binary (confirmed live against real
 targets: `pq.cloudflareresearch.com` negotiates TLSv1 with SECLEVEL=0,
