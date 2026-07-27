@@ -4,13 +4,10 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 from qureddy.core.models import FailureCategory, ProbeRole, ScanTarget
 from qureddy.scanners.tls._evidence import build_asset, evidence_from_probe
 from qureddy.scanners.tls.openssl_probe import HYBRID_GROUP, run_hybrid_probe
-
-FAKE_DIR = Path(__file__).parent / "fixtures" / "openssl" / "fake"
+from tests._fake_openssl import fake_openssl
 
 
 def _target() -> ScanTarget:
@@ -26,7 +23,7 @@ def _target() -> ScanTarget:
 def test_evidence_parser_uses_full_probe_output_not_excerpt() -> None:
     """A group line beyond EXCERPT_LIMIT must not become PARSE_NO_GROUP."""
     probe = run_hybrid_probe(
-        str(FAKE_DIR / "openssl_long_brief_output.sh"),
+        fake_openssl("openssl_long_brief_output"),
         host="example.com",
         port=443,
         sni="example.com",
@@ -47,7 +44,7 @@ def test_evidence_parser_uses_full_probe_output_not_excerpt() -> None:
 def test_evidence_parser_does_not_match_across_stream_boundary() -> None:
     """A line synthesized by stdout+stderr concatenation must not parse."""
     probe = run_hybrid_probe(
-        str(FAKE_DIR / "openssl_stream_boundary_phantom.sh"),
+        fake_openssl("openssl_stream_boundary_phantom"),
         host="example.com",
         port=443,
         sni="example.com",

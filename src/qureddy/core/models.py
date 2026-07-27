@@ -135,6 +135,7 @@ class FailureCategory(str, Enum):
     LOCAL_OPENSSL_IS_LIBRESSL = "local_openssl_is_libressl"
     LOCAL_OPENSSL_TOO_OLD = "local_openssl_too_old"
     LOCAL_OPENSSL_LACKS_GROUP = "local_openssl_lacks_group"
+    TARGET_SCAN_FAILED = "target_scan_failed"
     TARGET_CONNECT_FAILED = "target_connect_failed"
     TLS_HANDSHAKE_FAILED = "tls_handshake_failed"
     SNI_REQUIRED_OR_WRONG = "sni_required_or_wrong"

@@ -33,9 +33,11 @@ classifiers = [
 # typer upper bound (issue #186): 0.16+ vendors its own internal
 # exception module instead of re-raising real click exceptions, which
 # silently broke the exit-code-4 usage-error contract in cli.py. Code
-# now handles this explicitly up to the currently-tested version; an
-# upper bound forces a deliberate re-verification on the next bump
-# instead of silent drift.
+# now handles this explicitly through 0.26. Typer 0.27 changed its
+# CliRunner stream-capture contract and breaks QuReddy's stdout/stderr
+# separation tests, so the upper bound forces a deliberate compatibility
+# fix before that upgrade. Click 8.3.3 is the first release containing
+# the fix for PYSEC-2026-2132.
 #
 # cyclonedx-python-lib: used unconditionally by output/cbom.py, wired into
 # the CLI's --format cbom (prowler-rapid-prototype branch). Was missing
@@ -47,8 +49,8 @@ classifiers = [
 # this is prototype code, not yet the tracked MVP 0.3 implementation
 # (qureddy#61) — revisit the floor when that lands.
 dependencies = [
-    "typer>=0.12,<0.28",
-    "click>=8.1",
+    "typer>=0.23.1,<0.27",
+    "click>=8.3.3,<8.5",
     "rich>=13.7",
     "pydantic>=2.7",
     "structlog>=24.1",
@@ -75,7 +77,6 @@ dev = [
     "pip-audit>=2.7",
     "deptry>=0.20",
     "reuse>=4.0",
-    "semgrep>=1.80",
     "pre-commit>=3.5",
     # defusedxml is used by scripts/audit_phase.py to parse coverage.xml
     # and junit.xml safely. CODING_RULES §26 forbids stdlib xml.etree on
@@ -205,6 +206,15 @@ convention = "google"
 max-statements = 50
 
 [tool.ruff.lint.per-file-ignores]
+# TC001 wants application imports used only in annotations moved into an
+# `if TYPE_CHECKING:` block. Typer command modules cannot comply: Typer
+# resolves the `Annotated` option aliases (cli/_options.py) at RUNTIME via
+# typing.get_type_hints() to build the CLI, so hiding those imports behind
+# TYPE_CHECKING raises NameError at import. Pre-ADR-0005 the aliases were
+# module-local to cli.py, which is why the rule never fired before the split.
+"src/qureddy/cli/main.py" = ["TC001"]
+"src/qureddy/cli/scan.py" = ["TC001"]
+"src/qureddy/cli/ssh.py" = ["TC001"]
 "tests/**/*.py" = [
     "S101",     # asserts allowed in tests
     "PLR2004",  # magic numbers allowed in tests
@@ -306,7 +316,11 @@ show_missing = true
 # touch SVN repos. Per the quality-gate rules, MEDIUM and below do
 # not block. Reviewed: 2026-04-26. Re-review when interrogate drops
 # the `py` dependency or when an alternative pip-audit dep tree exists.
-ignore-vulns = ["GHSA-58qw-9mgm-455v", "PYSEC-2022-42969"]
+#
+ignore-vulns = [
+    "GHSA-58qw-9mgm-455v",
+    "PYSEC-2022-42969",
+]
 
 # ============================================================================
 # bandit
@@ -348,8 +362,8 @@ DEP002 = [
     "bandit",
     "pip-audit",
     "deptry",
+    "pre-commit",
     "reuse",
-    "semgrep",
     "ruff",
     "mypy",
     "pytest",

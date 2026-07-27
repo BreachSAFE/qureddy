@@ -25,9 +25,8 @@ def _openssl_path() -> str:
     """Resolve a real OpenSSL 3.5+ binary that supports X25519MLKEM768.
 
     Order: explicit homebrew openssl@3.5 → `QUREDDY_OPENSSL` → `PATH`.
-    Live tests skip cleanly if no capable binary is present so a
-    contributor on a stock distro is not forced to install OpenSSL 3.5
-    just to run the suite.
+    Live tests fail if no capable binary is present. CI provisions the
+    dependency explicitly, and a missing prerequisite must remain visible.
     """
     candidates = [
         "/opt/homebrew/opt/openssl@3.5/bin/openssl",
@@ -46,7 +45,7 @@ def _openssl_path() -> str:
                 continue
             if dep.failure_category is None and dep.supports_x25519mlkem768:
                 return resolved
-    pytest.skip(
+    pytest.fail(
         "no OpenSSL 3.5+ binary with X25519MLKEM768 found "
         "(install openssl@3.5 or set QUREDDY_OPENSSL)",
     )
@@ -59,11 +58,16 @@ def scanner() -> TLSScanner:
 
 
 def test_pq_cloudflareresearch_hybrid(scanner: TLSScanner) -> None:
-    """UC1: pq.cloudflareresearch.com must report transitional_hybrid."""
+    """UC1: Cloudflare's mutable endpoint must negotiate the hybrid group."""
     target = parse_target("pq.cloudflareresearch.com")
     result = scanner.scan(target)
-    assert result.summary.readiness is Readiness.TRANSITIONAL_HYBRID
-    assert any(f.rule_id == "tls.hybrid.negotiated_x25519mlkem768" for f in result.findings)
+    hybrid_findings = [
+        finding
+        for finding in result.findings
+        if finding.rule_id == "tls.hybrid.negotiated_x25519mlkem768"
+    ]
+    assert hybrid_findings
+    assert hybrid_findings[0].negotiated_group == "X25519MLKEM768"
 
 
 def test_example_com_classical_control_fires(scanner: TLSScanner) -> None:

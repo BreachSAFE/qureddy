@@ -1,0 +1,44 @@
+QuReddy 0.2.0 by BreachSAFE OSS · https://www.breachsafe.ai
+
+ ──────────────────── QuReddy scan: tls://example.com:443 ─────────────────────
+ READY — PQ hybrid X25519MLKEM768 negotiated
+ Monitor; certificate signature not yet inspected (fetch failed, timed out, or
+ was skipped).
+ ──────────────────────────────────────────────────────────────────────────────
+
+Scan details
+
+ Field             Value
+ ───────────────────────────────────────────
+ schema_version    qureddy.scan.v1
+ status            completed
+ readiness         transitional_hybrid
+ protocol          TLSv1.3
+ cipher_suite      TLS_AES_256_GCM_SHA384
+ hybrid_probe      negotiated X25519MLKEM768
+ classical_probe   negotiated X25519
+ findings          2
+ attempts          2
+
+
+Findings
+
+ Severity Rule                                   Protocol Crypto
+ ─────────────────────────────────────────────────────────────────────────────
+ low      tls.classical.negotiated_x25519        TLSv1.3  X25519
+ info     tls.hybrid.negotiated_x25519mlkem768   TLSv1.3  X25519MLKEM768
+
+
+Run details
+
+ Field                    Value
+ ──────────────────────────────────────────────────────────────────
+ scan_id                  scan-1
+ scanner                  tls
+ version                  0.2.0
+ started                  2026-04-26T00:00:00Z
+ completed                2026-04-26T00:00:00Z
+ duration                 0.0s
+ openssl_path             /opt/homebrew/opt/openssl@3.5/bin/openssl
+ openssl_version          3.5.6
+ openssl_hybrid_support   yes

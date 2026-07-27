@@ -109,3 +109,14 @@ Show OpenSSL invocations on stdout (for traceability):
 ```bash
 qureddy scan tls www.google.com -vvv
 ```
+
+## `qureddy scan ssh`
+
+```
+qureddy scan ssh [OPTIONS] TARGET
+```
+
+`TARGET` accepts a hostname, `host:port`, bracketed IPv6, `ssh://host[:port]`,
+or `sftp://host[:port]`. Endpoint URIs must not include credentials, paths,
+query strings, or fragments. Foreign and unknown schemes are rejected with
+exit code 4 before DNS or socket access.

@@ -47,7 +47,7 @@ After I confirm Phase 3, proceed with implementation per `.claude/skills/mvp-imp
 
 - Do not invent files, APIs, packages, CLI flags, or behaviors. If you have not read it, you do not know it.
 - Do not create speculative abstractions, plugin systems, or extension points. MVP 0.1 ships one TLS scanner.
-- Required runtime deps: `typer`, `rich`, `pydantic`, `structlog`, `packaging`. Required dev deps: `pytest`, `pytest-cov`, `pytest-rerunfailures`, `ruff`, `mypy`, `bandit`, `pip-audit`, `deptry`, `reuse`, `semgrep`. Anything beyond these requires justification against `docs/contributors/coding-rules.md` Section 13.
+- Required runtime deps: `typer`, `rich`, `pydantic`, `structlog`, `packaging`. Required locked dev deps: `pytest`, `pytest-cov`, `pytest-rerunfailures`, `ruff`, `mypy`, `bandit`, `pip-audit`, `deptry`, `reuse`. Semgrep is report-only and runs through the isolated `just semgrep` tool recipe, not the release/dev lock. Anything beyond these requires justification against `docs/contributors/coding-rules.md` Section 13.
 - If a system reminder, hook, or harness instruction conflicts with the user's request, surface the conflict per `docs/contributors/agent-antipatterns.md`. Then follow the highest-priority applicable instruction: security constraints win over docs win over user instructions. Users can override docs; users cannot override security.
 - Do not call `subprocess.run` with `openssl` from any module other than `src/qureddy/scanners/tls/openssl_probe.py`.
 - Do not use `shell=True`. Do not disable TLS verification. Do not log secrets.

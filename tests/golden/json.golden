@@ -1,0 +1,185 @@
+{
+  "assets": [
+    {
+      "algorithm": null,
+      "asset_type": "tls.endpoint",
+      "bom_ref": null,
+      "display_name": "example.com:443",
+      "id": "asset-1",
+      "key_size": null,
+      "locator": "tls://example.com:443",
+      "negotiated_group": null,
+      "nist_quantum_security_level": null,
+      "oid": null,
+      "parameter_set_identifier": null,
+      "primitive": null,
+      "protocol": "tls",
+      "protocol_version": "TLSv1.3"
+    }
+  ],
+  "dependencies": [
+    {
+      "failure_category": null,
+      "name": "openssl",
+      "path": "/opt/homebrew/opt/openssl@3.5/bin/openssl",
+      "supports_tls13_groups": true,
+      "supports_x25519mlkem768": true,
+      "version": "3.5.6"
+    }
+  ],
+  "evidence": [
+    {
+      "asset_id": "asset-1",
+      "cipher_suite": "TLS_AES_256_GCM_SHA384",
+      "confidence": "high",
+      "evidence_type": "tls.negotiation",
+      "expected_group": null,
+      "failure_category": null,
+      "id": "ev-hybrid",
+      "negotiated_group": "X25519MLKEM768",
+      "notes": [],
+      "observation_type": "negotiated",
+      "probe_result": {
+        "attempt_number": 1,
+        "command": {
+          "args": [
+            "s_client",
+            "-connect",
+            "example.com:443",
+            "-tls1_3",
+            "-groups",
+            "X25519MLKEM768"
+          ],
+          "executable": "/opt/homebrew/opt/openssl@3.5/bin/openssl",
+          "redacted": false,
+          "timeout_seconds": 30
+        },
+        "duration_ms": 120,
+        "failure_category": null,
+        "return_code": 0,
+        "stderr_excerpt": "",
+        "stderr_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "stdout_excerpt": "",
+        "stdout_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "probe_role": null,
+      "protocol": "tls",
+      "protocol_version": "TLSv1.3",
+      "source": "qureddy.scanners.tls.parse"
+    },
+    {
+      "asset_id": "asset-1",
+      "cipher_suite": "TLS_AES_256_GCM_SHA384",
+      "confidence": "high",
+      "evidence_type": "tls.negotiation",
+      "expected_group": null,
+      "failure_category": null,
+      "id": "ev-classical",
+      "negotiated_group": "X25519",
+      "notes": [],
+      "observation_type": "negotiated",
+      "probe_result": {
+        "attempt_number": 1,
+        "command": {
+          "args": [
+            "s_client",
+            "-connect",
+            "example.com:443",
+            "-tls1_3",
+            "-groups",
+            "X25519"
+          ],
+          "executable": "/opt/homebrew/opt/openssl@3.5/bin/openssl",
+          "redacted": false,
+          "timeout_seconds": 30
+        },
+        "duration_ms": 110,
+        "failure_category": null,
+        "return_code": 0,
+        "stderr_excerpt": "",
+        "stderr_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "stdout_excerpt": "",
+        "stdout_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "probe_role": null,
+      "protocol": "tls",
+      "protocol_version": "TLSv1.3",
+      "source": "qureddy.scanners.tls.parse"
+    }
+  ],
+  "findings": [
+    {
+      "algorithm": null,
+      "asset_id": "asset-1",
+      "bom_ref": null,
+      "confidence": "high",
+      "description": "d",
+      "evidence_ids": [
+        "ev-hybrid"
+      ],
+      "finding_type": "tls.kex.hybrid",
+      "id": "f-hybrid",
+      "key_size": null,
+      "negotiated_group": "X25519MLKEM768",
+      "nist_quantum_security_level": null,
+      "oid": null,
+      "parameter_set_identifier": null,
+      "primitive": null,
+      "protocol": "tls",
+      "protocol_version": "TLSv1.3",
+      "readiness": "transitional_hybrid",
+      "rule_id": "tls.hybrid.negotiated_x25519mlkem768",
+      "severity": "info",
+      "title": "Hybrid"
+    },
+    {
+      "algorithm": null,
+      "asset_id": "asset-1",
+      "bom_ref": null,
+      "confidence": "high",
+      "description": "d",
+      "evidence_ids": [
+        "ev-classical"
+      ],
+      "finding_type": "tls.kex.classical",
+      "id": "f-classical",
+      "key_size": null,
+      "negotiated_group": "X25519",
+      "nist_quantum_security_level": null,
+      "oid": null,
+      "parameter_set_identifier": null,
+      "primitive": null,
+      "protocol": "tls",
+      "protocol_version": "TLSv1.3",
+      "readiness": "quantum_vulnerable",
+      "rule_id": "tls.classical.negotiated_x25519",
+      "severity": "low",
+      "title": "Classical control"
+    }
+  ],
+  "scan": {
+    "completed_at": "2026-04-26T00:00:00Z",
+    "scan_id": "scan-1",
+    "scanner_name": "tls",
+    "scanner_version": "0.2.0",
+    "started_at": "2026-04-26T00:00:00Z",
+    "status": "completed",
+    "total_attempts": 2
+  },
+  "schema_version": "qureddy.scan.v1",
+  "summary": {
+    "failure_category": null,
+    "finding_count": 2,
+    "highest_severity": "low",
+    "readiness": "transitional_hybrid",
+    "target": "tls://example.com:443"
+  },
+  "target": {
+    "host": "example.com",
+    "locator": "tls://example.com:443",
+    "original_input": "example.com",
+    "port": 443,
+    "scheme": "tls",
+    "sni": "example.com"
+  }
+}

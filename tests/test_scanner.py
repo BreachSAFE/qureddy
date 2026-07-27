@@ -6,6 +6,9 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
+import pytest
+
+import qureddy.scanners.tls.scanner as scanner_module
 from qureddy.core.models import (
     Asset,
     Confidence,
@@ -26,8 +29,135 @@ from qureddy.core.models import (
 from qureddy.core.policy import classify_evidence
 from qureddy.scanners.tls._evidence import build_asset, evidence_from_probe
 from qureddy.scanners.tls._summary import highest_severity
+from qureddy.scanners.tls.cert_probe import CertificateInfo
 from qureddy.scanners.tls.openssl_probe import HYBRID_GROUP
-from qureddy.scanners.tls.scanner import _build_summary, _scan_readiness
+from qureddy.scanners.tls.scanner import TLSScanner, _build_summary, _scan_readiness
+
+
+class TestTLSScannerOrchestration:
+    """Hermetic coverage of the full-scan orchestration branches."""
+
+    @staticmethod
+    def _target() -> ScanTarget:
+        return ScanTarget(
+            original_input="example.invalid",
+            host="example.invalid",
+            port=443,
+            sni="example.invalid",
+            locator="tls://example.invalid:443",
+        )
+
+    def test_reachable_target_collects_legacy_and_certificate_evidence(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        scanner = TLSScanner(openssl_path="/fixture/openssl")
+        dependency = OpenSSLDependency(
+            path="/fixture/openssl",
+            version="3.5.1",
+            supports_tls13_groups=True,
+            supports_x25519mlkem768=True,
+        )
+        monkeypatch.setattr(
+            scanner, "_check_capability", lambda _timeout: (dependency.path, dependency)
+        )
+        monkeypatch.setattr(scanner, "_collect_evidence", lambda **_kwargs: ([], 0))
+        monkeypatch.setattr(scanner, "_collect_legacy_evidence", lambda **_kwargs: ([], []))
+
+        def collect_cert(**kwargs: object) -> tuple[Evidence, None]:
+            asset = kwargs["asset"]
+            assert isinstance(asset, Asset)
+            return (
+                Evidence(
+                    id="ev-cert",
+                    asset_id=asset.id,
+                    evidence_type="tls.cert.signature",
+                    observation_type=ObservationType.NOT_TESTABLE,
+                    source="fixture",
+                ),
+                None,
+            )
+
+        monkeypatch.setattr(scanner, "_collect_cert_evidence", collect_cert)
+        result = scanner.scan(self._target(), timeout_seconds=1)
+        assert result.scan.status == "completed"
+        assert result.scan.total_attempts == 1
+        assert result.evidence[0].id == "ev-cert"
+
+    def test_unreachable_target_skips_supplemental_probes(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        scanner = TLSScanner(openssl_path="/fixture/openssl")
+        dependency = OpenSSLDependency(
+            path="/fixture/openssl",
+            version="3.5.1",
+            supports_tls13_groups=True,
+            supports_x25519mlkem768=True,
+        )
+        target = self._target()
+        asset = build_asset(target)
+        failure = Evidence(
+            id="ev-connect",
+            asset_id=asset.id,
+            evidence_type="tls.probe.failure",
+            observation_type=ObservationType.OBSERVED,
+            source="fixture",
+            failure_category=FailureCategory.TARGET_CONNECT_FAILED,
+        )
+        monkeypatch.setattr(
+            scanner, "_check_capability", lambda _timeout: (dependency.path, dependency)
+        )
+        monkeypatch.setattr(scanner, "_collect_evidence", lambda **_kwargs: ([failure], 1))
+
+        def unexpected(**_kwargs: object) -> None:
+            pytest.fail("supplemental probe ran for unreachable target")
+
+        monkeypatch.setattr(scanner, "_collect_legacy_evidence", unexpected)
+        monkeypatch.setattr(scanner, "_collect_cert_evidence", unexpected)
+        result = scanner.scan(target, timeout_seconds=1)
+        assert result.scan.status == "completed"
+        assert result.scan.total_attempts == 1
+        assert result.evidence[0].failure_category is FailureCategory.TARGET_CONNECT_FAILED
+
+    def test_certificate_collection_covers_missing_and_observed_paths(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        target = self._target()
+        asset = build_asset(target)
+        monkeypatch.setattr(scanner_module, "fetch_certificate_pem", lambda *_args, **_kwargs: "")
+        evidence, finding = TLSScanner._collect_cert_evidence(  # noqa: SLF001
+            target=target,
+            asset=asset,
+            openssl_path="/fixture/openssl",
+            timeout_seconds=1,
+        )
+        assert finding is None
+        assert evidence.observation_type is ObservationType.NOT_TESTABLE
+
+        certificate = CertificateInfo(
+            subject="CN=test",
+            issuer="CN=issuer",
+            not_before="before",
+            not_after="after",
+            serial="01",
+            signature_algorithm="sha256WithRSAEncryption",
+            public_key_summary="Public-Key: (2048 bit)",
+            is_self_signed=False,
+            is_post_quantum_signature=False,
+        )
+        monkeypatch.setattr(
+            scanner_module, "fetch_certificate_pem", lambda *_args, **_kwargs: "fixture pem"
+        )
+        monkeypatch.setattr(
+            scanner_module, "parse_certificate", lambda *_args, **_kwargs: certificate
+        )
+        evidence, finding = TLSScanner._collect_cert_evidence(  # noqa: SLF001
+            target=target,
+            asset=asset,
+            openssl_path="/fixture/openssl",
+            timeout_seconds=1,
+        )
+        assert evidence.observation_type is ObservationType.OBSERVED
+        assert finding is not None
 
 
 class TestSummaryFailureCategoryPreservation:

@@ -7,10 +7,16 @@ Use Case 4 (Detect Unsupported Local OpenSSL) is covered here.
 
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
+import qureddy.scanners.tls.openssl_probe as openssl_probe_api
+import qureddy.scanners.tls.openssl_probe._constants as constants_module
+import qureddy.scanners.tls.openssl_probe.capability as capability_module
+import qureddy.scanners.tls.openssl_probe.probe as probe_module
 from qureddy.core.errors import (
     LocalOpenSSLBroken,
     LocalOpenSSLIsLibreSSL,
@@ -27,56 +33,104 @@ from qureddy.scanners.tls.openssl_probe import (
     resolve_openssl_path,
     run_hybrid_probe,
 )
+from tests._fake_openssl import fake_openssl
 
-FAKE_DIR = Path(__file__).parent / "fixtures" / "openssl" / "fake"
+
+def test_public_api_exports_exact_adr_symbols_by_identity() -> None:
+    """ADR 0005 compatibility symbols remain real re-exports, not copies."""
+    expected = {
+        "CLASSICAL_GROUP",
+        "DEFAULT_TIMEOUT_SECONDS",
+        "EXCERPT_LIMIT",
+        "HYBRID_GROUP",
+        "MIN_OPENSSL_VERSION",
+        "_classify_failure",
+        "probe_capability",
+        "raise_if_unusable",
+        "resolve_openssl_path",
+        "run_classical_probe",
+        "run_hybrid_probe",
+    }
+    assert set(openssl_probe_api.__all__) == expected
+    assert openssl_probe_api.MIN_OPENSSL_VERSION is constants_module.MIN_OPENSSL_VERSION
+    assert openssl_probe_api.EXCERPT_LIMIT is constants_module.EXCERPT_LIMIT
+    assert openssl_probe_api.DEFAULT_TIMEOUT_SECONDS is constants_module.DEFAULT_TIMEOUT_SECONDS
+    assert openssl_probe_api.CLASSICAL_GROUP is constants_module.CLASSICAL_GROUP
+    assert openssl_probe_api.HYBRID_GROUP is constants_module.HYBRID_GROUP
+    assert openssl_probe_api.run_classical_probe is probe_module.run_classical_probe
+    assert openssl_probe_api.run_hybrid_probe is probe_module.run_hybrid_probe
+    assert openssl_probe_api.probe_capability is capability_module.probe_capability
+    assert openssl_probe_api.raise_if_unusable is capability_module.raise_if_unusable
+    assert openssl_probe_api.resolve_openssl_path is capability_module.resolve_openssl_path
 
 
 class TestResolveOpenSSLPath:
-    def test_explicit_override_wins(self, tmp_path: Path) -> None:
-        binary = tmp_path / "fake_openssl"
-        binary.write_text("#!/usr/bin/env bash\nexit 0\n")
-        binary.chmod(0o755)
-        assert resolve_openssl_path(str(binary)) == str(binary)
+    def test_explicit_override_wins(self) -> None:
+        binary = fake_openssl("openssl_ok")
+        assert resolve_openssl_path(binary) == binary
 
     def test_missing_path_raises(self) -> None:
         with pytest.raises(LocalOpenSSLMissing):
             resolve_openssl_path("/this/path/does/not/exist/openssl")
 
-    def test_non_executable_raises(self, tmp_path: Path) -> None:
+    def test_non_executable_raises(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         non_exec = tmp_path / "fake_openssl"
         non_exec.write_text("not executable\n")
+        monkeypatch.setattr(
+            "qureddy.scanners.tls.openssl_probe.capability.os.access",
+            lambda *_args: False,
+        )
         with pytest.raises(LocalOpenSSLMissing):
             resolve_openssl_path(str(non_exec))
 
 
 class TestProbeCapability:
+    def test_non_launchable_binary_is_typed_local_failure(self) -> None:
+        with (
+            patch("subprocess.run", side_effect=OSError(193, "not a valid application")),
+            pytest.raises(LocalOpenSSLBroken, match="could not be launched"),
+        ):
+            probe_capability(fake_openssl("openssl_ok"))
+
+    def test_probe_launch_oserror_is_typed_local_failure(self) -> None:
+        with (
+            patch("subprocess.run", side_effect=OSError(193, "not a valid application")),
+            pytest.raises(LocalOpenSSLBroken, match="became unlaunchable"),
+        ):
+            run_hybrid_probe(
+                fake_openssl("openssl_ok"),
+                host="example.invalid",
+                port=443,
+                sni="example.invalid",
+            )
+
     def test_too_old_version_flagged(self) -> None:
-        dep = probe_capability(str(FAKE_DIR / "openssl_too_old.sh"))
+        dep = probe_capability(fake_openssl("openssl_too_old"))
         assert dep.failure_category is FailureCategory.LOCAL_OPENSSL_TOO_OLD
         assert dep.version == "3.4.0"
 
     def test_lacks_group_flagged(self) -> None:
-        dep = probe_capability(str(FAKE_DIR / "openssl_lacks_group.sh"))
+        dep = probe_capability(fake_openssl("openssl_lacks_group"))
         assert dep.failure_category is FailureCategory.LOCAL_OPENSSL_LACKS_GROUP
         assert dep.supports_tls13_groups is True
         assert dep.supports_x25519mlkem768 is False
 
     def test_supported_capability(self) -> None:
-        dep = probe_capability(str(FAKE_DIR / "openssl_ok.sh"))
+        dep = probe_capability(fake_openssl("openssl_ok"))
         assert dep.failure_category is None
         assert dep.supports_x25519mlkem768 is True
         assert dep.version == "3.5.6"
 
     def test_broken_returncode_flagged(self) -> None:
         with pytest.raises(LocalOpenSSLBroken) as exc_info:
-            probe_capability(str(FAKE_DIR / "openssl_broken_returncode.sh"))
+            probe_capability(fake_openssl("openssl_broken_returncode"))
         assert "exited with code 139" in str(exc_info.value)
         assert "Library not loaded" in str(exc_info.value)
         assert exc_info.value.dependency is not None
         assert exc_info.value.dependency.failure_category is FailureCategory.LOCAL_OPENSSL_BROKEN
 
     def test_unparseable_version_flagged(self) -> None:
-        dep = probe_capability(str(FAKE_DIR / "openssl_unparseable_version.sh"))
+        dep = probe_capability(fake_openssl("openssl_unparseable_version"))
         assert dep.version is None
         assert dep.supports_tls13_groups is True
         assert dep.supports_x25519mlkem768 is True
@@ -91,28 +145,28 @@ class TestProbeCapability:
         bucket with no actionable fix-it message. It must instead be
         recognized as LibreSSL specifically.
         """
-        dep = probe_capability(str(FAKE_DIR / "openssl_libressl.sh"))
+        dep = probe_capability(fake_openssl("openssl_libressl"))
         assert dep.failure_category is FailureCategory.LOCAL_OPENSSL_IS_LIBRESSL
         assert dep.version == "3.3.6"
 
 
 class TestRaiseIfUnusable:
     def test_too_old_raises(self) -> None:
-        dep = probe_capability(str(FAKE_DIR / "openssl_too_old.sh"))
+        dep = probe_capability(fake_openssl("openssl_too_old"))
         with pytest.raises(LocalOpenSSLTooOld):
             raise_if_unusable(dep)
 
     def test_unparseable_version_message_is_readable(self) -> None:
-        dep = probe_capability(str(FAKE_DIR / "openssl_unparseable_version.sh"))
+        dep = probe_capability(fake_openssl("openssl_unparseable_version"))
         with pytest.raises(LocalOpenSSLVersionUnreadable) as exc_info:
             raise_if_unusable(dep)
         message = str(exc_info.value)
         assert "unparseable version output" in message
-        assert str(FAKE_DIR / "openssl_unparseable_version.sh") in message
+        assert fake_openssl("openssl_unparseable_version") in message
         assert "OpenSSL None" not in message
 
     def test_lacks_group_raises(self) -> None:
-        dep = probe_capability(str(FAKE_DIR / "openssl_lacks_group.sh"))
+        dep = probe_capability(fake_openssl("openssl_lacks_group"))
         with pytest.raises(LocalOpenSSLLacksGroup):
             raise_if_unusable(dep)
 
@@ -120,7 +174,7 @@ class TestRaiseIfUnusable:
         """The whole point of #188: the message must say *why* (this is
         LibreSSL, not old/broken OpenSSL) and *how to fix it*
         (--openssl / QUREDDY_OPENSSL), not just "unparseable version"."""
-        dep = probe_capability(str(FAKE_DIR / "openssl_libressl.sh"))
+        dep = probe_capability(fake_openssl("openssl_libressl"))
         with pytest.raises(LocalOpenSSLIsLibreSSL) as exc_info:
             raise_if_unusable(dep)
         message = str(exc_info.value)
@@ -130,7 +184,7 @@ class TestRaiseIfUnusable:
         assert "QUREDDY_OPENSSL" in message
 
     def test_ok_does_not_raise(self) -> None:
-        dep = probe_capability(str(FAKE_DIR / "openssl_ok.sh"))
+        dep = probe_capability(fake_openssl("openssl_ok"))
         raise_if_unusable(dep)
 
 
@@ -145,7 +199,7 @@ class TestStderrClassification:
 
     def test_connect_refused_is_target_connect_failed(self) -> None:
         result = run_hybrid_probe(
-            str(FAKE_DIR / "openssl_connect_refused.sh"),
+            fake_openssl("openssl_connect_refused"),
             "192.0.2.1",
             443,
             None,
@@ -156,7 +210,7 @@ class TestStderrClassification:
 
     def test_handshake_failure_is_tls_handshake_failed(self) -> None:
         result = run_hybrid_probe(
-            str(FAKE_DIR / "openssl_handshake_failure.sh"),
+            fake_openssl("openssl_handshake_failure"),
             "104.154.89.105",
             1012,
             None,
@@ -258,16 +312,20 @@ class TestTimeoutPreservesPartialOutput:
     """
 
     def test_timeout_preserves_partial_stdout_hash(self) -> None:
-        # The fake binary writes "partial-stdout-marker\n" then sleeps
-        # 30s. With a 1s timeout, subprocess.TimeoutExpired fires while
-        # the partial output is in the pipe.
-        result = run_hybrid_probe(
-            str(FAKE_DIR / "openssl_slow_with_partial_output.sh"),
-            "192.0.2.99",
-            443,
-            None,
-            timeout_seconds=1,
+        timeout = subprocess.TimeoutExpired(
+            cmd=["openssl"],
+            timeout=1,
+            output=b"partial-stdout-marker\n",
+            stderr=b"CONNECTION ESTABLISHED\n",
         )
+        with patch("subprocess.run", side_effect=timeout):
+            result = run_hybrid_probe(
+                fake_openssl("openssl_ok"),
+                "192.0.2.99",
+                443,
+                None,
+                timeout_seconds=1,
+            )
         empty_hash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
         assert result.failure_category is FailureCategory.TLS_HANDSHAKE_FAILED
         assert result.return_code == -1
@@ -278,13 +336,20 @@ class TestTimeoutPreservesPartialOutput:
         assert "partial-stdout-marker" in result.stdout_excerpt
 
     def test_timeout_preserves_partial_stderr_with_marker(self) -> None:
-        result = run_hybrid_probe(
-            str(FAKE_DIR / "openssl_slow_with_partial_output.sh"),
-            "192.0.2.99",
-            443,
-            None,
-            timeout_seconds=1,
+        timeout = subprocess.TimeoutExpired(
+            cmd=["openssl"],
+            timeout=1,
+            output=b"partial-stdout-marker\n",
+            stderr=b"CONNECTION ESTABLISHED\n",
         )
+        with patch("subprocess.run", side_effect=timeout):
+            result = run_hybrid_probe(
+                fake_openssl("openssl_ok"),
+                "192.0.2.99",
+                443,
+                None,
+                timeout_seconds=1,
+            )
         # stderr captured the connection lines AND the timeout marker
         # the probe added on the timeout branch.
         assert "CONNECTION ESTABLISHED" in result.stderr_excerpt
@@ -298,14 +363,14 @@ class TestLocalOpenSSLExceptionsCarryDependency:
     """
 
     def test_too_old_exception_carries_dependency(self) -> None:
-        dep = probe_capability(str(FAKE_DIR / "openssl_too_old.sh"))
+        dep = probe_capability(fake_openssl("openssl_too_old"))
         with pytest.raises(LocalOpenSSLTooOld) as exc_info:
             raise_if_unusable(dep)
         assert exc_info.value.dependency is dep
         assert exc_info.value.dependency.failure_category is FailureCategory.LOCAL_OPENSSL_TOO_OLD
 
     def test_lacks_group_exception_carries_dependency(self) -> None:
-        dep = probe_capability(str(FAKE_DIR / "openssl_lacks_group.sh"))
+        dep = probe_capability(fake_openssl("openssl_lacks_group"))
         with pytest.raises(LocalOpenSSLLacksGroup) as exc_info:
             raise_if_unusable(dep)
         assert exc_info.value.dependency is dep

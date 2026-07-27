@@ -307,5 +307,7 @@ def _write_with_provides(bom: Bom, provides_edges: dict[str, list[str]], stream:
         ref = dependency.get("ref")
         if ref in provides_edges:
             dependency["provides"] = provides_edges[ref]
-    stream.write(json.dumps(payload, indent=2))
+    # Keep final machine bytes representable on locale-dependent Windows
+    # streams. JSON consumers recover the original Unicode from escapes.
+    stream.write(json.dumps(payload, indent=2, ensure_ascii=True))
     stream.write("\n")

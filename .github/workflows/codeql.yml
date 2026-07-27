@@ -56,18 +56,13 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install project (best-effort)
+      - name: Install uv
         if: matrix.language == 'python'
-        run: |
-          # Pre-MVP: src/qureddy may not exist yet. Install dev extras only
-          # so CodeQL can resolve imports for the dev tools that do exist.
-          pip install --upgrade pip
-          if [ -d src/qureddy ]; then
-            pip install -e ".[dev]"
-          else
-            pip install -e ".[dev]" || echo "no installable package yet (pre-MVP)"
-          fi
-        continue-on-error: true
+        uses: astral-sh/setup-uv@v3
+
+      - name: Install project from lock
+        if: matrix.language == 'python'
+        run: uv sync --locked --extra dev
 
       - name: Perform CodeQL analysis
         uses: github/codeql-action/analyze@v3
