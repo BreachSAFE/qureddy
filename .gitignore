@@ -115,6 +115,7 @@ Scratch/
 
 # Local evidence-honesty working document; keep it out of the public tree.
 /docs/explanation/evidence-honesty.md
+/docs/contributors/agent-antipatterns.md
 
 # Secrets, never commit
 .env
