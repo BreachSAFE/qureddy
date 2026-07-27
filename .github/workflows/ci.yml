@@ -537,8 +537,7 @@ jobs:
           python -m venv audit-tool
           audit-tool/bin/python -m pip install "pip-audit==2.10.1"
           audit-tool/bin/pip-audit \
-            --path runtime/lib/python3.12/site-packages \
-            --disable-pip
+            --path runtime/lib/python3.12/site-packages
 
       - name: Upload exact candidate artifacts
         uses: actions/upload-artifact@v4
