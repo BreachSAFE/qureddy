@@ -60,6 +60,7 @@ EXPECTED_LIVE_TARGETS = (
     "www.google.com",
     "example.com",
     "1.1.1.1",
+    "github.com",
     "tls-v1-2.badssl.com",
 )
 EXPECTED_SELF_SCAN_STATUSES = {
@@ -68,6 +69,7 @@ EXPECTED_SELF_SCAN_STATUSES = {
     "google.json": "completed",
     "example.json": "completed",
     "1111.json": "completed",
+    "github-ssh.json": "completed",
     "tls12.json": "tls_handshake_failed",
 }
 

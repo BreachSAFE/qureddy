@@ -833,12 +833,16 @@ QuReddy reports on crypto. We do not use weak crypto in our own code. SHA-1 only
 **Rule 27.1 — `main` branch is protected.**
 GitHub branch protection:
 - Require pull request before merging
-- Require status checks to pass (all phases from Section 21)
+- Require the current Linux, macOS, and Windows `Local release gate` checks to pass
 - Require branches to be up to date before merging
 - Require conversation resolution
 - Restrict force pushes
 - Restrict deletions
 - Require linear history
+
+Public-network live probes, Semgrep auto rules, and ecosystem scoring are advisory
+scheduled/manual signals. They are never required merge checks. The repository-owned local
+release gate remains authoritative if hosted Actions is unavailable.
 
 **Rule 27.2 — Mandatory PR workflow.**
 Every change goes through a PR. Solo contributors create PRs and self-review. The PR audit trail is the artifact. Direct pushes to `main` are forbidden.
@@ -849,7 +853,19 @@ Feature branches accumulate WIP commits. Squash to a single, well-described comm
 **Rule 27.4 — No merging without review.**
 At least one approving review on every PR. Self-merging is allowed for solo work but the PR record is non-negotiable. When a second contributor joins, self-merging is forbidden.
 
-**Rule 27.5 — Stale branches are pruned.**
+**Rule 27.5 — Administrator bypass is emergency-only and auditable.**
+Administrators do not bypass pull requests or a failing product gate for convenience.
+Bypass is limited to an active security incident or a hosted-platform outage after the
+same candidate commit has passed the complete local release gate. The administrator records
+the reason, evidence-manifest digest, and follow-up action in a public issue or security
+advisory before merging. A bypassed commit is not eligible for a package release until the
+normal protected checks pass.
+
+**Rule 27.6 — Sensitive approvals become stale after changes.**
+New commits dismiss approvals on workflow, packaging, release-script, dependency-lock, or
+security-policy changes. The updated candidate must be re-reviewed.
+
+**Rule 27.7 — Stale branches are pruned.**
 Merged branches are deleted. Open branches inactive for 30 days get tagged for review or deletion.
 
 ---

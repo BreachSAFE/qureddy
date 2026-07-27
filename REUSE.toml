@@ -36,6 +36,7 @@ path = [
     # syntax that survives regeneration. Annotate here instead of
     # adding a sidecar .license file.
     "uv.lock",
+    "scripts/release-tools.json",
 ]
 SPDX-FileCopyrightText = "2026 BreachSAFE"
 SPDX-License-Identifier = "Apache-2.0"

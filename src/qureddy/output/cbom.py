@@ -45,6 +45,7 @@ from qureddy.output.cbom_semantics import validate_cbom_semantics
 
 if TYPE_CHECKING:
     from qureddy.core.certificate import CertificateObservation
+    from qureddy.core.models import Evidence
 
 _ENDPOINT_REF = "endpoint"
 _QUREDDY_TOOL_REF = "tool/qureddy"
@@ -194,62 +195,85 @@ def _add_protocol_components(
     provides_edges: dict[str, list[str]],
 ) -> None:
     """Add one protocol asset per unique observed protocol and version."""
-    positive_evidence = [
-        evidence
-        for evidence in result.evidence
-        if evidence.observation_type in _POSITIVE_OBSERVATIONS and evidence.protocol_version
-    ]
-    protocol_versions: set[tuple[str, str]] = set()
-    for evidence in positive_evidence:
-        if evidence.protocol_version is not None:
-            protocol_versions.add((evidence.protocol, evidence.protocol_version))
+    positive_evidence = _positive_protocol_evidence(result)
+    protocol_versions = {
+        (evidence.protocol, evidence.protocol_version)
+        for evidence in positive_evidence
+        if evidence.protocol_version is not None
+    }
     for protocol, protocol_version in sorted(protocol_versions):
         matching = [
             evidence
             for evidence in positive_evidence
             if (evidence.protocol, evidence.protocol_version) == (protocol, protocol_version)
         ]
-        cipher_suites = []
-        for cipher_suite in sorted(
-            {evidence.cipher_suite for evidence in matching if evidence.cipher_suite}
-        ):
-            group_refs = sorted(
-                {
-                    algorithm_refs[evidence.negotiated_group]
-                    for evidence in matching
-                    if evidence.cipher_suite == cipher_suite
-                    and evidence.negotiated_group in algorithm_refs
-                }
-            )
-            cipher_suites.append(
-                ProtocolPropertiesCipherSuite(
-                    name=cipher_suite,
-                    algorithms=[BomRef(value=ref) for ref in group_refs] or None,
-                )
-            )
         ref = f"crypto/protocol/{protocol}-{protocol_version.lower()}"
         bom.components.add(
-            Component(
-                name=protocol_version,
-                type=ComponentType.CRYPTOGRAPHIC_ASSET,
-                bom_ref=ref,
-                crypto_properties=CryptoProperties(
-                    asset_type=CryptoAssetType.PROTOCOL,
-                    protocol_properties=ProtocolProperties(
-                        type=(
-                            ProtocolPropertiesType.TLS
-                            if protocol == "tls"
-                            else ProtocolPropertiesType.SSH
-                            if protocol == "ssh"
-                            else None
-                        ),
-                        version=protocol_version,
-                        cipher_suites=cipher_suites or None,
-                    ),
-                ),
+            _protocol_component(
+                protocol,
+                protocol_version,
+                ref,
+                _protocol_cipher_suites(matching, algorithm_refs),
             )
         )
         provides_edges.setdefault(_ENDPOINT_REF, []).append(ref)
+
+
+def _positive_protocol_evidence(result: ScanResult) -> list[Evidence]:
+    """Return only positive observations that identify a protocol version."""
+    return [
+        evidence
+        for evidence in result.evidence
+        if evidence.observation_type in _POSITIVE_OBSERVATIONS and evidence.protocol_version
+    ]
+
+
+def _protocol_cipher_suites(
+    evidence: list[Evidence], algorithm_refs: dict[str, str]
+) -> list[ProtocolPropertiesCipherSuite]:
+    """Build deterministic cipher-suite entries for one protocol version."""
+    suites = []
+    for cipher_suite in sorted({item.cipher_suite for item in evidence if item.cipher_suite}):
+        group_refs = sorted(
+            {
+                algorithm_refs[item.negotiated_group]
+                for item in evidence
+                if item.cipher_suite == cipher_suite and item.negotiated_group in algorithm_refs
+            }
+        )
+        suites.append(
+            ProtocolPropertiesCipherSuite(
+                name=cipher_suite,
+                algorithms=[BomRef(value=ref) for ref in group_refs] or None,
+            )
+        )
+    return suites
+
+
+def _protocol_component(
+    protocol: str,
+    protocol_version: str,
+    ref: str,
+    cipher_suites: list[ProtocolPropertiesCipherSuite],
+) -> Component:
+    """Build one CycloneDX protocol cryptographic asset."""
+    protocol_type = {
+        "tls": ProtocolPropertiesType.TLS,
+        "ssh": ProtocolPropertiesType.SSH,
+    }.get(protocol)
+    return Component(
+        name=protocol_version,
+        type=ComponentType.CRYPTOGRAPHIC_ASSET,
+        bom_ref=ref,
+        crypto_properties=CryptoProperties(
+            asset_type=CryptoAssetType.PROTOCOL,
+            protocol_properties=ProtocolProperties(
+                type=protocol_type,
+                version=protocol_version,
+                cipher_suites=cipher_suites or None,
+            ),
+        ),
+    )
 
 
 def _parse_openssl_date(text: str) -> datetime | None:

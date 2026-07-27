@@ -82,6 +82,117 @@ class RetryConfig:
     retry_on: frozenset[FailureCategory] = frozenset()
 
 
+def _collect_optional_axes(
+    scanner: TLSScanner,
+    target: ScanTarget,
+    asset: Asset,
+    openssl_path: str,
+    timeout_seconds: int,
+    evidence: list[Evidence],
+    findings: list[Finding],
+) -> int:
+    """Collect legacy and certificate axes unless the target is unreachable."""
+    if target_appears_unreachable(evidence):
+        get_logger(__name__).info(
+            "scan.legacy_and_cert_probes_skipped",
+            reason="target_appears_unreachable",
+        )
+        return 0
+    legacy_evidence, legacy_findings = scanner._collect_legacy_evidence(  # noqa: SLF001
+        target=target,
+        asset=asset,
+        openssl_path=openssl_path,
+        timeout_seconds=timeout_seconds,
+    )
+    evidence.extend(legacy_evidence)
+    findings.extend(legacy_findings)
+    cert_evidence, cert_finding = scanner._collect_cert_evidence(  # noqa: SLF001
+        target=target,
+        asset=asset,
+        openssl_path=openssl_path,
+        timeout_seconds=timeout_seconds,
+    )
+    evidence.append(cert_evidence)
+    if cert_finding is not None:
+        findings.append(cert_finding)
+    return len(legacy_evidence) + 1
+
+
+def _completed_scan_result(
+    target: ScanTarget,
+    asset: Asset,
+    dependency: OpenSSLDependency,
+    evidence: list[Evidence],
+    findings: list[Finding],
+    scan_id: str,
+    started: datetime,
+    total_attempts: int,
+) -> ScanResult:
+    """Roll up and build a completed TLS scan result."""
+    completed = datetime.now(UTC)
+    summary = build_summary(target, findings, evidence)
+    get_logger(__name__).info(
+        "scan.complete",
+        duration_ms=int((completed - started).total_seconds() * 1000),
+        finding_count=len(findings),
+        readiness=summary.readiness.value,
+    )
+    status = summary.failure_category.value if summary.failure_category else STATUS_COMPLETED
+    return ScanResult(
+        scan=ScanMetadata(
+            scan_id=scan_id,
+            started_at=started,
+            completed_at=completed,
+            status=status,
+            total_attempts=total_attempts,
+        ),
+        target=target,
+        dependencies=(dependency,),
+        assets=(asset,),
+        evidence=tuple(evidence),
+        findings=tuple(findings),
+        summary=summary,
+    )
+
+
+def _run_tls_scan(
+    scanner: TLSScanner,
+    target: ScanTarget,
+    timeout_seconds: int,
+) -> ScanResult:
+    """Run the TLS phases while keeping the public method a thin entrypoint."""
+    started = datetime.now(UTC)
+    scan_id = scanner._begin(target)  # noqa: SLF001
+    openssl_path, dependency = scanner._check_capability(timeout_seconds)  # noqa: SLF001
+    asset = build_asset(target)
+    evidence, total_attempts = scanner._collect_evidence(  # noqa: SLF001
+        target=target,
+        asset=asset,
+        openssl_path=openssl_path,
+        timeout_seconds=timeout_seconds,
+    )
+    findings = classify_evidence(asset, evidence)
+    total_attempts += _collect_optional_axes(
+        scanner,
+        target,
+        asset,
+        openssl_path,
+        timeout_seconds,
+        evidence,
+        findings,
+    )
+    return _completed_scan_result(
+        target,
+        asset,
+        dependency,
+        evidence,
+        findings,
+        scan_id,
+        started,
+        total_attempts,
+    )
+
+
 class TLSScanner:
     """Orchestrate one TLS scan from capability check through classification."""
 
@@ -108,76 +219,7 @@ class TLSScanner:
         timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS,
     ) -> ScanResult:
         """Run a full TLS scan against `target` and return a ScanResult."""
-        started = datetime.now(UTC)
-        scan_id = self._begin(target)
-        log = get_logger(__name__)
-        openssl_path, dependency = self._check_capability(timeout_seconds)
-        asset = build_asset(target)
-        evidence, total_attempts = self._collect_evidence(
-            target=target,
-            asset=asset,
-            openssl_path=openssl_path,
-            timeout_seconds=timeout_seconds,
-        )
-        findings = classify_evidence(asset, evidence)
-        if target_appears_unreachable(evidence):
-            # Issue #192/#183 follow-up: the legacy-protocol sweep (3
-            # protocols) and cert fetch each open their own connection
-            # with their own timeout_seconds budget. Against a target
-            # that silently drops packets (not an immediate TCP
-            # refuse), that's 4 more full timeout windows stacked onto
-            # the 2 the hybrid/classical probes already spent — verified
-            # live: 18s at --timeout 3 (6x), ~180s at the default 30s.
-            # If the main probes already both failed to even complete a
-            # handshake, more attempts against the same host with
-            # different flags are extremely unlikely to succeed and
-            # only multiply the wait.
-            log.info("scan.legacy_and_cert_probes_skipped", reason="target_appears_unreachable")
-        else:
-            legacy_evidence, legacy_findings = self._collect_legacy_evidence(
-                target=target,
-                asset=asset,
-                openssl_path=openssl_path,
-                timeout_seconds=timeout_seconds,
-            )
-            evidence.extend(legacy_evidence)
-            findings.extend(legacy_findings)
-            total_attempts += len(legacy_evidence)
-            cert_evidence, cert_finding = self._collect_cert_evidence(
-                target=target,
-                asset=asset,
-                openssl_path=openssl_path,
-                timeout_seconds=timeout_seconds,
-            )
-            evidence.append(cert_evidence)
-            if cert_finding is not None:
-                findings.append(cert_finding)
-            total_attempts += 1
-        completed = datetime.now(UTC)
-        summary = build_summary(target, findings, evidence)
-        log.info(
-            "scan.complete",
-            duration_ms=int((completed - started).total_seconds() * 1000),
-            finding_count=len(findings),
-            readiness=summary.readiness.value,
-        )
-        return ScanResult(
-            scan=ScanMetadata(
-                scan_id=scan_id,
-                started_at=started,
-                completed_at=completed,
-                status=(
-                    summary.failure_category.value if summary.failure_category else STATUS_COMPLETED
-                ),
-                total_attempts=total_attempts,
-            ),
-            target=target,
-            dependencies=(dependency,),
-            assets=(asset,),
-            evidence=tuple(evidence),
-            findings=tuple(findings),
-            summary=summary,
-        )
+        return _run_tls_scan(self, target, timeout_seconds)
 
     @staticmethod
     def _begin(target: ScanTarget) -> str:

@@ -14,6 +14,9 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+  schedule:
+    # Live public-network probes are an advisory signal, never a PR prerequisite.
+    - cron: "23 7 * * 2"
 
 permissions:
   contents: read
@@ -41,17 +44,17 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0  # gitleaks needs history
 
       - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@caf0cab7a618c569241d31dcd442f54681755d39 # v3
 
       - name: Install project (dev extras)
         run: uv sync --locked --extra dev
@@ -77,11 +80,9 @@ jobs:
       - name: reuse lint
         run: uv run --locked reuse lint
 
-      - name: gitleaks (Linux only)
+      - name: Gitleaks 8.30.1 full-history scan (Linux only)
         if: matrix.os == 'ubuntu-latest'
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python scripts/run_secret_scan.py
 
   # ===========================================================================
   # Phase 2 — Unit tests (hermetic, no network, no real OpenSSL).
@@ -97,15 +98,15 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@caf0cab7a618c569241d31dcd442f54681755d39 # v3
 
       - name: Install project (dev extras)
         run: uv sync --locked --extra dev
@@ -121,7 +122,7 @@ jobs:
 
       - name: Upload coverage
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: coverage-${{ matrix.os }}
           path: |
@@ -146,65 +147,19 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@caf0cab7a618c569241d31dcd442f54681755d39 # v3
 
-      - name: Install OpenSSL 3.5+ (Linux)
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          # Ubuntu 24.04 ships OpenSSL 3.0; install 3.5+ from upstream tarball.
-          OPENSSL_VERSION="3.5.1"
-          OPENSSL_SHA256="529043b15cffa5f36077a4d0af83f3de399807181d607441d734196d889b641f"
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq build-essential
-          curl -LO "https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz"
-          echo "${OPENSSL_SHA256}  openssl-${OPENSSL_VERSION}.tar.gz" | sha256sum --check --strict
-          tar -xzf "openssl-${OPENSSL_VERSION}.tar.gz"
-          cd "openssl-${OPENSSL_VERSION}"
-          ./config --prefix=/opt/openssl-3.5 --openssldir=/opt/openssl-3.5 shared
-          make -j"$(nproc)" > /dev/null
-          sudo make install_sw > /dev/null
-          echo "/opt/openssl-3.5/bin" >> "$GITHUB_PATH"
-          echo "LD_LIBRARY_PATH=/opt/openssl-3.5/lib64:/opt/openssl-3.5/lib:$LD_LIBRARY_PATH" >> "$GITHUB_ENV"
-
-      - name: Install OpenSSL 3.5+ (macOS)
-        if: matrix.os == 'macos-latest'
-        run: |
-          brew install openssl@3
-          echo "$(brew --prefix openssl@3)/bin" >> "$GITHUB_PATH"
-
-      - name: Install OpenSSL 3.5+ (Windows)
-        if: matrix.os == 'windows-latest'
-        shell: pwsh
-        run: |
-          # Chocolatey's versioned package delegates to an upstream installer
-          # URL that disappears when Shining Light rotates releases. Install
-          # the maintained current package, then verify the capability below.
-          choco install openssl --no-progress -y
-          $candidates = @(
-            (Join-Path $env:ProgramFiles "OpenSSL\bin\openssl.exe"),
-            (Join-Path $env:ProgramFiles "OpenSSL-Win64\bin\openssl.exe"),
-            (Join-Path $env:ChocolateyInstall "bin\openssl.exe")
-          )
-          $opensslExe = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
-          if (-not $opensslExe) {
-            throw "Chocolatey installed OpenSSL but no openssl.exe was discoverable"
-          }
-          $opensslBin = Split-Path -Parent $opensslExe
-          $opensslBin | Out-File -FilePath $env:GITHUB_PATH -Append
-
-      - name: Verify OpenSSL version
-        run: |
-          openssl version
-          openssl list -tls1_3 -tls-groups | tee openssl-groups.txt
-          grep -qi X25519MLKEM768 openssl-groups.txt
+      - name: Set up pinned OpenSSL 3.5.1
+        timeout-minutes: 30
+        uses: ./.github/actions/setup-openssl
 
       - name: Install project (dev extras)
         run: uv sync --locked --extra dev
@@ -218,6 +173,7 @@ jobs:
   # ===========================================================================
   phase-4-live:
     name: "Phase 4: Live (${{ matrix.os }})"
+    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
     runs-on: ${{ matrix.os }}
     needs: phase-3-integration
     strategy:
@@ -226,71 +182,29 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@caf0cab7a618c569241d31dcd442f54681755d39 # v3
 
-      - name: Install OpenSSL 3.5+ (Linux)
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          OPENSSL_VERSION="3.5.1"
-          OPENSSL_SHA256="529043b15cffa5f36077a4d0af83f3de399807181d607441d734196d889b641f"
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq build-essential
-          curl -LO "https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz"
-          echo "${OPENSSL_SHA256}  openssl-${OPENSSL_VERSION}.tar.gz" | sha256sum --check --strict
-          tar -xzf "openssl-${OPENSSL_VERSION}.tar.gz"
-          cd "openssl-${OPENSSL_VERSION}"
-          ./config --prefix=/opt/openssl-3.5 --openssldir=/opt/openssl-3.5 shared
-          make -j"$(nproc)" > /dev/null
-          sudo make install_sw > /dev/null
-          echo "/opt/openssl-3.5/bin" >> "$GITHUB_PATH"
-          echo "LD_LIBRARY_PATH=/opt/openssl-3.5/lib64:/opt/openssl-3.5/lib:$LD_LIBRARY_PATH" >> "$GITHUB_ENV"
-
-      - name: Install OpenSSL 3.5+ (macOS)
-        if: matrix.os == 'macos-latest'
-        run: |
-          brew install openssl@3
-          echo "$(brew --prefix openssl@3)/bin" >> "$GITHUB_PATH"
-
-      - name: Install OpenSSL 3.5+ (Windows)
-        if: matrix.os == 'windows-latest'
-        shell: pwsh
-        run: |
-          choco install openssl --no-progress -y
-          $candidates = @(
-            (Join-Path $env:ProgramFiles "OpenSSL\bin\openssl.exe"),
-            (Join-Path $env:ProgramFiles "OpenSSL-Win64\bin\openssl.exe"),
-            (Join-Path $env:ChocolateyInstall "bin\openssl.exe")
-          )
-          $opensslExe = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
-          if (-not $opensslExe) {
-            throw "Chocolatey installed OpenSSL but no openssl.exe was discoverable"
-          }
-          $opensslBin = Split-Path -Parent $opensslExe
-          $opensslBin | Out-File -FilePath $env:GITHUB_PATH -Append
+      - name: Set up pinned OpenSSL 3.5.1
+        timeout-minutes: 30
+        uses: ./.github/actions/setup-openssl
 
       - name: Install project (dev extras)
         run: uv sync --locked --extra dev
-
-      - name: Verify OpenSSL capability
-        run: |
-          openssl version
-          openssl list -tls1_3 -tls-groups | tee openssl-groups.txt
-          grep -qi X25519MLKEM768 openssl-groups.txt
 
       - name: pytest tests/live/
         run: uv run --locked pytest tests/live/ -v --junitxml=live-results.xml
 
       - name: Upload live-test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: live-results-${{ matrix.os }}
           path: live-results.xml
@@ -302,35 +216,24 @@ jobs:
   # ===========================================================================
   phase-5-self-scan:
     name: "Phase 5: Self-scan"
+    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     needs: phase-4-live
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@caf0cab7a618c569241d31dcd442f54681755d39 # v3
 
-      - name: Install OpenSSL 3.5+
-        run: |
-          OPENSSL_VERSION="3.5.1"
-          OPENSSL_SHA256="529043b15cffa5f36077a4d0af83f3de399807181d607441d734196d889b641f"
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq build-essential
-          curl -LO "https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz"
-          echo "${OPENSSL_SHA256}  openssl-${OPENSSL_VERSION}.tar.gz" | sha256sum --check --strict
-          tar -xzf "openssl-${OPENSSL_VERSION}.tar.gz"
-          cd "openssl-${OPENSSL_VERSION}"
-          ./config --prefix=/opt/openssl-3.5 --openssldir=/opt/openssl-3.5 shared
-          make -j"$(nproc)" > /dev/null
-          sudo make install_sw > /dev/null
-          echo "/opt/openssl-3.5/bin" >> "$GITHUB_PATH"
-          echo "LD_LIBRARY_PATH=/opt/openssl-3.5/lib64:/opt/openssl-3.5/lib:$LD_LIBRARY_PATH" >> "$GITHUB_ENV"
+      - name: Set up pinned OpenSSL 3.5.1
+        timeout-minutes: 30
+        uses: ./.github/actions/setup-openssl
 
       - name: Install project
         run: uv sync --locked --extra dev
@@ -343,6 +246,7 @@ jobs:
           uv run --locked qureddy scan tls www.google.com --format json > phase-5-self-scan/google.json
           uv run --locked qureddy scan tls example.com --format json > phase-5-self-scan/example.json
           uv run --locked qureddy scan tls 1.1.1.1:443 --sni one.one.one.one --format json > phase-5-self-scan/1111.json
+          uv run --locked qureddy scan ssh github.com --format json > phase-5-self-scan/github-ssh.json
           set +e
           uv run --locked qureddy scan tls tls-v1-2.badssl.com:1012 --format json > phase-5-self-scan/tls12.json
           tls12_exit=$?
@@ -351,7 +255,7 @@ jobs:
 
       - name: Upload self-scan artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: phase-5-self-scan
           path: phase-5-self-scan/
@@ -364,18 +268,18 @@ jobs:
   phase-6-build:
     name: "Phase 6: Build"
     runs-on: ubuntu-latest
-    needs: phase-5-self-scan
+    needs: phase-3-integration
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@caf0cab7a618c569241d31dcd442f54681755d39 # v3
 
       - name: uv build
         run: |
@@ -384,7 +288,7 @@ jobs:
 
       - name: Upload built artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: phase-6-dist
           path: dist/
@@ -409,25 +313,26 @@ jobs:
   phase-7-audit:
     name: "Phase 7: Audit"
     runs-on: ubuntu-latest
-    needs: phase-6-build
-    if: always()  # always run even if prior phases failed; audit reports the gaps
+    needs: [phase-4-live, phase-5-self-scan, phase-6-build]
+    # The audit covers live artifacts, so it is an advisory scheduled/manual signal too.
+    if: ${{ always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@caf0cab7a618c569241d31dcd442f54681755d39 # v3
 
       - name: Install locked audit dependencies
         run: uv sync --locked --extra dev
 
       - name: Download all phase artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           path: ci-artifacts/
 
@@ -447,10 +352,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
 
@@ -490,10 +395,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
 
@@ -541,7 +446,7 @@ jobs:
             --path runtime/lib/python3.12/site-packages
 
       - name: Upload exact candidate artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: pypi-candidate
           path: dist/
@@ -558,15 +463,15 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
 
       - name: Download exact candidate artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: pypi-candidate
           path: dist/
@@ -620,7 +525,7 @@ jobs:
           "$wheel_qureddy" scan tls --help > /dev/null
           "$wheel_qureddy" scan ssh --help > /dev/null
 
-      - name: Exercise installed network and failure contracts
+      - name: Exercise installed hermetic scan and failure contracts
         run: |
           if [[ "$RUNNER_OS" == "Windows" ]]; then
             qureddy="wheel-env/Scripts/qureddy"
@@ -631,7 +536,11 @@ jobs:
             python_bin="wheel-env/bin/python"
             old_openssl="tests/fixtures/openssl/fake/openssl_too_old.sh"
           fi
-          "$qureddy" scan ssh github.com --format json > ssh.json
+          set +e
+          "$qureddy" scan ssh 127.0.0.1:1 --format json > ssh.json
+          ssh_exit=$?
+          set -e
+          test "$ssh_exit" -eq 2
           "$python_bin" -c \
             'import json; assert json.load(open("ssh.json"))["scan"]["scanner_name"] == "ssh"'
           set +e

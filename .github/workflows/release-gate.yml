@@ -1,0 +1,53 @@
+# SPDX-FileCopyrightText: 2026 BreachSAFE
+# SPDX-License-Identifier: Apache-2.0
+name: release-gate
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  local-gate:
+    name: Local release gate (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - name: Checkout candidate history
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+
+      - name: Run repository release gate
+        run: python scripts/release_gate.py
+
+      - name: Upload evidence and candidate artifacts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-evidence-${{ matrix.os }}
+          path: |
+            dist/release-evidence/manifest.json
+            dist/release-evidence/dist/*.whl
+            dist/release-evidence/dist/*.tar.gz
+          if-no-files-found: error
+          retention-days: 90

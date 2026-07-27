@@ -1,0 +1,22 @@
+{
+  "uv": {
+    "version": "0.11.32",
+    "assets": {
+      "linux-arm64": ["uv-aarch64-unknown-linux-gnu.tar.gz", "4d4fa08d95b06642e5800df6a22bd71455f23f988269e18da2847971d8c0bf31"],
+      "linux-x64": ["uv-x86_64-unknown-linux-gnu.tar.gz", "aab924fd522efd06f1c5f3b93a243864fc453132c94b2dc49f1371b528a4b967"],
+      "macos-arm64": ["uv-aarch64-apple-darwin.tar.gz", "ed336d0ba49db8ef89b2b41fffa372ce63bd032f22a56f001c265891aec32829"],
+      "macos-x64": ["uv-x86_64-apple-darwin.tar.gz", "77f5ca26c0de20e992a3677a174fe1121ee25c36f9b1434a863f75bf077a05eb"],
+      "windows-x64": ["uv-x86_64-pc-windows-msvc.zip", "acfde570451cfdb8689fa159a138ee805ba4e241c466432750302c86254b0984"]
+    }
+  },
+  "gitleaks": {
+    "version": "8.30.1",
+    "assets": {
+      "linux-arm64": ["gitleaks_8.30.1_linux_arm64.tar.gz", "e4a487ee7ccd7d3a7f7ec08657610aa3606637dab924210b3aee62570fb4b080"],
+      "linux-x64": ["gitleaks_8.30.1_linux_x64.tar.gz", "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"],
+      "macos-arm64": ["gitleaks_8.30.1_darwin_arm64.tar.gz", "b40ab0ae55c505963e365f271a8d3846efbc170aa17f2607f13df610a9aeb6a5"],
+      "macos-x64": ["gitleaks_8.30.1_darwin_x64.tar.gz", "dfe101a4db2255fc85120ac7f3d25e4342c3c20cf749f2c20a18081af1952709"],
+      "windows-x64": ["gitleaks_8.30.1_windows_x64.zip", "d29144deff3a68aa93ced33dddf84b7fdc26070add4aa0f4513094c8332afc4e"]
+    }
+  }
+}

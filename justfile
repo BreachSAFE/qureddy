@@ -80,6 +80,10 @@ semgrep:
 hooks:
     uv run --locked pre-commit run --all-files
 
+# Build and verify one release-candidate artifact set with local evidence.
+release-gate:
+    python3 scripts/release_gate.py
+
 # Secret scan. Requires gitleaks installed externally; falls back to trufflehog.
 secrets:
     @if command -v gitleaks > /dev/null; then \
