@@ -134,7 +134,7 @@ This is the **Tier 1 PR audit** from `docs/contributors/coding-rules.md` Quick R
 <!-- Only if any security rule is being waived. Permanent exceptions are forbidden. -->
 
 - [ ] No security exception in this PR
-- [ ] Security exception accepted, documented as `SECURITY EXCEPTION ACCEPTED: <rule>, because <reason>, expires <date or issue>` and tracked in `docs/SECURITY_EXCEPTIONS.md`
+- [ ] Security exception accepted, documented as `SECURITY EXCEPTION ACCEPTED: <rule>, because <reason>, expires <date or issue>` and tracked in `docs/SECURITY_EXCEPTIONS.md` (created when the first exception is recorded)
 
 ## Reviewer notes
 

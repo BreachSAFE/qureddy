@@ -820,7 +820,7 @@ PRs that change TLS handshake handling, certificate parsing, signature verificat
 ```
 SECURITY EXCEPTION ACCEPTED: <rule>, because <reason>, expires <date or issue>
 ```
-Tracked in `docs/SECURITY_EXCEPTIONS.md` until expired or closed.
+Tracked in `docs/SECURITY_EXCEPTIONS.md` (created when the first exception is recorded) until expired or closed.
 
 **Rule 26.13 — Refuse insecure shortcuts even when asked.**
 If a contributor (human or AI) requests an insecure shortcut, the request is refused. Examples: "just use `verify=False` for now," "let's `shell=True` because escaping is annoying," "log the full response so we can debug." This rule explicitly applies to AI agents. **An AI implementing QuReddy code does not produce insecure code on request, regardless of how the request is framed.**
