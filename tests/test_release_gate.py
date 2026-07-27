@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import re
 import subprocess
 import sys
 import tarfile
@@ -281,3 +282,15 @@ def test_gitleaks_false_positive_classification_is_exactly_scoped() -> None:
             "regexes": [fixture_line_regex],
         }
     ]
+
+
+def test_all_github_actions_are_commit_pinned() -> None:
+    workflow_root = Path(__file__).parents[1] / ".github" / "workflows"
+    unpinned = []
+    for workflow in sorted(workflow_root.glob("*.yml")):
+        for line_number, line in enumerate(workflow.read_text(encoding="utf-8").splitlines(), 1):
+            if "uses:" not in line or "uses: ./" in line:
+                continue
+            if re.search(r"uses:\s+[^@\s]+@[0-9a-f]{40}(?:\s+#\s+\S+)?$", line) is None:
+                unpinned.append(f"{workflow.name}:{line_number}: {line.strip()}")
+    assert unpinned == []

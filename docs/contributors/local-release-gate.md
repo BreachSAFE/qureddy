@@ -12,9 +12,14 @@ current supported platform. It creates an isolated environment, runs every block
 check, builds one wheel and one sdist, inspects and clean-installs those exact bytes, and
 writes `dist/release-evidence/manifest.json`.
 
+The `release-gate` GitHub Actions workflow is a thin mirror on Linux, macOS, and Windows:
+it checks out full candidate history, selects Python 3.12, invokes this same command, and
+uploads the manifest and exact candidate artifacts even when the command fails. It does
+not carry a second release policy or replace a failed command with a hosted-only check.
+
 A failed or timed-out gate exits nonzero and still writes a machine-readable failure
-manifest. Live public-network probes, OpenSSL provisioning, the hosted CI mirror, and
-repository protection settings are separate parts of issue
+manifest. Live public-network probes, independently provisioned OpenSSL for those probes,
+and repository protection settings are separate parts of issue
 [#34](https://github.com/breachsafe/qureddy/issues/34); they are not hidden inside this
 local command.
 
