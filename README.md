@@ -55,10 +55,10 @@ The release image bundles the verified OpenSSL runtime and runs as an
 unprivileged user:
 
 ```bash
-docker pull ghcr.io/breachsafe/qureddy:0.2.0
-docker run --rm ghcr.io/breachsafe/qureddy:0.2.0 \
+docker pull --platform linux/amd64 ghcr.io/breachsafe/qureddy:0.2.0
+docker run --rm --platform linux/amd64 ghcr.io/breachsafe/qureddy:0.2.0 \
   scan tls pq.cloudflareresearch.com --format cbom
-docker run --rm ghcr.io/breachsafe/qureddy:0.2.0 \
+docker run --rm --platform linux/amd64 ghcr.io/breachsafe/qureddy:0.2.0 \
   scan ssh github.com --format cbom
 ```
 
