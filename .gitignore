@@ -118,6 +118,8 @@ Scratch/
 /docs/contributors/agent-antipatterns.md
 /docs/contributors/agents/mvp-0.1-bootstrap-prompt.md
 /docs/contributors/agents/claude-developer-prompt.md
+/docs/contributors/adr/0006-oss-vs-enterprise-split.md
+/docs/contributors/adr/0005-splitting-oversized-files.md
 
 # Secrets, never commit
 .env
