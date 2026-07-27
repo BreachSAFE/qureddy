@@ -79,10 +79,7 @@ def _windows_standard_handles_match() -> bool:
     stdout_handle = int(get_std_handle(-11) or 0)
     stderr_handle = int(get_std_handle(-12) or 0)
     invalid_handle = ctypes.c_void_p(-1).value
-    if (
-        stdout_handle in (0, invalid_handle)
-        or stderr_handle in (0, invalid_handle)
-    ):
+    if stdout_handle in (0, invalid_handle) or stderr_handle in (0, invalid_handle):
         return False
 
     try:
