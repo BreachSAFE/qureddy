@@ -57,6 +57,11 @@ py -3.12 --version
 > The commands below (plain `pipx install breachsafe-qureddy`) apply once the PyPI
 > release is published.
 
+If the resolver reports that no Click version satisfies `>=8.3.3`, the PyPI
+fallback is missing. TestPyPI does not mirror QuReddy's runtime dependencies;
+use the two-index command above and recreate any older pipx environment with
+`pipx uninstall breachsafe-qureddy` before reinstalling.
+
 The [pipx installation guide](https://pipx.pypa.io/stable/how-to/install-pipx.html)
 provides current platform instructions. After `pipx` is available:
 
@@ -118,6 +123,15 @@ py -3.12 -m pip install --user pipx
 py -3.12 -m pipx ensurepath
 py -3.12 -m pipx install breachsafe-qureddy
 qureddy --version
+```
+
+For the TestPyPI rehearsal, use both indexes in PowerShell:
+
+```powershell
+py -3.12 -m pipx install `
+  --index-url https://test.pypi.org/simple/ `
+  --pip-args "--extra-index-url https://pypi.org/simple/" `
+  breachsafe-qureddy
 ```
 
 For TLS scans, install a trusted OpenSSL 3.5 LTS or newer Windows build. QuReddy
