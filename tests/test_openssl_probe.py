@@ -70,8 +70,14 @@ class TestResolveOpenSSLPath:
         assert resolve_openssl_path(binary) == binary
 
     def test_missing_path_raises(self) -> None:
-        with pytest.raises(LocalOpenSSLMissing):
+        with pytest.raises(LocalOpenSSLMissing) as exc_info:
             resolve_openssl_path("/this/path/does/not/exist/openssl")
+        message = str(exc_info.value)
+        assert "pip installs QuReddy, not OpenSSL" in message
+        assert "macOS:" in message
+        assert "Linux:" in message
+        assert "Windows:" in message
+        assert "--openssl PATH" in message
 
     def test_non_executable_raises(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         non_exec = tmp_path / "fake_openssl"
@@ -153,8 +159,12 @@ class TestProbeCapability:
 class TestRaiseIfUnusable:
     def test_too_old_raises(self) -> None:
         dep = probe_capability(fake_openssl("openssl_too_old"))
-        with pytest.raises(LocalOpenSSLTooOld):
+        with pytest.raises(LocalOpenSSLTooOld) as exc_info:
             raise_if_unusable(dep)
+        message = str(exc_info.value)
+        assert "OpenSSL 3.4.0 is below required 3.5.0" in message
+        assert "pip installs QuReddy, not OpenSSL" in message
+        assert "QUREDDY_OPENSSL" in message
 
     def test_unparseable_version_message_is_readable(self) -> None:
         dep = probe_capability(fake_openssl("openssl_unparseable_version"))

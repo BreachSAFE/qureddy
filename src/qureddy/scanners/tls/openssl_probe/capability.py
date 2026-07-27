@@ -29,18 +29,25 @@ from qureddy.scanners.tls.openssl_probe._constants import (
     MIN_OPENSSL_VERSION,
 )
 
+_INSTALL_GUIDANCE = (
+    "pip installs QuReddy, not OpenSSL. Install OpenSSL 3.5+ separately, then pass "
+    "--openssl PATH or set QUREDDY_OPENSSL. macOS: brew install openssl@3. "
+    "Linux: install OpenSSL 3.5+ from your distribution or trusted vendor. "
+    "Windows: install a maintained OpenSSL 3.5+ distribution and pass its full path."
+)
+
 
 def resolve_openssl_path(explicit: str | None) -> str:
     """Resolve ``--openssl``, then the environment override, then PATH."""
     candidate = explicit or os.environ.get(ENV_OVERRIDE) or shutil.which("openssl")
     if not candidate:
         raise LocalOpenSSLMissing(
-            "openssl binary not found on PATH or via QUREDDY_OPENSSL",
+            f"openssl binary not found on PATH or via QUREDDY_OPENSSL. {_INSTALL_GUIDANCE}",
             dependency=_missing_dependency(None),
         )
     if not os.path.isfile(candidate) or not os.access(candidate, os.X_OK):
         raise LocalOpenSSLMissing(
-            f"openssl path is not an executable file: {candidate}",
+            f"openssl path is not an executable file: {candidate}. {_INSTALL_GUIDANCE}",
             dependency=_missing_dependency(candidate),
         )
     return candidate
@@ -115,7 +122,7 @@ def raise_if_unusable(dep: OpenSSLDependency) -> None:
         raise LocalOpenSSLIsLibreSSL(_libressl_guidance(dep), dependency=dep)
     if category is FailureCategory.LOCAL_OPENSSL_TOO_OLD:
         raise LocalOpenSSLTooOld(
-            f"OpenSSL {dep.version} is below required {MIN_OPENSSL_VERSION}",
+            f"OpenSSL {dep.version} is below required {MIN_OPENSSL_VERSION}. {_INSTALL_GUIDANCE}",
             dependency=dep,
         )
     if category is FailureCategory.LOCAL_OPENSSL_LACKS_GROUP:
