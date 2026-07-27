@@ -43,7 +43,8 @@ runs:
         tar -xzf "$archive" --strip-components=1 -C "$source"
         cd "$source"
         ./config --prefix="$prefix" --openssldir="$prefix" shared
-        make -j4 build_libs build_apps
+        make -j4 build_libs
+        make -j4 apps/openssl
         make install_sw
 
     - name: Set up pinned Windows build environment
@@ -80,7 +81,7 @@ runs:
         # OpenSSL's MSYS2 app makefiles race while renaming generated
         # dependency files. Libraries parallelize safely; build apps serially.
         make -j4 build_libs
-        make -j1 build_apps
+        make -j1 apps/openssl
         make install_sw
 
     - name: Expose and verify OpenSSL on Linux or macOS
