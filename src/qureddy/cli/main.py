@@ -34,7 +34,7 @@ from qureddy.cli._options import VersionOpt
 # reference. JSON and CBOM are repeated here even though they're also in
 # `scan tls --help`'s EXAMPLES — deliberately not DRY: CBOM in particular
 # is the product's own flagship differentiator ("Find what's
-# quantum-vulnerable. Generate a CBOM. Move on." — CLAUDE.md's tagline),
+# quantum-vulnerable. Generate a CBOM. Move on." — the project's tagline),
 # and a user who never drills past root --help shouldn't miss it.
 _ROOT_EPILOG = _colorize_help_text(f"""\
 QUICK START:

@@ -26,8 +26,8 @@ Notes on the format:
   §18 (no em-dashes in source).
 - `SOURCE_URL` points at `breachsafe/qureddy`, the canonical public
   repository (org cutover from the `breachsafe/qureddy` staging repo
-  org-migration target is documented in CLAUDE.md but the repo lives
-  at `breachsafe/qureddy` until org cutover).
+  org-migration target is documented in the contributor materials while the
+  canonical public repository remains `breachsafe/qureddy`.
 """
 
 from __future__ import annotations

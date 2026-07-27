@@ -52,16 +52,16 @@ dependencies = [
 
 [project.optional-dependencies]
 # Enterprise-grade gates from day 0. See:
-# .agents/skills/breachsafe-implement/SKILL.md "Quality gates" section.
+    # Contributor quality-gates documentation.
 dev = [
     "pytest>=8.0",
     "pytest-cov>=5.0",
     "pytest-rerunfailures>=14.0",
     # ruff upper bound: CI resolves this fresh, so an unpinned range let CI
     # jump to 0.16 while local envs sat on 0.15 — and 0.16 starts format-
-    # checking Python code blocks inside Markdown, flagging .claude/ and
-    # .agents/ skill files that must stay byte-identical to the canonical
-    # breachsafe-skills library. Bumping past 0.16 requires deciding the
+    # checking Python code blocks inside Markdown, flagging private skill
+    # files that must stay byte-identical to the canonical library. Bumping past
+    # 0.16 requires deciding the
     # markdown-format policy (exclude those trees) in the same PR.
     "ruff>=0.15,<0.16",
     "mypy>=1.10",
@@ -109,8 +109,7 @@ packages = ["src/qureddy"]
 
 [tool.hatch.build.targets.sdist]
 # Issue #159: an exclude-blocklist can only omit what it names, so every
-# internal directory added later (`.claude/`, `.github/`, `AGENTS.md`,
-# `CLAUDE.md`, the agent scaffolding) shipped into the public sdist by
+# internal directories added later shipped into the public sdist by
 # default — 51 internal files on the PyPI source view. Use an
 # include-allowlist instead: the sdist ships only what a source consumer
 # needs to build, install, and satisfy the license, and any new
