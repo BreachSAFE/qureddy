@@ -25,7 +25,8 @@ from qureddy.core.models import (
     ScanTarget,
     Severity,
 )
-from qureddy.output.cbom import _validate_cbom_semantics, render_cbom
+from qureddy.output.cbom import render_cbom
+from qureddy.output.cbom_semantics import validate_cbom_semantics
 from qureddy.scanners.tls.scanner import build_capability_failure_result
 
 
@@ -236,7 +237,7 @@ class TestCbomSemanticGuard:
         payload["specVersion"] = "1.6"
 
         with pytest.raises(ValueError, match=r"exactly 1\.7"):
-            _validate_cbom_semantics(payload)
+            validate_cbom_semantics(payload)
 
     def test_rejects_dangling_reference(self) -> None:
         payload = self._base()
@@ -244,14 +245,14 @@ class TestCbomSemanticGuard:
         endpoint["provides"].append("crypto/algorithm/missing")
 
         with pytest.raises(ValueError, match="dangling"):
-            _validate_cbom_semantics(payload)
+            validate_cbom_semantics(payload)
 
     def test_rejects_duplicate_reference(self) -> None:
         payload = self._base()
         payload["components"].append(dict(payload["components"][0]))
 
         with pytest.raises(ValueError, match="duplicate"):
-            _validate_cbom_semantics(payload)
+            validate_cbom_semantics(payload)
 
     def test_rejects_duplicate_tool_reference(self) -> None:
         payload = self._base()
@@ -260,7 +261,7 @@ class TestCbomSemanticGuard:
         payload["metadata"]["tools"]["components"].append(duplicate)
 
         with pytest.raises(ValueError, match="duplicate"):
-            _validate_cbom_semantics(payload)
+            validate_cbom_semantics(payload)
 
     @pytest.mark.parametrize(
         ("name", "value"),
@@ -282,4 +283,4 @@ class TestCbomSemanticGuard:
         )
 
         with pytest.raises(ValueError, match="secret-like"):
-            _validate_cbom_semantics(payload)
+            validate_cbom_semantics(payload)
