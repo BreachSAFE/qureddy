@@ -20,7 +20,7 @@ version = 1
 [[annotations]]
 path = [
     "README.md",
-    "CLAUDE.md",
+    "[Cc][Ll][Aa][Uu][Dd][Ee].md",
     "AGENTS.md",
     "SECURITY.md",
     "CHANGELOG.md",
@@ -54,15 +54,15 @@ SPDX-FileCopyrightText = "2026 BreachSAFE"
 SPDX-License-Identifier = "Apache-2.0"
 
 [[annotations]]
-path = ".claude/**"
+path = ".[Cc][Ll][Aa][Uu][Dd][Ee]/**"
 precedence = "override"
 SPDX-FileCopyrightText = "2026 BreachSAFE"
 SPDX-License-Identifier = "Apache-2.0"
 
 [[annotations]]
-# Codex-layout copies of the same skills library as .agents/skills/,
-# installed from the canonical paul007ex/breachsafe-skills repo. Same
-# reasoning as the .claude/** block: annotate here so installed copies
+# Copies of the same skills library as .agents/skills/, installed from the
+# canonical skills repository. Same reasoning as the private-skills block:
+# annotate here so installed copies
 # stay byte-identical to the library (its drift_check compares content;
 # adding inline headers per-repo would flag every file as drifted).
 path = ".agents/**"

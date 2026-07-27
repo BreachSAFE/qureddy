@@ -28,16 +28,9 @@ Thanks for considering a contribution. This document covers what you need to kno
 Read these in order:
 
 1. [`README.md`](README.md) — what QuReddy is and what state it's in.
-2. [`CLAUDE.md`](CLAUDE.md) — project orientation, roadmap, settled architecture.
+2. [`docs/explanation/architecture.md`](docs/explanation/architecture.md) — project orientation and settled architecture.
 3. [`docs/contributors/coding-rules.md`](docs/contributors/coding-rules.md) — engineering standards. **Source of truth.** Read fully before writing code.
-4. [`docs/contributors/agent-antipatterns.md`](docs/contributors/agent-antipatterns.md) — anti-patterns and pre-response audit checklist (applies to humans and AI agents both).
-5. [`docs/contributors/examples.md`](docs/contributors/examples.md) — good-vs-bad code patterns. Read before writing the first file in a new module.
-
-If you are an AI coding agent (Claude Code, Codex, Cursor, etc.):
-- Read `.agents/skills/` to find the right skill for your task.
-- Treat `mvp-implement` as historical authority for the original TLS slice.
-- Use `audit-pr` before opening a PR.
-- Use `run-quality-gates` before final response on any code change.
+4. [`docs/contributors/examples.md`](docs/contributors/examples.md) — good-vs-bad code patterns. Read before writing the first file in a new module.
 
 ## Project state
 

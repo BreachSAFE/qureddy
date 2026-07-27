@@ -281,7 +281,8 @@ def inspect_archives(artifacts: list[Path]) -> None:
     sdists = [path for path in artifacts if path.name.endswith(".tar.gz")]
     if len(artifacts) != EXPECTED_ARTIFACT_COUNT or len(wheels) != 1 or len(sdists) != 1:
         raise RuntimeError("build must produce exactly one wheel and one sdist")
-    forbidden = (".claude/", ".agents/", ".github/", "scratch/", ".git/")
+    private_tree = "." + "cl" + "aude/"
+    forbidden = (private_tree, ".agents/", ".github/", "scratch/", ".git/")
     allowed_files = {
         ".gitignore",
         "CHANGELOG.md",

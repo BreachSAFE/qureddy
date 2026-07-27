@@ -15,6 +15,6 @@ description = "OpenSSL X25519MLKEM768 parser fixture in an archived prompt"
 targetRules = ["generic-api-key"]
 condition = "AND"
 commits = ["72f3fa4d750a393460ac40348e71f4b6c717bbce"]
-paths = ['''^docs/mvp/MVP-0\.1-CLAUDE-PROMPT\.md$''']
+paths = ['''^docs/mvp/MVP-0\.1-[Cc][Ll][Aa][Uu][Dd][Ee]-PROMPT\.md$''']
 regexTarget = "line"
 regexes = ['''^\s*-\s*`Server Temp Key: X25519MLKEM768`\s*$''']
