@@ -61,17 +61,10 @@ def _execute_scan(
         LocalOpenSSLLacksGroup,
     ) as exc:
         log.warning("scan.local_dependency_unusable", error=str(exc))
-        # Issue #274: machine formats default to quiet logging, which
-        # suppressed the warning above — the only user-facing report of
-        # this failure — leaving exit 3 with an empty stderr. The
-        # actionable message (the exception text carries the fix-it
-        # instructions) reaches stderr directly, exempt from the quiet
-        # default — except under fd-level `2>&1`, where it would corrupt
-        # the machine document (issue #30; failure_category plus the
-        # dependency details carry the failure in the document there).
+        # Keep the actionable fix on stderr unless fd-level `2>&1` would
+        # corrupt the single machine-readable document (issues #30/#274).
         _echo_operator_diagnostic(str(exc), machine_format=machine_format)
-        # Consume exc.dependency directly. Re-probing would waste a
-        # subprocess and open a TOCTOU window.
+        # Consume the original result; re-probing creates a TOCTOU window.
         dependency = exc.dependency or OpenSSLDependency(
             failure_category=FailureCategory.LOCAL_OPENSSL_MISSING,
         )

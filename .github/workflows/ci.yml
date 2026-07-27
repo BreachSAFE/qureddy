@@ -400,6 +400,12 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Install locked audit dependencies
+        run: uv sync --locked --extra dev
+
       - name: Download all phase artifacts
         uses: actions/download-artifact@v4
         with:
@@ -409,4 +415,4 @@ jobs:
         run: ls -laR ci-artifacts/ || echo "no artifacts collected"
 
       - name: Run audit script
-        run: python scripts/audit_phase.py --artifacts-dir ci-artifacts/
+        run: uv run --locked python scripts/audit_phase.py --artifacts-dir ci-artifacts/

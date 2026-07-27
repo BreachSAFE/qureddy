@@ -6,7 +6,9 @@ from qureddy.scanners.tls._classify import classify_failure as _classify_failure
 from qureddy.scanners.tls.openssl_probe._constants import (
     CLASSICAL_GROUP,
     DEFAULT_TIMEOUT_SECONDS,
+    EXCERPT_LIMIT,
     HYBRID_GROUP,
+    MIN_OPENSSL_VERSION,
 )
 from qureddy.scanners.tls.openssl_probe.capability import (
     probe_capability,
@@ -21,7 +23,9 @@ from qureddy.scanners.tls.openssl_probe.probe import (
 __all__ = [
     "CLASSICAL_GROUP",
     "DEFAULT_TIMEOUT_SECONDS",
+    "EXCERPT_LIMIT",
     "HYBRID_GROUP",
+    "MIN_OPENSSL_VERSION",
     "_classify_failure",
     "probe_capability",
     "raise_if_unusable",
