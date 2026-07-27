@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -23,6 +24,7 @@ FAKE_DIR = Path(__file__).parent / "fixtures" / "openssl" / "fake"
 # S607 (partial executable path) the same way openssl_probe.py's own
 # subprocess calls do — via an already-resolved path, not a bare name.
 _QUREDDY_BIN = shutil.which("qureddy") or "qureddy"
+_SUBPROCESS_INJECT_DIR = Path(__file__).parent / "subprocess_inject"
 
 
 def test_help_lists_scan_subcommand() -> None:
@@ -518,8 +520,12 @@ def test_local_openssl_too_old_exits_3() -> None:
     assert payload["summary"]["readiness"] == "unknown"
 
 
-def test_json_output_clean_when_stderr_redirected_to_stdout() -> None:
-    """JSON stdout stays parseable under real OS-level `2>&1`, with --quiet.
+@pytest.mark.parametrize("output_format", ["json", "cbom"])
+@pytest.mark.parametrize("quiet", [True, False])
+def test_machine_output_clean_when_stderr_redirected_to_stdout(
+    output_format: str, quiet: bool
+) -> None:
+    """Machine stdout stays parseable under real OS-level ``2>&1``.
 
     typer.testing.CliRunner dropped `mix_stderr` (see #189) and, more
     importantly, could never exercise genuine shell-level `2>&1` anyway —
@@ -529,24 +535,22 @@ def test_json_output_clean_when_stderr_redirected_to_stdout() -> None:
     entrypoint via subprocess with stderr=STDOUT, the only way to test
     real fd-level merging.
 
-    Only --quiet is asserted clean here: without it, this currently FAILS
-    against production (see #194) because the kernel-fd-snapshot fix in
-    core/logging.py solves in-process stream mixing, not genuine shell
-    2>&1 (dup2() already merges the fds before Python even starts, so
-    there is no longer a separate "original stderr" left to snapshot).
+    Both machine formats and both quiet modes must remain one document.
     """
+    args = [
+        _QUREDDY_BIN,
+        "scan",
+        "tls",
+        "example.com",
+        "--openssl",
+        str(FAKE_DIR / "openssl_too_old.sh"),
+        "--format",
+        output_format,
+    ]
+    if quiet:
+        args.append("--quiet")
     result = subprocess.run(  # noqa: S603 -- list-form, shell=False, resolved full path
-        [
-            _QUREDDY_BIN,
-            "scan",
-            "tls",
-            "example.com",
-            "--openssl",
-            str(FAKE_DIR / "openssl_too_old.sh"),
-            "--format",
-            "json",
-            "--quiet",
-        ],
+        args,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
@@ -554,17 +558,42 @@ def test_json_output_clean_when_stderr_redirected_to_stdout() -> None:
     )
     assert result.returncode == 3
     payload = json.loads(result.stdout)
-    assert payload["summary"]["failure_category"] == "local_openssl_too_old"
+    if output_format == "json":
+        assert payload["summary"]["failure_category"] == "local_openssl_too_old"
+    else:
+        assert payload["bomFormat"] == "CycloneDX"
 
 
-def test_json_output_clean_under_2and1_without_quiet() -> None:
-    """#194 fix: --format json/cbom now default to quiet-equivalent
-    (ERROR-level) logging unless -v/-vv/-vvv is explicitly passed, so a
-    WARNING-level log never lands on stdout under real shell `2>&1` —
-    not just in-process stream mixing (CliRunner), which the #15 fix
-    already covered but which cannot protect real `2>&1` (the OS has
-    already merged fd 1/2 before Python starts)."""
-    result = subprocess.run(  # noqa: S603 -- list-form, shell=False, resolved full path
+@pytest.mark.parametrize("output_format", ["json", "cbom"])
+@pytest.mark.parametrize("quiet", [True, False])
+def test_machine_output_keeps_hint_on_separate_stderr(output_format: str, quiet: bool) -> None:
+    """Separate streams preserve the actionable diagnostic, even with --quiet."""
+    args = [
+        _QUREDDY_BIN,
+        "scan",
+        "tls",
+        "example.com",
+        "--openssl",
+        str(FAKE_DIR / "openssl_too_old.sh"),
+        "--format",
+        output_format,
+    ]
+    if quiet:
+        args.append("--quiet")
+    result = subprocess.run(  # noqa: S603 -- resolved executable, shell=False
+        args,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 3
+    json.loads(result.stdout)
+    assert "qureddy: OpenSSL 3.4.0 is below required 3.5.0" in result.stderr
+
+
+def test_verbose_machine_output_is_clean_with_separate_stderr() -> None:
+    """Explicit verbosity keeps JSON clean when diagnostics have their own fd."""
+    result = subprocess.run(  # noqa: S603 -- resolved executable, shell=False
         [
             _QUREDDY_BIN,
             "scan",
@@ -574,14 +603,44 @@ def test_json_output_clean_under_2and1_without_quiet() -> None:
             str(FAKE_DIR / "openssl_too_old.sh"),
             "--format",
             "json",
+            "-v",
         ],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
+        capture_output=True,
         text=True,
         check=False,
     )
     assert result.returncode == 3
     json.loads(result.stdout)
+    assert "scan.local_dependency_unusable" in result.stderr
+
+
+@pytest.mark.parametrize("output_format", ["json", "cbom"])
+def test_typed_scan_error_emits_document_under_2and1(output_format: str) -> None:
+    """Installed subprocess preserves a document and exit 2 for typed failures."""
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(_SUBPROCESS_INJECT_DIR)
+    env["QUREDDY_TEST_FORCE_TYPED_ERROR"] = "1"
+    result = subprocess.run(  # noqa: S603 -- resolved executable, shell=False
+        [
+            _QUREDDY_BIN,
+            "scan",
+            "tls",
+            "example.com",
+            "--format",
+            output_format,
+        ],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        check=False,
+        env=env,
+    )
+    assert result.returncode == 2
+    payload = json.loads(result.stdout)
+    if output_format == "json":
+        assert payload["summary"]["failure_category"] == "parse_ambiguous"
+    else:
+        assert payload["bomFormat"] == "CycloneDX"
 
 
 def test_local_openssl_lacks_group_exits_3() -> None:
@@ -620,6 +679,29 @@ def test_local_openssl_missing_exits_3() -> None:
     assert result.exit_code == 3
     payload = json.loads(result.stdout)
     assert payload["summary"]["failure_category"] == "local_openssl_missing"
+
+
+@pytest.mark.parametrize(
+    "target",
+    [
+        "https://example.com",
+        "tls://example.com",
+        "ftp://example.com",
+        "nonsense://example.com",
+    ],
+)
+def test_ssh_foreign_scheme_exits_4_without_probe(
+    target: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Foreign URI intent is rejected before DNS, sockets, or SSH probing."""
+
+    def unexpected_probe(*_args: object, **_kwargs: object) -> None:
+        pytest.fail("SSH probe was called for a rejected target")
+
+    monkeypatch.setattr(cli_module, "_scan_ssh", unexpected_probe)
+    result = CliRunner().invoke(app, ["scan", "ssh", target, "--format", "json"])
+    assert result.exit_code == 4
+    assert "unsupported SSH scheme" in result.stderr
 
 
 def test_local_openssl_broken_exits_3() -> None:

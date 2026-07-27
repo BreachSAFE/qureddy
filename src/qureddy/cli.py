@@ -12,6 +12,7 @@ Per skill §"Exit codes" + issue #12:
 
 from __future__ import annotations
 
+import ctypes
 import os
 import re
 import sys
@@ -71,6 +72,7 @@ from qureddy.scanners.tls.scanner import (
     RetryConfig,
     TLSScanner,
     build_capability_failure_result,
+    build_scan_failure_result,
 )
 
 EXIT_OK = 0
@@ -332,6 +334,10 @@ def show_help(ctx: typer.Context) -> None:
 # the @scan_app.command body stays under the 50-line ceiling. Each
 # `OptT` is the single canonical declaration of one CLI option.
 TargetArg = Annotated[str, typer.Argument(help="Target host[:port], URL, or IP.")]
+SshTargetArg = Annotated[
+    str,
+    typer.Argument(help="SSH endpoint: host[:port], bracketed IPv6, ssh://host, or sftp://host."),
+]
 SniOpt = Annotated[
     str | None, typer.Option("--sni", help="SNI override (required for IP targets).")
 ]
@@ -497,7 +503,9 @@ def scan_tls(
             openssl_path=openssl,
             retry=RetryConfig(retries=retries, retry_delay=retry_delay, retry_on=retry_set),
         )
-        result, exit_code = _execute_scan(scanner, scan_target, timeout)
+        result, exit_code = _execute_scan(
+            scanner, scan_target, timeout, machine_format=machine_format
+        )
         _render(result, output_format, verbose, timeout)
         raise typer.Exit(code=exit_code)
     finally:
@@ -528,10 +536,50 @@ def _parse_cli_target(target: str, sni: str | None) -> ScanTarget:
         raise typer.Exit(code=EXIT_USAGE) from None
 
 
+def _stderr_merged_into_stdout() -> bool:
+    """Return whether fd 2 and non-interactive fd 1 share one open file.
+
+    This detects genuine shell-level ``2>&1``. In-process stream objects
+    without file descriptors (such as CliRunner and pytest capture) are
+    deliberately treated as separate streams.
+    """
+    try:
+        stdout_fd = sys.stdout.fileno()
+        stderr_fd = sys.stderr.fileno()
+        if os.isatty(stderr_fd):
+            return False
+        if os.name == "nt":
+            return _windows_standard_handles_match()
+        stdout_stat = os.fstat(stdout_fd)
+        stderr_stat = os.fstat(stderr_fd)
+    except (AttributeError, OSError, ValueError):
+        return False
+    return (stdout_stat.st_dev, stdout_stat.st_ino) == (stderr_stat.st_dev, stderr_stat.st_ino)
+
+
+def _windows_standard_handles_match() -> bool:
+    """Compare Win32 stdout/stderr handles without unreliable pipe inodes."""
+    kernel32 = vars(ctypes)["windll"].kernel32
+    get_std_handle = kernel32.GetStdHandle
+    get_std_handle.restype = ctypes.c_void_p
+    stdout_handle = int(get_std_handle(-11) or 0)  # STD_OUTPUT_HANDLE
+    stderr_handle = int(get_std_handle(-12) or 0)  # STD_ERROR_HANDLE
+    return stdout_handle != 0 and stdout_handle == stderr_handle
+
+
+def _echo_operator_diagnostic(message: str, *, machine_format: bool) -> None:
+    """Write a stderr hint unless it would corrupt merged machine output."""
+    if machine_format and _stderr_merged_into_stdout():
+        return
+    typer.echo(f"qureddy: {message}", err=True)
+
+
 def _execute_scan(
     scanner: TLSScanner,
     scan_target: ScanTarget,
     timeout: int,
+    *,
+    machine_format: bool,
 ) -> tuple[ScanResult, int]:
     """Run the scan; map local-capability + scan failures to exit codes.
 
@@ -557,7 +605,7 @@ def _execute_scan(
         # actionable message (the exception text carries the fix-it
         # instructions) must reach stderr directly, exempt from the
         # quiet default, matching the exit-2/exit-4 paths.
-        typer.echo(f"qureddy: {exc}", err=True)
+        _echo_operator_diagnostic(str(exc), machine_format=machine_format)
         # Consume exc.dependency directly. Re-probing would waste a
         # subprocess and open a TOCTOU window.
         dependency = exc.dependency or OpenSSLDependency(
@@ -566,9 +614,20 @@ def _execute_scan(
         result = build_capability_failure_result(scan_target, dependency)
         exit_code = EXIT_LOCAL_DEPENDENCY
     except QureddyError as exc:
-        log.exception("scan.failed", error=str(exc))
-        typer.echo(f"qureddy: scan failed: {exc}", err=True)
-        raise typer.Exit(code=EXIT_TARGET_FAILED) from None
+        # ERROR logs still pass the machine-format quiet threshold. Suppress
+        # the traceback only when fd-level ``2>&1`` would splice it into the
+        # structured document; separate stderr retains full diagnostics.
+        if not (machine_format and _stderr_merged_into_stdout()):
+            log.exception("scan.failed", error=str(exc))
+        _echo_operator_diagnostic(f"scan failed: {exc}", machine_format=machine_format)
+        if not machine_format:
+            raise typer.Exit(code=EXIT_TARGET_FAILED) from None
+        result = build_scan_failure_result(
+            scan_target,
+            FailureCategory.PARSE_AMBIGUOUS,
+            note=str(exc),
+        )
+        exit_code = EXIT_TARGET_FAILED
 
     if exit_code == EXIT_OK and result.summary.failure_category is not None:
         exit_code = EXIT_TARGET_FAILED
@@ -847,7 +906,7 @@ def _clean_ssh_error(msg: str) -> str:
 
 @scan_app.command("ssh", epilog=_SCAN_SSH_EPILOG, context_settings=_NO_WRAP_CONTEXT_SETTINGS)
 def scan_ssh_cmd(
-    target: TargetArg,
+    target: SshTargetArg,
     fmt: FormatOpt = OutputFormat.RICH,
     timeout: TimeoutOpt = 8,
     verbose: VerboseOpt = 0,

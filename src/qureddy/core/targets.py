@@ -180,28 +180,32 @@ DEFAULT_SSH_PORT = 22
 
 
 def parse_ssh_target(input_str: str) -> ScanTarget:
-    """Parse an SSH target (host, host:port, or bracketed IPv6) into a ScanTarget.
+    """Parse an SSH target into a normalized ``ssh://`` ScanTarget.
 
-    Reuses the hardened host/port extraction from parse_target (IPv6 bracketing
-    #223, noncanonical-IPv4 rejection #255), but defaults to port 22 and the
-    "ssh" scheme instead of TLS's 443/tls.
+    Accepted forms are a hostname or IP with an optional port, plus an
+    ``ssh://`` or ``sftp://`` URI containing only that endpoint. Credentials,
+    paths, query strings, fragments, and foreign schemes are rejected before
+    any network operation.
     """
+    if not isinstance(input_str, str):
+        raise TargetParseError("target must be a string")
     cleaned = input_str.strip()
     if not cleaned:
         msg = "empty target"
         raise TargetParseError(msg)
+
     if "://" in cleaned:
-        cleaned = cleaned.split("://", 1)[1]
-    host, port = _extract_host_port(cleaned)
-    if port == DEFAULT_PORT:  # _extract_host_port used the TLS default; SSH wants 22
-        # only override when the user did NOT specify a port
-        if ":" not in cleaned or cleaned.startswith("["):
-            has_explicit = "]" in cleaned and cleaned.rsplit("]", 1)[1].startswith(":")
-        else:
-            has_explicit = cleaned.count(":") == 1
-        if not has_explicit:
-            port = DEFAULT_SSH_PORT
+        host, port = _parse_ssh_uri(cleaned)
+    else:
+        host, port = _parse_raw_ssh_endpoint(cleaned)
+
     is_ip = _is_ip_literal(host)
+    if not is_ip and _NUMERIC_HOST.fullmatch(host):
+        msg = (
+            f"noncanonical numeric IP target {host!r}; "
+            "use canonical dotted-decimal IPv4 (for example 127.0.0.1)"
+        )
+        raise TargetParseError(msg)
     if not is_ip and not HOSTNAME_PATTERN.match(host):
         msg = f"invalid SSH host: {host!r}"
         raise TargetParseError(msg)
@@ -214,3 +218,49 @@ def parse_ssh_target(input_str: str) -> ScanTarget:
         scheme="ssh",
         locator=f"ssh://{rendered}:{port}",
     )
+
+
+def _parse_ssh_uri(cleaned: str) -> tuple[str, int]:
+    """Parse the allowlisted endpoint-only SSH/SFTP URI forms."""
+    parsed = urlparse(cleaned)
+    if parsed.scheme not in {"ssh", "sftp"}:
+        msg = f"unsupported SSH scheme {parsed.scheme!r}; expected ssh or sftp"
+        raise TargetParseError(msg)
+    if parsed.username is not None or parsed.password is not None:
+        raise TargetParseError("SSH target must not contain credentials")
+    if parsed.path or parsed.params or parsed.query or parsed.fragment:
+        raise TargetParseError("SSH target URI must not contain a path, query, or fragment")
+    if not parsed.hostname:
+        raise TargetParseError("SSH target URI has no host component")
+    try:
+        port = parsed.port if parsed.port is not None else DEFAULT_SSH_PORT
+    except ValueError as exc:
+        raise TargetParseError("SSH target URI contains an invalid port") from exc
+    return parsed.hostname, _validate_port(port)
+
+
+def _parse_raw_ssh_endpoint(cleaned: str) -> tuple[str, int]:
+    """Parse a raw SSH host, host:port, or bracketed IPv6 endpoint."""
+    if any(marker in cleaned for marker in ("/", "?", "#", "@")):
+        raise TargetParseError("SSH target must be an endpoint without credentials or a path")
+    if cleaned.startswith("[") and "]" in cleaned:
+        closing = cleaned.index("]")
+        host, remainder = cleaned[1:closing], cleaned[closing + 1 :]
+        if not remainder:
+            return host, DEFAULT_SSH_PORT
+        if not remainder.startswith(":"):
+            raise TargetParseError("malformed SSH IPv6 target literal")
+        try:
+            return host, _validate_port(int(remainder[1:]))
+        except ValueError as exc:
+            raise TargetParseError("SSH IPv6 target has an invalid port") from exc
+    if cleaned.count(":") == 1:
+        host, _, raw_port = cleaned.partition(":")
+        if not host:
+            raise TargetParseError("SSH target host is empty")
+        try:
+            return host, _validate_port(int(raw_port))
+        except ValueError as exc:
+            raise TargetParseError(f"SSH port is not an integer: {raw_port!r}") from exc
+    _reject_ambiguous_unbracketed_ipv6(cleaned)
+    return cleaned, DEFAULT_SSH_PORT

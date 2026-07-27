@@ -59,11 +59,16 @@ def scanner() -> TLSScanner:
 
 
 def test_pq_cloudflareresearch_hybrid(scanner: TLSScanner) -> None:
-    """UC1: pq.cloudflareresearch.com must report transitional_hybrid."""
+    """UC1: Cloudflare's mutable endpoint must negotiate the hybrid group."""
     target = parse_target("pq.cloudflareresearch.com")
     result = scanner.scan(target)
-    assert result.summary.readiness is Readiness.TRANSITIONAL_HYBRID
-    assert any(f.rule_id == "tls.hybrid.negotiated_x25519mlkem768" for f in result.findings)
+    hybrid_findings = [
+        finding
+        for finding in result.findings
+        if finding.rule_id == "tls.hybrid.negotiated_x25519mlkem768"
+    ]
+    assert hybrid_findings
+    assert hybrid_findings[0].negotiated_group == "X25519MLKEM768"
 
 
 def test_example_com_classical_control_fires(scanner: TLSScanner) -> None:

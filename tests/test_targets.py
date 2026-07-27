@@ -7,7 +7,7 @@ from __future__ import annotations
 import pytest
 
 from qureddy.core.errors import TargetParseError
-from qureddy.core.targets import parse_target
+from qureddy.core.targets import parse_ssh_target, parse_target
 
 
 class TestParseTargetHostname:
@@ -104,3 +104,42 @@ class TestParseTargetInvalid:
     def test_empty_or_whitespace_sni_override_raises(self, bad_sni: str) -> None:
         with pytest.raises(TargetParseError, match="empty or whitespace"):
             parse_target("example.com", sni_override=bad_sni)
+
+
+class TestParseSshTarget:
+    """SSH target grammar accepts only endpoint-intent-preserving forms."""
+
+    @pytest.mark.parametrize(
+        ("target", "host", "port"),
+        [
+            ("example.com", "example.com", 22),
+            ("example.com:2222", "example.com", 2222),
+            ("ssh://example.com", "example.com", 22),
+            ("sftp://example.com:2222", "example.com", 2222),
+            ("[2001:db8::1]:2222", "2001:db8::1", 2222),
+            ("ssh://[2001:db8::1]", "2001:db8::1", 22),
+        ],
+    )
+    def test_accepted_forms(self, target: str, host: str, port: int) -> None:
+        result = parse_ssh_target(target)
+        assert result.host == host
+        assert result.port == port
+        assert result.scheme == "ssh"
+
+    @pytest.mark.parametrize(
+        "target",
+        [
+            "https://example.com",
+            "tls://example.com",
+            "ftp://example.com",
+            "nonsense://example.com",
+            "ssh://user@example.com",
+            "ssh://example.com/path",
+            "ssh://example.com?query=yes",
+            "ssh://example.com#fragment",
+            "example.com/path",
+        ],
+    )
+    def test_rejected_forms(self, target: str) -> None:
+        with pytest.raises(TargetParseError):
+            parse_ssh_target(target)

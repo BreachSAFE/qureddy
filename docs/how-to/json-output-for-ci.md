@@ -125,6 +125,24 @@ qureddy scan tls www.google.com --format json --json-logs > scan.json 2> scan.lo
 # scan.log now contains one JSON object per line
 ```
 
+## Failure diagnostics and merged streams
+
+JSON and CBOM failures still emit one structured document and preserve the
+documented nonzero exit code. With separate streams, an actionable operator
+hint remains on stderr, including with `--quiet`. Under genuine shell-level
+`2>&1`, QuReddy suppresses that courtesy hint so the merged stream remains one
+parseable document.
+
+Explicit `-v`, `-vv`, or `-vvv` requests diagnostic logs. Keep stderr separate
+when using verbose machine output:
+
+```bash
+qureddy scan tls api.example.com --format json -v > scan.json 2> scan.log
+```
+
+Merging explicitly requested verbose logs with `2>&1` mixes diagnostics with
+the document by design.
+
 ## Schema stability
 
 The top-level shape (`schema_version: "qureddy.scan.v1"`) will not change without a version bump. Additive changes to nested objects (new optional fields) can land in v1; breaking changes bump to `v2`.

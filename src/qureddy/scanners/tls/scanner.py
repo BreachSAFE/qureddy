@@ -352,6 +352,9 @@ def build_capability_failure_result(
         notes=("local OpenSSL is unusable for X25519MLKEM768 hybrid probing",),
     )
     findings = classify_evidence(asset, [evidence])
+    summary = build_summary(target, list(findings), [evidence]).model_copy(
+        update={"failure_category": failure_category}
+    )
     return ScanResult(
         scan=ScanMetadata(
             scan_id=f"scan-{uuid.uuid4().hex[:12]}",
@@ -365,7 +368,46 @@ def build_capability_failure_result(
         assets=(asset,),
         evidence=(evidence,),
         findings=tuple(findings),
-        summary=build_summary(target, list(findings), [evidence]),
+        summary=summary,
+    )
+
+
+def build_scan_failure_result(
+    target: ScanTarget,
+    failure_category: FailureCategory,
+    *,
+    note: str,
+) -> ScanResult:
+    """Build a structured TLS result for a typed target-scan exception."""
+    started = datetime.now(UTC)
+    asset = build_asset(target)
+    evidence = Evidence(
+        id=f"ev-{uuid.uuid4().hex[:12]}",
+        asset_id=asset.id,
+        evidence_type="tls.scan",
+        observation_type=ObservationType.NOT_TESTABLE,
+        source="qureddy.scanners.tls.scanner",
+        failure_category=failure_category,
+        notes=(note,),
+    )
+    findings = classify_evidence(asset, [evidence])
+    summary = build_summary(target, list(findings), [evidence]).model_copy(
+        update={"failure_category": failure_category}
+    )
+    return ScanResult(
+        scan=ScanMetadata(
+            scan_id=f"scan-{uuid.uuid4().hex[:12]}",
+            started_at=started,
+            completed_at=datetime.now(UTC),
+            status=failure_category.value,
+            total_attempts=0,
+        ),
+        target=target,
+        dependencies=(),
+        assets=(asset,),
+        evidence=(evidence,),
+        findings=tuple(findings),
+        summary=summary,
     )
 
 
@@ -398,4 +440,5 @@ __all__ = [
     "RetryConfig",
     "TLSScanner",
     "build_capability_failure_result",
+    "build_scan_failure_result",
 ]
