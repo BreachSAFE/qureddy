@@ -23,7 +23,8 @@ def _docstring_range(node: ast.AST) -> range:
         and isinstance(body[0].value, ast.Constant)
         and isinstance(body[0].value.value, str)
     ):
-        return range(body[0].lineno, body[0].end_lineno + 1)
+        end_lineno = body[0].end_lineno or body[0].lineno
+        return range(body[0].lineno, end_lineno + 1)
     return range(0)
 
 

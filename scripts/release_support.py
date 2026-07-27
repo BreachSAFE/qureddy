@@ -274,12 +274,12 @@ def inspect_archives(artifacts: list[Path]) -> None:
         "PKG-INFO",
     }
     for artifact in artifacts:
-        with (
-            zipfile.ZipFile(artifact)
-            if artifact.suffix == ".whl"
-            else tarfile.open(artifact) as bundle
-        ):
-            names = bundle.namelist() if artifact.suffix == ".whl" else bundle.getnames()
+        if artifact.suffix == ".whl":
+            with zipfile.ZipFile(artifact) as bundle:
+                names = bundle.namelist()
+        else:
+            with tarfile.open(artifact) as bundle:
+                names = bundle.getnames()
         if any(part in name for name in names for part in forbidden):
             raise RuntimeError(f"forbidden internal content in {artifact.name}")
         if any(name.startswith("/") or ".." in name.split("/") for name in names):
