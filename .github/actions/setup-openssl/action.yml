@@ -77,9 +77,10 @@ runs:
         tar -xzf "$archive" --strip-components=1 -C "$source"
         cd "$source"
         ./Configure mingw64 --prefix="$prefix" --openssldir="$prefix" shared
-        # OpenSSL's MSYS2 makefiles race while atomically renaming generated
-        # dependency files under parallel jobs; use one worker for correctness.
-        make -j1 build_libs build_apps
+        # OpenSSL's MSYS2 app makefiles race while renaming generated
+        # dependency files. Libraries parallelize safely; build apps serially.
+        make -j4 build_libs
+        make -j1 build_apps
         make install_sw
 
     - name: Expose and verify OpenSSL on Linux or macOS
