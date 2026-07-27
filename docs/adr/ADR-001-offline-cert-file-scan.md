@@ -1,17 +1,18 @@
 # ADR-001: Offline certificate-file scan (`qureddy scan cert <file>`)
 
-**Status:** Proposed (build later) — 2026-06-14
-**Relates to:** issue #7 (detect PQC certificate signature algorithm).
+**Status:** Proposed (not shipped) as of 2026-07-27
+**Relates to:** Public
+[issue #7](https://github.com/breachsafe/qureddy/issues/7) delivered live leaf
+certificate signature observation. This ADR proposes a separate offline
+certificate file command.
 
 ---
 
 ## Context
 
-QuReddy today scans **live TLS endpoints** only: `qureddy scan tls host:port` connects,
-performs the handshake, and judges the **key-exchange axis** (negotiated group, e.g.
-`X25519MLKEM768`). Issue #7 adds the **certificate/authentication axis** — the leaf cert's
-signature algorithm (ML-DSA vs classical), implemented in
-`src/qureddy/scanners/tls/cert_sig.py::parse_certificate_signature`.
+QuReddy 0.2.0 scans live TLS and SSH endpoints. The TLS scan observes the leaf
+certificate signature algorithm. It does not provide the proposed
+`qureddy scan cert <file>` offline command.
 
 The two axes differ in what they *need*:
 - **Key exchange** is a property of a *live handshake* — it inherently requires an endpoint.

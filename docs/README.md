@@ -72,6 +72,7 @@ The rules and conventions for working *on* QuReddy (not *with* it) live separate
 - [`contributors/coding-rules.md`](contributors/coding-rules.md) — Python authoring standards (size, types, security, structlog, exceptions). Source of truth for *how the code is written*.
 - [`contributors/cli-design-rules.md`](contributors/cli-design-rules.md) — CLI conventions (flags, exit codes, help, stdout/stderr contract, NO_COLOR). Source of truth for *how the CLI behaves*.
 - [`contributors/review-process.md`](contributors/review-process.md) — how a fix lands: reviewer / validator / arbiter pipeline + label tiers
+- [`contributors/adr/`](contributors/adr/) — accepted, proposed, implemented, and superseded architecture decisions
 - [`contributors/agents/`](contributors/agents/) — agent role specifications and bootstrap prompts
 
 These follow Diátaxis internally too — `coding-rules.md` is reference, `examples.md` is how-to, etc. — but they sit under `contributors/` because they're not for end users of the `qureddy` CLI.

@@ -2,14 +2,18 @@
 
 # ADR 0004 — Multi-scanner architecture for MVP 0.2
 
-**Status:** Proposed
+**Status:** Accepted and implemented for the shipped TLS and SSH scanners
 **Date:** 2026-04-27
 **Deciders:** Paul Volosen, project lead
 **Consulted:** Claude (drafting), Codex (architect / arbiter)
 **Informed:** future MVP 0.2 contributors
 **Supersedes:** none
 **Superseded by:** none
-**Tracking issue:** [#39](https://github.com/breachsafe/qureddy/issues/39)
+**Implementation evidence:** Public
+[PR #22](https://github.com/breachsafe/qureddy/pull/22) added the SSH scanner
+behind the shared `ScanResult` and output surfaces. The installed 0.2.0 CLI
+exposes `scan tls` and `scan ssh`. Historical issue numbers in the body belong
+to the pre-cutover staging tracker.
 
 ---
 

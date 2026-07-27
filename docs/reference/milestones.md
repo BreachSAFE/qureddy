@@ -1,68 +1,104 @@
-# Reference: Project milestones
+# Project milestone reference
 
-This page is the canonical record of what's shipped, what's planned, and which skill drives the active milestone. Reference, not roadmap-essay — for the *why* behind a milestone, see the relevant ADR or [explanation](../explanation/) page.
+This page records shipped, verified, and planned scope. It does not treat a
+planned milestone, open issue, or accepted design as a delivered artifact.
 
 ## Contents
 
-- [Status table](#status-table)
-- [Historical implementation skill](#historical-implementation-skill)
-- [Out of scope](#out-of-scope-explicit-non-goals)
-- [Historical bootstrap prompt](#historical-bootstrap-prompt)
+- [Status definitions](#status-definitions)
+- [Milestone table](#milestone-table)
+- [Current release program](#current-release-program)
+- [Non-goals](#non-goals)
+- [Historical implementation material](#historical-implementation-material)
+- [Decision records](#decision-records)
 - [Related documentation](#related-documentation)
 
-## Status table
+## Status definitions
 
-| Milestone | Status | Scope | Released |
-|---|---|---|---|
-| **MVP 0.1** | **Shipped** | TLS scanner. Hybrid + classical probes against `X25519MLKEM768` / `X25519` via `openssl s_client -brief`. Rich and JSON output. Exit codes 0/2/3/4/70. Capability detection. | 2026-05-10 |
-| MVP 0.2 | **Shipped (initial)** | Certificate signature-algorithm detection (classical vs post-quantum) and a legacy-protocol sweep (TLS 1.0/1.1/1.2 with per-protocol cipher enumeration), both wired into the default scan. Full cert-chain and key-size analysis still to come. | 2026-07 |
-| MVP 0.3 | **Shipped** | CycloneDX 1.7 CBOM emission via `--format cbom`. Final bytes pass the pinned 1.7.1 schemas, `cyclonedx-cli` 0.33.1, and QuReddy semantic checks. | 2026-07 |
-| MVP 0.4 | **Shipped** | SSH scanner with host-key and key-exchange algorithm observations. Rich, JSON, and CBOM output; no local OpenSSL dependency. | 2026-07 |
-| MVP 0.5 | Planned | Local crypto config scanner. | TBD |
-| MVP 0.6 | Planned | Source-code scanner. OpenSSF Best Practices passing tier target. | TBD |
-| v1.0 | Planned | Full OSS release. PyPI publish. Docker image at `ghcr.io/breachsafe/qureddy`. Signed artifacts. OpenSSF Best Practices silver tier target. | TBD |
-| **P2** | Planned | **BreachSAFE QuReddy Enterprise** — separate commercial product. Cloud scanners, fleet/batch operation, SaaS dashboard, SIEM integrations, compliance attestation reports, support contracts. Capability split documented in [`editions.md`](editions.md); design locked in [ADR 0006](../contributors/adr/0006-oss-vs-enterprise-split.md). | TBD |
+| Status | Meaning |
+| --- | --- |
+| Shipped | Present in the package version and public source |
+| Verified | Shipped behavior has named local, hosted, schema, or live proof |
+| Release candidate | Code and metadata are staged for publication; registry rehearsal is incomplete |
+| Planned | Tracked intent without a shipped implementation |
 
-## Historical implementation skill
+## Milestone table
 
-The original MVP 0.1 implementation instructions remain at:
+| Milestone | Status | Scope | Evidence date |
+| --- | --- | --- | --- |
+| MVP 0.1 | Shipped | TLS 1.3 hybrid and classical control probes, Rich and JSON output, typed failures | Public `v0.1.0` tag, 2026-05-10 |
+| MVP 0.2 | Shipped | Leaf certificate signature observation and legacy TLS 1.0, 1.1, and 1.2 enumeration | Current 0.2.0 source and tests |
+| MVP 0.3 | Shipped and independently verified | CycloneDX 1.7 CBOM output with pinned schema, CLI, semantic, and determinism checks | Public PRs #48 and #51, 2026-07-27 |
+| MVP 0.4 | Shipped | SSH and SFTP endpoint scanner with key exchange and host key observations | Public PR #22, 2026-07-23 |
+| MVP 0.5 | Planned | Local cryptographic configuration scanner | No shipped artifact |
+| MVP 0.6 | Planned | Source-code scanner | No shipped artifact |
+| PyPI 0.2.0 | Release candidate | Installable wheel and source distribution, release gate, documentation, TestPyPI rehearsal | Public issues #33 through #36 |
+| Enterprise P2 | Planned | Operated fleet, persistence, integrations, tenancy, and support | No shipped product in this repository |
 
-**`.claude/skills/mvp-implement/SKILL.md`**
+## Current release program
 
-That skill describes the historical TLS-only milestone and is not authority for the
-shipped SSH or CBOM surfaces. Current work is tracked in the public issue tracker and
-must be checked against the repository's current contributor rules.
+The public release sequence is:
 
-## Out of scope (explicit non-goals)
+1. [#30](https://github.com/breachsafe/qureddy/issues/30): truthful green main,
+   complete;
+2. [#31](https://github.com/breachsafe/qureddy/issues/31): CycloneDX 1.7
+   observation contract, complete;
+3. [#32](https://github.com/breachsafe/qureddy/issues/32): independent CBOM
+   conformance, complete;
+4. [#33](https://github.com/breachsafe/qureddy/issues/33): package artifact
+   proof, complete;
+5. [#34](https://github.com/breachsafe/qureddy/issues/34): repository-owned
+   local release gate, in progress;
+6. [#35](https://github.com/breachsafe/qureddy/issues/35): documentation
+   truth-up, in progress;
+7. [#36](https://github.com/breachsafe/qureddy/issues/36): TestPyPI rehearsal,
+   not started.
 
-These never ship in either OSS or Enterprise — see [`editions.md`](editions.md) "Never shipped" section for the full canonical list:
+Publication is not complete until issue #36 records the registry installation
+and rendering evidence.
 
-- Binary scanning (`.exe` / `.dll` / `.jar` / firmware)
-- Remediation (QuReddy reads, never writes)
-- Continuous monitoring as an always-on agent (cron is the answer)
-- AI / NHI inventory (different product)
-- Telemetry, ever
-- EOL platforms (Windows XP/7/8.1, RHEL 6, Ubuntu 16.04 and earlier)
-- Docker requirement at MVP scale (ships at v1.0)
-- Reinventing crypto primitives in the OSS core
+## Non-goals
 
-## Historical bootstrap prompt
+QuReddy does not provide:
 
-[`docs/contributors/agents/mvp-0.1-bootstrap-prompt.md`](../contributors/agents/mvp-0.1-bootstrap-prompt.md) is the pasteable session bootstrap. It tells a fresh Claude session to read the contracts, then load the skill, then begin work.
+- binary or firmware scanning;
+- automated remediation;
+- an always-on endpoint agent;
+- AI or non-human identity inventory;
+- hidden telemetry;
+- support for end-of-life platforms;
+- a hosted multi-tenant service in this repository.
 
-This prompt is retained as historical implementation context. It does not
-describe the current release surface.
+## Historical implementation material
+
+`.claude/skills/mvp-implement/SKILL.md` and
+`docs/contributors/agents/mvp-0.1-bootstrap-prompt.md` describe the original
+TLS-only implementation milestone. They are retained for history and are not
+authority for the shipped SSH, CBOM, packaging, or release surfaces.
+
+Current changes must follow the repository contributor rules, accepted ADRs,
+public issue acceptance criteria, code, tests, and installed artifact
+behavior.
+
+## Decision records
+
+The [ADR ledger](../contributors/adr/) records current status and historical
+supersession. Key release decisions are:
+
+- [ADR 0002](../contributors/adr/0002-diataxis-documentation-standard.md):
+  documentation structure;
+- [ADR 0004](../contributors/adr/0004-multi-scanner-architecture.md): TLS and
+  SSH scanner composition;
+- [ADR 0005 size](../contributors/adr/0005-splitting-oversized-files.md):
+  purpose-organized file splits;
+- [ADR 0006](../contributors/adr/0006-oss-vs-enterprise-split.md): product
+  boundary;
+- [ADR 0007](../contributors/adr/0007-cyclonedx-1.7-observation-contract.md):
+  CycloneDX 1.7 output.
 
 ## Related documentation
 
-- [`editions.md`](editions.md) — capability matrix for OSS vs Enterprise (canonical answer for "what's in each tier")
-- [Explanation: Why QuReddy is open-core](../explanation/oss-vs-enterprise.md) — the reasoning behind the P2 split
-- [`.claude/skills/mvp-implement/SKILL.md`](../../.claude/skills/mvp-implement/SKILL.md) — current skill
-- [`docs/contributors/coding-rules.md`](../contributors/coding-rules.md) — engineering standards
-- [`docs/contributors/oss-standards.md`](../contributors/oss-standards.md) — OSS conventions
-- [ADR 0001 — `--trace` flag](../contributors/adr/0001-trace-and-verbosity.md) — accepted, not yet implemented
-- [ADR 0002 — Diátaxis docs standard](../contributors/adr/0002-diataxis-documentation-standard.md)
-- [ADR 0003 — CLI `--help` rewrite](../contributors/adr/0003-cli-help-rewrite.md)
-- [ADR 0004 — Multi-scanner architecture](../contributors/adr/0004-multi-scanner-architecture.md)
-- [ADR 0005 — Splitting oversized files](../contributors/adr/0005-splitting-oversized-files.md)
-- [ADR 0006 — OSS vs Enterprise split](../contributors/adr/0006-oss-vs-enterprise-split.md) — locks the P2 design
+- [Edition reference](editions.md)
+- [Changelog](../../CHANGELOG.md)
+- [Local release gate](../contributors/local-release-gate.md)
+- [CBOM conformance](../contributors/cbom-conformance.md)

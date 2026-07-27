@@ -11,8 +11,13 @@ first implementation PR is the `cli.py` → `cli/` split)
 **Informed:** MVP 0.2+ contributors
 **Supersedes:** none
 **Superseded by:** none
-**Tracking issues:** [#60](https://github.com/breachsafe/qureddy/issues/60) (cli.py), [#82](https://github.com/breachsafe/qureddy/issues/82) (openssl_probe.py), [#69](https://github.com/breachsafe/qureddy/issues/69) (tests/test_cli.py)
-**Related:** [ADR 0003](0003-cli-help-rewrite.md), [ADR 0004](0004-multi-scanner-architecture.md), [#41](https://github.com/breachsafe/qureddy/issues/41), [#42](https://github.com/breachsafe/qureddy/issues/42)-[#45](https://github.com/breachsafe/qureddy/issues/45), [#79](https://github.com/breachsafe/qureddy/issues/79)
+**Public implementation:** [issue #30](https://github.com/breachsafe/qureddy/issues/30)
+and [PR #47](https://github.com/breachsafe/qureddy/pull/47)
+**Related:** [ADR 0003](0003-cli-help-rewrite.md), [ADR 0004](0004-multi-scanner-architecture.md)
+
+Historical issue numbers in the decision narrative belong to the pre-cutover
+staging tracker. They are retained as decision context, not public release
+links.
 
 ---
 
