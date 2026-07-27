@@ -39,6 +39,36 @@ semantic checks. See the
 [CBOM conformance procedure](../contributors/cbom-conformance.md) for the
 reproducible validator commands and pinned digests.
 
+Check JSON syntax with Python:
+
+```bash
+python -m json.tool github-ssh.cbom.json > /dev/null
+```
+
+Then validate with CycloneDX CLI 0.33.1:
+
+```bash
+cyclonedx --version
+cyclonedx validate \
+  --input-file github-ssh.cbom.json \
+  --input-format json \
+  --input-version v1_7 \
+  --fail-on-errors
+```
+
+Use the checksum-pinned platform asset recorded in
+[`tests/conformance/cyclonedx-cli-v0.33.1.json`](../../tests/conformance/cyclonedx-cli-v0.33.1.json)
+when reproducing release evidence. The repository-owned release gate downloads
+and verifies that asset before running the validator.
+
+Confirm the declared version:
+
+```bash
+python -c 'import json; print(json.load(open("github-ssh.cbom.json"))["specVersion"])'
+```
+
+The expected value is `1.7`.
+
 ## Evidence limits
 
 The CBOM reports observations made by QuReddy. It is not a claim of complete
