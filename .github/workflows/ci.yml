@@ -135,7 +135,9 @@ jobs:
 
   # ===========================================================================
   # Phase 3 — Integration tests (real OpenSSL 3.6.3 subprocess, no network).
-  # OpenSSL is installed per-OS.
+  # OpenSSL is installed per-OS. Windows 3.5.7 is excluded deliberately:
+  # native Windows coverage remains on 3.6.3 while 3.5.7 floor coverage runs
+  # on Linux and macOS; the pinned Windows build is retained for manual runs.
   # ===========================================================================
   phase-3-integration:
     name: "Phase 3: Integration (${{ matrix.os }}, OpenSSL ${{ matrix.openssl.version }})"
@@ -150,6 +152,11 @@ jobs:
             sha256: "a8c0d28a529ca480f9f36cf5792e2cd21984552a3c8e4aa11a24aa31aeac98e8"
           - version: "3.6.3"
             sha256: "243a86649cf6f23eeb6a2ff2456e09e5d77dd9018a54d3d96b0c6bdd6ba6c7f1"
+        exclude:
+          - os: windows-latest
+            openssl:
+              version: "3.5.7"
+              sha256: "a8c0d28a529ca480f9f36cf5792e2cd21984552a3c8e4aa11a24aa31aeac98e8"
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
