@@ -23,7 +23,7 @@ runs:
         archive="$RUNNER_TEMP/openssl-${version}.tar.gz"
         source="$RUNNER_TEMP/openssl-${version}-source"
         prefix="$RUNNER_TEMP/qureddy-openssl-${version}"
-        curl --fail --location --proto '=https' \
+        curl --fail --location --proto '=https' --connect-timeout 30 --max-time 300 \
           "https://www.openssl.org/source/openssl-${version}.tar.gz" \
           --output "$archive"
         actual="$(shasum -a 256 "$archive" | cut -d ' ' -f 1)"
@@ -58,7 +58,7 @@ runs:
         archive="$runner_temp/openssl-${version}.tar.gz"
         source="$runner_temp/openssl-${version}-source"
         prefix="$runner_temp/qureddy-openssl-${version}"
-        curl --fail --location --proto '=https' \
+        curl --fail --location --proto '=https' --connect-timeout 30 --max-time 300 \
           "https://www.openssl.org/source/openssl-${version}.tar.gz" \
           --output "$archive"
         echo "$expected  $archive" | sha256sum --check --strict

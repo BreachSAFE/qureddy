@@ -36,3 +36,11 @@ def test_legacy_ci_uses_the_release_gate_secret_scanner() -> None:
 
     assert "python scripts/run_secret_scan.py" in workflow
     assert "gitleaks/gitleaks-action@" not in workflow
+
+
+def test_pinned_openssl_setup_has_network_and_step_timeouts() -> None:
+    workflow = CI_WORKFLOW.read_text(encoding="utf-8")
+    action = Path(".github/actions/setup-openssl/action.yml").read_text(encoding="utf-8")
+
+    assert workflow.count("timeout-minutes: 30") >= 3
+    assert action.count("--connect-timeout 30 --max-time 300") == 2
