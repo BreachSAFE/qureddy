@@ -315,7 +315,7 @@ Google style. Includes Args, Returns, Raises sections where applicable.
 **Rule 10.2 — Comments explain why, not what.**
 The code says what. Comments explain why the code is the way it is.
 ```python
-# OpenSSL 3.6.3 emits "Server Temp Key" but not "Negotiated TLS1.3 group"
+# OpenSSL 3.5.7 LTS emits "Server Temp Key" but not "Negotiated TLS1.3 group"
 # in -brief mode for X25519MLKEM768. Parse the former.
 match = re.search(r"Server Temp Key:\s*(\S+)", stdout)
 ```
@@ -571,7 +571,7 @@ Artifact: `phase-2-unit.xml`, `coverage-unit.xml`
 
 ### Phase 3 — Integration Tests (Real OpenSSL, No Network)
 
-Real OpenSSL 3.6.3+ subprocess. Verifies capability detection and `-brief` parsing against a real binary, but no network connections.
+Real OpenSSL 3.5.7 LTS or newer subprocess. Verifies capability detection and `-brief` parsing against a real binary, but no network connections.
 
 ```
 pytest tests/test_openssl_probe.py
@@ -654,7 +654,7 @@ CI quality gates are split into two tiers based on cost-benefit at MVP scale.
 | Static security | 1 | `bandit` (MEDIUM threshold) | |
 | Secrets scan | 1 | `gitleaks` (or `trufflehog`) on diff | |
 | Unit tests | 2 | `pytest` excluding `tests/live/` (>=80% coverage) | |
-| Integration tests | 3 | `pytest tests/test_openssl_probe.py` | needs OpenSSL 3.6.3+ on runner |
+| Integration tests | 3 | `pytest tests/test_openssl_probe.py` | needs OpenSSL 3.5.7 LTS or newer on runner |
 | Live tests | 4 | `pytest tests/live/` | needs network; 3 retries via `pytest-rerunfailures` |
 | Audit | 7 | `scripts/audit_phase.py` | reads phase artifacts, asserts on counts |
 
@@ -673,7 +673,7 @@ CI quality gates are split into two tiers based on cost-benefit at MVP scale.
 
 Promote a Tier 2 gate to per-PR execution when its runtime and signal justify the cost.
 
-CI runs on the matrix: **ubuntu-latest × macos-latest × windows-latest × Python 3.12**. All three platforms must pass for both tiers. OpenSSL 3.6.3+ is installed per-platform during CI setup.
+CI runs on the matrix: **ubuntu-latest × macos-latest × windows-latest × Python 3.12**. All three platforms must pass for both tiers. OpenSSL 3.5.7 LTS or newer is installed per-platform during CI setup.
 
 ---
 

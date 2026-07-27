@@ -7,11 +7,11 @@ inputs:
   version:
     description: OpenSSL release to build
     required: false
-    default: "3.6.3"
+    default: "3.5.7"
   sha256:
     description: SHA-256 digest of the OpenSSL source archive
     required: false
-    default: "243a86649cf6f23eeb6a2ff2456e09e5d77dd9018a54d3d96b0c6bdd6ba6c7f1"
+    default: "a8c0d28a529ca480f9f36cf5792e2cd21984552a3c8e4aa11a24aa31aeac98e8"
 
 runs:
   using: composite
