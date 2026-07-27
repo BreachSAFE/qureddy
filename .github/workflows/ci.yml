@@ -1,0 +1,567 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# QuReddy CI — 7-phase pipeline per docs/contributors/coding-rules.md §21.
+#
+# Matrix: ubuntu × macos × windows on Python 3.12. OpenSSL 3.6.3 installed
+# per OS. Every test runs every time. pytest-rerunfailures absorbs
+# transient hiccups (3 attempts, 1s delay) globally via pyproject.toml.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    # Live public-network probes are an advisory signal, never a PR prerequisite.
+    - cron: "23 7 * * 2"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+
+  # ===========================================================================
+  # Phase 1 — Static analysis (no execution).
+  # Lint, format-check, type, static security, dep CVEs, license, secrets.
+  # ===========================================================================
+  phase-1-static:
+    name: "Phase 1: Static (${{ matrix.os }})"
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0  # gitleaks needs history
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+
+      - name: Install project (dev extras)
+        run: uv sync --locked --extra dev
+
+      - name: ruff check
+        run: uv run --locked ruff check .
+
+      - name: ruff format --check
+        run: uv run --locked ruff format --check .
+
+      - name: mypy --strict
+        run: uv run --locked mypy src/qureddy --strict
+
+      - name: bandit
+        run: uv run --locked bandit -r -ll src/qureddy scripts/
+
+      - name: pip-audit
+        run: uv run --locked pip-audit
+
+      - name: deptry
+        run: uv run --locked deptry .
+
+      - name: reuse lint
+        run: uv run --locked reuse lint
+
+      - name: Gitleaks 8.30.1 full-history scan (Linux only)
+        if: matrix.os == 'ubuntu-latest'
+        run: python scripts/run_secret_scan.py
+
+  # ===========================================================================
+  # Phase 2 — Unit tests (hermetic, no network, no real OpenSSL).
+  # Excludes tests/live/.
+  # ===========================================================================
+  phase-2-unit:
+    name: "Phase 2: Unit (${{ matrix.os }})"
+    runs-on: ${{ matrix.os }}
+    needs: phase-1-static
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+
+      - name: Install project (dev extras)
+        run: uv sync --locked --extra dev
+
+      - name: pytest (unit only, with coverage)
+        run: |
+          uv run --locked pytest --ignore=tests/live \
+            --cov=qureddy \
+            --cov-report=term-missing \
+            --cov-report=xml:coverage.xml \
+            --cov-fail-under=80 \
+            --junitxml=pytest-results.xml
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coverage-${{ matrix.os }}
+          path: |
+            .coverage
+            coverage.xml
+            pytest-results.xml
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
+
+  # ===========================================================================
+  # Phase 3 — Integration tests (real OpenSSL 3.6.3 subprocess, no network).
+  # OpenSSL is installed per Linux and macOS runner.
+  # ===========================================================================
+  phase-3-integration:
+    name: "Phase 3: Integration (${{ matrix.os }}, OpenSSL ${{ matrix.openssl.version }})"
+    runs-on: ${{ matrix.os }}
+    needs: phase-2-unit
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        openssl:
+          - version: "3.5.7"
+            sha256: "a8c0d28a529ca480f9f36cf5792e2cd21984552a3c8e4aa11a24aa31aeac98e8"
+          - version: "3.6.3"
+            sha256: "243a86649cf6f23eeb6a2ff2456e09e5d77dd9018a54d3d96b0c6bdd6ba6c7f1"
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+
+      - name: Set up pinned OpenSSL ${{ matrix.openssl.version }}
+        timeout-minutes: 30
+        uses: ./.github/actions/setup-openssl
+        with:
+          version: ${{ matrix.openssl.version }}
+          sha256: ${{ matrix.openssl.sha256 }}
+
+      - name: Install project (dev extras)
+        run: uv sync --locked --extra dev
+
+      - name: pytest tests/test_openssl_probe.py
+        run: uv run --locked pytest tests/test_openssl_probe.py -v
+
+  # ===========================================================================
+  # Phase 4 — Live tests (network required, real targets).
+  # tests/live/ runs with default pytest. pytest-rerunfailures absorbs hiccups.
+  # ===========================================================================
+  phase-4-live:
+    name: "Phase 4: Live (${{ matrix.os }})"
+    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ${{ matrix.os }}
+    needs: phase-3-integration
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+
+      - name: Set up pinned OpenSSL 3.6.3
+        timeout-minutes: 30
+        uses: ./.github/actions/setup-openssl
+
+      - name: Install project (dev extras)
+        run: uv sync --locked --extra dev
+
+      - name: pytest tests/live/
+        run: uv run --locked pytest tests/live/ -v --junitxml=live-results.xml
+
+      - name: Upload live-test results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: live-results-${{ matrix.os }}
+          path: live-results.xml
+          if-no-files-found: error
+          retention-days: 14
+
+  # ===========================================================================
+  # Phase 5 — Self-scan (qureddy scans qureddy's canonical targets).
+  # ===========================================================================
+  phase-5-self-scan:
+    name: "Phase 5: Self-scan"
+    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    needs: phase-4-live
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+
+      - name: Set up pinned OpenSSL 3.6.3
+        timeout-minutes: 30
+        uses: ./.github/actions/setup-openssl
+
+      - name: Install project
+        run: uv sync --locked --extra dev
+
+      - name: Scan canonical targets
+        run: |
+          mkdir -p phase-5-self-scan
+          uv run --locked qureddy scan tls www.cloudflare.com --format json > phase-5-self-scan/cloudflare.json
+          uv run --locked qureddy scan tls pq.cloudflareresearch.com --format json > phase-5-self-scan/pq-cloudflare.json
+          uv run --locked qureddy scan tls www.google.com --format json > phase-5-self-scan/google.json
+          uv run --locked qureddy scan tls example.com --format json > phase-5-self-scan/example.json
+          uv run --locked qureddy scan tls 1.1.1.1:443 --sni one.one.one.one --format json > phase-5-self-scan/1111.json
+          uv run --locked qureddy scan ssh github.com --format json > phase-5-self-scan/github-ssh.json
+          set +e
+          uv run --locked qureddy scan tls tls-v1-2.badssl.com:1012 --format json > phase-5-self-scan/tls12.json
+          tls12_exit=$?
+          set -e
+          test "$tls12_exit" -eq 2
+
+      - name: Upload self-scan artifacts
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: phase-5-self-scan
+          path: phase-5-self-scan/
+          if-no-files-found: error
+          retention-days: 90
+
+  # ===========================================================================
+  # Phase 6 — Build verification.
+  # ===========================================================================
+  phase-6-build:
+    name: "Phase 6: Build"
+    runs-on: ubuntu-latest
+    needs: phase-3-integration
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+
+      - name: uv build
+        run: |
+          uv sync --locked --extra dev
+          uv build
+
+      - name: Upload built artifacts
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: phase-6-dist
+          path: dist/
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: trivy fs scan
+        # v0.36.0, pinned to the dereferenced commit (not a mutable tag).
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
+        with:
+          scan-type: fs
+          ignore-unfixed: true
+          severity: HIGH,CRITICAL
+          format: table
+          exit-code: 1
+          skip-dirs: scratch,.git
+
+  # ===========================================================================
+  # Phase 7 — Audit. Reads prior phase artifacts. Asserts on counts.
+  # The anti-skim guard: passing exit codes from earlier phases are NOT enough.
+  # ===========================================================================
+  phase-7-audit:
+    name: "Phase 7: Audit"
+    runs-on: ubuntu-latest
+    needs: [phase-4-live, phase-5-self-scan, phase-6-build]
+    # The audit covers live artifacts, so it is an advisory scheduled/manual signal too.
+    if: ${{ always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') }}
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+
+      - name: Install locked audit dependencies
+        run: uv sync --locked --extra dev
+
+      - name: Download all phase artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          path: ci-artifacts/
+
+      - name: List artifacts
+        run: ls -laR ci-artifacts/ || echo "no artifacts collected"
+
+      - name: Run audit script
+        run: uv run --locked python scripts/audit_phase.py --artifacts-dir ci-artifacts/
+
+  # ===========================================================================
+  # Final-byte CBOM conformance — independent, offline schemas + pinned CLI.
+  # This gate is intentionally blocking and uses an installed wheel, never the
+  # editable source tree, to exercise the public console entrypoint.
+  # ===========================================================================
+  cbom-conformance:
+    name: "CBOM: CycloneDX 1.7 final bytes"
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+
+      - name: Build and install candidate wheel
+        run: |
+          uv tool run --from "build==1.3.0" python -m build --wheel
+          python -m venv .conformance-venv
+          uv pip install --python .conformance-venv/bin/python \
+            dist/breachsafe_qureddy-*.whl \
+            "jsonschema==4.25.1" \
+            "rfc3339-validator==0.1.4"
+
+      - name: Fetch pinned independent CycloneDX validator
+        run: |
+          asset_url="$(python -c 'import json; print(json.load(open("tests/conformance/cyclonedx-cli-v0.33.1.json"))["assets"]["linux-x64"]["url"])')"
+          expected_sha="$(python -c 'import json; print(json.load(open("tests/conformance/cyclonedx-cli-v0.33.1.json"))["assets"]["linux-x64"]["sha256"])')"
+          curl --fail --location --proto '=https' --tlsv1.2 \
+            "$asset_url" --output cyclonedx-cli
+          echo "$expected_sha  cyclonedx-cli" | sha256sum --check --strict
+          chmod +x cyclonedx-cli
+
+      - name: Validate final installed-console bytes
+        run: |
+          .conformance-venv/bin/python scripts/run_cbom_conformance.py \
+            --cyclonedx-cli ./cyclonedx-cli \
+            --tool-asset-key linux-x64 \
+            --qureddy-console .conformance-venv/bin/qureddy
+
+  # ===========================================================================
+  # PyPI artifact proof — build once with pinned tooling, audit runtime-only
+  # dependencies, then install the exact wheel/sdist on every supported OS.
+  # This is the packaging contract (#33), not the release orchestrator (#34).
+  # ===========================================================================
+  packaging-build:
+    name: "Package: build and runtime audit"
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+
+      - name: Install pinned build tools
+        run: uv self version
+
+      - name: Verify lock and build artifacts
+        run: |
+          uv lock --check
+          uv tool run --from "build==1.3.0" python -m build
+          uv tool run --from "twine==6.2.0" twine check dist/*
+          cd dist
+          sha256sum breachsafe_qureddy-* > SHA256SUMS
+          sha256sum --check --strict SHA256SUMS
+
+      - name: Reject internal archive content
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import tarfile
+          import zipfile
+
+          forbidden = (".claude", ".agents", "scratch", "AGENTS.md", "CLAUDE.md",
+                       "__pycache__", ".pyc")
+          for path in Path("dist").iterdir():
+              if path.suffix == ".whl":
+                  names = zipfile.ZipFile(path).namelist()
+              elif path.name.endswith(".tar.gz"):
+                  names = tarfile.open(path).getnames()
+              else:
+                  continue
+              bad = [name for name in names if any(item in name for item in forbidden)]
+              if bad:
+                  raise SystemExit(f"{path.name}: forbidden archive entries: {bad}")
+          PY
+
+      - name: Audit wheel runtime dependencies only
+        run: |
+          python -m venv runtime
+          uv pip install --python runtime/bin/python --upgrade "pip==26.1.2"
+          uv pip install --python runtime/bin/python dist/breachsafe_qureddy-*.whl
+          python -m venv audit-tool
+          uv tool run --from "pip-audit==2.10.1" pip-audit \
+            --path runtime/lib/python3.12/site-packages
+
+      - name: Upload exact candidate artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: pypi-candidate
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
+
+  packaging-install:
+    name: "Package: clean install (${{ matrix.os }})"
+    needs: packaging-build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+
+      - name: Download exact candidate artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: pypi-candidate
+          path: dist/
+
+      - name: Verify artifact hashes
+        run: |
+          cd dist
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+
+          for line in Path("SHA256SUMS").read_text().splitlines():
+              expected, name = line.split(maxsplit=1)
+              path = Path(name.lstrip("*"))
+              actual = hashlib.sha256(path.read_bytes()).hexdigest()
+              if actual != expected:
+                  raise SystemExit(f"{path}: expected {expected}, got {actual}")
+          PY
+
+      - name: Install wheel, sdist, and pipx application
+        run: |
+          python -m venv wheel-env
+          python -m venv sdist-env
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            wheel_python="wheel-env/Scripts/python"
+            wheel_qureddy="wheel-env/Scripts/qureddy"
+            sdist_python="sdist-env/Scripts/python"
+            sdist_qureddy="sdist-env/Scripts/qureddy"
+            export PIPX_HOME="$RUNNER_TEMP/pipx-home"
+            export PIPX_BIN_DIR="$RUNNER_TEMP/pipx-bin"
+            pipx_qureddy="$PIPX_BIN_DIR/qureddy.exe"
+          else
+            wheel_python="wheel-env/bin/python"
+            wheel_qureddy="wheel-env/bin/qureddy"
+            sdist_python="sdist-env/bin/python"
+            sdist_qureddy="sdist-env/bin/qureddy"
+            export PIPX_HOME="$RUNNER_TEMP/pipx-home"
+            export PIPX_BIN_DIR="$RUNNER_TEMP/pipx-bin"
+            pipx_qureddy="$PIPX_BIN_DIR/qureddy"
+          fi
+          "$wheel_python" -m pip install dist/breachsafe_qureddy-*.whl
+          "$sdist_python" -m pip install dist/breachsafe_qureddy-*.tar.gz
+          "$wheel_python" -m pip check
+          "$sdist_python" -m pip check
+          uv tool run --from "pipx==1.8.0" pipx install dist/breachsafe_qureddy-*.whl
+          "$wheel_qureddy" --version
+          "$sdist_qureddy" --version
+          "$pipx_qureddy" --version
+          "$wheel_qureddy" --help > /dev/null
+          "$wheel_qureddy" scan tls --help > /dev/null
+          "$wheel_qureddy" scan ssh --help > /dev/null
+
+      - name: Exercise installed hermetic scan and failure contracts
+        run: |
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            qureddy="wheel-env/Scripts/qureddy"
+            python_bin="wheel-env/Scripts/python"
+            old_openssl="tests/fixtures/openssl/fake/openssl_too_old.cmd"
+          else
+            qureddy="wheel-env/bin/qureddy"
+            python_bin="wheel-env/bin/python"
+            old_openssl="tests/fixtures/openssl/fake/openssl_too_old.sh"
+          fi
+          set +e
+          "$qureddy" scan ssh 127.0.0.1:1 --format json > ssh.json
+          ssh_exit=$?
+          set -e
+          test "$ssh_exit" -eq 2
+          "$python_bin" -c \
+            'import json; assert json.load(open("ssh.json"))["scan"]["scanner_name"] == "ssh"'
+          set +e
+          "$qureddy" scan tls example.com \
+            --openssl "$old_openssl" --format cbom > old-openssl.cbom.json
+          exit_code=$?
+          set -e
+          test "$exit_code" -eq 3
+          "$python_bin" -c \
+            'import json; assert json.load(open("old-openssl.cbom.json"))["specVersion"] == "1.7"'

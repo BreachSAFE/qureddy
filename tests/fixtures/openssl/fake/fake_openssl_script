@@ -1,0 +1,70 @@
+# SPDX-FileCopyrightText: 2026 BreachSAFE
+# SPDX-License-Identifier: Apache-2.0
+"""Windows implementation behind the fake OpenSSL .cmd launchers."""
+
+from __future__ import annotations
+
+import sys
+import time
+from pathlib import Path
+
+scenario, command = sys.argv[1:3]
+
+if scenario == "openssl_broken_returncode":
+    print("dyld: Library not loaded: libssl.dylib", file=sys.stderr)
+    raise SystemExit(139)
+if scenario == "openssl_too_old":
+    print("OpenSSL 3.4.0 1 Jan 2026" if command == "version" else "x25519:secp256r1")
+elif scenario == "openssl_lacks_group":
+    print("OpenSSL 3.6.3 1 Apr 2026" if command == "version" else "x25519:secp256r1")
+elif scenario == "openssl_unparseable_version":
+    print("GibberishSSL build unknown" if command == "version" else "X25519MLKEM768:x25519")
+elif scenario == "openssl_libressl":
+    print("LibreSSL 3.3.6" if command == "version" else "invalid command")
+elif scenario == "openssl_ok":
+    print("OpenSSL 3.6.3 7 Apr 2026" if command == "version" else "X25519MLKEM768:x25519")
+elif scenario == "openssl_connect_refused":
+    if command == "version":
+        print("OpenSSL 3.6.3 7 Apr 2026")
+    elif command == "list":
+        print("X25519MLKEM768:x25519")
+    else:
+        print("connect:errno=61", file=sys.stderr)
+        raise SystemExit(1)
+elif scenario == "openssl_handshake_failure":
+    if command == "version":
+        print("OpenSSL 3.6.3 7 Apr 2026")
+    elif command == "list":
+        print("X25519MLKEM768:x25519")
+    else:
+        print("ssl/tls alert handshake failure", file=sys.stderr)
+        raise SystemExit(1)
+elif scenario == "openssl_long_brief_output":
+    print("certificate-chain-padding-" * 220)
+    print("Protocol version: TLSv1.3")
+    print("Ciphersuite: TLS_AES_256_GCM_SHA384")
+    print("Negotiated TLS1.3 group: X25519MLKEM768")
+elif scenario == "openssl_stream_boundary_phantom":
+    print("Negotiated TLS1.3 group:", end="")
+    print("X25519MLKEM768", file=sys.stderr)
+elif scenario == "openssl_classical_replay":
+    if command == "version":
+        print("OpenSSL 3.6.3 7 Apr 2026")
+    elif command == "list":
+        print("X25519MLKEM768:x25519:secp256r1")
+    else:
+        fixture = Path(__file__).parents[1] / "brief_classical_example_com.txt"
+        print(
+            "\n".join(
+                line
+                for line in fixture.read_text(encoding="utf-8").splitlines()
+                if not line.startswith("#")
+            )
+        )
+elif scenario == "openssl_slow_with_partial_output":
+    print("partial-stdout-marker", flush=True)
+    print("CONNECTION ESTABLISHED", file=sys.stderr, flush=True)
+    time.sleep(30)
+else:
+    print(f"unknown fake OpenSSL scenario: {scenario}", file=sys.stderr)
+    raise SystemExit(2)

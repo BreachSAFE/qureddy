@@ -1,0 +1,245 @@
+# CycloneDX 1.7 CBOM reference
+
+`--format cbom` emits a CycloneDX 1.7 JSON Cryptography Bill of Materials
+(CBOM). The document contains cryptographic assets that QuReddy positively
+observed, scanner and collector provenance, scan status, and an endpoint
+relationship graph.
+
+## Contents
+
+- [Document identity](#document-identity)
+- [Metadata](#metadata)
+- [Endpoint root](#endpoint-root)
+- [Tool provenance](#tool-provenance)
+- [Cryptographic assets](#cryptographic-assets)
+- [Relationships](#relationships)
+- [Scan status](#scan-status)
+- [Stable references and volatile fields](#stable-references-and-volatile-fields)
+- [Positive observation rule](#positive-observation-rule)
+- [Certificate fields](#certificate-fields)
+- [Validation contract](#validation-contract)
+- [Evidence limits](#evidence-limits)
+- [Related documentation](#related-documentation)
+
+## Document identity
+
+| Field | Value |
+| --- | --- |
+| `bomFormat` | `CycloneDX` |
+| `specVersion` | `1.7` |
+| `$schema` | `http://cyclonedx.org/schema/bom-1.7.schema.json` |
+| `version` | CycloneDX document revision, currently `1` |
+
+The final JSON bytes, not an intermediate Python model, are the output
+contract.
+
+## Metadata
+
+`metadata` contains:
+
+- a generated UTC timestamp;
+- the remote endpoint as `metadata.component`;
+- QuReddy and the usable local OpenSSL collector under
+  `metadata.tools.components`;
+- QuReddy scan status properties.
+
+The metadata component is the graph root. It is not duplicated in
+`components`.
+
+## Endpoint root
+
+The endpoint root has:
+
+| Field | Contract |
+| --- | --- |
+| `type` | `application` |
+| `name` | normalized `host:port` |
+| `bom-ref` | `endpoint` |
+
+`application` represents the observed remote endpoint in the CycloneDX
+component model. QuReddy does not infer a remote product name, version, vendor,
+package, or implementation.
+
+## Tool provenance
+
+QuReddy appears as:
+
+```text
+bom-ref: tool/qureddy
+type: application
+name: qureddy
+version: installed scanner version
+```
+
+A usable local OpenSSL collector appears as:
+
+```text
+bom-ref: tool/openssl
+type: application
+name: openssl
+version: observed local version
+property: qureddy:collector.role=local-probe-runtime
+```
+
+OpenSSL is omitted when the local capability check fails. The collector is
+tool provenance, not a component supplied by or depended on by the endpoint.
+SSH CBOMs contain QuReddy tool provenance and no OpenSSL tool.
+
+## Cryptographic assets
+
+Observed assets use CycloneDX component type `cryptographic-asset`.
+
+### Algorithms
+
+Each unique positively observed key exchange or certificate signature
+algorithm becomes a component with:
+
+```text
+bom-ref: crypto/algorithm/<lowercase-observed-name>
+cryptoProperties.assetType: algorithm
+```
+
+### Protocols
+
+Each unique observed protocol and version becomes a component with:
+
+```text
+bom-ref: crypto/protocol/<protocol>-<lowercase-version>
+cryptoProperties.assetType: protocol
+```
+
+TLS protocol components may include observed cipher suites and references to
+their observed algorithms. SSH produces a protocol component for SSH 2.0.
+
+### Certificate
+
+When the TLS certificate probe captures and parses a leaf certificate, the
+CBOM contains:
+
+```text
+bom-ref: crypto/certificate/leaf
+cryptoProperties.assetType: certificate
+```
+
+See [certificate fields](#certificate-fields) for the populated properties and
+limits.
+
+## Relationships
+
+The endpoint dependency entry uses `provides` to reference each positively
+observed algorithm, protocol, and certificate:
+
+```json
+{
+  "ref": "endpoint",
+  "provides": [
+    "crypto/algorithm/example",
+    "crypto/protocol/ssh-2.0"
+  ]
+}
+```
+
+References are sorted and unique. QuReddy does not emit an endpoint
+`dependsOn` edge to the local OpenSSL collector.
+
+## Scan status
+
+CycloneDX metadata properties preserve the execution state:
+
+| Property | Presence | Meaning |
+| --- | --- | --- |
+| `qureddy:scan.status` | always | `completed` or the top-level failure category |
+| `qureddy:scan.failure_category` | on typed failure | Canonical failure category |
+
+A schema-valid sparse CBOM is not proof of a successful scan. Consumers must
+read these properties and preserve failure or unknown states.
+
+## Stable references and volatile fields
+
+The endpoint and component `bom-ref` values are deterministic for the same
+observations. Component and relationship order is deterministic.
+
+CycloneDX requires run-level identity and time fields that change:
+
+- top-level `serialNumber`;
+- `metadata.timestamp`.
+
+Conformance tests normalize only those two fields before comparing repeated
+renders. All remaining bytes must be identical for the same fixture.
+
+## Positive observation rule
+
+CBOM inventory includes evidence with observation type:
+
+```text
+negotiated
+offered
+observed
+```
+
+`inferred` and `not_testable` evidence does not create cryptographic asset
+components. Missing evidence remains missing instead of becoming a favorable
+asset claim.
+
+## Certificate fields
+
+The leaf certificate component may contain:
+
+- subject name;
+- issuer name;
+- X.509 format;
+- validity start and end times when the OpenSSL date text parses;
+- certificate serial number;
+- a reference to the observed signature algorithm.
+
+The component does not establish:
+
+- certificate path or trust;
+- hostname validation;
+- revocation status;
+- private key possession;
+- subject public key algorithm or size when not independently derived.
+
+Self-signed classification in QuReddy evidence requires signature verification;
+subject and issuer string equality alone is not accepted as proof.
+
+## Validation contract
+
+Every generated document passes three layers before release:
+
+1. the official CycloneDX 1.7.1 JSON schemas pinned by commit and SHA-256;
+2. `cyclonedx-cli` 0.33.1 from a checksum-verified release asset;
+3. QuReddy semantic checks.
+
+The semantic checks reject:
+
+- a `specVersion` other than exactly `1.7`;
+- duplicate `bom-ref` values;
+- dangling `dependsOn` or `provides` references;
+- secret-like fields or material.
+
+The fixture matrix contains positive and negative cases with provenance
+sidecars. The installed console canary validates successful and failed scan
+bytes and render determinism.
+
+## Evidence limits
+
+The CBOM is an observation artifact for one target and one scan. It is not:
+
+- a complete host, application, source, binary, key, or certificate inventory;
+- remote software identification;
+- proof of certificate trust or revocation;
+- proof of FIPS validation;
+- a compliance conclusion;
+- a claim about algorithms that the endpoint did not expose to the probe.
+
+Interpret CBOM entries as observations from the selected collector. The output does
+not establish complete inventory, remote implementation identity, certificate trust,
+or revocation status.
+
+## Related documentation
+
+- [Generate and validate a CBOM](../how-to/generate-a-cbom.md)
+- [CBOM conformance gate](../contributors/cbom-conformance.md)
+- [JSON output](json-schema.md)
+- [Failure categories](failure-categories.md)

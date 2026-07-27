@@ -1,0 +1,133 @@
+{
+  "schemas": {
+    "specification": "CycloneDX 1.7.1",
+    "tag": "1.7.1",
+    "commit": "b29bae660048e0ad2fbc5f2972927b442ce951c4",
+    "source": "https://github.com/CycloneDX/specification/tree/b29bae660048e0ad2fbc5f2972927b442ce951c4/schema",
+    "files": {
+      "bom-1.7.schema.json": "73308edec3ab2d38bfffd993e96a042b594314143b6971a6e9ed98bbb6bd76ce",
+      "cryptography-defs.schema.json": "027b059a729a06d591bac79a584ef04f83fc32d91a826fdba6ad3c98a10e5b44",
+      "jsf-0.82.schema.json": "8bae002c25e723db7ee1f26afde680ae1a2b1a8f6b4b4b0fd65dc3becb090aae",
+      "spdx.schema.json": "ea6e844ee6fba1e93473d94834d0ee0996970533497935f932f73d488ffdf4a3"
+    }
+  },
+  "producer": {
+    "commit": "bdaa5669bff7b46a8b6e6c48f1003a3acb26808a",
+    "installed_wheel_sha256": "ddb96f9e62e16805dba045483eaa55c2f7ac4bc4f63397a7dfd80207ab82dc38",
+    "version": "0.2.0"
+  },
+  "fixtures": {
+    "p1-hybrid-tls": {
+      "kind": "positive",
+      "classification": "captured",
+      "sha256": "da0052bcc029cf78b32a2989447dad19ebfe49871de8c42ce7865e49964a284a",
+      "official_rejects": false,
+      "cli_rejects": false,
+      "semantic_rejects": false
+    },
+    "p2-classical-tls": {
+      "kind": "positive",
+      "classification": "minimized-from-captured",
+      "sha256": "83b77d204a87bc1e439849e3698be4a9b770a5c1fa6d1bf7c0499fab205d2c9d",
+      "official_rejects": false,
+      "cli_rejects": false,
+      "semantic_rejects": false
+    },
+    "p3-ssh-hybrid": {
+      "kind": "positive",
+      "classification": "captured",
+      "sha256": "0b01aef089380dfb49ff0f529a068aeb305ca8956ca088f79f3beb75f181159e",
+      "official_rejects": false,
+      "cli_rejects": false,
+      "semantic_rejects": false
+    },
+    "p4-sparse-unknown": {
+      "kind": "positive",
+      "classification": "minimized-from-captured",
+      "sha256": "1bf43c03c0bd6702fa195a88c108006d9e58ebd2ba8eb98bfbdcd7e0ed9c75c8",
+      "official_rejects": false,
+      "cli_rejects": false,
+      "semantic_rejects": false
+    },
+    "p5-failed-target": {
+      "kind": "positive",
+      "classification": "minimized-from-captured",
+      "sha256": "a9d155824baa7dda7b4ad4a31cb7da6cb138663d6e2a90f38b0b4a6f016b260b",
+      "official_rejects": false,
+      "cli_rejects": false,
+      "semantic_rejects": false
+    },
+    "p6-missing-openssl": {
+      "kind": "positive",
+      "classification": "minimized-from-captured",
+      "sha256": "5bb7bd2cdd85b960e64e7dc27c2d8ff49fcec015e0128d6ea5c7697d5236cabf",
+      "official_rejects": false,
+      "cli_rejects": false,
+      "semantic_rejects": false
+    },
+    "p7-leaf-cert": {
+      "kind": "positive",
+      "classification": "captured",
+      "sha256": "aacb54a584950de7a3124b8b2b1d85b3f1dbacad9ce74370ef29ccda99f325fe",
+      "official_rejects": false,
+      "cli_rejects": false,
+      "semantic_rejects": false
+    },
+    "n1-wrong-specversion": {
+      "kind": "negative",
+      "classification": "synthetic-negative",
+      "sha256": "d43d4dc9c365bd408887436e43b50ef7009e8c0846170ddabbb8c9ef757bbdeb",
+      "official_rejects": false,
+      "cli_rejects": true,
+      "semantic_rejects": true
+    },
+    "n2-duplicate-bomref": {
+      "kind": "negative",
+      "classification": "synthetic-negative",
+      "sha256": "f182cea0ea3fc695692c8ee69ef39241c2078145bd96ddbc98dd7507536a4435",
+      "official_rejects": true,
+      "cli_rejects": true,
+      "semantic_rejects": true
+    },
+    "n3-dangling-ref": {
+      "kind": "negative",
+      "classification": "synthetic-negative",
+      "sha256": "4ceca313df9970fcfb6f3f7640ce4b592ceb477b80ae83e3451eae8a77111cb7",
+      "official_rejects": false,
+      "cli_rejects": false,
+      "semantic_rejects": true
+    },
+    "n4-invalid-asset-type": {
+      "kind": "negative",
+      "classification": "synthetic-negative",
+      "sha256": "5b17da0b198125e70681d43a1454b513f4e9e497072e64b81e8a092e75074100",
+      "official_rejects": true,
+      "cli_rejects": true,
+      "semantic_rejects": false
+    },
+    "n5-malformed-date": {
+      "kind": "negative",
+      "classification": "synthetic-negative",
+      "sha256": "e9051a1dc468c4e5fb3e1200f04252e8f4a53ec625a601d755987da699b88b81",
+      "official_rejects": true,
+      "cli_rejects": true,
+      "semantic_rejects": false
+    },
+    "n6-undeclared-top-level": {
+      "kind": "negative",
+      "classification": "synthetic-negative",
+      "sha256": "18f2f27fc2f4f6acdcfc69b52d0b6efec3c2c1817d6ae79fd408dd045f82bad1",
+      "official_rejects": true,
+      "cli_rejects": true,
+      "semantic_rejects": false
+    },
+    "n7-secret-material": {
+      "kind": "negative",
+      "classification": "synthetic-negative",
+      "sha256": "cba2438773ed6e0968fd27c4957841abafba4281a66a4e5bd86b58a887052040",
+      "official_rejects": false,
+      "cli_rejects": false,
+      "semantic_rejects": true
+    }
+  }
+}

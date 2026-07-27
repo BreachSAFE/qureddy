@@ -1,0 +1,140 @@
+# Planning artifacts (per CLAUDE.md: not shipped).
+# Lives under scratch/inbox/ now, not at root. Keep both forms for safety
+# in case someone or something resurrects an `inbox/` at root by mistake.
+inbox/
+/inbox/
+scratch/inbox/
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Python build / distribution
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# pip diagnostic dumps
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Tooling caches
+.pytest_cache/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+.ruff_cache/
+.tox/
+.nox/
+.cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+*.cover
+.hypothesis/
+cython_debug/
+.bento/
+.semgrep_cache/
+.ipynb_checkpoints/
+
+# uv (we DO commit uv.lock for reproducible builds)
+uv.lock.tmp
+
+# pyenv (we don't pin via .python-version; pyproject.toml requires-python wins)
+.python-version
+
+# Other Python package managers we are not using; ignore their lockfiles if they appear
+Pipfile.lock
+poetry.lock
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+ehthumbs_vista.db
+desktop.ini
+
+# Linux
+.directory
+.Trash-*
+
+# Editor / merge / diff backups
+*.bak
+*.orig
+*.rej
+*.tmp
+
+# Process artifacts
+nohup.out
+
+# Logs and local scratch
+# Agents drop sketch code under scratch/. Never commit it.
+# Belt and suspenders: match scratch anywhere AND scratch at the repo root explicitly.
+*.log
+.scratch/
+scratch/
+/scratch/
+Scratch/
+/Scratch/
+
+# Local working document; keep it out of the public tree.
+/docs/explanation/evidence-*.md
+/docs/contributors/agent-antipatterns.md
+/docs/contributors/agents/mvp-0.1-bootstrap-prompt.md
+/docs/contributors/agents/claude-developer-prompt.md
+/docs/contributors/adr/0006-oss-vs-enterprise-split.md
+/docs/contributors/adr/0005-splitting-oversized-files.md
+/docs/contributors/adr/
+/docs/adr/
+/docs/contributors/plans/
+/docs/explanation/oss-vs-enterprise.md
+/docs/reference/editions.md
+/.claude/skills/
+/.agents/skills/
+/AGENTS.md
+/CLAUDE.md
+
+# Secrets, never commit
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+!tests/fixtures/**/*.pem
+!tests/fixtures/**/*.key

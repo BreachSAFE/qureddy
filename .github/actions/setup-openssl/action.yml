@@ -1,0 +1,130 @@
+# SPDX-FileCopyrightText: 2026 BreachSAFE
+# SPDX-License-Identifier: Apache-2.0
+name: Set up pinned OpenSSL
+description: Build or restore a checksum-pinned OpenSSL used by QuReddy tests
+
+inputs:
+  version:
+    description: OpenSSL release to build
+    required: false
+    default: "3.6.3"
+  sha256:
+    description: SHA-256 digest of the OpenSSL source archive
+    required: false
+    default: "243a86649cf6f23eeb6a2ff2456e09e5d77dd9018a54d3d96b0c6bdd6ba6c7f1"
+
+runs:
+  using: composite
+  steps:
+    - name: Restore compiled OpenSSL
+      id: cache
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      with:
+        path: ${{ runner.temp }}/qureddy-openssl-${{ inputs.version }}
+        key: qureddy-openssl-${{ inputs.version }}-${{ runner.os }}-${{ runner.arch }}-${{ inputs.sha256 }}
+
+    - name: Build pinned OpenSSL on Linux or macOS
+      if: steps.cache.outputs.cache-hit != 'true' && runner.os != 'Windows'
+      shell: bash
+      run: |
+        set -euo pipefail
+        version="${{ inputs.version }}"
+        expected="${{ inputs.sha256 }}"
+        archive="$RUNNER_TEMP/openssl-${version}.tar.gz"
+        source="$RUNNER_TEMP/openssl-${version}-source"
+        prefix="$RUNNER_TEMP/qureddy-openssl-${version}"
+        curl --fail --location --proto '=https' --connect-timeout 30 --max-time 300 \
+          "https://www.openssl.org/source/openssl-${version}.tar.gz" \
+          --output "$archive"
+        actual="$(shasum -a 256 "$archive" | cut -d ' ' -f 1)"
+        test "$actual" = "$expected"
+        rm -rf "$source" "$prefix"
+        mkdir -p "$source"
+        tar -xzf "$archive" --strip-components=1 -C "$source"
+        cd "$source"
+        ./config --prefix="$prefix" --openssldir="$prefix" shared no-tests
+        make -j4 build_libs
+        make -j4 apps/openssl
+        make install_sw
+
+    - name: Set up pinned Windows build environment
+      if: steps.cache.outputs.cache-hit != 'true' && runner.os == 'Windows'
+      uses: msys2/setup-msys2@66cd2cce69caa17b53920067426061ca1de3a884 # v2
+      with:
+        msystem: MINGW64
+        update: false
+        install: >-
+          make
+          mingw-w64-x86_64-gcc
+          perl
+
+    - name: Build pinned OpenSSL on Windows
+      if: steps.cache.outputs.cache-hit != 'true' && runner.os == 'Windows'
+      shell: msys2 {0}
+      run: |
+        set -euo pipefail
+        version="${{ inputs.version }}"
+        expected="${{ inputs.sha256 }}"
+        runner_temp="$(cygpath -u "$RUNNER_TEMP")"
+        archive="$runner_temp/openssl-${version}.tar.gz"
+        source="$runner_temp/openssl-${version}-source"
+        prefix="$runner_temp/qureddy-openssl-${version}"
+        curl --fail --location --proto '=https' --connect-timeout 30 --max-time 300 \
+          "https://www.openssl.org/source/openssl-${version}.tar.gz" \
+          --output "$archive"
+        echo "$expected  $archive" | sha256sum --check --strict
+        rm -rf "$source" "$prefix"
+        mkdir -p "$source"
+        tar -xzf "$archive" --strip-components=1 -C "$source"
+        cd "$source"
+        ./Configure mingw64 --prefix="$prefix" --openssldir="$prefix" shared no-tests
+        # OpenSSL's MSYS2 app makefiles race while renaming generated
+        # dependency files. Libraries parallelize safely; build apps serially.
+        make -j4 build_libs
+        make -j1 apps/openssl
+        make install_sw
+
+    - name: Expose and verify OpenSSL on Linux or macOS
+      if: runner.os != 'Windows'
+      shell: bash
+      run: |
+        set -euo pipefail
+        prefix="$RUNNER_TEMP/qureddy-openssl-${{ inputs.version }}"
+        test -x "$prefix/bin/openssl"
+        library_path="$prefix/lib64:$prefix/lib"
+        version="$(
+          LD_LIBRARY_PATH="$library_path:${LD_LIBRARY_PATH:-}" \
+          DYLD_LIBRARY_PATH="$library_path:${DYLD_LIBRARY_PATH:-}" \
+          "$prefix/bin/openssl" version
+        )"
+        echo "$version"
+        grep -q "^OpenSSL ${{ inputs.version }} " <<< "$version"
+        LD_LIBRARY_PATH="$library_path:${LD_LIBRARY_PATH:-}" \
+          DYLD_LIBRARY_PATH="$library_path:${DYLD_LIBRARY_PATH:-}" \
+          "$prefix/bin/openssl" list -tls1_3 -tls-groups | tee openssl-groups.txt
+        grep -qi X25519MLKEM768 openssl-groups.txt
+        echo "$prefix/bin" >> "$GITHUB_PATH"
+        echo "LD_LIBRARY_PATH=$library_path:${LD_LIBRARY_PATH:-}" >> "$GITHUB_ENV"
+        echo "DYLD_LIBRARY_PATH=$library_path:${DYLD_LIBRARY_PATH:-}" >> "$GITHUB_ENV"
+
+    - name: Expose and verify OpenSSL on Windows
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        $prefix = Join-Path $env:RUNNER_TEMP "qureddy-openssl-${{ inputs.version }}"
+        $openssl = Join-Path $prefix "bin\openssl.exe"
+        if (-not (Test-Path $openssl)) {
+          throw "Pinned OpenSSL cache/build did not produce openssl.exe"
+        }
+        $version = & $openssl version
+        $version
+        $expectedVersion = [regex]::Escape("${{ inputs.version }}")
+        if (-not ($version -match "^OpenSSL $expectedVersion ")) {
+          throw "Pinned OpenSSL reported an unexpected version"
+        }
+        $groups = & $openssl list -tls1_3 -tls-groups
+        $groups | Out-File -FilePath openssl-groups.txt
+        if (-not ($groups | Select-String -Quiet "X25519MLKEM768")) {
+          throw "Pinned OpenSSL lacks X25519MLKEM768"
+        }
+        (Join-Path $prefix "bin") | Out-File -FilePath $env:GITHUB_PATH -Append

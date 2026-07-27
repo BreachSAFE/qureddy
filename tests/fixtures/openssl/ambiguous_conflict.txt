@@ -1,0 +1,11 @@
+# synthesized: contradictory ServerHello-derived evidence. Real
+# OpenSSL would not normally emit both lines; this is a defensive
+# fixture that proves the parser refuses to pick a winner instead
+# of silently trusting one source. Used to verify PARSE_AMBIGUOUS.
+CONNECTION ESTABLISHED
+Protocol version: TLSv1.3
+Ciphersuite: TLS_AES_128_GCM_SHA256
+Verification: OK
+Peer Temp Key: X25519, 253 bits
+Negotiated TLS1.3 group: X25519MLKEM768
+DONE

@@ -1,0 +1,380 @@
+# SPDX-FileCopyrightText: 2026 BreachSAFE
+# SPDX-License-Identifier: Apache-2.0
+# Release metadata and quality-tool configuration for the shipped TLS and SSH
+# scanner package. Keep the project table aligned with the tested wheel.
+
+[project]
+name = "breachsafe-qureddy"
+version = "0.2.0"
+description = "Open-source post-quantum readiness scanner for TLS and SSH endpoints."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{name = "BreachSAFE QuReddy contributors"}]
+keywords = ["pqc", "post-quantum", "cryptography", "tls", "scanner", "cbom"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Information Technology",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Security :: Cryptography",
+]
+
+# Runtime dependencies. click is pulled transitively by typer but
+# imported directly in cli.py for the UsageError → exit-4 remap, so
+# it is declared explicitly to satisfy deptry.
+#
+# typer upper bound (issue #186): 0.16+ vendors its own internal
+# exception module instead of re-raising real click exceptions, which
+# silently broke the exit-code-4 usage-error contract in cli.py. Code
+# now handles this explicitly through 0.26. Typer 0.27 changed its
+# CliRunner stream-capture contract and breaks QuReddy's stdout/stderr
+# separation tests, so the upper bound forces a deliberate compatibility
+# fix before that upgrade. Click 8.3.3 is the first release containing
+# the fix for PYSEC-2026-2132.
+#
+dependencies = [
+    "typer>=0.23.1,<0.27",
+    "click>=8.3.3,<8.5",
+    "rich>=13.7",
+    "pydantic>=2.7",
+    "structlog>=24.1",
+    "packaging>=24.0",
+    # Final bytes and independent fixtures validate the 11.x serializer
+    # contract; a 12.x upgrade must deliberately refresh conformance evidence.
+    "cyclonedx-python-lib>=11.11,<12",
+]
+
+[project.optional-dependencies]
+# Enterprise-grade gates from day 0. See:
+# .agents/skills/breachsafe-implement/SKILL.md "Quality gates" section.
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "pytest-rerunfailures>=14.0",
+    # ruff upper bound: CI resolves this fresh, so an unpinned range let CI
+    # jump to 0.16 while local envs sat on 0.15 — and 0.16 starts format-
+    # checking Python code blocks inside Markdown, flagging .claude/ and
+    # .agents/ skill files that must stay byte-identical to the canonical
+    # breachsafe-skills library. Bumping past 0.16 requires deciding the
+    # markdown-format policy (exclude those trees) in the same PR.
+    "ruff>=0.15,<0.16",
+    "mypy>=1.10",
+    "bandit>=1.7",
+    "pip-audit>=2.7",
+    "deptry>=0.20",
+    "reuse>=4.0",
+    "pre-commit>=3.5",
+    "twine==6.2.0",
+    # Final-byte CBOM conformance gate. jsonschema validates the vendored,
+    # pinned official CycloneDX schemas; rfc3339-validator makes
+    # FormatChecker enforce date-time rather than silently treating it as
+    # an unknown format.
+    "jsonschema>=4.25,<5",
+    "rfc3339-validator>=0.1.4,<1",
+    "types-jsonschema>=4.25",
+    "types-rfc3339-validator>=0.1.0.20260408",
+    # defusedxml is used by scripts/audit_phase.py to parse coverage.xml
+    # and junit.xml safely. CODING_RULES §26 forbids stdlib xml.etree on
+    # any input; defusedxml is the project-mandated alternative.
+    "defusedxml>=0.7",
+]
+
+[project.scripts]
+# `qureddy.cli:main` (NOT `:app`) is the install-time entrypoint. The
+# `main()` wrapper translates click.UsageError to exit code 4 per the
+# documented exit-code surface (0 ok, 2 target failed, 3 local dep, 4
+# usage). Pointing to `:app` directly would let Click default to exit
+# 2 for usage errors, colliding with target-scan-failure.
+qureddy = "qureddy.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/breachsafe/qureddy"
+Documentation = "https://github.com/breachsafe/qureddy/tree/main/docs"
+Repository = "https://github.com/breachsafe/qureddy"
+Issues = "https://github.com/breachsafe/qureddy/issues"
+Changelog = "https://github.com/breachsafe/qureddy/blob/main/CHANGELOG.md"
+
+[build-system]
+requires = ["hatchling==1.31.0"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/qureddy"]
+
+[tool.hatch.build.targets.sdist]
+# Issue #159: an exclude-blocklist can only omit what it names, so every
+# internal directory added later (`.claude/`, `.github/`, `AGENTS.md`,
+# `CLAUDE.md`, the agent scaffolding) shipped into the public sdist by
+# default — 51 internal files on the PyPI source view. Use an
+# include-allowlist instead: the sdist ships only what a source consumer
+# needs to build, install, and satisfy the license, and any new
+# internal file is excluded by default rather than leaked by default.
+include = [
+    "/src/qureddy",
+    "/README.md",
+    "/CHANGELOG.md",
+    "/CONTRIBUTING.md",
+    "/SECURITY.md",
+    "/CODE_OF_CONDUCT.md",
+    "/LICENSE",
+    "/LICENSES",
+    "/REUSE.toml",
+    "/pyproject.toml",
+]
+
+# ============================================================================
+# ruff
+# ============================================================================
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "B",    # flake8-bugbear
+    "C4",   # flake8-comprehensions
+    "UP",   # pyupgrade
+    "N",    # pep8-naming
+    "S",    # flake8-bandit (security)
+    "SIM",  # flake8-simplify
+    "TCH",  # flake8-type-checking
+    "RUF",  # ruff-specific
+    "PL",   # pylint
+    "PT",   # pytest style
+    "RET",  # flake8-return
+    "ARG",  # flake8-unused-arguments
+    "DTZ",  # flake8-datetimez (timezone-aware datetime)
+    "PTH",  # flake8-use-pathlib
+    "ERA",  # eradicate (no commented-out code)
+    "INP",  # implicit namespace package
+    "BLE",  # flake8-blind-except (catches `except Exception:` without noqa)
+    "SLF",  # flake8-self (private-member access from outside the class)
+    "D",    # pydocstyle — Google docstring convention per coding-rules.md Rule 5.
+            # PLR0915 (too-many-statements, default max=50) is already active via
+            # the PL selector and matches the Rule 2.2 function-size ceiling.
+]
+ignore = [
+    "E501",     # line-too-long, handled by formatter
+    "PLR0913",  # too-many-arguments — Typer commands legitimately have many
+    "PLR0917",  # too-many-positional-arguments — same reason as PLR0913: Typer
+                # command options are declared as (keyword-defaulted) parameters
+    # The mvp-implement skill explicitly mandates `class Foo(str, Enum)`
+    # (not `enum.StrEnum`) for the locked enums. The skill is the
+    # implementation authority; UP042 would request a change that
+    # violates the locked spec.
+    "UP042",
+    # `_LocalOpenSSLProblem` is the abstract base for the three local-
+    # capability exceptions; it is private and not raised directly.
+    # The mvp-implement skill convention is `*Error` suffix on the
+    # public hierarchy (QureddyError, TargetParseError, RetryConfigError);
+    # the private base does not need the suffix to be readable.
+    "N818",
+    # TC002/TC003 (move imports into TYPE_CHECKING blocks) trigger on
+    # types we genuinely use at runtime: `datetime.datetime` in Pydantic
+    # field declarations, `collections.abc.Callable` in retry.py
+    # parameter annotations (Pydantic and runtime-introspected callbacks
+    # need the symbol at module-load time), and `pytest.MonkeyPatch`
+    # used as a fixture type that pytest reads at collection time.
+    "TC002",
+    "TC003",
+    # `os.path.isfile` is the right primitive when paired with
+    # `os.access(path, os.X_OK)` — both check the same os-level inode
+    # state and using one Path call + one os.access call introduces a
+    # TOCTOU window the current single-namespace approach avoids.
+    "PTH113",
+]
+
+[tool.ruff.lint.pydocstyle]
+# coding-rules.md Rule 5 mandates Google-style docstrings.
+convention = "google"
+
+[tool.ruff.lint.pylint]
+# Matches coding-rules.md Rule 2.2: functions ≤ 30 lines norm, 50 ceiling.
+# PLR0915 counts statements (close proxy for non-comment lines); 50 is the
+# hard ceiling. Functions in the 31–50 band emit no warning here — those
+# are caught at PR review per Rule 2.1.1's edge bands.
+max-statements = 50
+
+[tool.ruff.lint.per-file-ignores]
+# TC001 wants application imports used only in annotations moved into an
+# `if TYPE_CHECKING:` block. Typer command modules cannot comply: Typer
+# resolves the `Annotated` option aliases (cli/_options.py) at RUNTIME via
+# typing.get_type_hints() to build the CLI, so hiding those imports behind
+# TYPE_CHECKING raises NameError at import. Pre-ADR-0005 the aliases were
+# module-local to cli.py, which is why the rule never fired before the split.
+"src/qureddy/cli/main.py" = ["TC001"]
+"src/qureddy/cli/scan.py" = ["TC001"]
+"src/qureddy/cli/ssh.py" = ["TC001"]
+"tests/**/*.py" = [
+    "S101",     # asserts allowed in tests
+    "PLR2004",  # magic numbers allowed in tests
+    "ARG",      # unused args allowed in fixtures
+    "D",        # tests don't need Google docstrings — test names document intent,
+                # and tests have no public-API surface for downstream callers.
+]
+"tests/fixtures/**" = ["E501"]  # fixture files may have long lines
+"scripts/**/*.py" = [
+    "INP001",   # scripts/ is intentionally not a package — these are
+                # standalone CLIs, not modules. Adding __init__.py to
+                # claim the namespace would be dishonest.
+]
+
+# ============================================================================
+# mypy
+# ============================================================================
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+no_implicit_reexport = true
+disallow_any_generics = true
+disallow_subclassing_any = true
+disallow_untyped_calls = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+strict_equality = true
+extra_checks = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false  # tests can have looser typing
+
+# ============================================================================
+# pytest + pytest-rerunfailures + pytest-cov
+# ============================================================================
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+    "--reruns=3",
+    "--reruns-delay=1",
+]
+# Per docs/contributors/coding-rules.md Rule 9.3: every test runs every time.
+# No marker-gated suites at the pytest layer. CI may organize tests
+# into multiple JOBS for fail-fast, but pytest itself runs everything.
+markers = []
+
+# ============================================================================
+# coverage
+# ============================================================================
+[tool.coverage.run]
+branch = true
+source = ["qureddy"]
+omit = ["tests/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+]
+fail_under = 80
+show_missing = true
+
+# ============================================================================
+# pip-audit
+# ============================================================================
+[tool.pip-audit]
+# pip-audit 2.9 does not natively read this block; CI must pass the
+# same IDs via `pip-audit --ignore-vuln <ID>` for the gate to actually
+# pass. The block here is the documented record of accepted advisories.
+#
+# GHSA-58qw-9mgm-455v: pip's Mercurial revision argument injection.
+# OSV severity: MODERATE (CVSS 4.0 AV:L/PR:N/UI:A; CWE-434 archive
+# confusion). No fix released yet — pip 26.0.1 is the latest available.
+# This is a vulnerability in pip itself (the package manager), not in
+# qureddy or any of its runtime deps. We do not invoke pip from
+# qureddy at runtime; pip is dev-tooling only. Per the quality-gate
+# rules, MEDIUM and below are reported but do not block.
+# Reviewed: 2026-04-26. Re-review when pip ships a fix version.
+#
+# PYSEC-2022-42969: ReDoS in `py.path.svnwc` regex (the `py` package).
+# Severity: MEDIUM. Transitive dep chain: pip-audit → interrogate → py.
+# `py` is unmaintained (frozen in 2022); the vulnerable code path is
+# the SVN integration which interrogate doesn't invoke. Effective
+# exploitability against qureddy or its dev tooling: zero. We do not
+# touch SVN repos. Per the quality-gate rules, MEDIUM and below do
+# not block. Reviewed: 2026-04-26. Re-review when interrogate drops
+# the `py` dependency or when an alternative pip-audit dep tree exists.
+#
+ignore-vulns = [
+    "GHSA-58qw-9mgm-455v",
+    "PYSEC-2022-42969",
+]
+
+# ============================================================================
+# bandit
+# ============================================================================
+[tool.bandit]
+exclude_dirs = ["tests", "scratch"]
+# MEDIUM threshold: bandit fails CI on MEDIUM or HIGH findings.
+# LOW findings are reported but do not block.
+#
+# CI must invoke `bandit -r src/qureddy scripts/` (two roots) so the
+# audit script is scanned alongside production code. The skill's
+# `bandit -r src/qureddy` example covers the production tree only;
+# CI workflow widens the scope. Earlier the audit script shipped 3
+# XXE bugs that this scoping miss let through.
+
+# ============================================================================
+# deptry
+# ============================================================================
+[tool.deptry]
+known_first_party = ["qureddy", "release_support"]
+# Distribution name (`breachsafe-qureddy`) differs from import name
+# (`qureddy`); declare the mapping so deptry doesn't flag the dist as
+# missing-an-import.
+package_module_name_map = { "breachsafe-qureddy" = "qureddy" }
+# `scripts/` is intentionally INCLUDED in the deptry scan so that
+# imports from CI utilities (e.g. defusedxml in scripts/audit_phase.py)
+# count toward dependency-usage analysis. Excluding scripts/ would
+# make deptry think defusedxml is unused. `scratch/` stays excluded;
+# it's gitignored agent workspace.
+extend_exclude = ["scratch"]
+
+[tool.deptry.per_rule_ignores]
+# DEP002 = unused dependency. Some dev deps are CLI tools invoked by
+# CI workflow, not imported by Python code. pytest, pytest-cov, and
+# pytest-rerunfailures will satisfy themselves once src/ + tests/
+# import them from the test suite; ruff and mypy are pure CLI tools and stay
+# in this list permanently. The jsonschema/RFC3339 packages and their
+# stubs are imported only by tests/conformance/, which deptry does not
+# scan; they are required by the independent final-byte test gate.
+DEP002 = [
+    "bandit",
+    "pip-audit",
+    "deptry",
+    "pre-commit",
+    "reuse",
+    "ruff",
+    "mypy",
+    "pytest",
+    "pytest-cov",
+    "pytest-rerunfailures",
+    "twine",
+    "jsonschema",
+    "rfc3339-validator",
+    "types-jsonschema",
+    "types-rfc3339-validator",
+]

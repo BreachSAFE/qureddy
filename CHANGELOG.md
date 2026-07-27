@@ -1,0 +1,124 @@
+# Changelog
+
+[![Status: Alpha](https://img.shields.io/badge/status-alpha-blue?style=flat-square)](https://github.com/breachsafe/qureddy)
+[![Version](https://img.shields.io/badge/version-0.2.0-blue?style=flat-square)](CHANGELOG.md)
+[![Keep a Changelog](https://img.shields.io/badge/keep%20a%20changelog-1.1.0-orange?style=flat-square)](https://keepachangelog.com/en/1.1.0/)
+[![SemVer](https://img.shields.io/badge/SemVer-2.0.0-blue?style=flat-square)](https://semver.org/spec/v2.0.0.html)
+
+All notable user-visible changes to QuReddy are recorded here. The format
+follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and version
+numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## Contents
+
+- [0.2.0](#020---2026-07-27)
+- [0.1.0](#010---2026-05-10)
+
+## [0.2.0] - 2026-07-27
+
+Version 0.2.0 adds SSH scanning, certificate signature observation, legacy TLS
+enumeration, and CycloneDX 1.7 CBOM output. It also completes the repository
+cutover and proves the wheel and source distribution across supported
+platforms.
+
+### Added
+
+- SSH and SFTP endpoint scanning through `qureddy scan ssh TARGET`. The scanner
+  reads the server identification and KEXINIT offer through a direct socket,
+  classifies hybrid key exchange and weak host keys, and requires no OpenSSL.
+  See [PR #22](https://github.com/breachsafe/qureddy/pull/22).
+- Leaf certificate signature algorithm observation in the TLS scan, including
+  ML-DSA recognition. See
+  [issue #7](https://github.com/breachsafe/qureddy/issues/7) and
+  [PR #8](https://github.com/breachsafe/qureddy/pull/8).
+- TLS 1.0, 1.1, and 1.2 enumeration with observed cipher suites in the default
+  TLS scan. See [issue #11](https://github.com/breachsafe/qureddy/issues/11).
+- CycloneDX 1.7 CBOM output for TLS and SSH through `--format cbom`. The
+  endpoint is the metadata root, local collector software is tool provenance,
+  positively observed crypto assets use stable references, and scan status is
+  retained in metadata properties. See
+  [issue #31](https://github.com/breachsafe/qureddy/issues/31) and
+  [PR #48](https://github.com/breachsafe/qureddy/pull/48).
+- Final-byte CBOM conformance against pinned CycloneDX 1.7.1 schemas,
+  `cyclonedx-cli` 0.33.1, semantic reference and secret checks, positive and
+  negative fixtures, installed-console canaries, and deterministic renders.
+  See [issue #32](https://github.com/breachsafe/qureddy/issues/32) and
+  [PR #51](https://github.com/breachsafe/qureddy/pull/51).
+- Root `-V` and `--version`, `-h` help, TLS and SSH help examples, and exit
+  code `70` for an unhandled internal error. The installed entry point remains
+  `qureddy.cli:main` so usage errors map to exit `4`.
+
+### Changed
+
+- The package name is `breachsafe-qureddy`, the installed command is
+  `qureddy`, and the version is single-sourced as `0.2.0`.
+- Canonical repository, issue, documentation, and package metadata URLs now
+  use `github.com/breachsafe/qureddy`. See
+  [PR #21](https://github.com/breachsafe/qureddy/pull/21).
+- `src/qureddy/cli.py` is now a focused `src/qureddy/cli/` package without
+  changing the installed entry point. Oversized scanner and renderer paths
+  were split behind the repository size policy. See
+  [issue #30](https://github.com/breachsafe/qureddy/issues/30) and
+  [PR #47](https://github.com/breachsafe/qureddy/pull/47).
+- The source distribution uses an explicit include allowlist.
+- Rich output shows separate readiness and protocol facts and includes the
+  observed SSH hybrid group when available. See
+  [PR #23](https://github.com/breachsafe/qureddy/pull/23),
+  [PR #24](https://github.com/breachsafe/qureddy/pull/24),
+  [PR #25](https://github.com/breachsafe/qureddy/pull/25),
+  [PR #26](https://github.com/breachsafe/qureddy/pull/26),
+  [PR #27](https://github.com/breachsafe/qureddy/pull/27),
+  [PR #28](https://github.com/breachsafe/qureddy/pull/28), and
+  [PR #29](https://github.com/breachsafe/qureddy/pull/29).
+- Build dependencies and release tools are pinned where deterministic artifact
+  evidence requires it. The exact wheel and source distribution pass archive
+  purity, metadata, runtime-only vulnerability audit, and clean wheel, source,
+  and pipx installation on Linux, macOS, and Windows. See
+  [issue #33](https://github.com/breachsafe/qureddy/issues/33) and
+  [PR #50](https://github.com/breachsafe/qureddy/pull/50).
+
+### Fixed
+
+- Machine JSON and CBOM modes default to quiet logging and keep standard
+  output parseable under normal and merged-stream failure paths. Explicit
+  verbosity still produces diagnostics on standard error. See
+  [issue #15](https://github.com/breachsafe/qureddy/issues/15) and
+  [PR #18](https://github.com/breachsafe/qureddy/pull/18).
+- LibreSSL has a distinct local capability failure and remediation message.
+  See [issue #10](https://github.com/breachsafe/qureddy/issues/10) and
+  [PR #17](https://github.com/breachsafe/qureddy/pull/17).
+- Certificate self-signed status requires signature verification; name
+  equality alone is not accepted.
+- OpenSSL capability, TLS probe, legacy protocol, and certificate subprocesses
+  preserve bounded timeouts and typed failure categories.
+- SSH target parsing rejects foreign schemes, credentials, paths, query
+  strings, fragments, ambiguous IPv6, and noncanonical numeric IP forms before
+  network access. See [issue #40](https://github.com/breachsafe/qureddy/issues/40).
+- Live policy tests assert the target-specific finding that the fixture
+  establishes instead of a mutable aggregate posture. See
+  [issue #39](https://github.com/breachsafe/qureddy/issues/39).
+- Runtime dependency resolution, formatting, strict type checking, dependency
+  declarations, and REUSE metadata are green on the release stack. See
+  [issue #30](https://github.com/breachsafe/qureddy/issues/30).
+
+## [0.1.0] - 2026-05-10
+
+Initial public release of the TLS 1.3 readiness scanner. The public
+[`v0.1.0`](https://github.com/breachsafe/qureddy/releases/tag/v0.1.0) tag
+contains:
+
+### Added
+
+- forced `X25519MLKEM768` hybrid and `X25519` classical control probes through
+  OpenSSL 3.5 or newer;
+- Rich and `qureddy.scan.v1` JSON output;
+- typed target, handshake, SNI, middlebox, parser, and local OpenSSL failures;
+- bounded retry configuration for selected transient TLS failures;
+- normalized hostname, port, URL, IPv4, IPv6, and SNI target handling;
+- exit codes `0`, `2`, `3`, `4`, and `70`;
+- structured diagnostics on standard error;
+- Apache 2.0 licensing and repository quality gates.
+
+The `v0.1.0` tag and the promoted `main` branch have unrelated Git history.
+This changelog therefore links the tag directly instead of publishing a
+misleading commit comparison.

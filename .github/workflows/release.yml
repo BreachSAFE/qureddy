@@ -1,0 +1,72 @@
+# SPDX-License-Identifier: Apache-2.0
+# Publish the built wheel + sdist to TestPyPI (and, when ready, PyPI) via OIDC Trusted
+# Publishing — NO API tokens in the repo. Register a matching TestPyPI "pending publisher":
+#   owner=breachsafe  repo=qureddy  workflow=release.yml  environment=testpypi
+#
+# "TestPyPI gets the latest": every GitHub Release (and manual dispatch) rebuilds and uploads.
+# `skip-existing` keeps a re-run from failing when a version is already present — bump the
+# version (pyproject) to publish a genuinely new one.
+name: release
+
+on:
+  release:
+    types: [published]     # cut a GitHub Release → auto-publish
+  workflow_dispatch:        # or run it by hand from the Actions tab
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: build wheel + sdist
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build distributions
+        run: |
+          python -m pip install --upgrade build
+          python -m build                 # → dist/*.whl + dist/*.tar.gz
+      - name: Check with twine
+        run: |
+          python -m pip install --upgrade "twine>=6"
+          python -m twine check dist/*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  testpypi:
+    name: publish to TestPyPI (OIDC)
+    needs: build
+    runs-on: ubuntu-latest
+    environment: testpypi     # must match the TestPyPI pending-publisher "Environment name"
+    permissions:
+      id-token: write         # OIDC — this is what enables tokenless publishing
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - name: Publish to TestPyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          skip-existing: true      # don't fail if this version is already on TestPyPI
+
+  # Enable once a real-PyPI Trusted Publisher (environment: pypi) is registered:
+  # pypi:
+  #   name: publish to PyPI (OIDC)
+  #   needs: testpypi
+  #   runs-on: ubuntu-latest
+  #   environment: pypi
+  #   permissions:
+  #     id-token: write
+  #   steps:
+  #     - uses: actions/download-artifact@v4
+  #       with:
+  #         name: dist
+  #         path: dist/
+  #     - uses: pypa/gh-action-pypi-publish@release/v1   # defaults to real PyPI

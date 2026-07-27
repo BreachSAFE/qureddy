@@ -1,0 +1,9 @@
+fixture: p5-failed-target
+classification: minimized-from-captured
+command: qureddy scan tls 192.0.2.1 --format cbom --openssl tests/fixtures/openssl/fake/openssl_connect_refused.sh
+exit_code: 2
+captured_utc: 2026-07-27T01:45:09Z
+source: hermetic minimized connection-refused result
+producer_commit: bdaa5669bff7b46a8b6e6c48f1003a3acb26808a
+installed_wheel_sha256: ddb96f9e62e16805dba045483eaa55c2f7ac4bc4f63397a7dfd80207ab82dc38
+sha256: a9d155824baa7dda7b4ad4a31cb7da6cb138663d6e2a90f38b0b4a6f016b260b

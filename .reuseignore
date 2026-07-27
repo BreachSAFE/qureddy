@@ -1,0 +1,19 @@
+# SPDX-FileCopyrightText: 2026 BreachSAFE
+# SPDX-License-Identifier: Apache-2.0
+#
+# Exclude transitive / generated paths from reuse-lint scanning.
+# Vendored dependencies and build artifacts carry their own licenses;
+# we don't claim copyright on them. The scratch/ tree is gitignored
+# agent workspace and is not part of the shipped project.
+.venv/**
+.mypy_cache/**
+.ruff_cache/**
+.pytest_cache/**
+.semgrep_cache/**
+htmlcov/**
+*.egg-info/**
+build/**
+dist/**
+scratch/**
+inbox/**
+plantuml.jar
