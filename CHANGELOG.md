@@ -1,6 +1,6 @@
 # Changelog
 
-[![Status: Alpha](https://img.shields.io/badge/status-alpha-blue?style=flat-square)](docs/reference/milestones.md)
+[![Status: Alpha](https://img.shields.io/badge/status-alpha-blue?style=flat-square)](https://github.com/breachsafe/qureddy)
 [![Version](https://img.shields.io/badge/version-0.2.0-blue?style=flat-square)](CHANGELOG.md)
 [![Keep a Changelog](https://img.shields.io/badge/keep%20a%20changelog-1.1.0-orange?style=flat-square)](https://keepachangelog.com/en/1.1.0/)
 [![SemVer](https://img.shields.io/badge/SemVer-2.0.0-blue?style=flat-square)](https://semver.org/spec/v2.0.0.html)
@@ -11,18 +11,10 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Contents
 
-- [Unreleased](#unreleased)
-- [0.2.0 release candidate](#020---unreleased-release-candidate)
+- [0.2.0](#020---2026-07-27)
 - [0.1.0](#010---2026-05-10)
 
-## Unreleased
-
-The remaining first-PyPI-release gates are tracked in public issues
-[#34](https://github.com/breachsafe/qureddy/issues/34),
-[#35](https://github.com/breachsafe/qureddy/issues/35), and
-[#36](https://github.com/breachsafe/qureddy/issues/36).
-
-## [0.2.0] - UNRELEASED (release candidate)
+## [0.2.0] - 2026-07-27
 
 Version 0.2.0 adds SSH scanning, certificate signature observation, legacy TLS
 enumeration, and CycloneDX 1.7 CBOM output. It also completes the repository
