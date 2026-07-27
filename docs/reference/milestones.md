@@ -87,7 +87,6 @@ not part of the customer documentation or release artifacts.
 
 ## Related documentation
 
-- [Edition reference](editions.md)
 - [Changelog](../../CHANGELOG.md)
 - [Local release gate](../contributors/local-release-gate.md)
 - [CBOM conformance](../contributors/cbom-conformance.md)

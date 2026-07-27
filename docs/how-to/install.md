@@ -3,7 +3,7 @@
 Install the `breachsafe-qureddy` distribution with Python 3.12. Use `pipx` for
 the command line application or install into a managed virtual environment.
 SSH scanning works without OpenSSL. TLS scanning requires a separate OpenSSL
-3.6.3 or newer binary.
+3.5 LTS or newer binary.
 
 ## Contents
 
@@ -26,7 +26,7 @@ QuReddy requires:
 - Python `>=3.12,<3.13`
 - macOS, Linux, or Windows
 - network reachability to the target
-- OpenSSL 3.6.3 or newer for `scan tls` only
+- OpenSSL 3.5 LTS or newer for `scan tls` only
 
 Check Python before installing:
 
@@ -58,10 +58,10 @@ Open a new terminal if `qureddy` is not found after `pipx ensurepath`.
 Homebrew can install Python, pipx, and OpenSSL:
 
 ```bash
-brew install python@3.12 pipx openssl@3
+brew install python@3.12 pipx openssl@3.5
 pipx ensurepath
 pipx install --python "$(brew --prefix python@3.12)/bin/python3.12" breachsafe-qureddy
-export QUREDDY_OPENSSL="$(brew --prefix openssl@3)/bin/openssl"
+export QUREDDY_OPENSSL="$(brew --prefix openssl@3.5)/bin/openssl"
 ```
 
 Do not select `/usr/bin/openssl`; current macOS systems expose LibreSSL at that
@@ -84,7 +84,7 @@ openssl version
 openssl list -tls1_3 -tls-groups
 ```
 
-If the version is older than 3.6.3 or the group list does not contain
+If the version is older than 3.5.0 or the group list does not contain
 `X25519MLKEM768`, install a supported vendor build or build a current release
 from the [official OpenSSL source](https://openssl-library.org/source/).
 Record the resulting path in `QUREDDY_OPENSSL`.
@@ -100,7 +100,7 @@ py -3.12 -m pipx install breachsafe-qureddy
 qureddy --version
 ```
 
-For TLS scans, install a trusted OpenSSL 3.6.3 or newer Windows build. QuReddy
+For TLS scans, install a trusted OpenSSL 3.5 LTS or newer Windows build. QuReddy
 does not bundle or endorse a third party OpenSSL binary. Set the full path:
 
 ```powershell
@@ -147,7 +147,7 @@ Confirm both the version and required group:
 "${QUREDDY_OPENSSL:-openssl}" list -tls1_3 -tls-groups
 ```
 
-The selected binary must report OpenSSL 3.6.3 or newer and list
+The selected binary must report OpenSSL 3.5.0 or newer and list
 `X25519MLKEM768`.
 
 ## Verify the installation

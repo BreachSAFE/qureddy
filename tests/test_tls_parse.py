@@ -20,7 +20,7 @@ def _load(name: str) -> str:
 
 
 class TestRealHybridCapture:
-    """Real OpenSSL 3.5.6 capture against pq.cloudflareresearch.com."""
+    """Real OpenSSL 3.6.3 capture against pq.cloudflareresearch.com."""
 
     def test_negotiated_line_is_recognized(self) -> None:
         result = parse_brief_output(
@@ -40,7 +40,7 @@ class TestRealHybridCapture:
 
 
 class TestRealClassicalCapture:
-    """Real OpenSSL 3.5.6 capture against example.com."""
+    """Real OpenSSL 3.6.3 capture against example.com."""
 
     def test_classical_x25519_recognized_via_peer_temp_key(self) -> None:
         result = parse_brief_output(

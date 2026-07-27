@@ -138,13 +138,18 @@ jobs:
   # OpenSSL is installed per-OS.
   # ===========================================================================
   phase-3-integration:
-    name: "Phase 3: Integration (${{ matrix.os }})"
+    name: "Phase 3: Integration (${{ matrix.os }}, OpenSSL ${{ matrix.openssl.version }})"
     runs-on: ${{ matrix.os }}
     needs: phase-2-unit
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
+        openssl:
+          - version: "3.5.7"
+            sha256: "a8c0d28a529ca480f9f36cf5792e2cd21984552a3c8e4aa11a24aa31aeac98e8"
+          - version: "3.6.3"
+            sha256: "243a86649cf6f23eeb6a2ff2456e09e5d77dd9018a54d3d96b0c6bdd6ba6c7f1"
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -157,9 +162,12 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
 
-      - name: Set up pinned OpenSSL 3.6.3
+      - name: Set up pinned OpenSSL ${{ matrix.openssl.version }}
         timeout-minutes: 30
         uses: ./.github/actions/setup-openssl
+        with:
+          version: ${{ matrix.openssl.version }}
+          sha256: ${{ matrix.openssl.sha256 }}
 
       - name: Install project (dev extras)
         run: uv sync --locked --extra dev

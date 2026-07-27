@@ -1,7 +1,17 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
 # SPDX-License-Identifier: Apache-2.0
 name: Set up pinned OpenSSL
-description: Build or restore the checksum-pinned OpenSSL used by QuReddy live tests
+description: Build or restore a checksum-pinned OpenSSL used by QuReddy tests
+
+inputs:
+  version:
+    description: OpenSSL release to build
+    required: false
+    default: "3.6.3"
+  sha256:
+    description: SHA-256 digest of the OpenSSL source archive
+    required: false
+    default: "243a86649cf6f23eeb6a2ff2456e09e5d77dd9018a54d3d96b0c6bdd6ba6c7f1"
 
 runs:
   using: composite
@@ -10,16 +20,16 @@ runs:
       id: cache
       uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
       with:
-        path: ${{ runner.temp }}/qureddy-openssl-3.6.3
-        key: qureddy-openssl-3.6.3-${{ runner.os }}-${{ runner.arch }}-243a86649cf6f23eeb6a2ff2456e09e5d77dd9018a54d3d96b0c6bdd6ba6c7f1
+        path: ${{ runner.temp }}/qureddy-openssl-${{ inputs.version }}
+        key: qureddy-openssl-${{ inputs.version }}-${{ runner.os }}-${{ runner.arch }}-${{ inputs.sha256 }}
 
     - name: Build pinned OpenSSL on Linux or macOS
       if: steps.cache.outputs.cache-hit != 'true' && runner.os != 'Windows'
       shell: bash
       run: |
         set -euo pipefail
-        version="3.6.3"
-        expected="243a86649cf6f23eeb6a2ff2456e09e5d77dd9018a54d3d96b0c6bdd6ba6c7f1"
+        version="${{ inputs.version }}"
+        expected="${{ inputs.sha256 }}"
         archive="$RUNNER_TEMP/openssl-${version}.tar.gz"
         source="$RUNNER_TEMP/openssl-${version}-source"
         prefix="$RUNNER_TEMP/qureddy-openssl-${version}"
@@ -52,8 +62,8 @@ runs:
       shell: msys2 {0}
       run: |
         set -euo pipefail
-        version="3.6.3"
-        expected="243a86649cf6f23eeb6a2ff2456e09e5d77dd9018a54d3d96b0c6bdd6ba6c7f1"
+        version="${{ inputs.version }}"
+        expected="${{ inputs.sha256 }}"
         runner_temp="$(cygpath -u "$RUNNER_TEMP")"
         archive="$runner_temp/openssl-${version}.tar.gz"
         source="$runner_temp/openssl-${version}-source"
@@ -75,7 +85,7 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        prefix="$RUNNER_TEMP/qureddy-openssl-3.6.3"
+        prefix="$RUNNER_TEMP/qureddy-openssl-${{ inputs.version }}"
         test -x "$prefix/bin/openssl"
         library_path="$prefix/lib64:$prefix/lib"
         version="$(
@@ -84,7 +94,7 @@ runs:
           "$prefix/bin/openssl" version
         )"
         echo "$version"
-        grep -q '^OpenSSL 3\.6\.3 ' <<< "$version"
+        grep -q "^OpenSSL ${{ inputs.version }} " <<< "$version"
         LD_LIBRARY_PATH="$library_path:${LD_LIBRARY_PATH:-}" \
           DYLD_LIBRARY_PATH="$library_path:${DYLD_LIBRARY_PATH:-}" \
           "$prefix/bin/openssl" list -tls1_3 -tls-groups | tee openssl-groups.txt
@@ -97,14 +107,15 @@ runs:
       if: runner.os == 'Windows'
       shell: pwsh
       run: |
-        $prefix = Join-Path $env:RUNNER_TEMP "qureddy-openssl-3.6.3"
+        $prefix = Join-Path $env:RUNNER_TEMP "qureddy-openssl-${{ inputs.version }}"
         $openssl = Join-Path $prefix "bin\openssl.exe"
         if (-not (Test-Path $openssl)) {
           throw "Pinned OpenSSL cache/build did not produce openssl.exe"
         }
         $version = & $openssl version
         $version
-        if (-not ($version -match '^OpenSSL 3\.6\.3 ')) {
+        $expectedVersion = [regex]::Escape("${{ inputs.version }}")
+        if (-not ($version -match "^OpenSSL $expectedVersion ")) {
           throw "Pinned OpenSSL reported an unexpected version"
         }
         $groups = & $openssl list -tls1_3 -tls-groups

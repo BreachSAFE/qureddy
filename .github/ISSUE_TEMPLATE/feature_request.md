@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 ---
 name: Feature request
-about: Propose new functionality
+about: Propose a new capability
 title: "[feat] "
 labels: ["enhancement", "triage"]
 assignees: []
@@ -11,7 +11,7 @@ assignees: []
 
 <!-- What problem does this feature solve? Who has the problem? -->
 
-## Proposed solution
+## Proposed change
 
 <!-- What you want QuReddy to do. Be specific. -->
 

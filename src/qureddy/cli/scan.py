@@ -108,7 +108,7 @@ ENVIRONMENT:
 NO_COLOR         Disable ANSI color (https://no-color.org).
 
 \b
-QUREDDY_OPENSSL  Override path to the OpenSSL 3.5+ binary
+QUREDDY_OPENSSL  Override path to the OpenSSL 3.5 LTS+ binary
                  (precedence: --openssl > $QUREDDY_OPENSSL > $PATH).
 
 Project: {PROJECT_URL}

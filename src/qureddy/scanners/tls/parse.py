@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 """Parse OpenSSL `s_client -brief` output into structured negotiation data.
 
-Captured from real OpenSSL 3.5.6 (homebrew `openssl@3.5`):
+Captured from real OpenSSL 3.6.3 (Homebrew `openssl@3`):
 
   - Hybrid PQ negotiation announces via ``Negotiated TLS1.3 group: <name>``.
     `Peer Temp Key:` does not appear in `-brief` mode for hybrid groups.
@@ -10,7 +10,7 @@ Captured from real OpenSSL 3.5.6 (homebrew `openssl@3.5`):
     `Negotiated TLS1.3 group:` does not appear in `-brief` for classical.
 
 The historical spec referred to the second line as ``Server Temp Key:``;
-real OpenSSL 3.5.6 emits ``Peer Temp Key:``. The parser accepts both for
+OpenSSL 3.6.3 emits ``Peer Temp Key:``. The parser accepts both for
 forward and backward compatibility but always anchors at line start so a
 ClientHello-derived dump cannot satisfy the pattern.
 

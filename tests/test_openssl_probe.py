@@ -125,7 +125,7 @@ class TestProbeCapability:
         dep = probe_capability(fake_openssl("openssl_ok"))
         assert dep.failure_category is None
         assert dep.supports_x25519mlkem768 is True
-        assert dep.version == "3.5.6"
+        assert dep.version == "3.6.3"
 
     def test_broken_returncode_flagged(self) -> None:
         with pytest.raises(LocalOpenSSLBroken) as exc_info:

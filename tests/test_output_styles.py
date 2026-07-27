@@ -69,4 +69,4 @@ class TestUnknownRecommendationLibreSSL:
         """Regression guard: the new branch must not swallow the existing
         generic message for the other four local-capability categories."""
         recommendation = unknown_recommendation(FailureCategory.LOCAL_OPENSSL_TOO_OLD)
-        assert "Install OpenSSL 3.5+" in recommendation
+        assert "Install OpenSSL 3.5 LTS+" in recommendation

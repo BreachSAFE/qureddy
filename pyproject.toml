@@ -112,11 +112,10 @@ packages = ["src/qureddy"]
 # `CLAUDE.md`, the agent scaffolding) shipped into the public sdist by
 # default — 51 internal files on the PyPI source view. Use an
 # include-allowlist instead: the sdist ships only what a source consumer
-# needs to build, install, test, and satisfy the license, and any new
+# needs to build, install, and satisfy the license, and any new
 # internal file is excluded by default rather than leaked by default.
 include = [
     "/src/qureddy",
-    "/tests",
     "/README.md",
     "/CHANGELOG.md",
     "/CONTRIBUTING.md",

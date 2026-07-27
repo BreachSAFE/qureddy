@@ -6,7 +6,7 @@
 # the failure is an actual handshake-layer alert, not a connect error.
 case "$1" in
     version)
-        echo "OpenSSL 3.5.6 7 Apr 2026"
+        echo "OpenSSL 3.6.3 7 Apr 2026"
         ;;
     list)
         echo "X25519MLKEM768:x25519:secp256r1"

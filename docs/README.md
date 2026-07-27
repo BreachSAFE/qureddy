@@ -1,6 +1,6 @@
 # QuReddy Documentation
 
-This directory follows **[Diátaxis](https://diataxis.fr)** — every documentation page belongs to exactly one of four quadrants. Mixing types in the same page is the primary doc smell Diátaxis is designed to prevent, so each page below has one job.
+This directory follows **[Diátaxis](https://diataxis.fr)**. Each documentation page belongs to one of four quadrants, and each page has one job.
 
 ## Contents
 
@@ -22,7 +22,7 @@ The split is more useful than it looks. Each quadrant answers a different reader
 
 - **Tutorials** — *"I'm new. Walk me through something so I learn."* Hand-holding, guaranteed to work, no choices to make. The reader is studying.
 - **How-to guides** — *"I have a goal. Show me the steps."* Task-oriented, assumes basic familiarity. The reader is working.
-- **Reference** — *"I need to look something up."* Information-oriented. Comprehensive, dry, accurate. The reader is working.
+- **Reference** — *"I need to look something up."* Information-oriented, complete, dry, and accurate. The reader is working.
 - **Explanation** — *"I want to understand why."* Discusses, gives context, considers alternatives. The reader is studying.
 
 A page that does two of these jobs is doing neither well. When in doubt, split it.
@@ -52,7 +52,6 @@ Look-it-up information. Comprehensive, accurate, dry.
 - [CycloneDX CBOM output](reference/cbom.md) — emitted 1.7 components, references, metadata, and limits
 - [Failure categories](reference/failure-categories.md) — the `FailureCategory` enum, what each value means, retry eligibility
 - [Project milestones](reference/milestones.md) — what's shipped, what's planned
-- [Editions](reference/editions.md) — capability matrix: OSS vs BreachSAFE QuReddy Enterprise (planned, P2)
 
 ### [Explanation](explanation/)
 Conceptual discussion. Why we made the choices we did.
@@ -61,7 +60,6 @@ Conceptual discussion. Why we made the choices we did.
 - [Why hybrid post-quantum?](explanation/why-hybrid-pq.md) — the X25519MLKEM768 design call
 - [Harvest now, decrypt later (HNDL)](explanation/hndl.md) — the threat model that drives the timeline
 - [Threat model and scope](explanation/threat-model.md) — what QuReddy assumes, what it doesn't try to defend against
-- [Evidence honesty](explanation/evidence-honesty.md) — observation, local capability, interpretation, and unknown states
 
 ## Contributor documentation
 
@@ -71,7 +69,6 @@ The rules and conventions for working *on* QuReddy (not *with* it) live separate
 - [`contributors/coding-rules.md`](contributors/coding-rules.md) — Python authoring standards (size, types, security, structlog, exceptions). Source of truth for *how the code is written*.
 - [`contributors/cli-design-rules.md`](contributors/cli-design-rules.md) — CLI conventions (flags, exit codes, help, stdout/stderr contract, NO_COLOR). Source of truth for *how the CLI behaves*.
 - [`contributors/review-process.md`](contributors/review-process.md) — how a fix lands: reviewer / validator / arbiter pipeline + label tiers
-- [`contributors/agents/`](contributors/agents/) — agent role specifications and bootstrap prompts
 
 These follow Diátaxis internally too — `coding-rules.md` is reference, `examples.md` is how-to, etc. — but they sit under `contributors/` because they're not for end users of the `qureddy` CLI.
 
@@ -99,8 +96,8 @@ Then create the file in the right directory and link it from this README.
 
 ## Why Diátaxis
 
-Documentation grows organically and ends up as a mix of partial tutorials, half-references, and forum-thread-quality explanations stuck in the same files. Diátaxis is a structural fix — once a doc has a quadrant, the rules for what it cannot do are obvious, and reviewers can apply them without arguing about taste.
+Documentation can accumulate partial tutorials, incomplete references, and mixed-purpose explanations. Diátaxis assigns each page a quadrant, which gives reviewers a concrete scope to check.
 
-Adopters include Django, Cloudflare, Gatsby, Pulumi, the Rust Book ecosystem, GitLab, and Open edX. It's free, requires no tooling, and is documented at https://diataxis.fr.
+Projects using Diátaxis include Django, Cloudflare, Gatsby, Pulumi, the Rust Book, GitLab, and Open edX. The method is documented at https://diataxis.fr.
 
 The contributor documentation standard is maintained as an internal decision record.

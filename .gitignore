@@ -124,6 +124,7 @@ Scratch/
 /docs/adr/
 /docs/contributors/plans/
 /docs/explanation/oss-vs-enterprise.md
+/docs/reference/editions.md
 /.claude/skills/
 /.agents/skills/
 /AGENTS.md

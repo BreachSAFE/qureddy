@@ -187,6 +187,20 @@ def test_archive_inspection_rejects_internal_content(tmp_path: Path) -> None:
         release_support.inspect_archives([wheel, sdist])
 
 
+def test_archive_inspection_rejects_tests_in_sdist(tmp_path: Path) -> None:
+    wheel = tmp_path / "candidate.whl"
+    sdist = tmp_path / "candidate.tar.gz"
+    with zipfile.ZipFile(wheel, "w") as bundle:
+        bundle.writestr("qureddy/__init__.py", "__version__ = '0.2.0'\n")
+    with tarfile.open(sdist, "w:gz") as bundle:
+        root = "breachsafe-qureddy-0.2.0"
+        info = tarfile.TarInfo(f"{root}/tests/test_public.py")
+        info.size = 0
+        bundle.addfile(info)
+    with pytest.raises(RuntimeError, match="unexpected sdist content"):
+        release_support.inspect_archives([wheel, sdist])
+
+
 def test_archive_inspection_rejects_incomplete_build(tmp_path: Path) -> None:
     wheel = tmp_path / "candidate.whl"
     wheel.touch()

@@ -21,10 +21,10 @@
     {
       "failure_category": null,
       "name": "openssl",
-      "path": "/opt/homebrew/opt/openssl@3.5/bin/openssl",
+      "path": "/opt/homebrew/opt/openssl@3/bin/openssl",
       "supports_tls13_groups": true,
       "supports_x25519mlkem768": true,
-      "version": "3.5.6"
+      "version": "3.6.3"
     }
   ],
   "evidence": [
@@ -50,7 +50,7 @@
             "-groups",
             "X25519MLKEM768"
           ],
-          "executable": "/opt/homebrew/opt/openssl@3.5/bin/openssl",
+          "executable": "/opt/homebrew/opt/openssl@3/bin/openssl",
           "redacted": false,
           "timeout_seconds": 30
         },
@@ -89,7 +89,7 @@
             "-groups",
             "X25519"
           ],
-          "executable": "/opt/homebrew/opt/openssl@3.5/bin/openssl",
+          "executable": "/opt/homebrew/opt/openssl@3/bin/openssl",
           "redacted": false,
           "timeout_seconds": 30
         },

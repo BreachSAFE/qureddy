@@ -122,7 +122,6 @@ tracker when they contain no sensitive target data.
 
 ## Related documentation
 
-- [Evidence honesty](evidence-honesty.md)
 - [Why hybrid post-quantum](why-hybrid-pq.md)
 - [Harvest now, decrypt later](hndl.md)
 - [Failure categories](../reference/failure-categories.md)

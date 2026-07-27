@@ -29,7 +29,7 @@ Fixes #
 
 <!-- If the linked issue has a "### Suggested fix" section, this PR must
      either implement it or explain divergence. Reviewers compare the diff
-     to the suggested fix; silently picking a different approach without
+     to the suggested fix; silently choosing a different implementation without
      justification is a re-review trigger. -->
 
 - [ ] This PR implements the issue's `### Suggested fix` as written

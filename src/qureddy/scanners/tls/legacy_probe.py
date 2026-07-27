@@ -15,7 +15,7 @@ issue #82) rather than adding to an over-ceiling file, same reasoning
 as `cert_probe.py`.
 
 ## Why `@SECLEVEL=0` is required, and why this still works on the
-## project's required OpenSSL 3.5+ floor
+## project's required OpenSSL 3.5 LTS+ floor
 
 OpenSSL 3.x's default security level (1) refuses TLS < 1.2 and most
 legacy ciphers outright — confirmed live: `openssl s_client -tls1`
@@ -45,7 +45,7 @@ offers, including deliberately-weak configurations, not refuse to look).
 
 ## Known gap: RC4/3DES/DES are not detectable on this build (issue #192 follow-up)
 
-Confirmed live: on the OpenSSL 3.5+ build this project requires (needed
+Confirmed live: on the OpenSSL 3.5 LTS+ build this project requires (needed
 for PQC group support), RC4, 3DES, and DES are compiled out entirely —
 `openssl ciphers -s -tls1 'ALL:COMPLEMENTOFALL:@SECLEVEL=0'` never lists
 them, and an explicit `-cipher RC4-SHA` / `DES-CBC3-SHA` handshake fails

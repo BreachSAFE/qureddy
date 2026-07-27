@@ -30,10 +30,10 @@ from qureddy.scanners.tls.openssl_probe._constants import (
 )
 
 _INSTALL_GUIDANCE = (
-    "pip installs QuReddy, not OpenSSL. Install OpenSSL 3.5+ separately, then pass "
-    "--openssl PATH or set QUREDDY_OPENSSL. macOS: brew install openssl@3. "
-    "Linux: install OpenSSL 3.5+ from your distribution or trusted vendor. "
-    "Windows: install a maintained OpenSSL 3.5+ distribution and pass its full path."
+    "pip installs QuReddy, not OpenSSL. Install OpenSSL 3.5 LTS or newer separately, then pass "
+    "--openssl PATH or set QUREDDY_OPENSSL. macOS: brew install openssl@3.5. "
+    "Linux: install OpenSSL 3.5 LTS or newer from your distribution or trusted vendor. "
+    "Windows: install a maintained OpenSSL 3.5 LTS or newer distribution and pass its full path."
 )
 
 
@@ -136,6 +136,6 @@ def _libressl_guidance(dep: OpenSSLDependency) -> str:
     return (
         f"{dep.path} is LibreSSL {dep.version}, not OpenSSL — install OpenSSL "
         f"{MIN_OPENSSL_VERSION}+ with {HYBRID_GROUP}. On macOS: brew install "
-        "openssl@3, then pass --openssl $(brew --prefix openssl@3)/bin/openssl "
-        f"or export {ENV_OVERRIDE}=$(brew --prefix openssl@3)/bin/openssl."
+        "openssl@3.5, then pass --openssl $(brew --prefix openssl@3.5)/bin/openssl "
+        f"or export {ENV_OVERRIDE}=$(brew --prefix openssl@3.5)/bin/openssl."
     )

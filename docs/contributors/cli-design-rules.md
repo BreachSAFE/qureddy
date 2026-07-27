@@ -8,7 +8,7 @@ Where a rule below carries no citation, it is a **QuReddy-specific decision** wi
 
 This document covers *how the CLI behaves*. It does not cover *what the CLI scans* (that is the scanner code under `src/qureddy/scanners/`) or *what the help text says* (that is per-PR copywriting). Rule changes here go through ADR + reviewer pass per [`review-process.md`](review-process.md).
 
-QuReddy's CLI is **Typer + Rich + structlog** running on top of **Click 8**. Rules below cite the Typer/Click idioms they translate to. When in doubt, the rule wins; the framework adapts.
+QuReddy's CLI is **Typer + Rich + structlog** running on top of **Click 8**. Rules below cite the Typer/Click idioms they translate to. When in doubt, the rule wins; the implementation follows it.
 
 > **Tracker provenance.** Links to `paul007ex/qureddy` in this document are
 > historical implementation records in the private staging tracker. They are
@@ -90,13 +90,13 @@ The `Annotated` form is what Typer's docs recommend for >0.9. It separates type 
 When the same `Annotated[type, typer.Option(...)]` appears in three or more commands, extract it. `VersionOpt`, `SniOpt`, `FormatOpt` are the existing examples. New scanners should add their own aliases as new commands grow. The aliases live near the top of `cli.py` (or its split-out package post-#60); the type expression is the documentation.
 
 **Rule 2.3 — Range constraints on the type, not in the body.**
-`Annotated[int, typer.Option(min=0, max=10, clamp=False)]` for a flag that takes a bounded integer. Click validates at usage-error time and exits 4. Validating in the function body forces a non-zero exit code that the framework would have given for free.
+`Annotated[int, typer.Option(min=0, max=10, clamp=False)]` for a flag that takes a bounded integer. Click validates at usage-error time and exits 4. Validating in the function body changes the usage-error contract.
 
 **Rule 2.4 — Use `typer.Exit(code=N)` from inside commands; not `sys.exit(N)`.**
 Typer needs to unwind cleanly so resource cleanup runs (Rich's progress bars, structlog handlers, async loops). `sys.exit` raises `SystemExit` which Typer treats as an unexpected crash and may report internal-error exit code 70 instead of the intended target-failure code 2.
 
 **Rule 2.5 — Typer's `--help` is auto-generated; expand `help=` strings, don't subclass.**
-Long, multi-paragraph help with `EXAMPLES` and `EXIT CODES` sections lives in Typer's `epilog=` parameter using the Click `\b` form-feed convention to preserve literal newlines (Rich's default is to collapse single newlines). Do not subclass `typer.Typer` to override help rendering; that breaks the framework's update path. Implementation reference: PR [#73](https://github.com/paul007ex/qureddy/pull/73) (closes [#71](https://github.com/paul007ex/qureddy/issues/71)).
+Long, multi-paragraph help with `EXAMPLES` and `EXIT CODES` sections lives in Typer's `epilog=` parameter using the Click `\b` form-feed convention to preserve literal newlines (Rich's default is to collapse single newlines). Do not subclass `typer.Typer` to override help rendering; that breaks Typer's update path. Implementation reference: PR [#73](https://github.com/paul007ex/qureddy/pull/73) (closes [#71](https://github.com/paul007ex/qureddy/issues/71)).
 
 **Rule 2.6 — Validation at usage-error time exits 4, not 2.**
 The `cli:main` wrapper translates Click's `UsageError` to exit code 4. Pointing the install-time entrypoint at `cli:app` directly would let Click default to exit 2 — colliding with target-scan-failure. The wrapper is non-negotiable; see `pyproject.toml [project.scripts]` and PR [#51](https://github.com/paul007ex/qureddy/pull/51) for the surrounding history.
