@@ -365,10 +365,10 @@ class TestScanReadinessRollupPrecedence:
       UNKNOWN > QUANTUM_SAFE > NOT_APPLICABLE
 
     Reviewer-flagged latent issue: CLASSICALLY_WEAK was unreachable in
-    MVP 0.1's policy (only the cert scanner at MVP 0.2 will emit it),
+    The current policy emits this finding when certificate evidence supports it,
     but the rollup branch was previously falling through to a
     nondeterministic `next(iter(...))`. These tests pin the precedence
-    so the future-MVP-0.2 cert findings can't be silently downgraded by
+    so certificate findings cannot be silently downgraded by
     a coexisting hybrid finding.
     """
 

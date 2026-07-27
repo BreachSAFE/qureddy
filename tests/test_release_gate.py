@@ -287,7 +287,7 @@ def test_gitleaks_false_positive_classification_is_exactly_scoped() -> None:
     assert config["extend"] == {"useDefault": True}
     assert config["allowlists"] == [
         {
-            "description": "OpenSSL X25519MLKEM768 parser fixture in the original MVP prompt",
+                "description": "OpenSSL X25519MLKEM768 parser fixture in an archived prompt",
             "targetRules": ["generic-api-key"],
             "condition": "AND",
             "commits": ["72f3fa4d750a393460ac40348e71f4b6c717bbce"],
