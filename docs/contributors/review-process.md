@@ -21,8 +21,8 @@ flowchart LR
     review_b -->|review:automated:&lt;verdict&gt;| labels1
     validate -->|validation:automated:&lt;verdict&gt;| labels1
 
-    labels1 --> arbiter["Arbiter<br/>(Codex)"]
-    arbiter -->|arbiter:codex:&lt;verdict&gt;| labels2[(Binding label)]
+    labels1 --> arbiter["Arbiter<br/>(project lead)"]
+    arbiter -->|arbiter:binding:&lt;verdict&gt;| labels2[(Binding label)]
     arbiter -->|decision:&lt;outcome&gt;| labels2
 
     labels2 --> gate{decision:approved?}
@@ -39,7 +39,7 @@ flowchart LR
 | Tier | Prefix | Who applies | Count per issue | What it means |
 |---|---|---|---|---|
 | **Reviewer** | `review:<role>-<instance>:<verdict>` | Each individual reviewer | 0..N | Recommendation; informational |
-| **Arbiter** | `arbiter:codex:<verdict>` | Only the arbiter | 0 or 1 | Arbiter's verdict, mirrors reviewer namespace for filterability |
+| **Arbiter** | `arbiter:binding:<verdict>` | Only the arbiter | 0 or 1 | Arbiter's verdict, mirrors reviewer namespace for filterability |
 | **Validator** | `validation:automated-<instance>:<verdict>` | The validator | 0..N | Mechanical: bug confirmed pre-patch, gone post-patch |
 | **Decision** | `decision:<outcome>` | Only the arbiter | 0 or 1 | **Binding.** The merge gate reads this and nothing else. |
 
@@ -50,7 +50,7 @@ Each automated review adds an instance suffix so concurrent reviews don't collid
 - `review:automated-1:<verdict>` — first automated review
 - `review:automated-2:<verdict>` — second automated review
 - `review:automated-N:<verdict>` — Nth automated review
-- `review:codex:<verdict>` — Codex (single-instance role; no suffix needed)
+- `review:lead:<verdict>` — project lead (single-instance role; no suffix needed)
 - `review:human:<verdict>` — human reviewer (single-instance role; no suffix needed)
 - `validation:automated-N:<verdict>` — same shape for validator labels
 
@@ -79,7 +79,7 @@ The validator is independent of the reviewer because "tests pass" and "issue res
 
 ### 1. Author opens PR
 
-PR body contains `Closes #N` (or multiple — codex bundles coupled fixes per the surgical-fix skill). PR template auto-fills with `### Fidelity to the issue's proposed fix` checkbox.
+PR body contains `Closes #N` (or multiple when the issues are coupled). PR template auto-fills with `### Fidelity to the issue's proposed fix` checkbox.
 
 ### 2. Reviewers post verdicts
 
@@ -101,14 +101,14 @@ gh pr comment <n> --repo breachsafe/qureddy --body "$(cat validation.md)"
 gh pr edit <n> --repo breachsafe/qureddy --add-label "validation:automated-1:validated"
 ```
 
-### 4. Arbiter (codex) decides
+### 4. Arbiter decides
 
-Codex reads every reviewer comment and the validator's verdict, settles disagreements explicitly with rule citations, runs tests one more time, and posts the binding decision.
+The arbiter reads every reviewer comment and the validator's verdict, settles disagreements explicitly with rule citations, runs tests one more time, and posts the binding decision.
 
 ```bash
 gh pr comment <n> --repo breachsafe/qureddy --body "$(cat arbitration.md)"
 gh pr edit <n> --repo breachsafe/qureddy \
-    --add-label "arbiter:codex:approve" \
+    --add-label "arbiter:binding:approve" \
     --add-label "decision:approved"
 ```
 
@@ -126,10 +126,10 @@ gh pr merge <n> --repo breachsafe/qureddy --squash --delete-branch
 # Ready to merge
 gh issue list --repo breachsafe/qureddy --label "decision:approved"
 
-# Reviewed by automated review 1, awaiting arbiter
+# Reviewed by automated review 1, awaiting the arbiter
 gh issue list --repo breachsafe/qureddy \
   --label "review:automated-1:approve" \
-  -- -l "arbiter:codex:*"
+  -- -l "arbiter:binding:*"
 
 # Disagreement between two reviewers
 gh issue list --repo breachsafe/qureddy \
