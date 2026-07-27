@@ -10,14 +10,14 @@ name = "breachsafe-qureddy"
 version = "0.2.0"
 description = "Open-source post-quantum readiness scanner for TLS and SSH endpoints."
 readme = "README.md"
-requires-python = ">=3.12"
-license = {text = "Apache-2.0"}
+requires-python = ">=3.12,<3.13"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 authors = [{name = "BreachSAFE QuReddy contributors"}]
 keywords = ["pqc", "post-quantum", "cryptography", "tls", "scanner", "cbom"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Information Technology",
-    "License :: OSI Approved :: Apache Software License",
     "Operating System :: MacOS",
     "Operating System :: POSIX :: Linux",
     "Operating System :: Microsoft :: Windows",
@@ -39,15 +39,6 @@ classifiers = [
 # fix before that upgrade. Click 8.3.3 is the first release containing
 # the fix for PYSEC-2026-2132.
 #
-# cyclonedx-python-lib: used unconditionally by output/cbom.py, wired into
-# the CLI's --format cbom (prowler-rapid-prototype branch). Was missing
-# here entirely — it only "worked" because it's a transitive dependency
-# of pip-audit (a dev-only tool), so a clean prod install without [dev]
-# would hit ModuleNotFoundError the moment --format cbom is used. Pinned
-# to the version already verified working (11.11.0) rather than the
-# lowest version that happens to expose CryptoAssetType/JsonV1Dot6, since
-# this is prototype code, not yet the tracked MVP 0.3 implementation
-# (qureddy#61) — revisit the floor when that lands.
 dependencies = [
     "typer>=0.23.1,<0.27",
     "click>=8.3.3,<8.5",
@@ -55,9 +46,8 @@ dependencies = [
     "pydantic>=2.7",
     "structlog>=24.1",
     "packaging>=24.0",
-    # Final producer bytes and the independent conformance fixtures are
-    # validated against the 11.x model/serializer contract. A 12.x upgrade
-    # must deliberately refresh those byte-level expectations.
+    # Final bytes and independent fixtures validate the 11.x serializer
+    # contract; a 12.x upgrade must deliberately refresh conformance evidence.
     "cyclonedx-python-lib>=11.11,<12",
 ]
 
@@ -105,12 +95,13 @@ qureddy = "qureddy.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/breachsafe/qureddy"
+Documentation = "https://github.com/breachsafe/qureddy/tree/main/docs"
 Repository = "https://github.com/breachsafe/qureddy"
 Issues = "https://github.com/breachsafe/qureddy/issues"
 Changelog = "https://github.com/breachsafe/qureddy/blob/main/CHANGELOG.md"
 
 [build-system]
-requires = ["hatchling>=1.25"]
+requires = ["hatchling==1.31.0"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]

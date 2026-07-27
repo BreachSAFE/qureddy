@@ -161,9 +161,11 @@ jobs:
         run: |
           # Ubuntu 24.04 ships OpenSSL 3.0; install 3.5+ from upstream tarball.
           OPENSSL_VERSION="3.5.1"
+          OPENSSL_SHA256="529043b15cffa5f36077a4d0af83f3de399807181d607441d734196d889b641f"
           sudo apt-get update -qq
           sudo apt-get install -y -qq build-essential
           curl -LO "https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz"
+          echo "${OPENSSL_SHA256}  openssl-${OPENSSL_VERSION}.tar.gz" | sha256sum --check --strict
           tar -xzf "openssl-${OPENSSL_VERSION}.tar.gz"
           cd "openssl-${OPENSSL_VERSION}"
           ./config --prefix=/opt/openssl-3.5 --openssldir=/opt/openssl-3.5 shared
@@ -238,9 +240,11 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: |
           OPENSSL_VERSION="3.5.1"
+          OPENSSL_SHA256="529043b15cffa5f36077a4d0af83f3de399807181d607441d734196d889b641f"
           sudo apt-get update -qq
           sudo apt-get install -y -qq build-essential
           curl -LO "https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz"
+          echo "${OPENSSL_SHA256}  openssl-${OPENSSL_VERSION}.tar.gz" | sha256sum --check --strict
           tar -xzf "openssl-${OPENSSL_VERSION}.tar.gz"
           cd "openssl-${OPENSSL_VERSION}"
           ./config --prefix=/opt/openssl-3.5 --openssldir=/opt/openssl-3.5 shared
@@ -315,9 +319,11 @@ jobs:
       - name: Install OpenSSL 3.5+
         run: |
           OPENSSL_VERSION="3.5.1"
+          OPENSSL_SHA256="529043b15cffa5f36077a4d0af83f3de399807181d607441d734196d889b641f"
           sudo apt-get update -qq
           sudo apt-get install -y -qq build-essential
           curl -LO "https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz"
+          echo "${OPENSSL_SHA256}  openssl-${OPENSSL_VERSION}.tar.gz" | sha256sum --check --strict
           tar -xzf "openssl-${OPENSSL_VERSION}.tar.gz"
           cd "openssl-${OPENSSL_VERSION}"
           ./config --prefix=/opt/openssl-3.5 --openssldir=/opt/openssl-3.5 shared
@@ -473,3 +479,166 @@ jobs:
             --cyclonedx-cli ./cyclonedx-cli \
             --tool-asset-key linux-x64 \
             --qureddy-console .conformance-venv/bin/qureddy
+
+  # ===========================================================================
+  # PyPI artifact proof — build once with pinned tooling, audit runtime-only
+  # dependencies, then install the exact wheel/sdist on every supported OS.
+  # This is the packaging contract (#33), not the release orchestrator (#34).
+  # ===========================================================================
+  packaging-build:
+    name: "Package: build and runtime audit"
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pinned build tools
+        run: python -m pip install "uv==0.11.32" "build==1.3.0" "twine==6.2.0"
+
+      - name: Verify lock and build artifacts
+        run: |
+          uv lock --check
+          python -m build
+          twine check dist/*
+          cd dist
+          sha256sum breachsafe_qureddy-* > SHA256SUMS
+          sha256sum --check --strict SHA256SUMS
+
+      - name: Reject internal archive content
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import tarfile
+          import zipfile
+
+          forbidden = (".claude", ".agents", "scratch", "AGENTS.md", "CLAUDE.md",
+                       "__pycache__", ".pyc")
+          for path in Path("dist").iterdir():
+              if path.suffix == ".whl":
+                  names = zipfile.ZipFile(path).namelist()
+              elif path.name.endswith(".tar.gz"):
+                  names = tarfile.open(path).getnames()
+              else:
+                  continue
+              bad = [name for name in names if any(item in name for item in forbidden)]
+              if bad:
+                  raise SystemExit(f"{path.name}: forbidden archive entries: {bad}")
+          PY
+
+      - name: Audit wheel runtime dependencies only
+        run: |
+          python -m venv runtime
+          runtime/bin/python -m pip install --upgrade "pip==26.1.2"
+          runtime/bin/python -m pip install dist/breachsafe_qureddy-*.whl
+          python -m venv audit-tool
+          audit-tool/bin/python -m pip install "pip-audit==2.10.1"
+          audit-tool/bin/pip-audit \
+            --path runtime/lib/python3.12/site-packages
+
+      - name: Upload exact candidate artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: pypi-candidate
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
+
+  packaging-install:
+    name: "Package: clean install (${{ matrix.os }})"
+    needs: packaging-build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Download exact candidate artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: pypi-candidate
+          path: dist/
+
+      - name: Verify artifact hashes
+        run: |
+          cd dist
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+
+          for line in Path("SHA256SUMS").read_text().splitlines():
+              expected, name = line.split(maxsplit=1)
+              path = Path(name.lstrip("*"))
+              actual = hashlib.sha256(path.read_bytes()).hexdigest()
+              if actual != expected:
+                  raise SystemExit(f"{path}: expected {expected}, got {actual}")
+          PY
+
+      - name: Install wheel, sdist, and pipx application
+        run: |
+          python -m venv wheel-env
+          python -m venv sdist-env
+          python -m pip install "pipx==1.8.0"
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            wheel_python="wheel-env/Scripts/python"
+            wheel_qureddy="wheel-env/Scripts/qureddy"
+            sdist_python="sdist-env/Scripts/python"
+            sdist_qureddy="sdist-env/Scripts/qureddy"
+            export PIPX_HOME="$RUNNER_TEMP/pipx-home"
+            export PIPX_BIN_DIR="$RUNNER_TEMP/pipx-bin"
+            pipx_qureddy="$PIPX_BIN_DIR/qureddy.exe"
+          else
+            wheel_python="wheel-env/bin/python"
+            wheel_qureddy="wheel-env/bin/qureddy"
+            sdist_python="sdist-env/bin/python"
+            sdist_qureddy="sdist-env/bin/qureddy"
+            export PIPX_HOME="$RUNNER_TEMP/pipx-home"
+            export PIPX_BIN_DIR="$RUNNER_TEMP/pipx-bin"
+            pipx_qureddy="$PIPX_BIN_DIR/qureddy"
+          fi
+          "$wheel_python" -m pip install dist/breachsafe_qureddy-*.whl
+          "$sdist_python" -m pip install dist/breachsafe_qureddy-*.tar.gz
+          "$wheel_python" -m pip check
+          "$sdist_python" -m pip check
+          python -m pipx install dist/breachsafe_qureddy-*.whl
+          "$wheel_qureddy" --version
+          "$sdist_qureddy" --version
+          "$pipx_qureddy" --version
+          "$wheel_qureddy" --help > /dev/null
+          "$wheel_qureddy" scan tls --help > /dev/null
+          "$wheel_qureddy" scan ssh --help > /dev/null
+
+      - name: Exercise installed network and failure contracts
+        run: |
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            qureddy="wheel-env/Scripts/qureddy"
+            python_bin="wheel-env/Scripts/python"
+            old_openssl="tests/fixtures/openssl/fake/openssl_too_old.cmd"
+          else
+            qureddy="wheel-env/bin/qureddy"
+            python_bin="wheel-env/bin/python"
+            old_openssl="tests/fixtures/openssl/fake/openssl_too_old.sh"
+          fi
+          "$qureddy" scan ssh github.com --format json > ssh.json
+          "$python_bin" -c \
+            'import json; assert json.load(open("ssh.json"))["scan"]["scanner_name"] == "ssh"'
+          set +e
+          "$qureddy" scan tls example.com \
+            --openssl "$old_openssl" --format cbom > old-openssl.cbom.json
+          exit_code=$?
+          set -e
+          test "$exit_code" -eq 3
+          "$python_bin" -c \
+            'import json; assert json.load(open("old-openssl.cbom.json"))["specVersion"] == "1.7"'

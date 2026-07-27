@@ -1,12 +1,12 @@
 # BreachSAFE QuReddy
 
-[![Version](https://img.shields.io/badge/version-0.1.0-blue?style=flat-square)](CHANGELOG.md)
-[![Python](https://img.shields.io/badge/python-3.12%2B-blue?style=flat-square&logo=python&logoColor=white)](https://www.python.org/downloads/)
+[![Version](https://img.shields.io/badge/version-0.2.0-blue?style=flat-square)](CHANGELOG.md)
+[![Python](https://img.shields.io/badge/python-3.12-blue?style=flat-square&logo=python&logoColor=white)](https://www.python.org/downloads/)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue?style=flat-square)](LICENSE)
 [![Code Style: Ruff](https://img.shields.io/badge/code%20style-ruff-D7FF64?style=flat-square&logo=ruff&logoColor=black)](https://docs.astral.sh/ruff/)
 [![Type Checked: mypy strict](https://img.shields.io/badge/type%20check-mypy%20strict-blue?style=flat-square)](https://mypy-lang.org/)
 
-QuReddy scans a TLS endpoint and tells you where it stands on the move to
+QuReddy scans a TLS or SSH endpoint and tells you where it stands on the move to
 post-quantum cryptography. It runs real OpenSSL handshakes against the target,
 reports what was actually negotiated, and makes only the handshakes any client
 would make.
@@ -56,15 +56,16 @@ group) instead of a generic "try again."
 ## Install
 
 ```bash
-git clone https://github.com/breachsafe/qureddy.git
-cd qureddy
-uv venv && source .venv/bin/activate
-uv pip install -e ".[dev]"
+pipx install breachsafe-qureddy
 ```
 
-QuReddy needs a real OpenSSL 3.5+ binary to run the PQC handshakes. On macOS the
-system `/usr/bin/openssl` is LibreSSL and will not work — install OpenSSL and
-point QuReddy at it:
+`pipx` is the recommended human install because it gives the `qureddy` command
+its own environment. For a library, container, or managed virtual environment,
+use `python -m pip install breachsafe-qureddy`.
+
+The Python package does not bundle OpenSSL. SSH scans work immediately, but TLS
+scans need a separate OpenSSL 3.5+ binary. On macOS, `/usr/bin/openssl` is
+LibreSSL and will not work; install OpenSSL and point QuReddy at it:
 
 ```bash
 brew install openssl@3
@@ -136,7 +137,7 @@ the exact OpenSSL binary used).
 |---|---|
 | `rich` (default) | The colored terminal report above. |
 | `json` | A stable machine document, schema `qureddy.scan.v1` — findings, evidence, and per-probe results. See the [JSON schema reference](docs/reference/json-schema.md). |
-| `cbom` | A CycloneDX 1.6 Cryptography Bill of Materials of the observed crypto assets. |
+| `cbom` | A validated CycloneDX 1.7 Cryptography Bill of Materials of positively observed crypto assets. |
 
 ## Exit codes
 
@@ -168,7 +169,7 @@ lives outside the scanner.
 
 ## Requirements
 
-- Python 3.12+
+- Python 3.12 (the currently tested and supported minor release)
 - OpenSSL 3.5+ (LibreSSL is not supported — it lacks the PQC groups)
 - macOS, Linux, or Windows
 
