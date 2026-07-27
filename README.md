@@ -42,7 +42,9 @@ cleartext KEXINIT offer directly and do not require OpenSSL.
 > ```
 >
 > The `--extra-index-url` pulls runtime dependencies from PyPI (TestPyPI hosts only
-> QuReddy). Once the PyPI release lands, this simplifies to `pipx install breachsafe-qureddy`.
+> QuReddy). Keep both indexes in this command: TestPyPI does not mirror every
+> dependency release. Once the PyPI release lands, this simplifies to
+> `pipx install breachsafe-qureddy`.
 
 Install the PyPI distribution with `pipx`:
 
@@ -52,7 +54,7 @@ qureddy --version
 ```
 
 > **Python 3.12 or newer.** QuReddy targets `>=3.12` (3.12, 3.13, …). Note: the
-> The previous `0.2.0` TestPyPI wheel had a `<3.13` cap; the `0.2.1` candidate
+> The previous `0.2.0` TestPyPI wheel had a `<3.13` cap; the `0.2.1` release
 > removes that stale upper bound.
 
 The expected version line is:
