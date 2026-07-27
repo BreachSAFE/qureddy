@@ -16,6 +16,7 @@ cleartext KEXINIT offer directly and do not require OpenSSL.
 ## Contents
 
 - [Install](#install)
+- [Run with Docker](#run-with-docker)
 - [Run the first SSH scan](#run-the-first-ssh-scan)
 - [Prepare OpenSSL for TLS](#prepare-openssl-for-tls)
 - [Run the first TLS scan](#run-the-first-tls-scan)
@@ -47,6 +48,22 @@ BreachSAFE QuReddy 0.2.0 -- https://www.breachsafe.ai
 path. See the [installation and troubleshooting guide](https://github.com/breachsafe/qureddy/blob/main/docs/how-to/install.md)
 for macOS, Linux, Windows, virtual environment, upgrade, and uninstall
 instructions.
+
+## Run with Docker
+
+The release image bundles the verified OpenSSL runtime and runs as an
+unprivileged user:
+
+```bash
+docker pull ghcr.io/breachsafe/qureddy:0.2.0
+docker run --rm ghcr.io/breachsafe/qureddy:0.2.0 \
+  scan tls pq.cloudflareresearch.com --format cbom
+docker run --rm ghcr.io/breachsafe/qureddy:0.2.0 \
+  scan ssh github.com --format cbom
+```
+
+See the [Docker and GHCR guide](https://github.com/breachsafe/qureddy/blob/main/docs/how-to/docker.md)
+for digest pinning, local builds, output redirection, and publication policy.
 
 ## Run the first SSH scan
 
