@@ -69,11 +69,7 @@ jobs:
         run: uv run --locked bandit -r -ll src/qureddy scripts/
 
       - name: pip-audit
-        run: |
-          uv run --locked pip-audit \
-            --ignore-vuln PYSEC-2026-3481 \
-            --ignore-vuln PYSEC-2026-3482 \
-            --ignore-vuln PYSEC-2026-3483
+        run: uv run --locked pip-audit
 
       - name: deptry
         run: uv run --locked deptry .

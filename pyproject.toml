@@ -368,7 +368,9 @@ extend_exclude = ["scratch"]
 # CI workflow, not imported by Python code. pytest, pytest-cov, and
 # pytest-rerunfailures will satisfy themselves once src/ + tests/
 # import them at MVP 0.1; ruff and mypy are pure CLI tools and stay
-# in this list permanently.
+# in this list permanently. The jsonschema/RFC3339 packages and their
+# stubs are imported only by tests/conformance/, which deptry does not
+# scan; they are required by the independent final-byte test gate.
 DEP002 = [
     "bandit",
     "pip-audit",
@@ -380,4 +382,8 @@ DEP002 = [
     "pytest",
     "pytest-cov",
     "pytest-rerunfailures",
+    "jsonschema",
+    "rfc3339-validator",
+    "types-jsonschema",
+    "types-rfc3339-validator",
 ]
