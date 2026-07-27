@@ -10,6 +10,14 @@ This document covers *how the CLI behaves*. It does not cover *what the CLI scan
 
 QuReddy's CLI is **Typer + Rich + structlog** running on top of **Click 8**. Rules below cite the Typer/Click idioms they translate to. When in doubt, the rule wins; the framework adapts.
 
+> **Tracker provenance.** Links to `paul007ex/qureddy` in this document are
+> historical implementation records in the private staging tracker. They are
+> context, not current public authority. The shipped contract is defined by
+> the [CLI reference](../reference/cli.md), the
+> [exit-code reference](../reference/exit-codes.md), current source and tests,
+> and the canonical public
+> [release documentation issue](https://github.com/breachsafe/qureddy/issues/35).
+
 > **Why now.** MVP 0.1 ships as `scan tls`. MVP 0.2–0.6 add `scan cert`, `scan ssh`, `scan config`, `scan source`. Every new scanner is a new subcommand and a new flag set. Without a written standard, every scanner author re-invents the conventions and every reviewer re-litigates them. This document locks the conventions before the surface scales.
 
 ---

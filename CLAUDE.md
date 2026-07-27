@@ -146,7 +146,7 @@ Decisions marked **pending** in `docs/contributors/coding-rules.md` should not b
 
 | Component | Decision |
 |---|---|
-| Language | Python 3.12+ |
+| Language | Python 3.12 (`>=3.12,<3.13` package metadata) |
 | Dev tooling | `uv` |
 | CLI | Typer + Rich |
 | Async | Not used by the shipped scanners |

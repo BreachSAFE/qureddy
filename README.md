@@ -1,8 +1,8 @@
 # BreachSAFE QuReddy
 
-[![Version](https://img.shields.io/badge/version-0.2.0-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.0-blue?style=flat-square)](https://github.com/breachsafe/qureddy/blob/main/CHANGELOG.md)
 [![Python](https://img.shields.io/badge/python-3.12-blue?style=flat-square&logo=python&logoColor=white)](https://www.python.org/downloads/)
-[![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue?style=flat-square)](LICENSE)
+[![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue?style=flat-square)](https://github.com/breachsafe/qureddy/blob/main/LICENSE)
 [![Code Style: Ruff](https://img.shields.io/badge/code%20style-ruff-D7FF64?style=flat-square&logo=ruff&logoColor=black)](https://docs.astral.sh/ruff/)
 [![Type Checked: mypy strict](https://img.shields.io/badge/type%20check-mypy%20strict-blue?style=flat-square)](https://mypy-lang.org/)
 
@@ -44,7 +44,7 @@ BreachSAFE QuReddy 0.2.0 -- https://www.breachsafe.ai
 ```
 
 `pipx` creates an isolated environment and places `qureddy` on your command
-path. See the [installation and troubleshooting guide](docs/how-to/install.md)
+path. See the [installation and troubleshooting guide](https://github.com/breachsafe/qureddy/blob/main/docs/how-to/install.md)
 for macOS, Linux, Windows, virtual environment, upgrade, and uninstall
 instructions.
 
@@ -82,7 +82,7 @@ openssl list -tls1_3 -tls-groups
 ```
 
 If `openssl` is not the intended binary, set `QUREDDY_OPENSSL` or pass
-`--openssl PATH`. The [installation guide](docs/how-to/install.md) documents
+`--openssl PATH`. The [installation guide](https://github.com/breachsafe/qureddy/blob/main/docs/how-to/install.md) documents
 the supported resolution order and failure diagnostics.
 
 ## Run the first TLS scan
@@ -123,9 +123,10 @@ qureddy scan ssh github.com --format cbom > github-ssh.cdx.json
 Machine modes write one parseable document to standard output. Without an
 explicit verbosity flag, successful scans keep standard error empty.
 
-See [generate and validate a CBOM](docs/how-to/generate-a-cbom.md),
-[JSON output](docs/reference/json-schema.md), and
-[CBOM output](docs/reference/cbom.md) for the exact contracts.
+See [generate and validate a CBOM](https://github.com/breachsafe/qureddy/blob/main/docs/how-to/generate-a-cbom.md),
+[JSON output](https://github.com/breachsafe/qureddy/blob/main/docs/reference/json-schema.md), and
+[CBOM output](https://github.com/breachsafe/qureddy/blob/main/docs/reference/cbom.md)
+for the exact contracts.
 
 ## Interpret the evidence
 
@@ -139,7 +140,7 @@ QuReddy separates four kinds of statement:
 
 The scanner does not claim a complete cryptographic inventory, FIPS
 validation, remote implementation identity, certificate trust, or revocation
-status. See [evidence honesty](docs/explanation/evidence-honesty.md).
+status. See [evidence honesty](https://github.com/breachsafe/qureddy/blob/main/docs/explanation/evidence-honesty.md).
 
 ## Exit codes
 
@@ -152,7 +153,7 @@ status. See [evidence honesty](docs/explanation/evidence-honesty.md).
 | `70` | Internal QuReddy error | Process wide |
 
 Scripts must branch on the exit code instead of treating a readiness finding
-as process failure. See the [exit code reference](docs/reference/exit-codes.md).
+as process failure. See the [exit code reference](https://github.com/breachsafe/qureddy/blob/main/docs/reference/exit-codes.md).
 
 ## Network and privacy scope
 
@@ -177,25 +178,30 @@ every operating system package repository supplies a suitable OpenSSL build.
 
 ## Documentation and support
 
-- [Documentation index](docs/README.md)
-- [CLI reference](docs/reference/cli.md)
-- [Install and troubleshoot](docs/how-to/install.md)
-- [Scan SSH or SFTP](docs/how-to/scan-ssh.md)
-- [Security policy and private disclosure](SECURITY.md)
+- [Documentation index](https://github.com/breachsafe/qureddy/blob/main/docs/README.md)
+- [CLI reference](https://github.com/breachsafe/qureddy/blob/main/docs/reference/cli.md)
+- [Install and troubleshoot](https://github.com/breachsafe/qureddy/blob/main/docs/how-to/install.md)
+- [Scan SSH or SFTP](https://github.com/breachsafe/qureddy/blob/main/docs/how-to/scan-ssh.md)
+- [Security policy and private disclosure](https://github.com/breachsafe/qureddy/blob/main/SECURITY.md)
 - [Public issue tracker](https://github.com/breachsafe/qureddy/issues)
 
 Do not file security vulnerabilities in the public issue tracker. Follow
-[`SECURITY.md`](SECURITY.md) for private reporting.
+[`SECURITY.md`](https://github.com/breachsafe/qureddy/blob/main/SECURITY.md)
+for private reporting.
 
 ## Contributing
 
-See [`CONTRIBUTING.md`](CONTRIBUTING.md) and the
-[contributor documentation](docs/contributors/). The repository enforces
+See [`CONTRIBUTING.md`](https://github.com/breachsafe/qureddy/blob/main/CONTRIBUTING.md)
+and the
+[contributor documentation](https://github.com/breachsafe/qureddy/tree/main/docs/contributors/).
+The repository enforces
 formatting, lint, strict type checking, tests, security scans, dependency
 audits, license metadata, file size policy, CBOM conformance, and release
 artifact checks.
 
 ## License
 
-Apache License 2.0. See [`LICENSE`](LICENSE), [`LICENSES/`](LICENSES/), and
-[`REUSE.toml`](REUSE.toml).
+Apache License 2.0. See
+[`LICENSE`](https://github.com/breachsafe/qureddy/blob/main/LICENSE),
+[`LICENSES/`](https://github.com/breachsafe/qureddy/tree/main/LICENSES/), and
+[`REUSE.toml`](https://github.com/breachsafe/qureddy/blob/main/REUSE.toml).

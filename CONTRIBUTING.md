@@ -108,7 +108,7 @@ The gate builds and audits exact wheel and source distribution bytes. See the
 
 Read `docs/contributors/coding-rules.md` and `docs/contributors/examples.md`. The short version:
 
-- Python 3.12+, typed (`mypy --strict`), formatted (`ruff format`), linted (`ruff check`)
+- Python 3.12, typed (`mypy --strict`), formatted (`ruff format`), linted (`ruff check`)
 - Functions ≤ 30 lines normal, 50 ceiling
 - Files ≤ 300 lines normal, 400 ceiling
 - Classes ≤ 200 lines
@@ -138,7 +138,9 @@ Adding a runtime dependency requires PR justification per Rule 13.1:
 - Apache 2.0-compatible license (no GPL, no AGPL, no LGPL)
 - Recognizable maintainer
 
-GPL/AGPL/LGPL dependencies are **rejected** by `pip-licenses` in CI.
+GPL, AGPL, and LGPL dependencies do not meet the documented dependency policy.
+Reviewers verify license compatibility before accepting a runtime dependency;
+the current CI does not automate that decision with `pip-licenses`.
 
 ## Security
 

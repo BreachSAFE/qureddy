@@ -79,7 +79,7 @@ The user (or the issue author) needs to either:
 
 ### 6. Comments are append-only.
 
-Never edit prior validation comments. Each run produces a new comment with the round number incremented. The label is `validation:claude-<instance>:<verdict>` per [the role-instance naming convention](../../docs/contributors/review-process.md#roleinstance-naming-convention) — multiple sessions run concurrently so labels carry instance suffixes. A swap (latest verdict from the same instance wins) only happens after the new comment is posted with `addresses-comment-id` naming the prior validation. Bare `validation:claude:*` labels are deprecated.
+Never edit prior validation comments. Each run produces a new comment with the round number incremented. The label is `validation:claude-<instance>:<verdict>` per [the role-instance naming convention](../../../docs/contributors/review-process.md#role-instance-naming-convention) — multiple sessions run concurrently so labels carry instance suffixes. A swap (latest verdict from the same instance wins) only happens after the new comment is posted with `addresses-comment-id` naming the prior validation. Bare `validation:claude:*` labels are deprecated.
 
 ### 7. Refuse to validate during the disagreement window.
 

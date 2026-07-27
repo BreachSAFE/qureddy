@@ -5,7 +5,7 @@
 [![Secret Scan: gitleaks](https://img.shields.io/badge/secret%20scan-gitleaks-red?style=flat-square)](https://github.com/gitleaks/gitleaks)
 [![SPDX: reuse](https://img.shields.io/badge/license%20headers-reuse-green?style=flat-square)](https://reuse.software/)
 [![OpenSSF Best Practices](https://img.shields.io/badge/OpenSSF-passing%20%28target%20MVP%200.6%29-yellow?style=flat-square)](https://www.bestpractices.dev/)
-[![Disclosure SLA](https://img.shields.io/badge/disclosure%20SLA-5%20business%20days-brightgreen?style=flat-square)](#response-sla)
+[![Disclosure SLA](https://img.shields.io/badge/disclosure%20SLA-5%20business%20days-brightgreen?style=flat-square)](#response-targets)
 
 QuReddy is a security tool. We take vulnerability reports seriously.
 
@@ -112,4 +112,6 @@ Time-bounded security exceptions are documented in `docs/SECURITY_EXCEPTIONS.md`
 SECURITY EXCEPTION ACCEPTED: <rule>, because <reason>, expires <date or issue link>
 ```
 
-The release workflow checks for expired exceptions and fails if any have lapsed. Permanent silent exceptions do not exist.
+No exception exists until it is recorded in that file and reviewed in the
+pull request that introduces it. An automated expiry gate is planned but is
+not currently enforced. Permanent silent exceptions do not exist.
