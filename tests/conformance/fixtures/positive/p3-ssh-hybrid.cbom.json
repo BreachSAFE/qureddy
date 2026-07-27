@@ -1,0 +1,68 @@
+{
+  "components": [
+    {
+      "bom-ref": "crypto/protocol/ssh-2.0",
+      "cryptoProperties": {
+        "assetType": "protocol",
+        "protocolProperties": {
+          "type": "ssh",
+          "version": "2.0"
+        }
+      },
+      "name": "2.0",
+      "type": "cryptographic-asset"
+    },
+    {
+      "bom-ref": "crypto/algorithm/sntrup761x25519-sha512",
+      "cryptoProperties": {
+        "assetType": "algorithm"
+      },
+      "name": "sntrup761x25519-sha512",
+      "type": "cryptographic-asset"
+    }
+  ],
+  "dependencies": [
+    {
+      "ref": "crypto/algorithm/sntrup761x25519-sha512"
+    },
+    {
+      "ref": "crypto/protocol/ssh-2.0"
+    },
+    {
+      "ref": "endpoint",
+      "provides": [
+        "crypto/algorithm/sntrup761x25519-sha512",
+        "crypto/protocol/ssh-2.0"
+      ]
+    }
+  ],
+  "metadata": {
+    "component": {
+      "bom-ref": "endpoint",
+      "name": "github.com:22",
+      "type": "application"
+    },
+    "properties": [
+      {
+        "name": "qureddy:scan.status",
+        "value": "completed"
+      }
+    ],
+    "timestamp": "2026-07-27T01:45:07.947185+00:00",
+    "tools": {
+      "components": [
+        {
+          "bom-ref": "tool/qureddy",
+          "name": "qureddy",
+          "type": "application",
+          "version": "0.2.0"
+        }
+      ]
+    }
+  },
+  "serialNumber": "urn:uuid:62c37fb8-15d4-4c6c-b7d0-49d16c2adc43",
+  "version": 1,
+  "$schema": "http://cyclonedx.org/schema/bom-1.7.schema.json",
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.7"
+}

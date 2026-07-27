@@ -1,0 +1,137 @@
+{
+  "components": [
+    {
+      "bom-ref": "crypto/protocol/tls-tlsv1",
+      "cryptoProperties": {
+        "assetType": "protocol",
+        "protocolProperties": {
+          "type": "tls",
+          "version": "TLSv1"
+        }
+      },
+      "name": "TLSv1",
+      "type": "cryptographic-asset"
+    },
+    {
+      "bom-ref": "crypto/protocol/tls-tlsv1.1",
+      "cryptoProperties": {
+        "assetType": "protocol",
+        "protocolProperties": {
+          "type": "tls",
+          "version": "TLSv1.1"
+        }
+      },
+      "name": "TLSv1.1",
+      "type": "cryptographic-asset"
+    },
+    {
+      "bom-ref": "crypto/protocol/tls-tlsv1.2",
+      "cryptoProperties": {
+        "assetType": "protocol",
+        "protocolProperties": {
+          "type": "tls",
+          "version": "TLSv1.2"
+        }
+      },
+      "name": "TLSv1.2",
+      "type": "cryptographic-asset"
+    },
+    {
+      "bom-ref": "crypto/protocol/tls-tlsv1.3",
+      "cryptoProperties": {
+        "assetType": "protocol",
+        "protocolProperties": {
+          "cipherSuites": [
+            {
+              "algorithms": [
+                "crypto/algorithm/x25519"
+              ],
+              "name": "TLS_AES_256_GCM_SHA384"
+            }
+          ],
+          "type": "tls",
+          "version": "TLSv1.3"
+        }
+      },
+      "name": "TLSv1.3",
+      "type": "cryptographic-asset"
+    },
+    {
+      "bom-ref": "crypto/algorithm/x25519",
+      "cryptoProperties": {
+        "assetType": "algorithm"
+      },
+      "name": "X25519",
+      "type": "cryptographic-asset"
+    }
+  ],
+  "dependencies": [
+    {
+      "ref": "crypto/algorithm/x25519"
+    },
+    {
+      "ref": "crypto/protocol/tls-tlsv1"
+    },
+    {
+      "ref": "crypto/protocol/tls-tlsv1.1"
+    },
+    {
+      "ref": "crypto/protocol/tls-tlsv1.2"
+    },
+    {
+      "ref": "crypto/protocol/tls-tlsv1.3"
+    },
+    {
+      "ref": "endpoint",
+      "provides": [
+        "crypto/algorithm/x25519",
+        "crypto/protocol/tls-tlsv1",
+        "crypto/protocol/tls-tlsv1.1",
+        "crypto/protocol/tls-tlsv1.2",
+        "crypto/protocol/tls-tlsv1.3"
+      ]
+    }
+  ],
+  "metadata": {
+    "component": {
+      "bom-ref": "endpoint",
+      "name": "192.0.2.10:443",
+      "type": "application"
+    },
+    "properties": [
+      {
+        "name": "qureddy:scan.status",
+        "value": "completed"
+      }
+    ],
+    "timestamp": "2026-07-27T01:45:07.614356+00:00",
+    "tools": {
+      "components": [
+        {
+          "bom-ref": "tool/openssl",
+          "name": "openssl",
+          "properties": [
+            {
+              "name": "qureddy:collector.role",
+              "value": "local-probe-runtime"
+            }
+          ],
+          "type": "application",
+          "version": "3.5.6"
+        },
+        {
+          "bom-ref": "tool/qureddy",
+          "name": "qureddy",
+          "type": "application",
+          "version": "0.2.0"
+        }
+      ]
+    }
+  },
+  "serialNumber": "urn:uuid:8ec0d3df-dca7-42c8-a790-404f70a6ced4",
+  "version": 1,
+  "$schema": "http://cyclonedx.org/schema/bom-1.7.schema.json",
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.7",
+  "qureddyVerdict": "ready"
+}

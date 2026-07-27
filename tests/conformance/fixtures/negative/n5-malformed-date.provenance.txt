@@ -1,0 +1,7 @@
+fixture: n5-malformed-date
+classification: synthetic-negative
+not_network_evidence: true
+derived_from: fixtures/positive/p2-classical-tls.cbom.json
+base_sha256: ac24c39fa6f3197ad964a3b8cca470847d4bd2637d7dcf1f0624e41b71fda116
+mutation: metadata.timestamp made non-RFC3339
+sha256: 7ca3e89dc548fb9382e4ca9bb3cdb18f0a71cac892c69bad027c0126cb5ca605

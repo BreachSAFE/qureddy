@@ -1,0 +1,40 @@
+{
+  "dependencies": [
+    {
+      "ref": "endpoint"
+    }
+  ],
+  "metadata": {
+    "component": {
+      "bom-ref": "endpoint",
+      "name": "192.0.2.10:443",
+      "type": "application"
+    },
+    "properties": [
+      {
+        "name": "qureddy:scan.failure_category",
+        "value": "local_openssl_missing"
+      },
+      {
+        "name": "qureddy:scan.status",
+        "value": "local_openssl_missing"
+      }
+    ],
+    "timestamp": "2026-07-27T01:45:08.476015+00:00",
+    "tools": {
+      "components": [
+        {
+          "bom-ref": "tool/qureddy",
+          "name": "qureddy",
+          "type": "application",
+          "version": "0.2.0"
+        }
+      ]
+    }
+  },
+  "serialNumber": "urn:uuid:d11fead9-61ad-4d51-baf7-27c19ea553be",
+  "version": 1,
+  "$schema": "http://cyclonedx.org/schema/bom-1.7.schema.json",
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.7"
+}
