@@ -11,6 +11,7 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Contents
 
+- [0.2.10](#0210---2026-07-28)
 - [0.2.9](#029---2026-07-28)
 - [0.2.8](#028---2026-07-28)
 - [0.2.7](#027---2026-07-28)
@@ -23,15 +24,23 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - [0.2.0](#020---2026-07-27)
 - [0.1.0](#010---2026-05-10)
 
-## [Unreleased]
+## [0.2.10] - 2026-07-28
+
+### Added
+
+- Opt-in SSRF guard: `QUREDDY_BLOCK_INTERNAL_TARGETS=1` (or `block_internal=True`)
+  rejects loopback/link-local/private/metadata targets before network access, for
+  embedders that accept untrusted targets; the CLI default is unchanged. Threat model
+  documents the boundary. (#134)
+- SSH scanner flags `ssh-rsa` (RSA/SHA-1) weak host keys in addition to `ssh-dss`,
+  with a per-algorithm justification note; `rsa-sha2-*` stay unflagged. (#143)
+- Release workflow signs the wheel + sdist with cosign keyless (OIDC) and attaches the
+  signatures as GitHub Release assets (OpenSSF Signed-Releases). (#121)
 
 ### Changed
 
-- SSH scanner now flags `ssh-rsa` (SHA-1, RFC 8332) and the `ssh-dss` / `ssh-rsa`
-  OpenSSH certificate variants as weak host keys, not just `ssh-dss`. The SHA-2
-  families `rsa-sha2-256` / `rsa-sha2-512` remain correctly unflagged. The weak
-  host-key finding and its evidence now carry a per-algorithm justification note.
-  (#143)
+- Internal: `cbom.py` split into `cbom.py` + `cbom_metadata.py` + `cbom_components.py`
+  to stay under the file-size ceiling; CBOM output is byte-identical. (#171)
 
 ## [0.2.9] - 2026-07-28
 

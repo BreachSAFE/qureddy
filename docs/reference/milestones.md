@@ -27,7 +27,7 @@ planned milestone, open issue, or accepted design as a delivered artifact.
 | Milestone | Status | Scope | Evidence date |
 | --- | --- | --- | --- |
 | MVP 0.1 | Shipped | TLS 1.3 hybrid and classical control probes, Rich and JSON output, typed failures | Public `v0.1.0` tag, 2026-05-10 |
-| MVP 0.2 | Shipped | Leaf certificate signature observation and legacy TLS 1.0, 1.1, and 1.2 enumeration | Current 0.2.9 source and tests |
+| MVP 0.2 | Shipped | Leaf certificate signature observation and legacy TLS 1.0, 1.1, and 1.2 enumeration | Current 0.2.10 source and tests |
 | MVP 0.3 | Shipped and independently verified | CycloneDX 1.7 CBOM output with pinned schema, CLI, semantic, and determinism checks | Public PRs #48 and #51, 2026-07-27 |
 | MVP 0.4 | Shipped | SSH and SFTP endpoint scanner with key exchange and host key observations | Public PR #22, 2026-07-23 |
 | MVP 0.5 | Planned | Local cryptographic configuration scanner | No shipped artifact |
