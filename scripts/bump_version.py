@@ -121,7 +121,7 @@ def bump(new_version: str) -> int:
         f"bump_version: set version {new_version} "
         f"(pyproject + {n} badge + {golden_updates} golden)"
     )
-    print("Next: add a CHANGELOG entry and tag the release.")
+    print("Next: run `uv lock` (sync uv.lock), add a CHANGELOG entry, and tag the release.")
     return 0
 
 
