@@ -185,6 +185,42 @@ def _algorithm_properties(group: str) -> AlgorithmProperties | None:
     )
 
 
+_SIGNATURE_FUNCTIONS = (CryptoFunction.SIGN, CryptoFunction.VERIFY)
+# ML-DSA (FIPS 204) parameter set -> NIST security category.
+_MLDSA_SECURITY_LEVEL: MappingProxyType[str, int] = MappingProxyType(
+    {"ml-dsa-44": 2, "ml-dsa-65": 3, "ml-dsa-87": 5}
+)
+# Substrings that identify a classical (non-PQ) signature algorithm, drawn from X.509
+# signatureAlgorithm names and SSH host-key identifiers.
+_CLASSICAL_SIGNATURE_MARKERS = ("ecdsa", "rsa", "ed25519", "ed448", "dsa", "dss")
+
+
+def _signature_algorithm_properties(name: str) -> AlgorithmProperties | None:
+    """Classify a certificate or host-key signature algorithm (#177).
+
+    Every signature is the SIGNATURE primitive with sign/verify functions. ML-DSA
+    (FIPS 204) carries its NIST security category; a classical signature (ECDSA, RSA,
+    EdDSA, DSA) has no post-quantum resistance (nistQuantumSecurityLevel 0). A name we
+    can't classify keeps a minimal algorithmProperties rather than fabricating a level.
+    """
+    normalized = name.lower().replace("-", "").replace("_", "")
+    for parameter_set, level in _MLDSA_SECURITY_LEVEL.items():
+        if parameter_set.replace("-", "") in normalized:
+            return AlgorithmProperties(
+                primitive=CryptoPrimitive.SIGNATURE,
+                parameter_set_identifier=parameter_set.upper(),
+                crypto_functions=list(_SIGNATURE_FUNCTIONS),
+                nist_quantum_security_level=level,
+            )
+    if any(marker in name.lower() for marker in _CLASSICAL_SIGNATURE_MARKERS):
+        return AlgorithmProperties(
+            primitive=CryptoPrimitive.SIGNATURE,
+            crypto_functions=list(_SIGNATURE_FUNCTIONS),
+            nist_quantum_security_level=0,
+        )
+    return None
+
+
 def add_protocol_components(
     bom: Bom,
     result: ScanResult,
@@ -362,7 +398,10 @@ def _add_signature_algorithm_component(
             name=signature_algorithm,
             type=ComponentType.CRYPTOGRAPHIC_ASSET,
             bom_ref=ref,
-            crypto_properties=CryptoProperties(asset_type=CryptoAssetType.ALGORITHM),
+            crypto_properties=CryptoProperties(
+                asset_type=CryptoAssetType.ALGORITHM,
+                algorithm_properties=_signature_algorithm_properties(signature_algorithm),
+            ),
         )
     )
     provides_edges.setdefault(ENDPOINT_REF, []).append(ref)
