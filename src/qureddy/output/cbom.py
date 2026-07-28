@@ -278,11 +278,26 @@ def _protocol_component(
             asset_type=CryptoAssetType.PROTOCOL,
             protocol_properties=ProtocolProperties(
                 type=protocol_type,
-                version=protocol_version,
+                version=_bare_protocol_version(protocol, protocol_version),
                 cipher_suites=cipher_suites or None,
             ),
         ),
     )
+
+
+def _bare_protocol_version(protocol: str, protocol_version: str) -> str:
+    """Return the CycloneDX bare protocol version (`1.0`, `1.3`, `2.0`).
+
+    TLS evidence stores `"TLSv1.3"`; CycloneDX 1.7 documents this field as a bare
+    version, and the SSH path already emits `"2.0"`. Strip the `TLSv` prefix so a
+    consumer keying on the version sees consistent values across TLS and SSH. The
+    human-facing component `name`/`bom-ref` keep the fuller label (#140).
+    """
+    if protocol == "tls" and protocol_version.startswith("TLSv"):
+        rest = protocol_version.removeprefix("TLSv")
+        # "TLSv1" is TLS 1.0; give it an explicit minor so every value is "major.minor".
+        return rest if "." in rest else f"{rest}.0"
+    return protocol_version
 
 
 # OpenSSL prints certificate dates in the C locale regardless of the host locale
