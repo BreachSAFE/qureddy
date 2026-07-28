@@ -11,6 +11,7 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Contents
 
+- [0.2.8](#028---2026-07-28)
 - [0.2.7](#027---2026-07-28)
 - [0.2.6](#026---2026-07-28)
 - [0.2.5](#025---2026-07-28)
@@ -20,6 +21,17 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - [0.2.1](#021---2026-07-27)
 - [0.2.0](#020---2026-07-27)
 - [0.1.0](#010---2026-05-10)
+
+## [0.2.8] - 2026-07-28
+
+### Added
+
+- CBOM carries the full evidence/provenance trail as `qureddy:evidence.{i}.*` metadata
+  properties: source, observation, probe_role, and the probe command SHA-256 +
+  return_code + stdout/stderr SHA-256, so every crypto assertion is traceable. (#149, PR #168)
+- `--reproducible` (TLS and SSH) omits the per-run identity fields (serialNumber,
+  timestamp, scan id/timing, evidence duration) so the same scan is byte- and
+  digest-identical for content addressing. (#162, PR #167)
 
 ## [0.2.7] - 2026-07-28
 
