@@ -17,11 +17,6 @@
 name: file-size-gate
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "src/**"
-      - ".github/workflows/file-size-gate.yml"
   pull_request:
     branches: [main]
     paths:
