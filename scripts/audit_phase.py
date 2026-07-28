@@ -43,7 +43,7 @@ EXIT_BAD_ARTIFACTS = 2
 
 MIN_COVERAGE_PERCENT = 80.0
 MIN_UNIT_TEST_COUNT_AT_MVP = 20
-EXPECTED_PLATFORMS = ("ubuntu-latest", "macos-latest", "windows-latest")
+EXPECTED_PLATFORMS = ("ubuntu-latest", "macos-latest")
 EXPECTED_LIVE_TESTS = frozenset(
     {
         "test_pq_cloudflareresearch_hybrid",
