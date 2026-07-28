@@ -26,8 +26,8 @@ jobs:
     name: build wheel + sdist
     runs-on: ubuntu-latest
     permissions:
-      contents: read
-      id-token: write        # OIDC for the SLSA provenance attestation
+      contents: write        # upload signed artifacts as GitHub Release assets (#121)
+      id-token: write        # OIDC for the SLSA provenance attestation + cosign keyless
       attestations: write    # write the attestation to the repo's attestation store
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -48,10 +48,30 @@ jobs:
         uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
         with:
           subject-path: "dist/*"
+      # Hand the pristine dist/ to the TestPyPI job before any signature bundles land in
+      # dist/, so twine never tries to publish a .sigstore file.
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: dist
           path: dist/
+      # Signed-Releases (#121): cosign keyless OIDC signature bundles attached to the
+      # GitHub Release so OpenSSF Scorecard can discover a signature next to each asset.
+      # Only meaningful on `release: published` (workflow_dispatch has no release tag).
+      - name: Install cosign
+        if: github.event_name == 'release'
+        uses: sigstore/cosign-installer@7e8b541eb2e61bf99390e1afd4be13a184e9ebc5 # v3.10.1
+      - name: Sign distributions with cosign (keyless OIDC)
+        if: github.event_name == 'release'
+        run: |
+          for f in dist/*; do
+            cosign sign-blob --yes --bundle "$f.sigstore" "$f"
+          done
+      - name: Upload signed distributions to the GitHub Release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "${{ github.event.release.tag_name }}" dist/* --clobber
 
   testpypi:
     name: publish to TestPyPI (OIDC)
