@@ -2,7 +2,7 @@
 #
 # QuReddy CI — 7-phase pipeline per docs/contributors/coding-rules.md §21.
 #
-# Matrix: ubuntu × macos × windows on Python 3.12. OpenSSL 3.5.7 LTS installed
+# Matrix: ubuntu × macos on Python 3.12. OpenSSL 3.5.7 LTS installed
 # per OS. Every test runs every time. pytest-rerunfailures absorbs
 # transient hiccups (3 attempts, 1s delay) globally via pyproject.toml.
 
