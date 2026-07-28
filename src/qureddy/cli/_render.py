@@ -12,11 +12,17 @@ from qureddy.output.console import render_rich
 from qureddy.output.json import render_json
 
 
-def _render(result: ScanResult, output_format: OutputFormat, verbose: int) -> None:
+def _render(
+    result: ScanResult,
+    output_format: OutputFormat,
+    verbose: int,
+    *,
+    reproducible: bool = False,
+) -> None:
     """Dispatch to the JSON, CBOM, or Rich renderer."""
     if output_format is OutputFormat.JSON:
         render_json(result, sys.stdout)
     elif output_format is OutputFormat.CBOM:
-        render_cbom(result, sys.stdout)
+        render_cbom(result, sys.stdout, reproducible=reproducible)
     else:
         render_rich(result, sys.stdout, verbosity=verbose)

@@ -17,6 +17,7 @@ relationship graph.
 - [Stable references and volatile fields](#stable-references-and-volatile-fields)
 - [Positive observation rule](#positive-observation-rule)
 - [Certificate fields](#certificate-fields)
+- [Reproducibility](#reproducibility)
 - [Validation contract](#validation-contract)
 - [Evidence limits](#evidence-limits)
 - [Related documentation](#related-documentation)
@@ -202,6 +203,15 @@ The component does not establish:
 
 Self-signed classification in QuReddy evidence requires signature verification;
 subject and issuer string equality alone is not accepted as proof.
+
+## Reproducibility
+
+By default the CBOM carries per-run identity (a CycloneDX `serialNumber` and
+`metadata.timestamp`, plus `qureddy:scan.id` and the scan start/finish times),
+so two runs of the same scan produce different bytes. Pass `--reproducible` to
+omit those fields: the same observed crypto then yields byte- and
+digest-identical output for content addressing. The crypto inventory, ordering,
+and values are identical either way.
 
 ## Validation contract
 

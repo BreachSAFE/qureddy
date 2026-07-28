@@ -74,6 +74,13 @@ FormatOpt = Annotated[
         case_sensitive=False,
     ),
 ]
+ReproducibleOpt = Annotated[
+    bool,
+    typer.Option(
+        "--reproducible",
+        help="CBOM: omit per-run identity (serial, timestamps, scan id) for a stable digest.",
+    ),
+]
 TimeoutOpt = Annotated[
     int,
     typer.Option(

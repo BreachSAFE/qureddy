@@ -22,6 +22,7 @@ from qureddy.cli._options import (
     FormatOpt,
     JsonLogsOpt,
     QuietOpt,
+    ReproducibleOpt,
     SshTargetArg,
     TimeoutOpt,
     VerboseOpt,
@@ -107,6 +108,7 @@ def scan_ssh_cmd(
     verbose: VerboseOpt = 0,
     json_logs: JsonLogsOpt = False,
     quiet: QuietOpt = False,
+    reproducible: ReproducibleOpt = False,
 ) -> None:
     """Scan an SSH endpoint for post-quantum readiness."""
     # Mirror scan tls: machine formats default to quiet so stdout stays a
@@ -138,7 +140,7 @@ def scan_ssh_cmd(
     if fmt is OutputFormat.JSON:
         render_json(result, sys.stdout)
     elif fmt is OutputFormat.CBOM:
-        render_cbom(result, sys.stdout)
+        render_cbom(result, sys.stdout, reproducible=reproducible)
     else:
         render_rich(result, sys.stdout, verbosity=verbose)
     if exit_code != EXIT_OK:
