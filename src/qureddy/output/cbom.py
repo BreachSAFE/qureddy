@@ -86,6 +86,7 @@ def render_cbom(
     bom.metadata.component = endpoint
     _add_tool_provenance(bom, result)
     _add_scan_status_properties(bom, result)
+    _add_scan_target_metadata(bom, result)
 
     algorithm_refs = _add_algorithm_components(bom, result, provides_edges)
     _add_protocol_components(bom, result, algorithm_refs, provides_edges)
@@ -173,6 +174,34 @@ def _add_scan_status_properties(bom: Bom, result: ScanResult) -> None:
                 value=result.summary.failure_category.value,
             )
         )
+
+
+def _add_scan_target_metadata(bom: Bom, result: ScanResult) -> None:
+    """Carry scan-identity/timing and structured target fields as metadata.properties.
+
+    JSON exposes these; the CBOM previously kept only the emission timestamp and a
+    `host:port` component name, so a CBOM-only consumer lost the scan id, timing,
+    attempt count, and (critically) the SNI that determined what was actually
+    probed (#152).
+    """
+    scan = result.scan
+    target = result.target
+    pairs: list[tuple[str, str]] = [
+        ("qureddy:scan.id", scan.scan_id),
+        ("qureddy:scan.scanner_name", scan.scanner_name),
+        ("qureddy:scan.started_at", scan.started_at.isoformat()),
+        ("qureddy:scan.completed_at", scan.completed_at.isoformat()),
+        ("qureddy:scan.total_attempts", str(scan.total_attempts)),
+        ("qureddy:target.original_input", target.original_input),
+        ("qureddy:target.host", target.host),
+        ("qureddy:target.port", str(target.port)),
+        ("qureddy:target.scheme", target.scheme),
+        ("qureddy:target.locator", target.locator),
+    ]
+    if target.sni is not None:
+        pairs.append(("qureddy:target.sni", target.sni))
+    for name, value in pairs:
+        bom.metadata.properties.add(Property(name=name, value=value))
 
 
 def _add_algorithm_components(
