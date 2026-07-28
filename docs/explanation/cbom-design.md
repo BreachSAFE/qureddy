@@ -63,15 +63,24 @@ digest-identical.
 - Prowler and TAO consume QuReddy's `--format json` (`qureddy.scan.v1`) through the
   endpoint collector, not the CBOM as CycloneDX.
 
-## Open question
+## Decision (settled)
 
-Whether to make the interpretation layer natively understood by foreign tools by
-re-modelling findings as CycloneDX `vulnerabilities` + `ratings` and evidence as
-`components[].evidence`, versus keeping the CBOM a lean native inventory and
-leaving the report to `--format json` (and, if a machine-readable posture artifact
-is needed for third parties, a separate CycloneDX VEX).
+Keep the CBOM as-is: a lean, valid CycloneDX 1.7 with a native crypto layer plus
+the `qureddy:` extension layer. Generic tools ignore the extensions without
+choking, and the native `algorithmProperties` (notably `nistQuantumSecurityLevel`),
+protocol components, and cipher strength carry enough for a foreign consumer to
+*derive* the weak-crypto / quantum-vulnerable findings themselves. QuReddy and
+Qurum read the explicit findings from the extension layer. We deliberately do NOT
+re-model findings as CycloneDX `vulnerabilities` (see below). Issue #169 closed.
 
-The caution against `vulnerabilities`: PQ-readiness has no CVE identifier, so
-modelling it as a vulnerability requires synthetic ids that a generic scanner would
-surface as non-CVE findings. This is an interoperability-versus-semantic-honesty
-trade and a product decision rather than a code constraint. Tracked in issue #169.
+### Rationale against `vulnerabilities`
+
+The alternative considered was re-modelling findings as CycloneDX `vulnerabilities`
++ `ratings` (and evidence as `components[].evidence`) so foreign tools understand
+them natively. It was rejected: PQ-readiness has no CVE identifier, so a
+`vulnerability` entry needs a synthetic id that a generic scanner would surface as a
+non-CVE finding, polluting vulnerability dashboards. The interoperability gain does
+not justify that, especially since the weak-crypto conclusion is already derivable
+from the native `nistQuantumSecurityLevel`. If a third party ever needs a
+machine-readable posture artifact, a separate CycloneDX VEX is the correct vehicle,
+not overloading the inventory.
