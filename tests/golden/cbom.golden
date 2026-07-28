@@ -147,6 +147,18 @@
             {
               "name": "qureddy:collector.role",
               "value": "local-probe-runtime"
+            },
+            {
+              "name": "qureddy:openssl.path",
+              "value": "/opt/homebrew/opt/openssl@3/bin/openssl"
+            },
+            {
+              "name": "qureddy:openssl.supports_tls13_groups",
+              "value": "true"
+            },
+            {
+              "name": "qureddy:openssl.supports_x25519mlkem768",
+              "value": "true"
             }
           ],
           "type": "application",

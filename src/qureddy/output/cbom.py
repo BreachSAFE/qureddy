@@ -50,7 +50,7 @@ from qureddy.output.cbom_semantics import validate_cbom_semantics
 
 if TYPE_CHECKING:
     from qureddy.core.certificate import CertificateObservation
-    from qureddy.core.models import Evidence
+    from qureddy.core.models import Evidence, OpenSSLDependency
 
 _ENDPOINT_REF = "endpoint"
 _QUREDDY_TOOL_REF = "tool/qureddy"
@@ -135,15 +135,33 @@ def _add_tool_provenance(bom: Bom, result: ScanResult) -> None:
                 type=ComponentType.APPLICATION,
                 bom_ref=_OPENSSL_TOOL_REF,
                 version=dependency.version,
-                properties=[
-                    Property(
-                        name="qureddy:collector.role",
-                        value="local-probe-runtime",
-                    )
-                ],
+                properties=_openssl_tool_properties(dependency),
             )
         )
     bom.metadata.tools = ToolRepository(components=tools)
+
+
+def _openssl_tool_properties(dependency: OpenSSLDependency) -> list[Property]:
+    """Carry the local OpenSSL capability flags (and path) onto the tool component.
+
+    The CBOM kept only openssl's version, dropping the flags JSON's dependencies[]
+    carries. Those flags decide whether a "no hybrid found" result is a real negative
+    or a prober blind-spot: a consumer can't trust the inventory without them (#151).
+    """
+    properties = [
+        Property(name="qureddy:collector.role", value="local-probe-runtime"),
+        Property(
+            name="qureddy:openssl.supports_tls13_groups",
+            value=str(dependency.supports_tls13_groups).lower(),
+        ),
+        Property(
+            name="qureddy:openssl.supports_x25519mlkem768",
+            value=str(dependency.supports_x25519mlkem768).lower(),
+        ),
+    ]
+    if dependency.path is not None:
+        properties.append(Property(name="qureddy:openssl.path", value=dependency.path))
+    return properties
 
 
 def _add_scan_status_properties(bom: Bom, result: ScanResult) -> None:
