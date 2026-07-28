@@ -20,9 +20,11 @@ upstream API gaps; everything else is delegated to ``JsonV1Dot7``.
 from __future__ import annotations
 
 import json
+import re
 import sys
 import warnings
 from datetime import UTC, datetime
+from types import MappingProxyType
 from typing import IO, TYPE_CHECKING
 
 from cyclonedx.model import Property
@@ -276,20 +278,56 @@ def _protocol_component(
     )
 
 
+# OpenSSL prints certificate dates in the C locale regardless of the host locale
+# ("Jul 17 07:18:11 2026 GMT"), so the English month abbreviations are fixed. We map
+# them ourselves instead of using strptime's `%b`, which is LC_TIME-dependent and
+# silently fails on a non-English host (e.g. de_DE), dropping the cert dates (#116).
+_OPENSSL_MONTHS = MappingProxyType(
+    {
+        month: index
+        for index, month in enumerate(
+            ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"),
+            start=1,
+        )
+    }
+)
+# Day is `\d{1,2}` because OpenSSL space-pads single-digit days ("Jul  7 ..."), which
+# `%d` also mishandles. Only GMT/UTC is accepted (OpenSSL always reports these in GMT).
+_OPENSSL_DATE = re.compile(
+    r"^(?P<mon>[A-Z][a-z]{2})\s+(?P<day>\d{1,2})\s+"
+    r"(?P<hour>\d{2}):(?P<minute>\d{2}):(?P<second>\d{2})\s+"
+    r"(?P<year>\d{4})\s+(?P<tz>GMT|UTC)$"
+)
+
+
 def _parse_openssl_date(text: str) -> datetime | None:
     """Parse `openssl x509 -dates` output (e.g. "Jul 17 07:18:11 2026 GMT").
 
     Returns None on anything unparseable rather than raising — a date
     the CBOM can't represent should degrade to "absent from this CBOM",
     not abort rendering the rest of a real, otherwise-valid certificate.
-    OpenSSL always reports these in GMT (== UTC); `%Z` doesn't set
-    tzinfo on its own in `strptime`, so UTC is attached explicitly to
-    satisfy the project's timezone-aware-datetime rule.
+    Parsing is locale-independent (see ``_OPENSSL_MONTHS``); OpenSSL always
+    reports GMT (== UTC), which is attached explicitly to satisfy the
+    project's timezone-aware-datetime rule.
     """
     if not text:
         return None
+    match = _OPENSSL_DATE.match(text.strip())
+    if not match:
+        return None
+    month = _OPENSSL_MONTHS.get(match.group("mon"))
+    if month is None:
+        return None
     try:
-        return datetime.strptime(text, "%b %d %H:%M:%S %Y %Z").replace(tzinfo=UTC)
+        return datetime(
+            int(match.group("year")),
+            month,
+            int(match.group("day")),
+            int(match.group("hour")),
+            int(match.group("minute")),
+            int(match.group("second")),
+            tzinfo=UTC,
+        )
     except ValueError:
         return None
 
