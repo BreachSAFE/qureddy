@@ -26,6 +26,14 @@
     {
       "bom-ref": "crypto/algorithm/x25519",
       "cryptoProperties": {
+        "algorithmProperties": {
+          "cryptoFunctions": [
+            "keygen"
+          ],
+          "curve": "curve25519",
+          "nistQuantumSecurityLevel": 0,
+          "primitive": "key-agree"
+        },
         "assetType": "algorithm"
       },
       "name": "X25519",
@@ -34,6 +42,16 @@
     {
       "bom-ref": "crypto/algorithm/x25519mlkem768",
       "cryptoProperties": {
+        "algorithmProperties": {
+          "cryptoFunctions": [
+            "decapsulate",
+            "encapsulate",
+            "keygen"
+          ],
+          "nistQuantumSecurityLevel": 3,
+          "parameterSetIdentifier": "ML-KEM-768",
+          "primitive": "kem"
+        },
         "assetType": "algorithm"
       },
       "name": "X25519MLKEM768",
