@@ -11,20 +11,27 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Contents
 
-- [Unreleased](#unreleased)
+- [0.2.4](#024---2026-07-28)
 - [0.2.3](#023---2026-07-27)
 - [0.2.2](#022---2026-07-27)
 - [0.2.1](#021---2026-07-27)
 - [0.2.0](#020---2026-07-27)
 - [0.1.0](#010---2026-05-10)
 
-## [Unreleased]
+## [0.2.4] - 2026-07-28
 
 ### Fixed
 
 - Certificate validity dates are parsed locale-independently, so they are no longer
-  silently dropped from the CBOM on a non-English host (previously a locale-dependent
-  strptime returned nothing on such hosts). (#116, PR #126)
+  silently dropped from the CBOM on a non-English host. (#116, PR #126)
+- The CBOM now carries qureddy's headline readiness verdict in `metadata.properties`
+  (`qureddy:scan.readiness`); previously it appeared only in `--format json`. (#132, PR #135)
+- Non-canonical port forms (Unicode digits, underscores, a leading sign, surrounding
+  whitespace) are rejected instead of being silently corrected by `int()`. (#128, PR #136)
+- The published container image is stamped with the real release version in its
+  `org.opencontainers.image.version` OCI label instead of a fixed `0.2.0`. (#123, PR #127)
+- Corrected the `--sni` help and IP-target examples, which wrongly claimed SNI is
+  required for IP targets; it is an override for name-based virtual hosts. (#122, PR #129)
 
 ## [0.2.3] - 2026-07-27
 

@@ -104,10 +104,14 @@ jobs:
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io --username "${{ github.actor }}" --password-stdin
       - name: Build + push ${{ matrix.arch }} by digest (native, no emulation)
         id: build
+        env:
+          # Pass the dispatch input through env, not inline ${{ }}, so it cannot break
+          # out of the shell command (script-injection hardening).
+          QUREDDY_VERSION: ${{ inputs.version }}
         run: |
           docker buildx build \
             --platform "linux/${{ matrix.arch }}" \
-            --build-arg "QUREDDY_VERSION=${{ inputs.version }}" \
+            --build-arg "QUREDDY_VERSION=${QUREDDY_VERSION}" \
             --provenance=true --sbom=true \
             --metadata-file "$RUNNER_TEMP/meta.json" \
             --output "type=image,name=ghcr.io/breachsafe/qureddy,push-by-digest=true,name-canonical=true,push=true" \
