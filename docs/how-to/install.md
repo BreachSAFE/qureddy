@@ -42,7 +42,7 @@ py -3.12 --version
 
 ## Install with pipx
 
-> **Pre-release (TestPyPI).** QuReddy 0.2.5 is being published to
+> **Pre-release (TestPyPI).** QuReddy 0.2.6 is being published to
 > [TestPyPI](https://test.pypi.org/project/breachsafe-qureddy/) while the PyPI
 > release is finalized. Until then, install from TestPyPI and pull runtime
 > dependencies from PyPI:

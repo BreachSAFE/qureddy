@@ -11,6 +11,7 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Contents
 
+- [0.2.6](#026---2026-07-28)
 - [0.2.5](#025---2026-07-28)
 - [0.2.4](#024---2026-07-28)
 - [0.2.3](#023---2026-07-27)
@@ -18,6 +19,17 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - [0.2.1](#021---2026-07-27)
 - [0.2.0](#020---2026-07-27)
 - [0.1.0](#010---2026-05-10)
+
+## [0.2.6] - 2026-07-28
+
+### Added
+
+- CBOM carries scan-identity and structured target metadata (`qureddy:scan.*`,
+  `qureddy:target.*` incl. SNI) for JSON parity. (#152, PR #159)
+- CBOM openssl tool component carries the capability flags
+  (`supports_tls13_groups`, `supports_x25519mlkem768`) and path. (#151, PR #160)
+- CBOM emits the negotiated AEAD cipher suite as a standalone crypto asset and marks
+  every algorithm with `qureddy:observation` (negotiated/offered/observed). (#150, PR #161)
 
 ## [0.2.5] - 2026-07-28
 

@@ -1,6 +1,6 @@
 # BreachSAFE QuReddy
 
-[![Version](https://img.shields.io/badge/version-0.2.5-blue?style=flat-square)](https://github.com/breachsafe/qureddy/blob/main/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.6-blue?style=flat-square)](https://github.com/breachsafe/qureddy/blob/main/CHANGELOG.md)
 [![Python](https://img.shields.io/badge/python-3.12-blue?style=flat-square&logo=python&logoColor=white)](https://www.python.org/downloads/)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue?style=flat-square)](https://github.com/breachsafe/qureddy/blob/main/LICENSE)
 [![Code Style: Ruff](https://img.shields.io/badge/code%20style-ruff-D7FF64?style=flat-square&logo=ruff&logoColor=black)](https://docs.astral.sh/ruff/)
@@ -32,7 +32,7 @@ cleartext KEXINIT offer directly and do not require OpenSSL.
 
 ## Install
 
-> **Pre-release (TestPyPI):** QuReddy 0.2.5 is being published to **TestPyPI**
+> **Pre-release (TestPyPI):** QuReddy 0.2.6 is being published to **TestPyPI**
 > while the PyPI release is finalized. Install with (**Python 3.12+**):
 >
 > ```bash
@@ -61,7 +61,7 @@ qureddy --version
 The expected version line is:
 
 ```text
-BreachSAFE QuReddy 0.2.5 -- https://www.breachsafe.ai
+BreachSAFE QuReddy 0.2.6 -- https://www.breachsafe.ai
 ```
 
 `pipx` creates an isolated environment and places `qureddy` on your command
@@ -83,7 +83,7 @@ docker run --rm ghcr.io/breachsafe/qureddy:latest \
 ```
 
 For reproducible deployments, pin an explicit version tag (for example
-`ghcr.io/breachsafe/qureddy:0.2.5`) or a `@sha256:` digest instead of `:latest`.
+`ghcr.io/breachsafe/qureddy:0.2.6`) or a `@sha256:` digest instead of `:latest`.
 
 See the [Docker and GHCR guide](https://github.com/breachsafe/qureddy/blob/main/docs/how-to/docker.md)
 for digest pinning, local builds, output redirection, and publication policy.
