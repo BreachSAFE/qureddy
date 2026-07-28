@@ -15,8 +15,6 @@ on:
   schedule:
     # Mondays 06:00 UTC. Weekly cadence; not on every PR.
     - cron: "0 6 * * 1"
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions: read-all
