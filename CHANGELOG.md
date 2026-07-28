@@ -11,7 +11,7 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Contents
 
-- [Unreleased](#unreleased)
+- [0.2.7](#027---2026-07-28)
 - [0.2.6](#026---2026-07-28)
 - [0.2.5](#025---2026-07-28)
 - [0.2.4](#024---2026-07-28)
@@ -21,14 +21,19 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - [0.2.0](#020---2026-07-27)
 - [0.1.0](#010---2026-05-10)
 
-## [Unreleased]
+## [0.2.7] - 2026-07-28
 
 ### Fixed
 
-- A trailing-dot absolute FQDN target (e.g. `www.google.com.`) is now accepted by
-  `parse_target` and `parse_ssh_target` (RFC 1034 section 3.1). The trailing dot is
-  stripped from the stored host, locator, and derived SNI so the on-wire SNI stays
-  RFC 6066 compliant, while `original_input` preserves what the user typed. (#130)
+- Trailing-dot absolute FQDNs (`www.google.com.`) are accepted as targets and the
+  trailing dot is stripped from the on-wire SNI (RFC 6066). (#130, PR #164)
+- The Phase-7 CI audit gate no longer expects a `windows-latest` artifact the matrix
+  never produces, so it can actually pass. (#141, PR #163)
+- The CBOM repeatability check normalizes the per-run scan id/timing added in 0.2.6,
+  fixing a wall-clock race. (#152 follow-up, PR #165)
+- The runtime CBOM semantic validator now also walks `signatureAlgorithmRef` and
+  cipher-suite algorithm refs, and the validation-contract docs describe accurately
+  what runs at runtime versus in CI. (#144, PR #166)
 
 ## [0.2.6] - 2026-07-28
 
