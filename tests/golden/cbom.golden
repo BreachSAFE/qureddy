@@ -3,6 +3,24 @@
   "bomFormat": "CycloneDX",
   "components": [
     {
+      "bom-ref": "crypto/algorithm/tls_aes_256_gcm_sha384",
+      "cryptoProperties": {
+        "algorithmProperties": {
+          "classicalSecurityLevel": 256,
+          "primitive": "ae"
+        },
+        "assetType": "algorithm"
+      },
+      "name": "TLS_AES_256_GCM_SHA384",
+      "properties": [
+        {
+          "name": "qureddy:observation",
+          "value": "negotiated"
+        }
+      ],
+      "type": "cryptographic-asset"
+    },
+    {
       "bom-ref": "crypto/protocol/tls-tlsv1.3",
       "cryptoProperties": {
         "assetType": "protocol",
@@ -37,6 +55,12 @@
         "assetType": "algorithm"
       },
       "name": "X25519",
+      "properties": [
+        {
+          "name": "qureddy:observation",
+          "value": "negotiated"
+        }
+      ],
       "type": "cryptographic-asset"
     },
     {
@@ -55,10 +79,19 @@
         "assetType": "algorithm"
       },
       "name": "X25519MLKEM768",
+      "properties": [
+        {
+          "name": "qureddy:observation",
+          "value": "negotiated"
+        }
+      ],
       "type": "cryptographic-asset"
     }
   ],
   "dependencies": [
+    {
+      "ref": "crypto/algorithm/tls_aes_256_gcm_sha384"
+    },
     {
       "ref": "crypto/algorithm/x25519"
     },
@@ -70,6 +103,7 @@
     },
     {
       "provides": [
+        "crypto/algorithm/tls_aes_256_gcm_sha384",
         "crypto/algorithm/x25519",
         "crypto/algorithm/x25519mlkem768",
         "crypto/protocol/tls-tlsv1.3"
