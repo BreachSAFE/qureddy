@@ -29,6 +29,9 @@ MAX_PORT = 65535
 # isn't already a strict IP literal, rather than silently accepting it as
 # a DNS hostname.
 _NUMERIC_HOST = re.compile(r"^[0-9.]+$")
+# Plain ASCII digits only: `int()` would also accept Unicode digits, underscores,
+# a leading sign, and surrounding whitespace (see _parse_port / #128).
+_CANONICAL_PORT = re.compile(r"[0-9]+")
 
 
 def parse_target(input_str: str, sni_override: str | None = None) -> ScanTarget:
@@ -113,12 +116,7 @@ def _extract_host_port(cleaned: str) -> tuple[str, int]:
         host, _, raw_port = cleaned.partition(":")
         if not host:
             raise TargetParseError("target host is empty")
-        try:
-            port = int(raw_port)
-        except ValueError as exc:
-            msg = f"port is not an integer: {raw_port!r}"
-            raise TargetParseError(msg) from exc
-        return host, _validate_port(port)
+        return host, _parse_port(raw_port)
 
     _reject_ambiguous_unbracketed_ipv6(cleaned)
     return cleaned, DEFAULT_PORT
@@ -154,11 +152,7 @@ def _parse_bracketed_ipv6(cleaned: str) -> tuple[str, int]:
         return host, DEFAULT_PORT
     if not remainder.startswith(":"):
         raise TargetParseError("malformed IPv6 target literal")
-    try:
-        return host, _validate_port(int(remainder[1:]))
-    except ValueError as exc:
-        msg = "IPv6 target has an invalid port"
-        raise TargetParseError(msg) from exc
+    return host, _parse_port(remainder[1:])
 
 
 def _is_ip_literal(host: str) -> bool:
@@ -174,6 +168,22 @@ def _validate_port(port: int) -> int:
         msg = f"port out of range [1, 65535]: {port}"
         raise TargetParseError(msg)
     return port
+
+
+def _parse_port(raw_port: str) -> int:
+    """Parse a port from its literal target text, rejecting non-canonical forms.
+
+    `int()` alone silently accepts Unicode digits, underscores, a leading sign,
+    and surrounding whitespace, so the scanner would record the string the user
+    typed while connecting to a different, "corrected" port. This is the class
+    already closed for numeric hosts (#255). Require plain ASCII digits, then
+    range-check. The `urlparse`-based paths already reject these, so this keeps
+    the bare `host:port` form consistent with the `scheme://` form (#128).
+    """
+    if not _CANONICAL_PORT.fullmatch(raw_port):
+        msg = f"port is not a canonical number: {raw_port!r}"
+        raise TargetParseError(msg)
+    return _validate_port(int(raw_port))
 
 
 DEFAULT_SSH_PORT = 22
@@ -250,17 +260,11 @@ def _parse_raw_ssh_endpoint(cleaned: str) -> tuple[str, int]:
             return host, DEFAULT_SSH_PORT
         if not remainder.startswith(":"):
             raise TargetParseError("malformed SSH IPv6 target literal")
-        try:
-            return host, _validate_port(int(remainder[1:]))
-        except ValueError as exc:
-            raise TargetParseError("SSH IPv6 target has an invalid port") from exc
+        return host, _parse_port(remainder[1:])
     if cleaned.count(":") == 1:
         host, _, raw_port = cleaned.partition(":")
         if not host:
             raise TargetParseError("SSH target host is empty")
-        try:
-            return host, _validate_port(int(raw_port))
-        except ValueError as exc:
-            raise TargetParseError(f"SSH port is not an integer: {raw_port!r}") from exc
+        return host, _parse_port(raw_port)
     _reject_ambiguous_unbracketed_ipv6(cleaned)
     return cleaned, DEFAULT_SSH_PORT

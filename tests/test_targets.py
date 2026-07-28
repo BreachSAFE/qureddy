@@ -94,6 +94,11 @@ class TestParseTargetInvalid:
             "https://",
             "[2001:db8::1]:notaport",
             "host..example.com",
+            # #128: non-canonical port forms int() would silently "correct"
+            "example.com:٤٤٣",  # Arabic-Indic digits
+            "example.com:4_43",  # underscore
+            "example.com:+443",  # leading sign
+            "example.com: 443",  # surrounding whitespace
         ],
     )
     def test_invalid_inputs_raise(self, bad_input: str) -> None:
