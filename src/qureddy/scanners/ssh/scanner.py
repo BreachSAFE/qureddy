@@ -174,6 +174,7 @@ def _weak_host_key_observation(
     weak = classify.weak_host_keys(algorithms)
     if not weak:
         return None
+    reasons = classify.weak_host_key_reasons(algorithms)
     evidence = Evidence(
         id=_uid("ev"),
         asset_id=asset.id,
@@ -182,7 +183,7 @@ def _weak_host_key_observation(
         source="qureddy.scanners.ssh.probe",
         protocol="ssh",
         protocol_version="2.0",
-        notes=(f"weak host-key algorithm offered: {', '.join(weak)}",),
+        notes=reasons,
     )
     finding = Finding(
         id=_uid("finding"),
@@ -191,7 +192,11 @@ def _weak_host_key_observation(
         rule_id="ssh.hostkey.weak",
         finding_type="ssh.hostkey.weak",
         title=f"Weak SSH host-key algorithm offered ({', '.join(weak)})",
-        description="DSA host keys are deprecated and cryptographically weak.",
+        description=(
+            "Deprecated or SHA-1 host-key algorithms offered. DSA keys are fixed at "
+            "1024-bit; ssh-rsa signs with SHA-1 (RFC 8332). Both are disabled by "
+            "default in modern OpenSSH."
+        ),
         severity=Severity.MEDIUM,
         readiness=Readiness.CLASSICALLY_WEAK,
         confidence=Confidence.HIGH,
