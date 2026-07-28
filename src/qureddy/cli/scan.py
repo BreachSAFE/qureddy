@@ -73,7 +73,7 @@ qureddy scan tls google.com
 qureddy scan tls pq.cloudflareresearch.com --format json
 
 \b
-# Scan an IP target (SNI override required).
+# Scan an IP target with an SNI override for a name-based virtual host.
 qureddy scan tls 1.1.1.1:443 --sni one.one.one.one
 
 \b
