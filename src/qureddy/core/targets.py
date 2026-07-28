@@ -72,6 +72,13 @@ def parse_target(input_str: str, sni_override: str | None = None) -> ScanTarget:
     if sni_override is not None:
         if not sni_override.strip():
             raise TargetParseError("--sni cannot be empty or whitespace-only")
+        # The derived SNI (sni = host) is validated by HOSTNAME_PATTERN; the override must
+        # meet the same bar or a newline/control char/ANSI escape/leading dash flows verbatim
+        # into OpenSSL's -servername value (#145). fullmatch (not match) because `$` also
+        # matches just before a trailing newline, which would let "host\n" through.
+        if not HOSTNAME_PATTERN.fullmatch(sni_override):
+            msg = f"--sni is not a valid hostname: {sni_override!r}"
+            raise TargetParseError(msg)
         sni: str | None = sni_override
     elif is_ip:
         sni = None

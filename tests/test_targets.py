@@ -111,6 +111,20 @@ class TestParseTargetInvalid:
         with pytest.raises(TargetParseError, match="empty or whitespace"):
             parse_target("example.com", sni_override=bad_sni)
 
+    @pytest.mark.parametrize(
+        "bad_sni",
+        [
+            "0\n",  # #145: trailing newline ($ would otherwise let it through)
+            "evil\ninjected",  # embedded newline
+            "-oProxyCommand=x",  # leading dash
+            "a\x1b[31mb",  # ANSI escape
+            "host name",  # space
+        ],
+    )
+    def test_sni_override_with_invalid_hostname_chars_raises(self, bad_sni: str) -> None:
+        with pytest.raises(TargetParseError, match="not a valid hostname"):
+            parse_target("example.com", sni_override=bad_sni)
+
 
 class TestParseSshTarget:
     """SSH target grammar accepts only endpoint-intent-preserving forms."""
