@@ -25,15 +25,18 @@ import sys
 import warnings
 from datetime import UTC, datetime
 from types import MappingProxyType
-from typing import IO, TYPE_CHECKING
+from typing import IO, TYPE_CHECKING, NamedTuple
 
 from cyclonedx.model import Property
 from cyclonedx.model.bom import Bom
 from cyclonedx.model.bom_ref import BomRef
 from cyclonedx.model.component import Component, ComponentType
 from cyclonedx.model.crypto import (
+    AlgorithmProperties,
     CertificateProperties,
     CryptoAssetType,
+    CryptoFunction,
+    CryptoPrimitive,
     CryptoProperties,
     ProtocolProperties,
     ProtocolPropertiesCipherSuite,
@@ -189,12 +192,60 @@ def _add_algorithm_components(
                 name=group,
                 type=ComponentType.CRYPTOGRAPHIC_ASSET,
                 bom_ref=ref,
-                crypto_properties=CryptoProperties(asset_type=CryptoAssetType.ALGORITHM),
+                crypto_properties=CryptoProperties(
+                    asset_type=CryptoAssetType.ALGORITHM,
+                    algorithm_properties=_algorithm_properties(group),
+                ),
             )
         )
         algorithm_refs[group] = ref
         provides_edges.setdefault(_ENDPOINT_REF, []).append(ref)
     return algorithm_refs
+
+
+# Structured classification for the key-exchange groups qureddy positively observes, so a
+# CBOM consumer doesn't have to string-match the component name (#146). Values verified:
+# ML-KEM-768 is NIST security category 3 (FIPS 203); X25519 is classical (no PQ resistance,
+# level 0). Only groups we can classify with confidence are listed; anything else keeps a
+# minimal (empty) algorithmProperties rather than fabricating a primitive/level.
+# CONFORMANCE: expanding this table (SSH groups, signature algorithms) and re-checking every
+# nistQuantumSecurityLevel is a breachsafe-conformance follow-up before claiming full coverage.
+class _AlgorithmSpec(NamedTuple):
+    primitive: CryptoPrimitive
+    nist_quantum_security_level: int
+    crypto_functions: tuple[CryptoFunction, ...]
+    parameter_set_identifier: str | None = None
+    curve: str | None = None
+
+
+_KEM_FUNCTIONS = (CryptoFunction.KEYGEN, CryptoFunction.ENCAPSULATE, CryptoFunction.DECAPSULATE)
+_ALGORITHM_PROFILE: MappingProxyType[str, _AlgorithmSpec] = MappingProxyType(
+    {
+        "X25519MLKEM768": _AlgorithmSpec(
+            CryptoPrimitive.KEM, 3, _KEM_FUNCTIONS, parameter_set_identifier="ML-KEM-768"
+        ),
+        "X25519": _AlgorithmSpec(
+            CryptoPrimitive.KEY_AGREE, 0, (CryptoFunction.KEYGEN,), curve="curve25519"
+        ),
+    }
+)
+
+
+def _algorithm_properties(group: str) -> AlgorithmProperties | None:
+    """Return a fresh AlgorithmProperties for a known group, else None (#146).
+
+    A fresh instance per call keeps CycloneDX's mutable model out of shared module state.
+    """
+    spec = _ALGORITHM_PROFILE.get(group)
+    if spec is None:
+        return None
+    return AlgorithmProperties(
+        primitive=spec.primitive,
+        parameter_set_identifier=spec.parameter_set_identifier,
+        curve=spec.curve,
+        crypto_functions=list(spec.crypto_functions),
+        nist_quantum_security_level=spec.nist_quantum_security_level,
+    )
 
 
 def _add_protocol_components(
