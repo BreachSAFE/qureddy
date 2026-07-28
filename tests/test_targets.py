@@ -99,6 +99,7 @@ class TestParseTargetInvalid:
             "example.com:4_43",  # underscore
             "example.com:+443",  # leading sign
             "example.com: 443",  # surrounding whitespace
+            "http://[bad",  # #139: unclosed IPv6 bracket -> urlparse ValueError, must be exit 4 not 70
         ],
     )
     def test_invalid_inputs_raise(self, bad_input: str) -> None:
@@ -143,6 +144,7 @@ class TestParseSshTarget:
             "ssh://example.com?query=yes",
             "ssh://example.com#fragment",
             "example.com/path",
+            "ssh://[bad",  # #139: unclosed IPv6 bracket -> urlparse ValueError, must be exit 4 not 70
         ],
     )
     def test_rejected_forms(self, target: str) -> None:

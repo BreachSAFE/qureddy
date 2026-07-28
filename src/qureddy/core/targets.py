@@ -95,7 +95,13 @@ def parse_target(input_str: str, sni_override: str | None = None) -> ScanTarget:
 def _extract_host_port(cleaned: str) -> tuple[str, int]:
     """Pull (host, port) out of any of the accepted input shapes."""
     if "://" in cleaned:
-        parsed = urlparse(cleaned)
+        try:
+            parsed = urlparse(cleaned)
+        except ValueError as exc:
+            # urlparse raises ValueError eagerly on a malformed authority (e.g. an
+            # unclosed "[" IPv6 bracket); that is bad user input (exit 4), not an
+            # internal error (exit 70). (#139)
+            raise TargetParseError(f"malformed target URL: {cleaned!r}") from exc
         if parsed.scheme not in {"https", "tls"}:
             msg = f"unsupported scheme {parsed.scheme!r}; expected https or tls"
             raise TargetParseError(msg)
@@ -232,7 +238,12 @@ def parse_ssh_target(input_str: str) -> ScanTarget:
 
 def _parse_ssh_uri(cleaned: str) -> tuple[str, int]:
     """Parse the allowlisted endpoint-only SSH/SFTP URI forms."""
-    parsed = urlparse(cleaned)
+    try:
+        parsed = urlparse(cleaned)
+    except ValueError as exc:
+        # Malformed authority (e.g. unclosed "[" IPv6 bracket) is bad user input
+        # (exit 4), not an internal error (exit 70). (#139)
+        raise TargetParseError(f"malformed SSH target URL: {cleaned!r}") from exc
     if parsed.scheme not in {"ssh", "sftp"}:
         msg = f"unsupported SSH scheme {parsed.scheme!r}; expected ssh or sftp"
         raise TargetParseError(msg)
