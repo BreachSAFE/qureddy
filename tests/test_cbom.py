@@ -266,6 +266,24 @@ class TestCycloneDx17Contract:
         assert certificate_properties["notValidBefore"] == "2026-07-17T07:18:11+00:00"
         assert certificate_properties["notValidAfter"] == "2027-07-17T07:18:11+00:00"
 
+    def test_reproducible_mode_is_byte_identical_and_drops_run_identity(self) -> None:
+        # #162: --reproducible omits the per-run identity so the same scan is
+        # content-addressable (byte-identical on repeat).
+        first = io.StringIO()
+        second = io.StringIO()
+        render_cbom(_build_result(), first, reproducible=True)
+        render_cbom(_build_result(), second, reproducible=True)
+        assert first.getvalue() == second.getvalue()
+        payload = json.loads(first.getvalue())
+        assert "serialNumber" not in payload
+        assert "timestamp" not in payload["metadata"]
+        property_names = {prop["name"] for prop in payload["metadata"]["properties"]}
+        assert "qureddy:scan.id" not in property_names
+        assert "qureddy:scan.started_at" not in property_names
+        # deterministic content stays present
+        assert "qureddy:scan.readiness" in property_names
+        assert "qureddy:target.host" in property_names
+
     def test_inventory_comes_from_positive_evidence_not_findings(self) -> None:
         result = _build_result()
         finding_only = result.model_copy(update={"evidence": ()})

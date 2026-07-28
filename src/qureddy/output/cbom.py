@@ -64,15 +64,30 @@ _POSITIVE_OBSERVATIONS = frozenset(
 def render_cbom(
     result: ScanResult,
     stream: IO[str] | None = None,
+    *,
+    reproducible: bool = False,
 ) -> None:
     """Render typed scan observations as CycloneDX 1.7.
 
     Issue #239: `stream: IO[str] = sys.stdout` as a default is resolved
     once at function-definition time, not per call — same root cause as
     #237/#238. Resolve at call time instead.
+
+    When ``reproducible`` is set, the per-run identity fields (the CycloneDX
+    serialNumber and metadata.timestamp, plus the scan id and start/finish
+    times) are omitted so the same scan is byte- and digest-reproducible for
+    content addressing (#162). The observed crypto content is unchanged.
     """
     target_stream = stream if stream is not None else sys.stdout
     bom = Bom()
+    if reproducible:
+        # The Bom() constructor auto-generates a random serialNumber and an
+        # emission timestamp; drop both (they are optional in CycloneDX) so the
+        # output is content-addressable.
+        # The library stub types these non-optional, but both are optional in
+        # CycloneDX and are omitted from output when None (verified at runtime).
+        bom.serial_number = None  # type: ignore[assignment]
+        bom.metadata.timestamp = None  # type: ignore[assignment]
     provides_edges: dict[str, list[str]] = {}
 
     # WHY: adding this same object to bom.components makes the library's
@@ -86,7 +101,7 @@ def render_cbom(
     bom.metadata.component = endpoint
     _add_tool_provenance(bom, result)
     _add_scan_status_properties(bom, result)
-    _add_scan_target_metadata(bom, result)
+    _add_scan_target_metadata(bom, result, reproducible=reproducible)
 
     algorithm_refs = _add_algorithm_components(bom, result, provides_edges)
     _add_cipher_suite_components(bom, result, provides_edges)
@@ -195,21 +210,19 @@ def _add_scan_status_properties(bom: Bom, result: ScanResult) -> None:
         )
 
 
-def _add_scan_target_metadata(bom: Bom, result: ScanResult) -> None:
+def _add_scan_target_metadata(bom: Bom, result: ScanResult, *, reproducible: bool = False) -> None:
     """Carry scan-identity/timing and structured target fields as metadata.properties.
 
     JSON exposes these; the CBOM previously kept only the emission timestamp and a
     `host:port` component name, so a CBOM-only consumer lost the scan id, timing,
     attempt count, and (critically) the SNI that determined what was actually
-    probed (#152).
+    probed (#152). In ``reproducible`` mode the per-run scan id and start/finish
+    times are omitted so the output is content-addressable (#162).
     """
     scan = result.scan
     target = result.target
     pairs: list[tuple[str, str]] = [
-        ("qureddy:scan.id", scan.scan_id),
         ("qureddy:scan.scanner_name", scan.scanner_name),
-        ("qureddy:scan.started_at", scan.started_at.isoformat()),
-        ("qureddy:scan.completed_at", scan.completed_at.isoformat()),
         ("qureddy:scan.total_attempts", str(scan.total_attempts)),
         ("qureddy:target.original_input", target.original_input),
         ("qureddy:target.host", target.host),
@@ -217,6 +230,13 @@ def _add_scan_target_metadata(bom: Bom, result: ScanResult) -> None:
         ("qureddy:target.scheme", target.scheme),
         ("qureddy:target.locator", target.locator),
     ]
+    if not reproducible:
+        pairs = [
+            ("qureddy:scan.id", scan.scan_id),
+            ("qureddy:scan.started_at", scan.started_at.isoformat()),
+            ("qureddy:scan.completed_at", scan.completed_at.isoformat()),
+            *pairs,
+        ]
     if target.sni is not None:
         pairs.append(("qureddy:target.sni", target.sni))
     for name, value in pairs:

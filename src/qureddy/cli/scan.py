@@ -26,6 +26,7 @@ from qureddy.cli._options import (
     JsonLogsOpt,
     OpenSSLOpt,
     QuietOpt,
+    ReproducibleOpt,
     RetriesOpt,
     RetryDelayOpt,
     RetryOnOpt,
@@ -136,6 +137,7 @@ def scan_tls(
     verbose: VerboseOpt = 0,
     json_logs: JsonLogsOpt = False,
     quiet: QuietOpt = False,
+    reproducible: ReproducibleOpt = False,
 ) -> None:
     """Scan a TLS endpoint for post-quantum readiness."""
     # JSON/CBOM stdout is a single machine-parsed document. The #15 fd-snapshot
@@ -161,7 +163,7 @@ def scan_tls(
         result, exit_code = _execute_scan(
             scanner, scan_target, timeout, machine_format=machine_format
         )
-        _render(result, output_format, verbose)
+        _render(result, output_format, verbose, reproducible=reproducible)
         raise typer.Exit(code=exit_code)
     finally:
         structlog.contextvars.clear_contextvars()
