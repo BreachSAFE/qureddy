@@ -143,7 +143,7 @@ def _add_tool_provenance(bom: Bom, result: ScanResult) -> None:
 
 
 def _add_scan_status_properties(bom: Bom, result: ScanResult) -> None:
-    """Mirror scan.status/summary.failure_category onto bom.metadata.properties.
+    """Mirror scan.status/readiness/failure_category onto bom.metadata.properties.
 
     `bom.metadata.properties` is the standard CycloneDX extension point.
     Without this, a CBOM from a hard-failed scan (e.g. tls_handshake_failed)
@@ -154,8 +154,15 @@ def _add_scan_status_properties(bom: Bom, result: ScanResult) -> None:
     no field anywhere in the CBOM itself recording that the scan failed.
     A consumer that stores/forwards only the CBOM JSON (no external exit
     code) had no way to tell these apart (issue #195).
+
+    The readiness verdict is qureddy's headline conclusion and is carried in
+    `--format json`; emitting it here keeps the CBOM self-describing so a
+    consumer sees what qureddy concluded without re-deriving it (issue #132).
     """
     bom.metadata.properties.add(Property(name="qureddy:scan.status", value=result.scan.status))
+    bom.metadata.properties.add(
+        Property(name="qureddy:scan.readiness", value=result.summary.readiness.value)
+    )
     if result.summary.failure_category is not None:
         bom.metadata.properties.add(
             Property(
