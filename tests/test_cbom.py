@@ -313,6 +313,22 @@ class TestCbomSemanticGuard:
         with pytest.raises(ValueError, match="dangling"):
             validate_cbom_semantics(payload)
 
+    def test_rejects_dangling_cipher_suite_algorithm_ref(self) -> None:
+        # #144: the runtime validator must catch a dangling cipher-suite algorithm ref,
+        # not only the CI harness.
+        payload = self._base()
+        protocol = next(
+            component
+            for component in payload["components"]
+            if component.get("cryptoProperties", {}).get("protocolProperties")
+        )
+        protocol["cryptoProperties"]["protocolProperties"]["cipherSuites"][0]["algorithms"].append(
+            "crypto/algorithm/missing"
+        )
+
+        with pytest.raises(ValueError, match="dangling"):
+            validate_cbom_semantics(payload)
+
     def test_rejects_duplicate_reference(self) -> None:
         payload = self._base()
         payload["components"].append(dict(payload["components"][0]))
