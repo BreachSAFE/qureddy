@@ -39,8 +39,8 @@ def parse_target(input_str: str, sni_override: str | None = None) -> ScanTarget:
 
     Args:
         input_str: User input. Accepts hostname, host:port, https URL, or IP.
-        sni_override: Optional SNI override. Required for IP targets that
-            need to address a specific virtual host.
+        sni_override: Optional SNI override for a name-based virtual host.
+            Recommended (not required) for IP targets serving multiple certs.
 
     Returns:
         Normalized ScanTarget with locator format ``tls://host:port``.

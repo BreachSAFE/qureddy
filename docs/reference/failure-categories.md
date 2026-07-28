@@ -40,7 +40,7 @@ OpenSSL.
 The SSH probe maps socket and timeout causes to `target_connect_failed`.
 Malformed identification or KEXINIT responses map to `parse_ambiguous`.
 
-SSH exposes no retry options in version 0.2.4. An operator or calling system
+SSH exposes no retry options in version 0.2.5. An operator or calling system
 may invoke the command again, but QuReddy does not retry SSH internally.
 
 ## TLS retry allowlist

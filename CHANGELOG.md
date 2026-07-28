@@ -11,12 +11,36 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Contents
 
+- [0.2.5](#025---2026-07-28)
 - [0.2.4](#024---2026-07-28)
 - [0.2.3](#023---2026-07-27)
 - [0.2.2](#022---2026-07-27)
 - [0.2.1](#021---2026-07-27)
 - [0.2.0](#020---2026-07-27)
 - [0.1.0](#010---2026-05-10)
+
+## [0.2.5] - 2026-07-28
+
+### Fixed
+
+- Malformed target URLs (e.g. an unclosed `[` IPv6 bracket) now exit 4 (usage) instead
+  of 70 (internal error). (#139, PR #148)
+- A connect-timeout with no TCP `CONNECTED` is classified as unreachable
+  (`target_connect_failed`) so the scanner short-circuits instead of sweeping a dead
+  host for ~180s. (#138, PR #154)
+- CBOM `protocolProperties.version` for TLS is the bare CycloneDX form (`1.3`, not
+  `TLSv1.3`), matching the SSH path. (#140, PR #155)
+- A completed legacy sweep that confirms a protocol is absent is recorded as
+  `not_offered`, not `offered`, so the CBOM no longer claims modern targets provide
+  TLS 1.0/1.1. (#137, PR #156)
+- The `--sni` override is validated as a hostname, rejecting embedded newlines, control
+  characters, ANSI escapes, and leading dashes before they reach OpenSSL. (#145, PR #158)
+
+### Added
+
+- CBOM algorithm components carry structured `algorithmProperties` (primitive,
+  parameterSetIdentifier, nistQuantumSecurityLevel, cryptoFunctions) for the observed
+  key-exchange groups. (#146, PR #157)
 
 ## [0.2.4] - 2026-07-28
 

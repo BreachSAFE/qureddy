@@ -112,7 +112,7 @@
           "bom-ref": "tool/qureddy",
           "name": "qureddy",
           "type": "application",
-          "version": "0.2.4"
+          "version": "0.2.5"
         }
       ]
     }
