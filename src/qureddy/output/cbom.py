@@ -100,10 +100,11 @@ def render_cbom(
         bom_ref=_ENDPOINT_REF,
     )
     bom.metadata.component = endpoint
-    _add_tool_provenance(bom, result)
+    _add_tool_provenance(bom, result, reproducible=reproducible)
     _add_scan_status_properties(bom, result)
     _add_scan_target_metadata(bom, result, reproducible=reproducible)
     _add_evidence_provenance(bom, result, reproducible=reproducible)
+    _add_finding_verdicts(bom, result)
 
     algorithm_refs = _add_algorithm_components(bom, result, provides_edges)
     _add_cipher_suite_components(bom, result, provides_edges)
@@ -135,7 +136,7 @@ def _captured_certificate(result: ScanResult) -> CertificateObservation | None:
     return observations[0] if observations else None
 
 
-def _add_tool_provenance(bom: Bom, result: ScanResult) -> None:
+def _add_tool_provenance(bom: Bom, result: ScanResult, *, reproducible: bool = False) -> None:
     """Record QuReddy and local OpenSSL as collection tools."""
     tools = [
         Component(
@@ -153,18 +154,22 @@ def _add_tool_provenance(bom: Bom, result: ScanResult) -> None:
                 type=ComponentType.APPLICATION,
                 bom_ref=_OPENSSL_TOOL_REF,
                 version=dependency.version,
-                properties=_openssl_tool_properties(dependency),
+                properties=_openssl_tool_properties(dependency, reproducible=reproducible),
             )
         )
     bom.metadata.tools = ToolRepository(components=tools)
 
 
-def _openssl_tool_properties(dependency: OpenSSLDependency) -> list[Property]:
+def _openssl_tool_properties(
+    dependency: OpenSSLDependency, *, reproducible: bool = False
+) -> list[Property]:
     """Carry the local OpenSSL capability flags (and path) onto the tool component.
 
     The CBOM kept only openssl's version, dropping the flags JSON's dependencies[]
     carries. Those flags decide whether a "no hybrid found" result is a real negative
     or a prober blind-spot: a consumer can't trust the inventory without them (#151).
+    The absolute local path is host-specific, so it is omitted in reproducible mode so
+    two hosts observing identical crypto produce the same digest (#162/#147 audit).
     """
     properties = [
         Property(name="qureddy:collector.role", value="local-probe-runtime"),
@@ -177,7 +182,7 @@ def _openssl_tool_properties(dependency: OpenSSLDependency) -> list[Property]:
             value=str(dependency.supports_x25519mlkem768).lower(),
         ),
     ]
-    if dependency.path is not None:
+    if dependency.path is not None and not reproducible:
         properties.append(Property(name="qureddy:openssl.path", value=dependency.path))
     return properties
 
@@ -225,7 +230,6 @@ def _add_scan_target_metadata(bom: Bom, result: ScanResult, *, reproducible: boo
     target = result.target
     pairs: list[tuple[str, str]] = [
         ("qureddy:scan.scanner_name", scan.scanner_name),
-        ("qureddy:scan.total_attempts", str(scan.total_attempts)),
         ("qureddy:target.original_input", target.original_input),
         ("qureddy:target.host", target.host),
         ("qureddy:target.port", str(target.port)),
@@ -233,8 +237,10 @@ def _add_scan_target_metadata(bom: Bom, result: ScanResult, *, reproducible: boo
         ("qureddy:target.locator", target.locator),
     ]
     if not reproducible:
+        # total_attempts can vary with transient retries, so it is per-run too.
         pairs = [
             ("qureddy:scan.id", scan.scan_id),
+            ("qureddy:scan.total_attempts", str(scan.total_attempts)),
             ("qureddy:scan.started_at", scan.started_at.isoformat()),
             ("qureddy:scan.completed_at", scan.completed_at.isoformat()),
             *pairs,
@@ -255,7 +261,9 @@ def _add_evidence_provenance(bom: Bom, result: ScanResult, *, reproducible: bool
     JSON. The per-run probe duration is omitted in reproducible mode (#162).
     """
     for index, evidence in enumerate(result.evidence):
-        prefix = f"qureddy:evidence.{index}"
+        # Zero-padded so the property names sort lexicographically in scan order
+        # (evidence.02 before evidence.10), matching how CycloneDX serializes them (#147).
+        prefix = f"qureddy:evidence.{index:02d}"
         pairs: list[tuple[str, str | None]] = [
             (f"{prefix}.type", evidence.evidence_type),
             (f"{prefix}.observation", evidence.observation_type.value),
@@ -283,6 +291,27 @@ def _add_evidence_provenance(bom: Bom, result: ScanResult, *, reproducible: bool
         for name, value in pairs:
             if value is not None:
                 bom.metadata.properties.add(Property(name=name, value=value))
+
+
+def _add_finding_verdicts(bom: Bom, result: ScanResult) -> None:
+    """Carry each finding's verdict (severity/readiness/rule) as metadata properties (#147).
+
+    JSON's findings[] drive the posture; the CBOM previously carried only the top-level
+    readiness (#132), so a consumer could not see per-finding severity or which rule fired.
+    Emit one indexed block per finding; every field is deterministic (reproducible-safe).
+    """
+    for index, finding in enumerate(result.findings):
+        prefix = f"qureddy:finding.{index:02d}"
+        pairs = [
+            (f"{prefix}.rule_id", finding.rule_id),
+            (f"{prefix}.finding_type", finding.finding_type),
+            (f"{prefix}.severity", finding.severity.value),
+            (f"{prefix}.readiness", finding.readiness.value),
+            (f"{prefix}.title", finding.title),
+            (f"{prefix}.confidence", finding.confidence.value),
+        ]
+        for name, value in pairs:
+            bom.metadata.properties.add(Property(name=name, value=value))
 
 
 # Strongest-signal ordering: a group seen negotiated outranks one merely offered or

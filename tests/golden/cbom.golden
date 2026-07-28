@@ -119,100 +119,148 @@
     },
     "properties": [
       {
-        "name": "qureddy:evidence.0.attempt_number",
+        "name": "qureddy:evidence.00.attempt_number",
         "value": "1"
       },
       {
-        "name": "qureddy:evidence.0.cipher_suite",
+        "name": "qureddy:evidence.00.cipher_suite",
         "value": "TLS_AES_256_GCM_SHA384"
       },
       {
-        "name": "qureddy:evidence.0.command_sha256",
+        "name": "qureddy:evidence.00.command_sha256",
         "value": "14de7cb10487c354a0b64064eed9e1cdc9471ac8d64688d589d7d4cd63d2c82f"
       },
       {
-        "name": "qureddy:evidence.0.duration_ms",
+        "name": "qureddy:evidence.00.duration_ms",
         "value": "120"
       },
       {
-        "name": "qureddy:evidence.0.negotiated_group",
+        "name": "qureddy:evidence.00.negotiated_group",
         "value": "X25519MLKEM768"
       },
       {
-        "name": "qureddy:evidence.0.observation",
+        "name": "qureddy:evidence.00.observation",
         "value": "negotiated"
       },
       {
-        "name": "qureddy:evidence.0.protocol_version",
+        "name": "qureddy:evidence.00.protocol_version",
         "value": "TLSv1.3"
       },
       {
-        "name": "qureddy:evidence.0.return_code",
+        "name": "qureddy:evidence.00.return_code",
         "value": "0"
       },
       {
-        "name": "qureddy:evidence.0.source",
+        "name": "qureddy:evidence.00.source",
         "value": "qureddy.scanners.tls.parse"
       },
       {
-        "name": "qureddy:evidence.0.stderr_sha256",
+        "name": "qureddy:evidence.00.stderr_sha256",
         "value": "0000000000000000000000000000000000000000000000000000000000000000"
       },
       {
-        "name": "qureddy:evidence.0.stdout_sha256",
+        "name": "qureddy:evidence.00.stdout_sha256",
         "value": "0000000000000000000000000000000000000000000000000000000000000000"
       },
       {
-        "name": "qureddy:evidence.0.type",
+        "name": "qureddy:evidence.00.type",
         "value": "tls.negotiation"
       },
       {
-        "name": "qureddy:evidence.1.attempt_number",
+        "name": "qureddy:evidence.01.attempt_number",
         "value": "1"
       },
       {
-        "name": "qureddy:evidence.1.cipher_suite",
+        "name": "qureddy:evidence.01.cipher_suite",
         "value": "TLS_AES_256_GCM_SHA384"
       },
       {
-        "name": "qureddy:evidence.1.command_sha256",
+        "name": "qureddy:evidence.01.command_sha256",
         "value": "36605f46b24883f29f645dca64b513a38a48293c071d694ef109c142469b1cb8"
       },
       {
-        "name": "qureddy:evidence.1.duration_ms",
+        "name": "qureddy:evidence.01.duration_ms",
         "value": "110"
       },
       {
-        "name": "qureddy:evidence.1.negotiated_group",
+        "name": "qureddy:evidence.01.negotiated_group",
         "value": "X25519"
       },
       {
-        "name": "qureddy:evidence.1.observation",
+        "name": "qureddy:evidence.01.observation",
         "value": "negotiated"
       },
       {
-        "name": "qureddy:evidence.1.protocol_version",
+        "name": "qureddy:evidence.01.protocol_version",
         "value": "TLSv1.3"
       },
       {
-        "name": "qureddy:evidence.1.return_code",
+        "name": "qureddy:evidence.01.return_code",
         "value": "0"
       },
       {
-        "name": "qureddy:evidence.1.source",
+        "name": "qureddy:evidence.01.source",
         "value": "qureddy.scanners.tls.parse"
       },
       {
-        "name": "qureddy:evidence.1.stderr_sha256",
+        "name": "qureddy:evidence.01.stderr_sha256",
         "value": "0000000000000000000000000000000000000000000000000000000000000000"
       },
       {
-        "name": "qureddy:evidence.1.stdout_sha256",
+        "name": "qureddy:evidence.01.stdout_sha256",
         "value": "0000000000000000000000000000000000000000000000000000000000000000"
       },
       {
-        "name": "qureddy:evidence.1.type",
+        "name": "qureddy:evidence.01.type",
         "value": "tls.negotiation"
+      },
+      {
+        "name": "qureddy:finding.00.confidence",
+        "value": "high"
+      },
+      {
+        "name": "qureddy:finding.00.finding_type",
+        "value": "tls.kex.hybrid"
+      },
+      {
+        "name": "qureddy:finding.00.readiness",
+        "value": "transitional_hybrid"
+      },
+      {
+        "name": "qureddy:finding.00.rule_id",
+        "value": "tls.hybrid.negotiated_x25519mlkem768"
+      },
+      {
+        "name": "qureddy:finding.00.severity",
+        "value": "info"
+      },
+      {
+        "name": "qureddy:finding.00.title",
+        "value": "Hybrid"
+      },
+      {
+        "name": "qureddy:finding.01.confidence",
+        "value": "high"
+      },
+      {
+        "name": "qureddy:finding.01.finding_type",
+        "value": "tls.kex.classical"
+      },
+      {
+        "name": "qureddy:finding.01.readiness",
+        "value": "quantum_vulnerable"
+      },
+      {
+        "name": "qureddy:finding.01.rule_id",
+        "value": "tls.classical.negotiated_x25519"
+      },
+      {
+        "name": "qureddy:finding.01.severity",
+        "value": "low"
+      },
+      {
+        "name": "qureddy:finding.01.title",
+        "value": "Classical control"
       },
       {
         "name": "qureddy:scan.completed_at",
