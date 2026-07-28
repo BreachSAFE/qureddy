@@ -43,15 +43,25 @@ _SUBPROCESS_TIMEOUT = 60
 
 
 def _without_document_identity(output: str) -> str:
-    """Normalize only the two document-level values allowed to vary."""
+    """Normalize the per-run document-identity values allowed to vary.
+
+    Besides the CycloneDX serialNumber and emission timestamp, the CBOM carries the
+    scan id and scan start/finish times (#152); those are run-identity, not content,
+    so they are normalized here to keep the final-bytes-repeatable contract meaningful.
+    """
     output = re.sub(
         r'("serialNumber": )"urn:uuid:[^"]+"',
         r'\1"<document-serial>"',
         output,
     )
-    return re.sub(
+    output = re.sub(
         r'("timestamp": )"[^"]+"',
         r'\1"<document-timestamp>"',
+        output,
+    )
+    return re.sub(
+        r'("name": "qureddy:scan\.(?:id|started_at|completed_at)",\s*"value": )"[^"]*"',
+        r'\1"<run-identity>"',
         output,
     )
 
