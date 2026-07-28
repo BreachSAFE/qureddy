@@ -11,6 +11,7 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Contents
 
+- [Unreleased](#unreleased)
 - [0.2.6](#026---2026-07-28)
 - [0.2.5](#025---2026-07-28)
 - [0.2.4](#024---2026-07-28)
@@ -19,6 +20,15 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - [0.2.1](#021---2026-07-27)
 - [0.2.0](#020---2026-07-27)
 - [0.1.0](#010---2026-05-10)
+
+## [Unreleased]
+
+### Fixed
+
+- A trailing-dot absolute FQDN target (e.g. `www.google.com.`) is now accepted by
+  `parse_target` and `parse_ssh_target` (RFC 1034 section 3.1). The trailing dot is
+  stripped from the stored host, locator, and derived SNI so the on-wire SNI stays
+  RFC 6066 compliant, while `original_input` preserves what the user typed. (#130)
 
 ## [0.2.6] - 2026-07-28
 
