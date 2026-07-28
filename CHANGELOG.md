@@ -11,6 +11,7 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Contents
 
+- [0.2.11](#0211---2026-07-28)
 - [0.2.10](#0210---2026-07-28)
 - [0.2.9](#029---2026-07-28)
 - [0.2.8](#028---2026-07-28)
@@ -23,6 +24,14 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - [0.2.1](#021---2026-07-27)
 - [0.2.0](#020---2026-07-27)
 - [0.1.0](#010---2026-05-10)
+
+## [0.2.11] - 2026-07-28
+
+### Added
+
+- Shell tab completion: `qureddy --install-completion` (bash/zsh/fish); `scan <tab>` offers
+  tls/ssh and `--format <tab>` offers rich/json/cbom. The completion options are hidden from
+  `--help` so the help screens stay clean. (#125)
 
 ## [0.2.10] - 2026-07-28
 
