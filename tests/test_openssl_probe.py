@@ -8,6 +8,7 @@ Use Case 4 (Detect Unsupported Local OpenSSL) is covered here.
 from __future__ import annotations
 
 import subprocess
+from datetime import UTC, datetime
 from pathlib import Path
 from unittest.mock import patch
 
@@ -25,7 +26,7 @@ from qureddy.core.errors import (
     LocalOpenSSLTooOld,
     LocalOpenSSLVersionUnreadable,
 )
-from qureddy.core.models import FailureCategory
+from qureddy.core.models import FailureCategory, ProbeResult
 from qureddy.scanners.tls.openssl_probe import (
     _classify_failure,
     probe_capability,
@@ -33,6 +34,7 @@ from qureddy.scanners.tls.openssl_probe import (
     resolve_openssl_path,
     run_hybrid_probe,
 )
+from qureddy.scanners.tls.openssl_probe._results import result_from_timeout
 from tests._fake_openssl import fake_openssl
 
 
@@ -198,6 +200,23 @@ class TestRaiseIfUnusable:
         raise_if_unusable(dep)
 
 
+class TestTimeoutClassification:
+    """A timeout is unreachable only when the TCP connect never completed (#138)."""
+
+    @staticmethod
+    def _timeout_result(output: bytes) -> ProbeResult:
+        exc = subprocess.TimeoutExpired(cmd=["openssl"], timeout=2, output=output, stderr=b"")
+        return result_from_timeout(["openssl"], exc, datetime.now(UTC), 2, 1)
+
+    def test_timeout_before_connect_is_unreachable(self) -> None:
+        result = self._timeout_result(b"")
+        assert result.failure_category is FailureCategory.TARGET_CONNECT_FAILED
+
+    def test_timeout_after_connect_stays_handshake(self) -> None:
+        result = self._timeout_result(b"CONNECTED(00000003)\n")
+        assert result.failure_category is FailureCategory.TLS_HANDSHAKE_FAILED
+
+
 class TestStderrClassification:
     """Probe-level stderr classification per blocker 4.
 
@@ -325,8 +344,8 @@ class TestTimeoutPreservesPartialOutput:
         timeout = subprocess.TimeoutExpired(
             cmd=["openssl"],
             timeout=1,
-            output=b"partial-stdout-marker\n",
-            stderr=b"CONNECTION ESTABLISHED\n",
+            output=b"CONNECTED(00000003)\npartial-stdout-marker\n",
+            stderr=b"",
         )
         with patch("subprocess.run", side_effect=timeout):
             result = run_hybrid_probe(

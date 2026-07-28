@@ -25,18 +25,29 @@ def result_from_timeout(
     stderr = decode_partial(exc.stderr)
     marker = f"\n[qureddy] timeout after {timeout_seconds}s"
     annotated_stderr = stderr + marker if stderr else marker.lstrip("\n")
+    parser_input = combined_probe_output(stdout, stderr)
+    # A timeout with no "CONNECTED(...)" line means openssl never completed the TCP
+    # connect: the target is unreachable (a firewall black-hole), not a handshake
+    # failure. Classifying that as TARGET_CONNECT_FAILED lets the unreachable
+    # short-circuit skip the remaining probes instead of timing out on each one; a
+    # timeout after CONNECTED is a genuine handshake stall and stays HANDSHAKE (#138).
+    handshake_started = "CONNECTED" in parser_input
     return build_probe_result(
         args=args,
         stdout=stdout,
         stderr=stderr,
-        parser_input=combined_probe_output(stdout, stderr),
+        parser_input=parser_input,
         stdout_excerpt=stdout[:EXCERPT_LIMIT],
         stderr_excerpt_override=annotated_stderr[:EXCERPT_LIMIT],
         return_code=-1,
         duration_ms=duration_ms,
         attempt_number=attempt_number,
         timeout_seconds=timeout_seconds,
-        failure_category=FailureCategory.TLS_HANDSHAKE_FAILED,
+        failure_category=(
+            FailureCategory.TLS_HANDSHAKE_FAILED
+            if handshake_started
+            else FailureCategory.TARGET_CONNECT_FAILED
+        ),
     )
 
 
