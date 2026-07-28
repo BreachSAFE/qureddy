@@ -13,6 +13,8 @@ import sys
 
 import click
 import typer
+from typer import _click as _typer_click  # the vendored Click fork Typer builds commands with
+from typer.core import TyperGroup, TyperOption
 
 from qureddy._branding import DESCRIPTION, PROJECT_NAME, PROJECT_URL, PROJECT_VERSION
 from qureddy.cli._errors import (
@@ -89,12 +91,38 @@ qureddy scan tls --help              # full options, examples, exit codes
 qureddy scan ssh --help              # SSH options and examples
 """)
 
+# Issue #125: Typer's completion (`add_completion=True`) is what powers
+# `qureddy --install-completion` plus tab completion of subcommands and
+# `--format` values. Typer implements it by appending `--install-completion`
+# and `--show-completion` to the ROOT command, which would clutter the
+# hand-formatted help body (the reason completion was originally left off).
+# Both can be had: this group keeps the two options fully functional while
+# marking them hidden so they never render on `qureddy --help`. The
+# completion options carry Typer's own eager callbacks, so hiding them from
+# the help record does not affect their behavior.
+_COMPLETION_OPTION_NAMES = frozenset({"install_completion", "show_completion"})
+
+
+class _RootGroup(TyperGroup):
+    """Root command group that keeps completion options out of `--help`."""
+
+    def format_options(
+        self, ctx: _typer_click.Context, formatter: _typer_click.HelpFormatter
+    ) -> None:
+        """Hide the completion options, then format Options/Commands as usual."""
+        for param in self.get_params(ctx):
+            if param.name in _COMPLETION_OPTION_NAMES and isinstance(param, TyperOption):
+                param.hidden = True
+        super().format_options(ctx, formatter)
+
+
 app = typer.Typer(
     name="qureddy",
+    cls=_RootGroup,
     help=(f"{PROJECT_NAME} {PROJECT_VERSION} -- {DESCRIPTION}."),
     epilog=_ROOT_EPILOG,
     no_args_is_help=True,
-    add_completion=False,
+    add_completion=True,
     # rich_markup_mode=None disables Typer's Rich-based formatter for help
     # output; falls back to Click's classic formatter which respects literal
     # newlines + the `\b` form-feed convention. Required for the multi-line
