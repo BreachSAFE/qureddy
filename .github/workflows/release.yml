@@ -16,6 +16,11 @@ on:
 permissions:
   contents: read
 
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     name: build wheel + sdist
