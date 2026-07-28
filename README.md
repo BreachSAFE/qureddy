@@ -160,6 +160,13 @@ positively observed cryptographic assets:
 qureddy scan ssh github.com --format cbom > github-ssh.cdx.json
 ```
 
+The crypto assets use native CycloneDX `cryptoProperties`, so any CycloneDX 1.7
+crypto-aware tool understands the inventory and post-quantum posture. QuReddy's
+interpretation and provenance ride in `qureddy:`-namespaced `metadata.properties`,
+which unaware tools ignore without failing. Add `--reproducible` for a byte- and
+digest-identical document. See [the CBOM design doc](https://github.com/breachsafe/qureddy/blob/main/docs/explanation/cbom-design.md)
+for the design and interoperability boundary.
+
 Machine modes write one parseable document to standard output. Without an
 explicit verbosity flag, successful scans keep standard error empty.
 

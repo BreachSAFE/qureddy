@@ -18,9 +18,33 @@ relationship graph.
 - [Positive observation rule](#positive-observation-rule)
 - [Certificate fields](#certificate-fields)
 - [Reproducibility](#reproducibility)
+- [Interoperability](#interoperability)
 - [Validation contract](#validation-contract)
 - [Evidence limits](#evidence-limits)
 - [Related documentation](#related-documentation)
+
+## Interoperability
+
+The document is structured in two layers (see
+[CBOM design](../explanation/cbom-design.md)):
+
+1. A native crypto layer. Observed algorithms, protocols, and the certificate are
+   real CycloneDX `components` with native `cryptoProperties`
+   (`algorithmProperties`/`protocolProperties`/`certificateProperties`) and a
+   native `provides` graph. Any CycloneDX 1.7, crypto-aware tool (for example IBM
+   CBOMkit or Dependency-Track's crypto support) understands this layer, including
+   the post-quantum posture, with no CVE identifiers required.
+2. A `qureddy:`-namespaced property layer under `metadata.properties`. QuReddy's
+   interpretation (per-finding verdicts, readiness) and the provenance trail live
+   here. `properties` is a valid CycloneDX extension point, so the document stays
+   valid and a tool that does not understand these keys ignores them; it never
+   fails ingestion. QuReddy-aware consumers (Qurum) read the full fidelity.
+
+Consequences: the document parses in every CycloneDX 1.7 tool; the crypto
+inventory is natively understood; the interpretation layer is semantically private
+to QuReddy-aware readers. Because `cryptoProperties` is CycloneDX 1.6+ and this
+document is 1.7, tooling pinned to CycloneDX 1.6 or earlier will not accept it. The
+full scan report, including findings, is also available in `--format json`.
 
 ## Document identity
 
