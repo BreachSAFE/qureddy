@@ -50,7 +50,8 @@ SshTargetArg = Annotated[
     typer.Argument(help="SSH endpoint: host[:port], bracketed IPv6, ssh://host, or sftp://host."),
 ]
 SniOpt = Annotated[
-    str | None, typer.Option("--sni", help="SNI override (required for IP targets).")
+    str | None,
+    typer.Option("--sni", help="SNI override (recommended for name-based virtual hosts)."),
 ]
 OpenSSLOpt = Annotated[
     str | None, typer.Option("--openssl", help="Path to OpenSSL 3.5 LTS+ binary.")
