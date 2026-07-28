@@ -107,6 +107,7 @@ jobs:
         run: |
           docker buildx build \
             --platform "linux/${{ matrix.arch }}" \
+            --build-arg "QUREDDY_VERSION=${{ inputs.version }}" \
             --provenance=true --sbom=true \
             --metadata-file "$RUNNER_TEMP/meta.json" \
             --output "type=image,name=ghcr.io/breachsafe/qureddy,push-by-digest=true,name-canonical=true,push=true" \
