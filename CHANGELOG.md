@@ -23,6 +23,16 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - [0.2.0](#020---2026-07-27)
 - [0.1.0](#010---2026-05-10)
 
+## [Unreleased]
+
+### Changed
+
+- SSH scanner now flags `ssh-rsa` (SHA-1, RFC 8332) and the `ssh-dss` / `ssh-rsa`
+  OpenSSH certificate variants as weak host keys, not just `ssh-dss`. The SHA-2
+  families `rsa-sha2-256` / `rsa-sha2-512` remain correctly unflagged. The weak
+  host-key finding and its evidence now carry a per-algorithm justification note.
+  (#143)
+
 ## [0.2.9] - 2026-07-28
 
 ### Added
