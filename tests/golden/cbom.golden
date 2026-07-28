@@ -119,6 +119,102 @@
     },
     "properties": [
       {
+        "name": "qureddy:evidence.0.attempt_number",
+        "value": "1"
+      },
+      {
+        "name": "qureddy:evidence.0.cipher_suite",
+        "value": "TLS_AES_256_GCM_SHA384"
+      },
+      {
+        "name": "qureddy:evidence.0.command_sha256",
+        "value": "14de7cb10487c354a0b64064eed9e1cdc9471ac8d64688d589d7d4cd63d2c82f"
+      },
+      {
+        "name": "qureddy:evidence.0.duration_ms",
+        "value": "120"
+      },
+      {
+        "name": "qureddy:evidence.0.negotiated_group",
+        "value": "X25519MLKEM768"
+      },
+      {
+        "name": "qureddy:evidence.0.observation",
+        "value": "negotiated"
+      },
+      {
+        "name": "qureddy:evidence.0.protocol_version",
+        "value": "TLSv1.3"
+      },
+      {
+        "name": "qureddy:evidence.0.return_code",
+        "value": "0"
+      },
+      {
+        "name": "qureddy:evidence.0.source",
+        "value": "qureddy.scanners.tls.parse"
+      },
+      {
+        "name": "qureddy:evidence.0.stderr_sha256",
+        "value": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "name": "qureddy:evidence.0.stdout_sha256",
+        "value": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "name": "qureddy:evidence.0.type",
+        "value": "tls.negotiation"
+      },
+      {
+        "name": "qureddy:evidence.1.attempt_number",
+        "value": "1"
+      },
+      {
+        "name": "qureddy:evidence.1.cipher_suite",
+        "value": "TLS_AES_256_GCM_SHA384"
+      },
+      {
+        "name": "qureddy:evidence.1.command_sha256",
+        "value": "36605f46b24883f29f645dca64b513a38a48293c071d694ef109c142469b1cb8"
+      },
+      {
+        "name": "qureddy:evidence.1.duration_ms",
+        "value": "110"
+      },
+      {
+        "name": "qureddy:evidence.1.negotiated_group",
+        "value": "X25519"
+      },
+      {
+        "name": "qureddy:evidence.1.observation",
+        "value": "negotiated"
+      },
+      {
+        "name": "qureddy:evidence.1.protocol_version",
+        "value": "TLSv1.3"
+      },
+      {
+        "name": "qureddy:evidence.1.return_code",
+        "value": "0"
+      },
+      {
+        "name": "qureddy:evidence.1.source",
+        "value": "qureddy.scanners.tls.parse"
+      },
+      {
+        "name": "qureddy:evidence.1.stderr_sha256",
+        "value": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "name": "qureddy:evidence.1.stdout_sha256",
+        "value": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "name": "qureddy:evidence.1.type",
+        "value": "tls.negotiation"
+      },
+      {
         "name": "qureddy:scan.completed_at",
         "value": "2026-04-26T00:00:00+00:00"
       },

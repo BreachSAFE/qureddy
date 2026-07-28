@@ -19,6 +19,7 @@ upstream API gaps; everything else is delegated to ``JsonV1Dot7``.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import sys
@@ -102,6 +103,7 @@ def render_cbom(
     _add_tool_provenance(bom, result)
     _add_scan_status_properties(bom, result)
     _add_scan_target_metadata(bom, result, reproducible=reproducible)
+    _add_evidence_provenance(bom, result, reproducible=reproducible)
 
     algorithm_refs = _add_algorithm_components(bom, result, provides_edges)
     _add_cipher_suite_components(bom, result, provides_edges)
@@ -241,6 +243,46 @@ def _add_scan_target_metadata(bom: Bom, result: ScanResult, *, reproducible: boo
         pairs.append(("qureddy:target.sni", target.sni))
     for name, value in pairs:
         bom.metadata.properties.add(Property(name=name, value=value))
+
+
+def _add_evidence_provenance(bom: Bom, result: ScanResult, *, reproducible: bool) -> None:
+    """Attach the scan's evidence/provenance trail as namespaced metadata properties (#149).
+
+    JSON carries `evidence[]` (source, observation_type, probe_role, and the probe_result
+    command/return_code/hashes), but the CBOM dropped all of it and so could not answer
+    "how do you know?". Emit one indexed block per evidence record, in deterministic scan
+    order, so a CBOM consumer can audit/reproduce each observation without also parsing the
+    JSON. The per-run probe duration is omitted in reproducible mode (#162).
+    """
+    for index, evidence in enumerate(result.evidence):
+        prefix = f"qureddy:evidence.{index}"
+        pairs: list[tuple[str, str | None]] = [
+            (f"{prefix}.type", evidence.evidence_type),
+            (f"{prefix}.observation", evidence.observation_type.value),
+            (f"{prefix}.source", evidence.source),
+            (f"{prefix}.protocol_version", evidence.protocol_version),
+            (f"{prefix}.cipher_suite", evidence.cipher_suite),
+            (f"{prefix}.negotiated_group", evidence.negotiated_group),
+            (f"{prefix}.probe_role", evidence.probe_role.value if evidence.probe_role else None),
+            (f"{prefix}.expected_group", evidence.expected_group),
+        ]
+        probe = evidence.probe_result
+        if probe is not None:
+            command = " ".join([probe.command.executable, *probe.command.args])
+            pairs.extend(
+                [
+                    (f"{prefix}.command_sha256", hashlib.sha256(command.encode()).hexdigest()),
+                    (f"{prefix}.return_code", str(probe.return_code)),
+                    (f"{prefix}.stdout_sha256", probe.stdout_sha256),
+                    (f"{prefix}.stderr_sha256", probe.stderr_sha256),
+                    (f"{prefix}.attempt_number", str(probe.attempt_number)),
+                ]
+            )
+            if not reproducible:
+                pairs.append((f"{prefix}.duration_ms", str(probe.duration_ms)))
+        for name, value in pairs:
+            if value is not None:
+                bom.metadata.properties.add(Property(name=name, value=value))
 
 
 # Strongest-signal ordering: a group seen negotiated outranks one merely offered or
