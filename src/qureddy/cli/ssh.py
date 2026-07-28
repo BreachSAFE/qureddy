@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import os
 import re
 import sys
 
@@ -100,6 +101,20 @@ def _clean_ssh_error(msg: str) -> str:
     return cleaned
 
 
+def _block_internal_targets() -> bool:
+    """Read the opt-in SSRF guard from the environment (Rule 5.6: env at the boundary).
+
+    Off by default; an embedder accepting an untrusted target sets
+    QUREDDY_BLOCK_INTERNAL_TARGETS=1 to reject internal/metadata endpoints (#134).
+    """
+    return os.environ.get("QUREDDY_BLOCK_INTERNAL_TARGETS", "").strip().lower() not in (
+        "",
+        "0",
+        "false",
+        "no",
+    )
+
+
 @scan_app.command("ssh", epilog=_SCAN_SSH_EPILOG, context_settings=_NO_WRAP_CONTEXT_SETTINGS)
 def scan_ssh_cmd(
     target: SshTargetArg,
@@ -118,7 +133,7 @@ def scan_ssh_cmd(
     effective_quiet = quiet or (machine_format and verbose == 0)
     configure_logging(verbosity=verbose, json_logs=json_logs, quiet=effective_quiet)
     try:
-        scan_target = parse_ssh_target(target)
+        scan_target = parse_ssh_target(target, block_internal=_block_internal_targets())
     except TargetParseError as exc:
         _fail(f"invalid target: {exc}", EXIT_USAGE)
     exit_code = EXIT_OK

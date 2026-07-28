@@ -34,13 +34,19 @@ _NUMERIC_HOST = re.compile(r"^[0-9.]+$")
 _CANONICAL_PORT = re.compile(r"[0-9]+")
 
 
-def parse_target(input_str: str, sni_override: str | None = None) -> ScanTarget:
+def parse_target(
+    input_str: str, sni_override: str | None = None, *, block_internal: bool = False
+) -> ScanTarget:
     """Parse a user-supplied target string into a normalized ScanTarget.
 
     Args:
         input_str: User input. Accepts hostname, host:port, https URL, or IP.
         sni_override: Optional SNI override for a name-based virtual host.
             Recommended (not required) for IP targets serving multiple certs.
+        block_internal: Reject loopback/link-local/private/metadata targets. Off by
+            default (the CLI operator deliberately chooses the target); an embedder
+            that accepts an untrusted target should enable it to prevent SSRF into
+            cloud instance-metadata or internal services (#134).
 
     Returns:
         Normalized ScanTarget with locator format ``tls://host:port``.
@@ -69,6 +75,8 @@ def parse_target(input_str: str, sni_override: str | None = None) -> ScanTarget:
     if not is_ip and not HOSTNAME_PATTERN.match(host):
         msg = f"target host is not a valid hostname or IP: {host!r}"
         raise TargetParseError(msg)
+
+    _reject_internal_target(host, block_internal=block_internal)
 
     if sni_override is not None:
         if not sni_override.strip():
@@ -191,6 +199,47 @@ def _is_ip_literal(host: str) -> bool:
     return True
 
 
+# Hostnames that resolve to the cloud instance-metadata service on major providers.
+_METADATA_HOSTS = frozenset({"metadata.google.internal", "metadata", "instance-data"})
+
+
+def _is_internal_host(host: str) -> bool:
+    """Return True for a loopback/link-local/private/reserved/metadata target.
+
+    IP literals are classified with ``ipaddress`` (link-local covers the
+    169.254.169.254 metadata endpoint). A small hostname blocklist catches the
+    well-known metadata names; arbitrary hostnames that *resolve* to an internal
+    address are NOT caught here (that needs resolve-then-check) and are called out
+    in the threat model.
+    """
+    lowered = host.lower()
+    if lowered in _METADATA_HOSTS or lowered.endswith(".internal"):
+        return True
+    try:
+        address = ipaddress.ip_address(host)
+    except ValueError:
+        return False
+    return (
+        address.is_loopback
+        or address.is_link_local
+        or address.is_private
+        or address.is_reserved
+        or address.is_multicast
+        or address.is_unspecified
+    )
+
+
+def _reject_internal_target(host: str, *, block_internal: bool) -> None:
+    """Raise when an internal target is blocked by the opt-in SSRF guard (#134)."""
+    if block_internal and _is_internal_host(host):
+        msg = (
+            f"target {host!r} is an internal, link-local, or metadata endpoint; "
+            "blocked by the internal-target guard (unset QUREDDY_BLOCK_INTERNAL_TARGETS "
+            "to allow it)"
+        )
+        raise TargetParseError(msg)
+
+
 def _validate_port(port: int) -> int:
     if not MIN_PORT <= port <= MAX_PORT:
         msg = f"port out of range [1, 65535]: {port}"
@@ -217,13 +266,14 @@ def _parse_port(raw_port: str) -> int:
 DEFAULT_SSH_PORT = 22
 
 
-def parse_ssh_target(input_str: str) -> ScanTarget:
+def parse_ssh_target(input_str: str, *, block_internal: bool = False) -> ScanTarget:
     """Parse an SSH target into a normalized ``ssh://`` ScanTarget.
 
     Accepted forms are a hostname or IP with an optional port, plus an
     ``ssh://`` or ``sftp://`` URI containing only that endpoint. Credentials,
     paths, query strings, fragments, and foreign schemes are rejected before
-    any network operation.
+    any network operation. ``block_internal`` opt-in rejects internal/metadata
+    targets for embedders that accept an untrusted target (#134).
     """
     if not isinstance(input_str, str):
         raise TargetParseError("target must be a string")
@@ -248,6 +298,7 @@ def parse_ssh_target(input_str: str) -> ScanTarget:
     if not is_ip and not HOSTNAME_PATTERN.match(host):
         msg = f"invalid SSH host: {host!r}"
         raise TargetParseError(msg)
+    _reject_internal_target(host, block_internal=block_internal)
     rendered = f"[{host}]" if ":" in host else host
     return ScanTarget(
         original_input=input_str,

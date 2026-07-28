@@ -65,6 +65,28 @@ Malformed or conflicting responses become typed target or parse failures.
 Target-controlled text is treated as untrusted data and is not evaluated as
 code.
 
+## Target selection and SSRF boundary
+
+QuReddy connects to whatever target it is given and does no target filtering by
+default. Scanning `localhost`, an RFC1918 host, a link-local address, or a cloud
+metadata endpoint such as `169.254.169.254` is intended behavior for the CLI: the
+operator deliberately chooses the target.
+
+That default is unsafe for an embedder that passes an untrusted, user-supplied
+target into `parse_target`/`parse_ssh_target` (for example a hosted scan service).
+There, an attacker-supplied `169.254.169.254` or `metadata.google.internal` turns
+the scanner into a server-side request forgery pivot into instance metadata or
+internal services.
+
+An embedder in that position must opt into the internal-target guard by setting
+`QUREDDY_BLOCK_INTERNAL_TARGETS=1` (or passing `block_internal=True` to the
+parser). The guard rejects loopback, link-local, private, reserved, multicast,
+unspecified, and known metadata-hostname targets before any network access. It
+classifies IP literals precisely; it does NOT resolve hostnames, so a hostname
+that resolves to an internal address (including DNS-rebinding) is not caught by
+name. A service that accepts untrusted targets should also validate the resolved
+address at connect time and run the scanner in an egress-restricted network.
+
 ## In-scope protections
 
 QuReddy provides:
