@@ -11,6 +11,7 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Contents
 
+- [0.2.12](#0212---2026-07-28)
 - [0.2.11](#0211---2026-07-28)
 - [0.2.10](#0210---2026-07-28)
 - [0.2.9](#029---2026-07-28)
@@ -24,6 +25,20 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - [0.2.1](#021---2026-07-27)
 - [0.2.0](#020---2026-07-27)
 - [0.1.0](#010---2026-05-10)
+
+## [0.2.12] - 2026-07-28
+
+### Added
+
+- CBOM classifies certificate and host-key signature algorithms natively
+  (`primitive: signature`, sign/verify; classical at nistQuantumSecurityLevel 0,
+  ML-DSA at its FIPS 204 category), closing the last empty-`algorithmProperties` gap
+  so a foreign crypto-aware CycloneDX tool understands the cert posture. (#177)
+
+### Changed
+
+- Documented the CBOM two-layer design and CycloneDX interoperability model in
+  `docs/explanation/cbom-design.md`, cross-linked from the README and CBOM reference.
 
 ## [0.2.11] - 2026-07-28
 
