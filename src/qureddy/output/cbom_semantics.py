@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Iterator
 from typing import Any
 
 _SECRET_PATTERNS = (
@@ -52,13 +53,37 @@ def validate_cbom_semantics(payload: dict[str, Any]) -> None:
             for ref in dependency.get(edge_name, []):
                 if isinstance(ref, str) and ref not in known_refs:
                     dangling.add(ref)
+    # Also walk the intra-component crypto references the CI conformance harness checks,
+    # so a dangling ref fails at runtime, not only in CI (#144).
+    dangling.update(
+        ref for ref in _intra_component_crypto_refs(payload) if ref not in known_refs
+    )
     if dangling:
-        msg = f"dangling dependency references: {', '.join(sorted(dangling))}"
+        msg = f"dangling references: {', '.join(sorted(dangling))}"
         raise ValueError(msg)
 
     if _contains_secret_like_material(payload):
         msg = "CBOM contains secret-like material"
         raise ValueError(msg)
+
+
+def _intra_component_crypto_refs(payload: dict[str, Any]) -> Iterator[str]:
+    """Yield the crypto references components make.
+
+    A certificate's signatureAlgorithmRef and each protocol's
+    cipherSuites[].algorithms point at algorithm components.
+    """
+    for component in payload.get("components", []):
+        crypto_properties = component.get("cryptoProperties", {})
+        signature_ref = crypto_properties.get("certificateProperties", {}).get(
+            "signatureAlgorithmRef"
+        )
+        if isinstance(signature_ref, str):
+            yield signature_ref
+        for suite in crypto_properties.get("protocolProperties", {}).get("cipherSuites", []):
+            for ref in suite.get("algorithms", []):
+                if isinstance(ref, str):
+                    yield ref
 
 
 def _contains_secret_like_material(value: object) -> bool:

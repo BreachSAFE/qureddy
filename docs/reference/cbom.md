@@ -205,17 +205,22 @@ subject and issuer string equality alone is not accepted as proof.
 
 ## Validation contract
 
-Every generated document passes three layers before release:
+QuReddy runs the semantic checks on every document it emits, at runtime, before
+writing any bytes. Two heavier layers validate the generator in CI rather than
+per document:
 
-1. the official CycloneDX 1.7.1 JSON schemas pinned by commit and SHA-256;
-2. `cyclonedx-cli` 0.33.1 from a checksum-verified release asset;
-3. QuReddy semantic checks.
+1. the official CycloneDX 1.7.1 JSON schemas pinned by commit and SHA-256 (CI conformance);
+2. `cyclonedx-cli` 0.33.1 from a checksum-verified release asset (CI conformance);
+3. QuReddy semantic checks (runtime, every document).
 
-The semantic checks reject:
+Layers 1 and 2 gate the release over the generator and its fixture matrix; they
+are not a per-document runtime step (`cyclonedx-cli` is an external binary). The
+runtime semantic checks reject:
 
 - a `specVersion` other than exactly `1.7`;
 - duplicate `bom-ref` values;
-- dangling `dependsOn` or `provides` references;
+- dangling `dependsOn`/`provides`, `signatureAlgorithmRef`, and cipher-suite
+  algorithm references;
 - secret-like fields or material.
 
 The fixture matrix contains positive and negative cases with provenance
