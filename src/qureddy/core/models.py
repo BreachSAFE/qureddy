@@ -48,14 +48,16 @@ class ObservationType(str, Enum):
 
     `negotiated` and `offered` come from observed TLS handshakes;
     `observed` from passive probe output; `inferred` from policy
-    rules without direct measurement; `not_testable` when the local
-    capability check prevented probing the target.
+    rules without direct measurement; `not_offered` when a completed
+    probe confirmed the protocol is absent; `not_testable` when the
+    local capability check prevented probing the target.
     """
 
     NEGOTIATED = "negotiated"
     OFFERED = "offered"
     OBSERVED = "observed"
     INFERRED = "inferred"
+    NOT_OFFERED = "not_offered"
     NOT_TESTABLE = "not_testable"
 
 

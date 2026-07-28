@@ -67,11 +67,15 @@ def evidence_from_legacy_result(asset: Asset, result: LegacyProtocolResult) -> E
     )
     if result.probe_incomplete:
         notes = (*notes, "sweep incomplete — timed out before checking remaining candidates")
+    # A completed sweep with zero accepted ciphers is a confirmed "not offered", not an
+    # OFFERED observation; tagging it OFFERED made the CBOM's positive-observation filter
+    # claim the endpoint *provides* TLS 1.0/1.1 for essentially every modern target (#137).
+    observation_type = ObservationType.OFFERED if result.offered else ObservationType.NOT_OFFERED
     return Evidence(
         id=f"ev-{uuid.uuid4().hex[:12]}",
         asset_id=asset.id,
         evidence_type="tls.legacy.protocol",
-        observation_type=ObservationType.OFFERED,
+        observation_type=observation_type,
         source="qureddy.scanners.tls.legacy_probe",
         protocol_version=result.protocol_version,
         notes=notes,
