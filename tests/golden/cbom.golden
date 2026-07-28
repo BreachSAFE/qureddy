@@ -67,6 +67,10 @@
     },
     "properties": [
       {
+        "name": "qureddy:scan.readiness",
+        "value": "transitional_hybrid"
+      },
+      {
         "name": "qureddy:scan.status",
         "value": "completed"
       }
