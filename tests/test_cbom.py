@@ -10,6 +10,7 @@ from datetime import UTC, datetime
 
 import pytest
 
+from qureddy._branding import PROJECT_VERSION
 from qureddy.core.certificate import CertificateObservation
 from qureddy.core.models import (
     Asset,
@@ -130,7 +131,9 @@ class TestCycloneDx17Contract:
         tools_by_ref = {tool["bom-ref"]: tool for tool in tools}
         deps_by_ref = {d["ref"]: d for d in payload["dependencies"]}
 
-        assert tools_by_ref["tool/qureddy"]["version"] == "0.2.1"
+        # derive from the same source the emitter uses (importlib.metadata via _branding),
+        # so a version bump never rots this assertion (#112).
+        assert tools_by_ref["tool/qureddy"]["version"] == PROJECT_VERSION
         assert tools_by_ref["tool/openssl"]["version"] == "3.6.3"
         assert "crypto-library/openssl" not in json.dumps(payload)
         assert "dependsOn" not in deps_by_ref["endpoint"]
