@@ -4,8 +4,10 @@
 
 from __future__ import annotations
 
+import contextlib
 import io
 import json
+import locale
 from datetime import UTC, datetime
 
 import pytest
@@ -100,6 +102,24 @@ def _render(result: ScanResult) -> dict:
     buf = io.StringIO()
     render_cbom(result, buf)
     return json.loads(buf.getvalue())
+
+
+@contextlib.contextmanager
+def _forced_non_english_lc_time() -> object:
+    """Force a non-English LC_TIME if one is installed; restore it on exit (#116).
+
+    Never skips: where no non-English locale is available on the runner, the
+    body still asserts correct parsing under the default locale.
+    """
+    original = locale.setlocale(locale.LC_TIME)
+    try:
+        for candidate in ("de_DE.UTF-8", "de_DE.utf8", "fr_FR.UTF-8", "German_Germany.1252"):
+            with contextlib.suppress(locale.Error):
+                locale.setlocale(locale.LC_TIME, candidate)
+                break
+        yield
+    finally:
+        locale.setlocale(locale.LC_TIME, original)
 
 
 class TestCycloneDx17Contract:
@@ -203,6 +223,40 @@ class TestCycloneDx17Contract:
         assert all(
             prop["name"] != "qureddy:certificate.serial" for prop in component.get("properties", [])
         )
+
+    def test_certificate_dates_survive_non_english_host_locale(self) -> None:
+        # #116: cert validity dates were parsed with a locale-dependent strptime and
+        # silently dropped on a non-English host. Render under a forced non-English
+        # LC_TIME and assert they still appear.
+        certificate = CertificateObservation(
+            subject="CN=example.com",
+            issuer="CN=Example CA",
+            not_before="Jul 17 07:18:11 2026 GMT",
+            not_after="Jul 17 07:18:11 2027 GMT",
+            serial="0123456789ABCDEF",
+            signature_algorithm="ecdsa-with-SHA256",
+            public_key_summary="Public Key Algorithm: id-ecPublicKey",
+            is_self_signed=False,
+            is_post_quantum_signature=False,
+        )
+        certificate_evidence = Evidence(
+            id="ev-cert",
+            asset_id="asset-1",
+            evidence_type="tls.cert.signature",
+            observation_type=ObservationType.OBSERVED,
+            source="qureddy.scanners.tls.cert_sig",
+            certificate=certificate,
+        )
+        result = _build_result().model_copy(
+            update={"evidence": (*_build_result().evidence, certificate_evidence)}
+        )
+        with _forced_non_english_lc_time():
+            payload = _render(result)
+        certificate_properties = next(
+            item for item in payload["components"] if item["bom-ref"] == "crypto/certificate/leaf"
+        )["cryptoProperties"]["certificateProperties"]
+        assert certificate_properties["notValidBefore"] == "2026-07-17T07:18:11+00:00"
+        assert certificate_properties["notValidAfter"] == "2027-07-17T07:18:11+00:00"
 
     def test_inventory_comes_from_positive_evidence_not_findings(self) -> None:
         result = _build_result()

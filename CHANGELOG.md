@@ -11,11 +11,20 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Contents
 
+- [Unreleased](#unreleased)
 - [0.2.3](#023---2026-07-27)
 - [0.2.2](#022---2026-07-27)
 - [0.2.1](#021---2026-07-27)
 - [0.2.0](#020---2026-07-27)
 - [0.1.0](#010---2026-05-10)
+
+## [Unreleased]
+
+### Fixed
+
+- Certificate validity dates are parsed locale-independently, so they are no longer
+  silently dropped from the CBOM on a non-English host (previously a locale-dependent
+  strptime returned nothing on such hosts). (#116, PR #126)
 
 ## [0.2.3] - 2026-07-27
 
