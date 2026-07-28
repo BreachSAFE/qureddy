@@ -138,3 +138,4 @@ Scratch/
 *.key
 !tests/fixtures/**/*.pem
 !tests/fixtures/**/*.key
+.claude/
