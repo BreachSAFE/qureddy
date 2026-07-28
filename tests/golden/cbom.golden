@@ -85,12 +85,56 @@
     },
     "properties": [
       {
+        "name": "qureddy:scan.completed_at",
+        "value": "2026-04-26T00:00:00+00:00"
+      },
+      {
+        "name": "qureddy:scan.id",
+        "value": "scan-1"
+      },
+      {
         "name": "qureddy:scan.readiness",
         "value": "transitional_hybrid"
       },
       {
+        "name": "qureddy:scan.scanner_name",
+        "value": "tls"
+      },
+      {
+        "name": "qureddy:scan.started_at",
+        "value": "2026-04-26T00:00:00+00:00"
+      },
+      {
         "name": "qureddy:scan.status",
         "value": "completed"
+      },
+      {
+        "name": "qureddy:scan.total_attempts",
+        "value": "2"
+      },
+      {
+        "name": "qureddy:target.host",
+        "value": "example.com"
+      },
+      {
+        "name": "qureddy:target.locator",
+        "value": "tls://example.com:443"
+      },
+      {
+        "name": "qureddy:target.original_input",
+        "value": "example.com"
+      },
+      {
+        "name": "qureddy:target.port",
+        "value": "443"
+      },
+      {
+        "name": "qureddy:target.scheme",
+        "value": "tls"
+      },
+      {
+        "name": "qureddy:target.sni",
+        "value": "example.com"
       }
     ],
     "timestamp": "<normalized-timestamp>",

@@ -140,9 +140,17 @@ class TestCycloneDx17Contract:
         assert "version" not in first["metadata"]["component"]
         component_refs = {c["bom-ref"] for c in first["components"]}
         assert "endpoint" not in component_refs
+        # serialNumber, the emission timestamp, and the per-run scan timing are
+        # run-identity fields, not deterministic content (#152).
+        _run_identity = {"qureddy:scan.started_at", "qureddy:scan.completed_at"}
         for payload in (first, second):
             payload.pop("serialNumber")
             payload["metadata"].pop("timestamp")
+            payload["metadata"]["properties"] = [
+                prop
+                for prop in payload["metadata"]["properties"]
+                if prop["name"] not in _run_identity
+            ]
         assert first == second
 
     def test_local_tools_are_provenance_not_endpoint_dependencies(self) -> None:
