@@ -11,10 +11,25 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Contents
 
+- [0.2.3](#023---2026-07-27)
 - [0.2.2](#022---2026-07-27)
 - [0.2.1](#021---2026-07-27)
 - [0.2.0](#020---2026-07-27)
 - [0.1.0](#010---2026-05-10)
+
+## [0.2.3] - 2026-07-27
+
+### Changed
+
+- Standardized on OpenSSL 3.5 LTS across CI, the setup action, and contributor docs;
+  removed 3.6.3 references (the shipped image already builds 3.5.7 LTS).
+- Removed em and en dashes from shipped and user-facing documentation per the project
+  style rule.
+
+### Fixed
+
+- Golden output contracts and the version badge move with the package version through
+  scripts/bump_version.py (single source), so a bump no longer breaks test_golden_output.
 
 ## [0.2.2] - 2026-07-27
 
