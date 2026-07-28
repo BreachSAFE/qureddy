@@ -11,6 +11,7 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Contents
 
+- [0.2.9](#029---2026-07-28)
 - [0.2.8](#028---2026-07-28)
 - [0.2.7](#027---2026-07-28)
 - [0.2.6](#026---2026-07-28)
@@ -21,6 +22,20 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - [0.2.1](#021---2026-07-27)
 - [0.2.0](#020---2026-07-27)
 - [0.1.0](#010---2026-05-10)
+
+## [0.2.9] - 2026-07-28
+
+### Added
+
+- CBOM carries per-finding verdicts (`qureddy:finding.{i}.severity/readiness/rule_id/...`),
+  completing readiness/severity parity with `--format json`. (#147, PR #170)
+
+### Fixed
+
+- `--reproducible` now also omits the host-specific `qureddy:openssl.path` and the
+  retry-varying `qureddy:scan.total_attempts`, so two hosts observing identical crypto
+  produce the same digest. Evidence/finding index property names are zero-padded so they
+  sort lexicographically in scan order. (#147 audit)
 
 ## [0.2.8] - 2026-07-28
 

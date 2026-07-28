@@ -38,7 +38,7 @@ qureddy --version
 The release candidate prints:
 
 ```text
-BreachSAFE QuReddy 0.2.8 -- https://www.breachsafe.ai
+BreachSAFE QuReddy 0.2.9 -- https://www.breachsafe.ai
 ```
 
 ## Scan an SSH endpoint
