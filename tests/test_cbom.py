@@ -267,6 +267,7 @@ class TestCycloneDx17Contract:
         refs = {component["bom-ref"] for component in _render(evidence_only)["components"]}
         assert refs == {
             "crypto/algorithm/x25519mlkem768",
+            "crypto/algorithm/tls_aes_256_gcm_sha384",  # #150: negotiated cipher suite as an asset
             "crypto/protocol/tls-tlsv1.3",
         }
 
