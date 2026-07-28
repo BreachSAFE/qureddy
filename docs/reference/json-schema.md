@@ -39,7 +39,7 @@ code to distinguish completion from failure.
 
 | Field | Type | Meaning |
 | --- | --- | --- |
-| `schema_version` | string | Always `qureddy.scan.v1` in version 0.2.0 |
+| `schema_version` | string | Always `qureddy.scan.v1` in version 0.2.4 |
 | `scan` | object | Run identity, timing, producer, and status |
 | `target` | object | Normalized endpoint |
 | `dependencies` | array | Local collector dependencies; empty for SSH |
