@@ -11,11 +11,20 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Contents
 
+- [Unreleased](#unreleased)
 - [0.2.3](#023---2026-07-27)
 - [0.2.2](#022---2026-07-27)
 - [0.2.1](#021---2026-07-27)
 - [0.2.0](#020---2026-07-27)
 - [0.1.0](#010---2026-05-10)
+
+## [Unreleased]
+
+### Fixed
+
+- Non-canonical port forms (Unicode digits, underscores, a leading sign, surrounding
+  whitespace) are rejected instead of being silently "corrected" by `int()`, so the
+  scanner never connects to a different port than the one typed. (#128, PR #136)
 
 ## [0.2.3] - 2026-07-27
 
