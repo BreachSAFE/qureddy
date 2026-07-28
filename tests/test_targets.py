@@ -42,6 +42,43 @@ class TestParseTargetHostname:
         assert result.original_input == "https://example.com:8443"
 
 
+class TestParseTargetTrailingDotFqdn:
+    """Issue #130: a single trailing dot is a valid absolute FQDN (RFC 1034).
+
+    Accept it as a target, but strip it from the stored host, locator, and the
+    derived SNI so the on-wire SNI stays RFC 6066 compliant.
+    """
+
+    @pytest.mark.parametrize(
+        ("target", "host"),
+        [
+            ("www.google.com.", "www.google.com"),
+            ("example.com.", "example.com"),
+        ],
+    )
+    def test_trailing_dot_fqdn_parses_without_dot(self, target: str, host: str) -> None:
+        result = parse_target(target)
+        assert result.host == host
+        assert result.sni == host
+        assert result.sni is not None
+        assert not result.sni.endswith(".")
+        assert result.locator == f"tls://{host}:443"
+
+    def test_trailing_dot_fqdn_preserves_original_input(self) -> None:
+        result = parse_target("www.google.com.")
+        assert result.original_input == "www.google.com."
+
+    def test_trailing_dot_fqdn_with_port(self) -> None:
+        result = parse_target("example.com.:8443")
+        assert result.host == "example.com"
+        assert result.sni == "example.com"
+        assert result.locator == "tls://example.com:8443"
+
+    def test_double_trailing_dot_still_rejected(self) -> None:
+        with pytest.raises(TargetParseError):
+            parse_target("example.com..")
+
+
 class TestParseTargetIP:
     """IP inputs have SNI=None unless overridden."""
 
@@ -145,6 +182,24 @@ class TestParseSshTarget:
         assert result.host == host
         assert result.port == port
         assert result.scheme == "ssh"
+
+    @pytest.mark.parametrize(
+        ("target", "host"),
+        [
+            ("www.google.com.", "www.google.com"),
+            ("example.com.:2222", "example.com"),
+            ("ssh://example.com.", "example.com"),
+        ],
+    )
+    def test_trailing_dot_fqdn_parses_without_dot(self, target: str, host: str) -> None:
+        result = parse_ssh_target(target)
+        assert result.host == host
+        assert result.locator.startswith(f"ssh://{host}:")
+        assert not result.host.endswith(".")
+
+    def test_ssh_double_trailing_dot_still_rejected(self) -> None:
+        with pytest.raises(TargetParseError):
+            parse_ssh_target("example.com..")
 
     @pytest.mark.parametrize(
         "target",

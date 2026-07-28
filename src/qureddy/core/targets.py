@@ -56,6 +56,7 @@ def parse_target(input_str: str, sni_override: str | None = None) -> ScanTarget:
         raise TargetParseError("target is empty")
 
     host, port = _extract_host_port(cleaned)
+    host = _strip_fqdn_root_dot(host)
     is_ip = _is_ip_literal(host)
 
     if not is_ip and _NUMERIC_HOST.fullmatch(host):
@@ -168,6 +169,20 @@ def _parse_bracketed_ipv6(cleaned: str) -> tuple[str, int]:
     return host, _parse_port(remainder[1:])
 
 
+def _strip_fqdn_root_dot(host: str) -> str:
+    """Normalize an absolute FQDN by removing its single trailing root dot.
+
+    A single trailing dot is the canonical absolute-FQDN form (RFC 1034 section
+    3.1, the explicit root label) and is a valid target, but the stored host,
+    the locator, and the on-wire SNI (RFC 6066 section 3) must omit it. Two or
+    more trailing dots is an empty label and stays malformed so downstream
+    hostname validation still rejects it.
+    """
+    if host.endswith(".") and not host.endswith(".."):
+        return host[:-1]
+    return host
+
+
 def _is_ip_literal(host: str) -> bool:
     try:
         ipaddress.ip_address(host)
@@ -221,6 +236,7 @@ def parse_ssh_target(input_str: str) -> ScanTarget:
         host, port = _parse_ssh_uri(cleaned)
     else:
         host, port = _parse_raw_ssh_endpoint(cleaned)
+    host = _strip_fqdn_root_dot(host)
 
     is_ip = _is_ip_literal(host)
     if not is_ip and _NUMERIC_HOST.fullmatch(host):
