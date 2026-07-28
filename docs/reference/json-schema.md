@@ -206,6 +206,7 @@ negotiated
 offered
 observed
 inferred
+not_offered
 not_testable
 ```
 
