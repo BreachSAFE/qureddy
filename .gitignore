@@ -127,8 +127,6 @@ Scratch/
 /docs/reference/editions.md
 /.[Cc][Ll][Aa][Uu][Dd][Ee]/skills/
 /.agents/skills/
-/AGENTS.md
-/[Cc][Ll][Aa][Uu][Dd][Ee].md
 
 # Secrets, never commit
 .env
