@@ -16,23 +16,23 @@ cleartext KEXINIT offer directly and do not require OpenSSL.
 
 ## Contents
 
-- [Install](#install)
-- [Run with Docker](#run-with-docker)
-- [Run the first SSH scan](#run-the-first-ssh-scan)
-- [Prepare OpenSSL for TLS](#prepare-openssl-for-tls)
-- [Run the first TLS scan](#run-the-first-tls-scan)
-- [Write JSON or CBOM output](#write-json-or-cbom-output)
-- [Interpret the evidence](#interpret-the-evidence)
-- [Exit codes](#exit-codes)
-- [Network and privacy scope](#network-and-privacy-scope)
-- [Requirements](#requirements)
-- [Documentation and support](#documentation-and-support)
-- [Contributing](#contributing)
-- [License](#license)
+1. [Install](#1-install)
+2. [Run with Docker](#2-run-with-docker)
+3. [Run the first SSH scan](#3-run-the-first-ssh-scan)
+4. [Prepare OpenSSL for TLS](#4-prepare-openssl-for-tls)
+5. [Run the first TLS scan](#5-run-the-first-tls-scan)
+6. [Write JSON or CBOM output](#6-write-json-or-cbom-output)
+7. [Interpret the evidence](#7-interpret-the-evidence)
+8. [Exit codes](#8-exit-codes)
+9. [Network and privacy scope](#9-network-and-privacy-scope)
+10. [Requirements](#10-requirements)
+11. [Documentation and support](#11-documentation-and-support)
+12. [Contributing](#12-contributing)
+13. [License](#13-license)
 
-## Install
+## 1. Install
 
-> **Pre-release (TestPyPI):** QuReddy 0.2.13 is being published to **TestPyPI**
+> **Pre-release (TestPyPI):** QuReddy 0.2.13 is available on **TestPyPI**
 > while the PyPI release is finalized. Install with (**Python 3.12+**):
 >
 > ```bash
@@ -69,7 +69,7 @@ path. See the [installation and troubleshooting guide](docs/how-to/install.md)
 for macOS, Linux, Windows, virtual environment, upgrade, and uninstall
 instructions.
 
-## Run with Docker
+## 2. Run with Docker
 
 The release image bundles the verified OpenSSL runtime and runs as an
 unprivileged user:
@@ -88,7 +88,7 @@ For reproducible deployments, pin an explicit version tag (for example
 See the [Docker and GHCR guide](docs/how-to/docker.md)
 for digest pinning, local builds, output redirection, and publication policy.
 
-## Run the first SSH scan
+## 3. Run the first SSH scan
 
 This command needs network access to `github.com` on TCP port 22. It does not
 need OpenSSL:
@@ -100,7 +100,7 @@ qureddy scan ssh github.com
 The scanner observes the offered key exchange and host key algorithms. A
 successful scan exits `0` even when it reports a vulnerable posture.
 
-## Prepare OpenSSL for TLS
+## 4. Prepare OpenSSL for TLS
 
 TLS scanning requires OpenSSL 3.5 LTS or newer with the
 `X25519MLKEM768` TLS group. LibreSSL is not supported.
@@ -125,7 +125,7 @@ If `openssl` is not the intended binary, set `QUREDDY_OPENSSL` or pass
 `--openssl PATH`. The [installation guide](docs/how-to/install.md) documents
 the supported resolution order and failure diagnostics.
 
-## Run the first TLS scan
+## 5. Run the first TLS scan
 
 This command needs network access to
 `pq.cloudflareresearch.com` on TCP port 443:
@@ -145,7 +145,7 @@ For an IP target that requires Server Name Indication (SNI):
 qureddy scan tls 1.1.1.1:443 --sni one.one.one.one
 ```
 
-## Write JSON or CBOM output
+## 6. Write JSON or CBOM output
 
 Use JSON for QuReddy's complete scan result:
 
@@ -175,7 +175,7 @@ See [generate and validate a CBOM](docs/how-to/generate-a-cbom.md),
 [CBOM output](docs/reference/cbom.md)
 for the exact contracts.
 
-## Interpret the evidence
+## 7. Interpret the evidence
 
 QuReddy separates four kinds of statement:
 
@@ -185,7 +185,7 @@ QuReddy separates four kinds of statement:
 - A finding interprets one or more observations under a named rule.
 - `unknown` or `not_testable` preserves a missing or failed observation.
 
-## Exit codes
+## 8. Exit codes
 
 | Code | Meaning | Scanner |
 | --- | --- | --- |
@@ -198,7 +198,7 @@ QuReddy separates four kinds of statement:
 Scripts must branch on the exit code instead of treating a readiness finding
 as process failure. See the [exit code reference](docs/reference/exit-codes.md).
 
-## Network and privacy scope
+## 9. Network and privacy scope
 
 QuReddy connects only to the target named on the command line. TLS scans make
 bounded TLS handshakes. SSH scans read the server identification and KEXINIT
@@ -208,7 +208,7 @@ The scanner does not change the target, send telemetry, store scan history, or
 contact a BreachSAFE service. Redirected JSON and CBOM files remain on the
 operator's system unless the operator sends them elsewhere.
 
-## Requirements
+## 10. Requirements
 
 - Python `>=3.12`
 - macOS, Linux, or Windows
@@ -219,7 +219,7 @@ The clean artifact matrix installs the wheel, source distribution, and pipx
 application on Linux, macOS, and Windows. Platform support does not imply that
 every operating system package repository supplies a suitable OpenSSL build.
 
-## Documentation and support
+## 11. Documentation and support
 
 - [Documentation index](docs/README.md)
 - [CLI reference](docs/reference/cli.md)
@@ -232,7 +232,7 @@ Do not file security vulnerabilities in the public issue tracker. Follow
 [`SECURITY.md`](SECURITY.md)
 for private reporting.
 
-## Contributing
+## 12. Contributing
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md)
 and the
@@ -242,7 +242,7 @@ formatting, lint, strict type checking, tests, security scans, dependency
 audits, license metadata, file size policy, CBOM conformance, and release
 artifact checks.
 
-## License
+## 13. License
 
 PolyForm Noncommercial License 1.0.0. Commercial use requires a separate
 license from BreachSAFE. See [`LICENSE`](LICENSE),

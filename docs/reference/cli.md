@@ -6,18 +6,18 @@ release candidate help output.
 
 ## Contents
 
-- [Root command](#root-command)
-- [`qureddy scan`](#qureddy-scan)
-- [`qureddy scan ssh`](#qureddy-scan-ssh)
-- [`qureddy scan tls`](#qureddy-scan-tls)
-- [Target syntax](#target-syntax)
-- [Output formats](#output-formats)
-- [Output streams](#output-streams)
-- [Exit codes](#exit-codes)
-- [Environment variables](#environment-variables)
-- [Related documentation](#related-documentation)
+1. [Root command](#1-root-command)
+2. [`qureddy scan`](#2-qureddy-scan)
+3. [`qureddy scan ssh`](#3-qureddy-scan-ssh)
+4. [`qureddy scan tls`](#4-qureddy-scan-tls)
+5. [Target syntax](#5-target-syntax)
+6. [Output formats](#6-output-formats)
+7. [Output streams](#7-output-streams)
+8. [Exit codes](#8-exit-codes)
+9. [Environment variables](#9-environment-variables)
+10. [Related documentation](#10-related-documentation)
 
-## Root command
+## 1. Root command
 
 ```text
 qureddy [OPTIONS] COMMAND [ARGS]...
@@ -39,7 +39,7 @@ The version line is:
 BreachSAFE QuReddy 0.2.13 -- https://www.breachsafe.ai
 ```
 
-## `qureddy scan`
+## 2. `qureddy scan`
 
 ```text
 qureddy scan [OPTIONS] COMMAND [ARGS]...
@@ -54,7 +54,7 @@ qureddy scan [OPTIONS] COMMAND [ARGS]...
 | `tls` | Scan a TLS endpoint |
 | `ssh` | Scan an SSH or SFTP endpoint |
 
-## `qureddy scan ssh`
+## 3. `qureddy scan ssh`
 
 ```text
 qureddy scan ssh [OPTIONS] TARGET
@@ -85,7 +85,7 @@ qureddy scan ssh ssh://github.com:22 --format json
 qureddy scan ssh sftp://sftp.vendor.example:2222 --format cbom
 ```
 
-## `qureddy scan tls`
+## 4. `qureddy scan tls`
 
 ```text
 qureddy scan tls [OPTIONS] TARGET
@@ -123,7 +123,7 @@ qureddy scan tls example.com --openssl /absolute/path/to/openssl
 qureddy scan tls flaky.example --retry-on tls_handshake_failed --retries 3
 ```
 
-## Target syntax
+## 5. Target syntax
 
 ### TLS
 
@@ -158,7 +158,7 @@ SSH defaults to port `22`. Only `ssh://` and `sftp://` schemes are accepted.
 Credentials, paths, query strings, fragments, and foreign schemes are rejected
 before DNS or socket access.
 
-## Output formats
+## 6. Output formats
 
 | Value | Contract |
 | --- | --- |
@@ -166,7 +166,7 @@ before DNS or socket access.
 | `json` | QuReddy scan document with schema version `qureddy.scan.v1` |
 | `cbom` | CycloneDX 1.7 CBOM containing positively observed cryptographic assets |
 
-## Output streams
+## 7. Output streams
 
 Human output and machine documents go to standard output. Diagnostic logs and
 operator hints go to standard error.
@@ -181,7 +181,7 @@ Under shell-level `2>&1`, the default machine modes suppress the courtesy hint
 so the merged stream remains parseable. Explicit `-v`, `-vv`, or `-vvv` logs
 are diagnostics and must remain on a separate stream.
 
-## Exit codes
+## 8. Exit codes
 
 | Code | TLS | SSH | Meaning |
 | --- | --- | --- | --- |
@@ -193,7 +193,7 @@ are diagnostics and must remain on a separate stream.
 
 See the [exit code reference](exit-codes.md) for branching examples.
 
-## Environment variables
+## 9. Environment variables
 
 | Variable | Scope | Meaning |
 | --- | --- | --- |
@@ -203,7 +203,7 @@ See the [exit code reference](exit-codes.md) for branching examples.
 OpenSSL selection order is `--openssl`, then `QUREDDY_OPENSSL`, then
 `openssl` on `PATH`.
 
-## Related documentation
+## 10. Related documentation
 
 - [Install and troubleshoot](../how-to/install.md)
 - [Exit codes](exit-codes.md)

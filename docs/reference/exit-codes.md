@@ -4,20 +4,20 @@ The `qureddy` CLI uses POSIX exit codes to signal what happened. Scripts and CI 
 
 ## Contents
 
-- [Applicability by scanner](#applicability-by-scanner)
-- [The codes](#the-codes)
-- [Why these values](#why-these-values)
-- [Worked examples](#worked-examples)
-- [Implementation note](#implementation-note)
-- [Related documentation](#related-documentation)
+1. [Applicability by scanner](#1-applicability-by-scanner)
+2. [The codes](#2-the-codes)
+3. [Why these values](#3-why-these-values)
+4. [Worked examples](#4-worked-examples)
+5. [Implementation note](#5-implementation-note)
+6. [Related documentation](#6-related-documentation)
 
-## Applicability by scanner
+## 1. Applicability by scanner
 
 Exit 3 is specific to `scan tls`, because the SSH scanner does not use
 OpenSSL. `scan ssh` uses exits 0, 2, and 4; exit 70 remains the process-wide
 last-resort internal-error code.
 
-## The codes
+## 2. The codes
 
 | Code | Name | Meaning | When it fires |
 |---|---|---|---|
@@ -27,7 +27,7 @@ last-resort internal-error code.
 | **4** | `EXIT_USAGE` | Usage or configuration error | Bad flag value (e.g. `--format yaml`), unknown retry category, `--retries` without `--retry-on`, malformed target string. |
 | **70** | `EXIT_INTERNAL_ERROR` | Internal qureddy bug | An unhandled exception escaped to `main()`'s last-resort catch (e.g., a programming error in qureddy itself, an unhandled dependency failure). **This is qureddy's problem, not yours.** Open an issue with the printed error message and a reproducer. Code 70 is BSD `sysexits.h` `EX_SOFTWARE`. |
 
-## Why these values
+## 3. Why these values
 
 - **0 and non-zero is universal**; every shell, every CI runner, every script handles `if exit == 0` correctly.
 - **2 for "the operation didn't succeed"** matches `grep` and most CLIs that distinguish "no match" (1) from "I failed" (2). QuReddy doesn't have a "no match" outcome; failure is always a real failure.
@@ -35,7 +35,7 @@ last-resort internal-error code.
 - **4 separates "you typed something wrong" from "the scan didn't work".** This is the same convention `git`, `ssh`, and `curl` use.
 - **70 (BSD `sysexits.h` `EX_SOFTWARE`) is reserved for "qureddy itself crashed".** Without a distinct code, an internal bug exits 2 (target failed); indistinguishable from a real target problem. CI scripts that branch on exit 2 must be able to trust that 2 means the target, not qureddy.
 
-## Worked examples
+## 4. Worked examples
 
 ### CI pipeline that fails on bad targets but tolerates infra hiccups
 
@@ -76,13 +76,13 @@ case $? in
 esac
 ```
 
-## Implementation note
+## 5. Implementation note
 
 The Typer-based CLI's `main()` wrapper translates Click's default `UsageError` exit code (Click's 2) to QuReddy's `EXIT_USAGE` (4) so usage errors never collide with the documented "target scan failed" exit code. This means you can run `qureddy` from any shell and get the documented codes; Click's defaults stay internal to Click.
 
 If you invoke `qureddy.cli.app` directly from Python (skipping `main()`), you get Click's defaults instead. Use `qureddy.cli.main` if you need the documented exit codes from a Python wrapper.
 
-## Related documentation
+## 6. Related documentation
 
 - [Reference: CLI options](cli.md); what triggers exit 4
 - [Reference: Failure categories](failure-categories.md); what triggers exit 2 and exit 3

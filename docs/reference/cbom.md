@@ -7,23 +7,23 @@ relationship graph.
 
 ## Contents
 
-- [Document identity](#document-identity)
-- [Metadata](#metadata)
-- [Endpoint root](#endpoint-root)
-- [Tool provenance](#tool-provenance)
-- [Cryptographic assets](#cryptographic-assets)
-- [Relationships](#relationships)
-- [Scan status](#scan-status)
-- [Stable references and volatile fields](#stable-references-and-volatile-fields)
-- [Positive observation rule](#positive-observation-rule)
-- [Certificate fields](#certificate-fields)
-- [Reproducibility](#reproducibility)
-- [Interoperability](#interoperability)
-- [Validation contract](#validation-contract)
-- [Evidence limits](#evidence-limits)
-- [Related documentation](#related-documentation)
+1. [Interoperability](#1-interoperability)
+2. [Document identity](#2-document-identity)
+3. [Metadata](#3-metadata)
+4. [Endpoint root](#4-endpoint-root)
+5. [Tool provenance](#5-tool-provenance)
+6. [Cryptographic assets](#6-cryptographic-assets)
+7. [Relationships](#7-relationships)
+8. [Scan status](#8-scan-status)
+9. [Stable references and volatile fields](#9-stable-references-and-volatile-fields)
+10. [Positive observation rule](#10-positive-observation-rule)
+11. [Certificate fields](#11-certificate-fields)
+12. [Reproducibility](#12-reproducibility)
+13. [Validation contract](#13-validation-contract)
+14. [Evidence limits](#14-evidence-limits)
+15. [Related documentation](#15-related-documentation)
 
-## Interoperability
+## 1. Interoperability
 
 The document is structured in two layers (see
 [CBOM design](../explanation/cbom-design.md)):
@@ -46,7 +46,7 @@ to QuReddy-aware readers. Because `cryptoProperties` is CycloneDX 1.6+ and this
 document is 1.7, tooling pinned to CycloneDX 1.6 or earlier will not accept it. The
 full scan report, including findings, is also available in `--format json`.
 
-## Document identity
+## 2. Document identity
 
 | Field | Value |
 | --- | --- |
@@ -58,7 +58,7 @@ full scan report, including findings, is also available in `--format json`.
 The final JSON bytes, not an intermediate Python model, are the output
 contract.
 
-## Metadata
+## 3. Metadata
 
 `metadata` contains:
 
@@ -71,7 +71,7 @@ contract.
 The metadata component is the graph root. It is not duplicated in
 `components`.
 
-## Endpoint root
+## 4. Endpoint root
 
 The endpoint root has:
 
@@ -85,7 +85,7 @@ The endpoint root has:
 component model. QuReddy does not infer a remote product name, version, vendor,
 package, or implementation.
 
-## Tool provenance
+## 5. Tool provenance
 
 QuReddy appears as:
 
@@ -110,7 +110,7 @@ OpenSSL is omitted when the local capability check fails. The collector is
 tool provenance, not a component supplied by or depended on by the endpoint.
 SSH CBOMs contain QuReddy tool provenance and no OpenSSL tool.
 
-## Cryptographic assets
+## 6. Cryptographic assets
 
 Observed assets use CycloneDX component type `cryptographic-asset`.
 
@@ -149,7 +149,7 @@ cryptoProperties.assetType: certificate
 See [certificate fields](#certificate-fields) for the populated properties and
 limits.
 
-## Relationships
+## 7. Relationships
 
 The endpoint dependency entry uses `provides` to reference each positively
 observed algorithm, protocol, and certificate:
@@ -167,7 +167,7 @@ observed algorithm, protocol, and certificate:
 References are sorted and unique. QuReddy does not emit an endpoint
 `dependsOn` edge to the local OpenSSL collector.
 
-## Scan status
+## 8. Scan status
 
 CycloneDX metadata properties preserve the execution state:
 
@@ -179,7 +179,7 @@ CycloneDX metadata properties preserve the execution state:
 A schema-valid sparse CBOM is not proof of a successful scan. Consumers must
 read these properties and preserve failure or unknown states.
 
-## Stable references and volatile fields
+## 9. Stable references and volatile fields
 
 The endpoint and component `bom-ref` values are deterministic for the same
 observations. Component and relationship order is deterministic.
@@ -192,7 +192,7 @@ CycloneDX requires run-level identity and time fields that change:
 Conformance tests normalize only those two fields before comparing repeated
 renders. All remaining bytes must be identical for the same fixture.
 
-## Positive observation rule
+## 10. Positive observation rule
 
 CBOM inventory includes evidence with observation type:
 
@@ -206,7 +206,7 @@ observed
 components. Missing evidence remains missing instead of becoming a favorable
 asset claim.
 
-## Certificate fields
+## 11. Certificate fields
 
 The leaf certificate component may contain:
 
@@ -228,7 +228,7 @@ The component does not establish:
 Self-signed classification in QuReddy evidence requires signature verification;
 subject and issuer string equality alone is not accepted as proof.
 
-## Reproducibility
+## 12. Reproducibility
 
 By default the CBOM carries per-run identity (a CycloneDX `serialNumber` and
 `metadata.timestamp`, plus `qureddy:scan.id` and the scan start/finish times),
@@ -237,7 +237,7 @@ omit those fields: the same observed crypto then yields byte- and
 digest-identical output for content addressing. The crypto inventory, ordering,
 and values are identical either way.
 
-## Validation contract
+## 13. Validation contract
 
 QuReddy runs the semantic checks on every document it emits, at runtime, before
 writing any bytes. Two heavier layers validate the generator in CI rather than
@@ -261,7 +261,7 @@ The fixture matrix contains positive and negative cases with provenance
 sidecars. The installed console canary validates successful and failed scan
 bytes and render determinism.
 
-## Evidence limits
+## 14. Evidence limits
 
 The CBOM is an observation artifact for one target and one scan. It is not:
 
@@ -276,7 +276,7 @@ Interpret CBOM entries as observations from the selected collector. The output d
 not establish complete inventory, remote implementation identity, certificate trust,
 or revocation status.
 
-## Related documentation
+## 15. Related documentation
 
 - [Generate and validate a CBOM](../how-to/generate-a-cbom.md)
 - [CBOM conformance gate](../contributors/cbom-conformance.md)

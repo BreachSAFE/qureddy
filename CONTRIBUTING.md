@@ -11,19 +11,19 @@ Thanks for considering a contribution. This document covers what you need to kno
 
 ## Contents
 
-- [Before you contribute](#before-you-contribute)
-- [Project state](#project-state)
-- [Set up a development environment](#set-up-a-development-environment)
-- [Workflow](#workflow)
-- [Coding style](#coding-style)
-- [Testing](#testing)
-- [Dependencies](#dependencies)
-- [Security](#security)
-- [Commits](#commits)
-- [License](#license)
-- [Code of Conduct](#code-of-conduct)
+1. [Before you contribute](#1-before-you-contribute)
+2. [Project state](#2-project-state)
+3. [Set up a development environment](#3-set-up-a-development-environment)
+4. [Workflow](#4-workflow)
+5. [Coding style](#5-coding-style)
+6. [Testing](#6-testing)
+7. [Dependencies](#7-dependencies)
+8. [Security](#8-security)
+9. [Commits](#9-commits)
+10. [License](#10-license)
+11. [Code of Conduct](#11-code-of-conduct)
 
-## Before you contribute
+## 1. Before you contribute
 
 Read these in order:
 
@@ -32,7 +32,7 @@ Read these in order:
 3. [`docs/contributors/coding-rules.md`](docs/contributors/coding-rules.md); engineering standards. **Source of truth.** Read fully before writing code.
 4. [`docs/contributors/examples.md`](docs/contributors/examples.md); good-vs-bad code patterns. Read before writing the first file in a new module.
 
-## Project state
+## 2. Project state
 
 QuReddy 0.2.13 ships TLS and SSH scanners with Rich, JSON, and CycloneDX 1.7
 CBOM output. Certificate signature observation and legacy TLS enumeration are
@@ -41,7 +41,7 @@ scanning, hosted operation, and remediation are not shipped.
 
 The current milestone is named in [`docs/reference/milestones.md`](docs/reference/milestones.md).
 
-## Set up a development environment
+## 3. Set up a development environment
 
 ```bash
 # Clone
@@ -74,7 +74,7 @@ You also need OpenSSL 3.5 LTS or newer on your `PATH` for the TLS scanner to wor
 
 QuReddy's capability check exits 3 with a clear message when OpenSSL is missing or too old.
 
-## Workflow
+## 4. Workflow
 
 1. **Open an issue first** for non-trivial changes. We will tell you if it's in scope for the current milestone before you write code.
 2. **Branch from `main`**. Branch naming: `<type>/<short-description>` (e.g., `feat/cert-scanner`, `fix/openssl-version-parse`).
@@ -97,7 +97,7 @@ just release-gate
 The gate builds and audits exact wheel and source distribution bytes. See the
 [local release gate](docs/contributors/local-release-gate.md).
 
-## Coding style
+## 5. Coding style
 
 Read `docs/contributors/coding-rules.md` and `docs/contributors/examples.md`. The short version:
 
@@ -113,7 +113,7 @@ Read `docs/contributors/coding-rules.md` and `docs/contributors/examples.md`. Th
 - All datetimes timezone-aware UTC
 - SPDX header on every source file
 
-## Testing
+## 6. Testing
 
 Per `docs/contributors/coding-rules.md` Section 9:
 
@@ -122,7 +122,7 @@ Per `docs/contributors/coding-rules.md` Section 9:
 - Coverage minimum is 80%.
 - Fixtures under `tests/fixtures/` use real captured outputs, not synthetic stubs.
 
-## Dependencies
+## 7. Dependencies
 
 Adding a runtime dependency requires PR justification per Rule 13.1:
 
@@ -135,13 +135,13 @@ GPL, AGPL, and LGPL dependencies do not meet the documented dependency policy.
 Reviewers verify license compatibility before accepting a runtime dependency;
 the current CI does not automate that decision with `pip-licenses`.
 
-## Security
+## 8. Security
 
 If you find a vulnerability, **do not open a public issue.** See [`SECURITY.md`](SECURITY.md) for the disclosure process.
 
 Insecure shortcuts are forbidden in PRs (Rule 26.13). If you need to disable TLS verification, log secrets, use `shell=True`, or take any other insecure shortcut, the PR will be rejected. The right answer is a captured fixture, list-form arguments, or hash-only logging.
 
-## Commits
+## 9. Commits
 
 Conventional Commits format:
 
@@ -160,7 +160,7 @@ Examples:
 - `fix(parser): reject ClientHello-only X25519MLKEM768`
 - `docs(coding-rules): clarify retry allowlist`
 
-## License
+## 10. License
 
 By contributing, you confirm that you have authority to contribute the material and agree that your contribution is licensed under the PolyForm Noncommercial License 1.0.0. Every first-party source file must have an SPDX header:
 
@@ -170,6 +170,6 @@ By contributing, you confirm that you have authority to contribute the material 
 
 `reuse lint` enforces this in CI.
 
-## Code of Conduct
+## 11. Code of Conduct
 
 See [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md). The short version: be respectful, assume good faith, focus on the code.

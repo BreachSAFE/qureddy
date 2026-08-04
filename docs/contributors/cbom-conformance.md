@@ -17,7 +17,11 @@ The same bytes must pass three independent layers:
 proves that malformed `date-time` values are rejected; missing format support
 therefore fails closed instead of silently weakening schema validation.
 
-## Controlled upgrade procedure
+## Contents
+
+1. [Controlled upgrade procedure](#1-controlled-upgrade-procedure)
+
+## 1. Controlled upgrade procedure
 
 Schema or validator upgrades must be isolated in one pull request:
 

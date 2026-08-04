@@ -4,6 +4,18 @@ Side-by-side examples for the highest-frequency QuReddy code patterns. Read this
 
 This is companion material to `docs/contributors/coding-rules.md`. The rules document tells you *what* the standard is; this document shows you *what it looks like*.
 
+## Contents
+
+1. [Pydantic models](#1-pydantic-models)
+2. [pytest tests](#2-pytest-tests)
+3. [Subprocess calls](#3-subprocess-calls-openssl-probe)
+4. [Structured logging](#4-structured-logging)
+5. [Custom exceptions](#5-custom-exceptions)
+6. [Docstrings](#6-docstrings)
+7. [CLI command body](#7-cli-command-body-typer)
+8. [JSON output](#8-json-output)
+9. [How to use this document](#9-how-to-use-this-document)
+
 ---
 
 ## 1. Pydantic models
@@ -604,7 +616,7 @@ def render_json(result):  # no types
 
 ---
 
-## How to use this document
+## 9. How to use this document
 
 When you start writing a new file:
 

@@ -7,7 +7,16 @@ Live targets used by two things:
 
 Targets in this file are the canonical set the suite hits. When CI fails because a target is unreachable, investigate before re-running; that is a real signal, not noise.
 
-## PQ-deployed (should negotiate `X25519MLKEM768`)
+## Contents
+
+1. [PQ-deployed](#1-pq-deployed-should-negotiate-x25519mlkem768)
+2. [Classical baseline](#2-classical-baseline-should-negotiate-x25519-not-hybrid)
+3. [SNI handling](#3-sni-handling)
+4. [Edge cases](#4-edge-cases--badsslcom-suite)
+5. [Failure categories](#5-failure-categories--fixture-mapping)
+6. [Fixture capture protocol](#6-fixture-capture-protocol)
+
+## 1. PQ-deployed (should negotiate `X25519MLKEM768`)
 
 | Target | Notes |
 |---|---|
@@ -17,20 +26,20 @@ Targets in this file are the canonical set the suite hits. When CI fails because
 | `www.facebook.com` | Meta enabled hybrid PQ at the load balancer. |
 | `kms.us-east-1.amazonaws.com` | AWS KMS PQ TLS rollout (Nov 2025). Important for the financial-services positioning story. |
 
-## Classical baseline (should negotiate `X25519`, not hybrid)
+## 2. Classical baseline (should negotiate `X25519`, not hybrid)
 
 | Target | Notes |
 |---|---|
 | `example.com` | RFC 2606 reserved. Stable baseline that will not negotiate PQ. |
 | `www.example.org` | RFC 2606 reserved. Useful if it stays on classical TLS. |
 
-## SNI handling
+## 3. SNI handling
 
 | Target | Invocation | Tests |
 |---|---|---|
 | `1.1.1.1` | `qureddy scan tls 1.1.1.1:443 --sni one.one.one.one` | `--sni` flag against an IP target. |
 
-## Edge cases — `badssl.com` suite
+## 4. Edge cases — `badssl.com` suite
 
 The canonical TLS edge-case test surface. Stable, public, exhaustive.
 
@@ -58,7 +67,7 @@ These targets exercise certificate-chain validity and certificate observations i
 
 The scanner records certificate problems as findings, not as workarounds via `verify=False`.
 
-## Failure categories — fixture mapping
+## 5. Failure categories — fixture mapping
 
 Every failure category enumerated by the scanner needs at least one captured fixture. Suggested target for each:
 
@@ -75,7 +84,7 @@ Every failure category enumerated by the scanner needs at least one captured fix
 | `parse_ambiguous` | Synthesize by editing a captured fixture. |
 | `unexpected_group` | Synthesize: scan with `-groups secp256r1` and check parser rejects it. |
 
-## Fixture capture protocol
+## 6. Fixture capture protocol
 
 1. Run the documented probe command against the target.
 2. Save raw output to `tests/fixtures/openssl/<descriptive_name>.txt`.

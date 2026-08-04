@@ -4,14 +4,14 @@ This directory follows **[Diátaxis](https://diataxis.fr)**. Each documentation 
 
 ## Contents
 
-- [The four quadrants](#the-four-quadrants)
-- [QuReddy documentation](#qureddy-documentation)
-- [Contributor documentation](#contributor-documentation)
-- [Editorial rules](#editorial-rules)
-- [Add a page](#add-a-page)
-- [Why Diátaxis](#why-diátaxis)
+1. [The four quadrants](#1-the-four-quadrants)
+2. [QuReddy documentation](#2-qureddy-documentation)
+3. [Contributor documentation](#3-contributor-documentation)
+4. [Editorial rules](#4-editorial-rules)
+5. [Add a page](#5-add-a-page)
+6. [Why Diátaxis](#6-why-diátaxis)
 
-## The four quadrants
+## 1. The four quadrants
 
 |  | Theoretical (concept) | Practical (action) |
 |---|---|---|
@@ -27,7 +27,7 @@ The split is more useful than it looks. Each quadrant answers a different reader
 
 A page that does two of these jobs is doing neither well. When in doubt, split it.
 
-## QuReddy documentation
+## 2. QuReddy documentation
 
 ### [Tutorials](tutorials/)
 Learning-oriented walkthroughs for someone new to the tool.
@@ -61,7 +61,7 @@ Conceptual discussion. Why we made the choices we did.
 - [Harvest now, decrypt later (HNDL)](explanation/hndl.md) — the threat model that drives the timeline
 - [Threat model and scope](explanation/threat-model.md) — what QuReddy assumes, what it doesn't try to defend against
 
-## Contributor documentation
+## 3. Contributor documentation
 
 The rules and conventions for working *on* QuReddy (not *with* it) live separately from user-facing docs:
 
@@ -72,7 +72,7 @@ The rules and conventions for working *on* QuReddy (not *with* it) live separate
 
 These follow Diátaxis internally too — `coding-rules.md` is reference, `examples.md` is how-to, etc. — but they sit under `contributors/` because they're not for end users of the `qureddy` CLI.
 
-## Editorial rules
+## 4. Editorial rules
 
 These keep Diátaxis from drifting:
 
@@ -84,7 +84,7 @@ These keep Diátaxis from drifting:
 6. **Front-load the answer.** Every page starts with what it covers in 1–2 sentences. The reader should know in five seconds whether they're in the right place.
 7. **No marketing voice.** This is technical documentation. "QuReddy makes PQ easy!" — no.
 
-## Add a page
+## 5. Add a page
 
 When you add a doc, ask:
 
@@ -94,7 +94,7 @@ When you add a doc, ask:
 
 Then create the file in the right directory and link it from this README.
 
-## Why Diátaxis
+## 6. Why Diátaxis
 
 Documentation can accumulate partial tutorials, incomplete references, and mixed-purpose explanations. Diátaxis assigns each page a quadrant, which gives reviewers a concrete scope to check.
 

@@ -7,22 +7,22 @@ dependency, and protocol fields.
 
 ## Contents
 
-- [Document contract](#document-contract)
-- [Top-level fields](#top-level-fields)
-- [Scan metadata](#scan-metadata)
-- [Target](#target)
-- [Dependencies](#dependencies)
-- [Assets](#assets)
-- [Evidence](#evidence)
-- [Probe result](#probe-result)
-- [Findings](#findings)
-- [Summary](#summary)
-- [Enumerated values](#enumerated-values)
-- [SSH example](#ssh-example)
-- [Stability rules](#stability-rules)
-- [Related documentation](#related-documentation)
+1. [Document contract](#1-document-contract)
+2. [Top-level fields](#2-top-level-fields)
+3. [Scan metadata](#3-scan-metadata)
+4. [Target](#4-target)
+5. [Dependencies](#5-dependencies)
+6. [Assets](#6-assets)
+7. [Evidence](#7-evidence)
+8. [Probe result](#8-probe-result)
+9. [Findings](#9-findings)
+10. [Summary](#10-summary)
+11. [Enumerated values](#11-enumerated-values)
+12. [SSH example](#12-ssh-example)
+13. [Stability rules](#13-stability-rules)
+14. [Related documentation](#14-related-documentation)
 
-## Document contract
+## 1. Document contract
 
 Machine mode writes one UTF-8 JSON document and a trailing newline to standard
 output. The top-level keys appear in this order:
@@ -35,7 +35,7 @@ The order of nested object fields is not a consumer contract. Standard output
 remains parseable on successful and typed failed scans. Use the process exit
 code to distinguish completion from failure.
 
-## Top-level fields
+## 2. Top-level fields
 
 | Field | Type | Meaning |
 | --- | --- | --- |
@@ -48,7 +48,7 @@ code to distinguish completion from failure.
 | `findings` | array | Rule interpretations linked to evidence |
 | `summary` | object | Rolled-up readiness and failure state |
 
-## Scan metadata
+## 3. Scan metadata
 
 | Field | Type | Meaning |
 | --- | --- | --- |
@@ -62,7 +62,7 @@ code to distinguish completion from failure.
 
 Identifiers and timestamps are intentionally different across runs.
 
-## Target
+## 4. Target
 
 | Field | Type | TLS | SSH |
 | --- | --- | --- | --- |
@@ -73,7 +73,7 @@ Identifiers and timestamps are intentionally different across runs.
 | `scheme` | string | `tls` | `ssh` |
 | `locator` | string | Canonical `tls://host:port` | Canonical `ssh://host:port` |
 
-## Dependencies
+## 5. Dependencies
 
 TLS emits one local OpenSSL dependency record. SSH emits an empty array.
 
@@ -89,7 +89,7 @@ TLS emits one local OpenSSL dependency record. SSH emits an empty array.
 This record describes the scanner host. It is not the remote endpoint's TLS
 implementation identity.
 
-## Assets
+## 6. Assets
 
 | Field | Type | Meaning |
 | --- | --- | --- |
@@ -111,7 +111,7 @@ implementation identity.
 Null means that the scan did not establish the value at this model location.
 It is not a favorable or unfavorable result.
 
-## Evidence
+## 7. Evidence
 
 | Field | Type | Meaning |
 | --- | --- | --- |
@@ -135,7 +135,7 @@ The internal typed certificate observation is intentionally excluded from
 this JSON contract. Certificate facts appear through public evidence and
 finding fields and through the CycloneDX certificate component.
 
-## Probe result
+## 8. Probe result
 
 `probe_result` is present for OpenSSL subprocess evidence.
 
@@ -162,7 +162,7 @@ finding fields and through the CycloneDX certificate component.
 
 The parser's internal input field is excluded from serialized JSON.
 
-## Findings
+## 9. Findings
 
 | Field | Type | Meaning |
 | --- | --- | --- |
@@ -187,7 +187,7 @@ The parser's internal input field is excluded from serialized JSON.
 | `oid` | string or null | Object identifier |
 | `nist_quantum_security_level` | integer `0..5` or null | Established security level |
 
-## Summary
+## 10. Summary
 
 | Field | Type | Meaning |
 | --- | --- | --- |
@@ -197,7 +197,7 @@ The parser's internal input field is excluded from serialized JSON.
 | `readiness` | enum | Rolled-up readiness |
 | `failure_category` | string or null | Canonical top-level failure reason |
 
-## Enumerated values
+## 11. Enumerated values
 
 `observation_type`:
 
@@ -224,7 +224,7 @@ not_applicable
 Failure values are listed in the
 [failure category reference](failure-categories.md).
 
-## SSH example
+## 12. SSH example
 
 This is a valid illustrative document. IDs and timestamps are fixed examples,
 not a captured current posture for the target.
@@ -325,7 +325,7 @@ not a captured current posture for the target.
 }
 ```
 
-## Stability rules
+## 13. Stability rules
 
 Breaking changes require a new `schema_version`. Version 1 may add optional
 nested fields. Consumers must:
@@ -337,7 +337,7 @@ nested fields. Consumers must:
 - use the process exit code for scan completion;
 - preserve `unknown` and `not_testable`.
 
-## Related documentation
+## 14. Related documentation
 
 - [CLI reference](cli.md)
 - [Failure categories](failure-categories.md)

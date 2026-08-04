@@ -6,7 +6,17 @@ How a bug fix lands in QuReddy. This is the operational form of the multi-tier r
 
 For *why* the project uses three label tiers (Reviewer / Arbiter / Decision), see the reviewer skill. This document is just the diagram + the cookbook.
 
-## The pipeline
+## Contents
+
+1. [The pipeline](#1-the-pipeline)
+2. [The label tiers](#2-the-label-tiers)
+3. [Why three tiers](#3-why-three-tiers)
+4. [Workflow per fix](#4-workflow-per-fix)
+5. [Filterable views](#5-filterable-views)
+6. [Hard rules](#6-hard-rules)
+7. [When the apparatus doesn't apply](#7-when-the-apparatus-doesnt-apply)
+
+## 1. The pipeline
 
 ```mermaid
 flowchart LR
@@ -34,7 +44,7 @@ flowchart LR
     merge --> close_issue[Issues<br/>auto-closed]
 ```
 
-## The label tiers
+## 2. The label tiers
 
 | Tier | Prefix | Who applies | Count per issue | What it means |
 |---|---|---|---|---|
@@ -62,7 +72,7 @@ Verdicts: `approve`, `approve-with-changes`, `reject`.
 Decision outcomes: `approved`, `needs-changes`, `rejected`.
 Validation verdicts: `validated`, `partial`, `failed`, `needs-clarification`.
 
-## Why three tiers
+## 3. Why three tiers
 
 **Reviewer asks: "does this implementation address the root cause?"**
 Root cause vs symptom. Schema stability. Security invariants. Rejects fixes that paper over bugs or violate contracts.
@@ -75,7 +85,7 @@ Reads every reviewer comment and the validator's verdict. Settles disagreements 
 
 The validator is independent of the reviewer because "tests pass" and "issue resolved" are different questions. CI says the first; the validator answers the second by checking out the base commit, running the issue's reproduction (which must fail), then running it on the PR's HEAD (where it must pass).
 
-## Workflow per fix
+## 4. Workflow per fix
 
 ### 1. Author opens PR
 
@@ -120,7 +130,7 @@ Squash-merge per [coding-rules §27.3](coding-rules.md). The `Closes #N` referen
 gh pr merge <n> --repo breachsafe/qureddy --squash --delete-branch
 ```
 
-## Filterable views
+## 5. Filterable views
 
 ```bash
 # Ready to merge
@@ -141,7 +151,7 @@ gh pr list --repo breachsafe/qureddy --state open \
   --json number,labels | jq '[.[] | select(.labels | length == 0) | .number]'
 ```
 
-## Hard rules
+## 6. Hard rules
 
 These come from the reviewer and validator skills:
 
@@ -152,7 +162,7 @@ These come from the reviewer and validator skills:
 5. **Tests must pass 3× without `Rerun:` markers.** `pytest-rerunfailures` cannot mask deterministic failures. See the cautionary tale in [issue #15](https://github.com/breachsafe/qureddy/issues/15) where 5 hard-failing tests showed as "192 passed."
 6. **Reviewer disagreement triggers escalation, not loops.** Per the reviewer skill: "If you can't tell whether you or they are right, propose the test that would settle it. Then run it."
 
-## When the apparatus doesn't apply
+## 7. When the apparatus doesn't apply
 
 - **Docs-only PRs** can skip the validator (nothing to validate against an issue's reproduction). **A reviewer pass (Reviewer mode, non-binding) is still required** — at minimum a `## Review:` comment with verdict and signature block, even when the verdict is `approve` and the diff is one line. Issue #48 documents the canonical failure: PRs #26, #36, #40 self-merged with zero reviews, and the apparatus that was *defining itself* in those PRs got bypassed by its own definitions.
 - **Solo work** by the project lead can self-merge per [coding-rules §27.4](coding-rules.md), but the PR record is still required, including at least one reviewer comment. "Self-merged with no review" is acceptable — "merged with no record" is not. The audit trail must distinguish "reviewed and approved" from "self-merged knowingly" from "merged without thinking."

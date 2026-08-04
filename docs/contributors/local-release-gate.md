@@ -25,7 +25,11 @@ protection settings are administered separately and follow
 [coding-rules §27](coding-rules.md#section-27--branch-protection-and-merge-hygiene); they
 are not hidden inside this local command.
 
-## Secret-scan classification
+## Contents
+
+1. [Secret-scan classification](#1-secret-scan-classification)
+
+## 1. Secret-scan classification
 
 The full-history Gitleaks scan has one reviewed false-positive classification in
 `.gitleaks.toml`. Commit `72f3fa4d750a393460ac40348e71f4b6c717bbce` introduced an

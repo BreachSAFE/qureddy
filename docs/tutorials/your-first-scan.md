@@ -6,17 +6,17 @@ You will finish with one human report and one parseable JSON result.
 
 ## Contents
 
-- [Install QuReddy](#install-qureddy)
-- [Check the command](#check-the-command)
-- [Scan an SSH endpoint](#scan-an-ssh-endpoint)
-- [Read the SSH result](#read-the-ssh-result)
-- [Prepare OpenSSL](#prepare-openssl)
-- [Scan a TLS endpoint](#scan-a-tls-endpoint)
-- [Capture JSON](#capture-json)
-- [What you verified](#what-you-verified)
-- [Next steps](#next-steps)
+1. [Install QuReddy](#1-install-qureddy)
+2. [Check the command](#2-check-the-command)
+3. [Scan an SSH endpoint](#3-scan-an-ssh-endpoint)
+4. [Read the SSH result](#4-read-the-ssh-result)
+5. [Prepare OpenSSL](#5-prepare-openssl)
+6. [Scan a TLS endpoint](#6-scan-a-tls-endpoint)
+7. [Capture JSON](#7-capture-json)
+8. [What you verified](#8-what-you-verified)
+9. [Next steps](#9-next-steps)
 
-## Install QuReddy
+## 1. Install QuReddy
 
 QuReddy requires Python `>=3.12`.
 
@@ -27,7 +27,7 @@ pipx install breachsafe-qureddy
 If `pipx` or Python 3.12 is not available, follow the
 [installation guide](../how-to/install.md).
 
-## Check the command
+## 2. Check the command
 
 This command is offline:
 
@@ -41,7 +41,7 @@ The release candidate prints:
 BreachSAFE QuReddy 0.2.13 -- https://www.breachsafe.ai
 ```
 
-## Scan an SSH endpoint
+## 3. Scan an SSH endpoint
 
 The following command opens a read-only connection to `github.com` on TCP
 port 22:
@@ -53,7 +53,7 @@ qureddy scan ssh github.com
 The scan reads the server identification and the offered SSH key exchange and
 host key algorithms. It does not authenticate or open a shell.
 
-## Read the SSH result
+## 4. Read the SSH result
 
 The report separates key exchange posture from host key posture:
 
@@ -68,7 +68,7 @@ The report separates key exchange posture from host key posture:
 Exit `0` means the scan completed. It does not mean that the target received a
 favorable readiness result.
 
-## Prepare OpenSSL
+## 5. Prepare OpenSSL
 
 TLS scans require OpenSSL 3.5 LTS or newer with the `X25519MLKEM768` group. Check
 the selected binary:
@@ -87,7 +87,7 @@ export QUREDDY_OPENSSL="$(brew --prefix openssl@3.5)/bin/openssl"
 
 Use the [installation guide](../how-to/install.md) for Linux and Windows.
 
-## Scan a TLS endpoint
+## 6. Scan a TLS endpoint
 
 The following command opens bounded TLS handshakes to
 `pq.cloudflareresearch.com` on TCP port 443:
@@ -106,7 +106,7 @@ The scan records:
 The result does not establish certificate trust, revocation, remote software
 identity, or a complete cryptographic inventory.
 
-## Capture JSON
+## 7. Capture JSON
 
 Run the SSH scan in machine mode:
 
@@ -120,7 +120,7 @@ scan, target, dependencies, assets, evidence, findings, and summary objects.
 Identifiers and timestamps change on every run, so automation should select
 named fields instead of comparing the whole document byte for byte.
 
-## What you verified
+## 8. What you verified
 
 You used an installed command to:
 
@@ -130,7 +130,7 @@ You used an installed command to:
 4. run the TLS evidence pipeline;
 5. capture one parseable JSON document.
 
-## Next steps
+## 9. Next steps
 
 - [Generate and validate a CycloneDX 1.7 CBOM](../how-to/generate-a-cbom.md)
 - [Scan an SSH or SFTP endpoint](../how-to/scan-ssh.md)

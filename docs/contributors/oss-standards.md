@@ -4,15 +4,15 @@ This project commits to the following standards. Pull requests that violate them
 
 ## Contents
 
-- [Agent working standard](#agent-working-standard)
-- [Repository hygiene](#repository-hygiene)
-- [Documentation hygiene](#documentation-hygiene)
-- [Code hygiene](#code-hygiene)
-- [Community hygiene](#community-hygiene)
-- [Release hygiene](#release-hygiene)
-- [Things we do not do](#things-we-do-not-do)
+1. [Agent working standard](#1-agent-working-standard)
+2. [Repository hygiene](#2-repository-hygiene)
+3. [Documentation hygiene](#3-documentation-hygiene)
+4. [Code hygiene](#4-code-hygiene)
+5. [Community hygiene](#5-community-hygiene)
+6. [Release hygiene](#6-release-hygiene)
+7. [Things we do not do](#7-things-we-do-not-do)
 
-## Agent working standard
+## 1. Agent working standard
 
 Agents working on this repo follow the contract in `docs/contributors/agent-antipatterns.md`. The summary commitment:
 
@@ -25,7 +25,7 @@ Agents working on this repo follow the contract in `docs/contributors/agent-anti
 
 ---
 
-## Repository hygiene
+## 2. Repository hygiene
 
 - Every source file has an SPDX-License-Identifier header.
 - Every release is tagged with semver and has a changelog entry.
@@ -34,7 +34,7 @@ Agents working on this repo follow the contract in `docs/contributors/agent-anti
 
 ---
 
-## Documentation hygiene
+## 3. Documentation hygiene
 
 - The README is readable in 60 seconds.
 - README quick start includes a working install path and first useful command.
@@ -45,7 +45,7 @@ Agents working on this repo follow the contract in `docs/contributors/agent-anti
 
 ---
 
-## Code hygiene
+## 4. Code hygiene
 
 - All code passes ruff check, mypy strict, and pytest.
 - All public functions have docstrings.
@@ -56,7 +56,7 @@ Agents working on this repo follow the contract in `docs/contributors/agent-anti
 
 ---
 
-## Community hygiene
+## 5. Community hygiene
 
 - Issues get a response within 7 days.
 - PRs get a response within 7 days.
@@ -65,7 +65,7 @@ Agents working on this repo follow the contract in `docs/contributors/agent-anti
 
 ---
 
-## Release hygiene
+## 6. Release hygiene
 
 - CI must pass before merge to main.
 - main is always releasable.
@@ -78,7 +78,7 @@ Agents working on this repo follow the contract in `docs/contributors/agent-anti
 
 ---
 
-## Things we do not do
+## 7. Things we do not do
 
 - We don't merge to main without CI passing.
 - We don't ship features without tests.
