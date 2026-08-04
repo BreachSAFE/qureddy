@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 """Tests for the SSH KEXINIT probe — hostile-server hardening + parsing.
 
 Every byte from an SSH endpoint is untrusted (esp. a vendor SFTP host qureddy

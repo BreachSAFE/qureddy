@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 """Top-level render orchestration: header + section order for `qureddy scan`."""
 
 from __future__ import annotations
@@ -82,7 +82,7 @@ def render_rich(
 def _header_text() -> Text:
     """Color the top-of-output header in the brand palette.
 
-    HEADER is `QuReddy <ver> by BreachSAFE OSS · <url>`. The `QuReddy`
+    HEADER is `QuReddy <ver> by BreachSAFE · <url>`. The `QuReddy`
     wordmark and the site render in the brand cyan; the rest of the name
     line is green. Split on the middot so the site stays a distinct element.
     """

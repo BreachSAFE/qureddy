@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 """Internal typed certificate observation shared by scanners and renderers."""
 
 from pydantic import BaseModel, ConfigDict

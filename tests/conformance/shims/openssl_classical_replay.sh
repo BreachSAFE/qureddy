@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # SPDX-FileCopyrightText: 2026 BreachSAFE
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 # Replays the minimized classical example.com capture without network access.
 set -eu
 fixture_root="$(cd "$(dirname "$0")/../.." && pwd)"

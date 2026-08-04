@@ -409,7 +409,7 @@ Globals are frozen tuples/strings/ints/Enums. Module-level mutable lists or dict
 **Rule 13.1 — Every new dependency must justify itself.**
 - Replaces at least 50 lines of code we would have written
 - Actively maintained (commit in last 12 months)
-- License compatible with Apache 2.0 (no GPL, no AGPL, no LGPL)
+- License and distribution terms compatible with this source-available release; preserve all upstream notices
 - Recognizable maintainer or organization
 
 If you are tempted to add a dependency for a one-off task, write the 5 lines yourself.
@@ -418,7 +418,7 @@ If you are tempted to add a dependency for a one-off task, write the 5 lines you
 Reproducible builds. Lock file is committed. Updates happen deliberately, with PR review.
 
 **Rule 13.3 — Reject AGPL and GPL dependencies.**
-QuReddy is Apache 2.0. AGPL and GPL dependencies make the project derivative-licensed. This is the project's most important license rule. LGPL is rejected by default.
+QuReddy is source-available under PolyForm Noncommercial 1.0.0. Dependencies must be reviewed for compatibility with its distribution terms; AGPL, GPL, and LGPL dependencies are rejected by default, and every bundled dependency retains its original notices.
 
 **Rule 13.4 — Prefer the standard library.**
 `pathlib`, `datetime`, `subprocess`, `re`, `json`, `secrets`, `hmac`, `urllib.request`, `urllib.parse`. The stdlib is well-maintained, well-known, and free. (Note: `urllib3` and `requests` are third-party. The stdlib equivalent is `urllib.request`. Reach for third-party HTTP only if stdlib genuinely falls short.)

@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 """Tests for the retry orchestrator and CLI argument validation."""
 
 from __future__ import annotations

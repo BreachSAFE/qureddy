@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 """Tests for Rich style policy and unknown-readiness recommendations."""
 
 from qureddy.core.models import FailureCategory, Readiness, Severity

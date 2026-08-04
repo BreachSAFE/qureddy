@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 
 FROM debian:bookworm-slim@sha256:7b140f374b289a7c2befc338f42ebe6441b7ea838a042bbd5acbfca6ec875818 AS openssl-build
 
@@ -29,7 +29,7 @@ ARG QUREDDY_VERSION=0.2.0
 LABEL org.opencontainers.image.title="QuReddy" \
       org.opencontainers.image.description="Post-quantum readiness scanner for TLS and SSH endpoints" \
       org.opencontainers.image.source="https://github.com/breachsafe/qureddy" \
-      org.opencontainers.image.licenses="Apache-2.0" \
+      org.opencontainers.image.licenses="PolyForm-Noncommercial-1.0.0" \
       org.opencontainers.image.version="${QUREDDY_VERSION}"
 
 COPY --from=openssl-build /opt/openssl /opt/openssl

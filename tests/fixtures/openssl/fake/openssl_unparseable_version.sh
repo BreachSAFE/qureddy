@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # SPDX-FileCopyrightText: 2026 BreachSAFE
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 # Fake openssl that exits 0 but prints version output `_extract_version` cannot parse.
 # Used to test FailureCategory.LOCAL_OPENSSL_VERSION_UNREADABLE.
 case "$1" in

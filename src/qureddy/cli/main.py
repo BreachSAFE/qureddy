@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 """Typer app assembly and the installed `qureddy` entry point.
 
 Glue only — no command logic. The `scan tls` / `scan ssh` command bodies

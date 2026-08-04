@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 """Evidence/Finding builders for the certificate issuer-signature axis (issue #183).
 
 Issue #226 correction: this is the certificate's *issuer* signature axis

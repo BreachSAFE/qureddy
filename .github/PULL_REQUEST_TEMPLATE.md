@@ -1,4 +1,4 @@
-<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0 -->
 
 ## Summary
 
@@ -123,7 +123,7 @@ This is the **Tier 1 PR audit** from `docs/contributors/coding-rules.md` Quick R
 
 <!-- Only relevant if pyproject.toml or uv.lock changed. -->
 
-- [ ] Every new dependency justified per Rule 13.1 (replaces ≥50 lines, actively maintained, Apache-compatible license, recognizable maintainer)
+- [ ] Every new dependency justified per Rule 13.1 (replaces ≥50 lines, actively maintained, redistribution-compatible license, recognizable maintainer)
 - [ ] No GPL, AGPL, or LGPL dependencies introduced
 - [ ] `pip-audit` passes (no HIGH or CRITICAL CVEs in dep tree) — PASS / FAIL / NOT RUN:
 - [ ] `pip-licenses` passes (no AGPL/GPL/LGPL) — PASS / FAIL / NOT RUN:
@@ -147,5 +147,5 @@ This is the **Tier 1 PR audit** from `docs/contributors/coding-rules.md` Quick R
 By submitting this PR I confirm:
 
 - [ ] I read `CONTRIBUTING.md` and `docs/contributors/coding-rules.md` before writing this code
-- [ ] I am the author of this code, or it is sourced and licensed compatibly with Apache 2.0
+- [ ] I am the author of this code, or it is sourced with provenance and terms compatible with this release
 - [ ] I agree to the [Code of Conduct](../CODE_OF_CONDUCT.md)

@@ -1,0 +1,16 @@
+Required Notice: Copyright BreachSAFE (https://www.breachsafe.ai)
+
+This release's BreachSAFE-owned source and documentation are licensed under the
+PolyForm Noncommercial License 1.0.0. Commercial use requires a separate
+license from BreachSAFE.
+
+Historical release notice: QuReddy releases through v0.2.12 were distributed
+under Apache License 2.0. Those historical license grants remain effective for
+copies distributed under those releases.
+
+Third-party and standard materials remain subject to their own copyright,
+license, and notice terms. In particular, vendored CycloneDX schemas in
+tests/conformance/schemas/ retain their upstream Apache-2.0 attribution.
+
+OpenSSL material redistributed in QuReddy container images is provided under
+Apache-2.0. Python dependencies retain their respective upstream licenses.

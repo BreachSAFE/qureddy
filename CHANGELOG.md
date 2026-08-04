@@ -9,6 +9,13 @@ All notable user-visible changes to QuReddy are recorded here. The format
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and version
 numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- Future releases are source-available under PolyForm Noncommercial License 1.0.0.
+  Releases through v0.2.12 remain available under their published Apache-2.0 terms.
+
 ## Contents
 
 - [0.2.12](#0212---2026-07-28)

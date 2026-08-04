@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 """Typer CLI package for the qureddy command (ADR 0005 split of cli.py).
 
 Public surface: `app` (the Typer application) and `main` (the installed

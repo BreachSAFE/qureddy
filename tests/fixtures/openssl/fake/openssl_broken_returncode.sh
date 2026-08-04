@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # SPDX-FileCopyrightText: 2026 BreachSAFE
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 # Fake openssl that exists and is executable, but fails during capability detection.
 # Used to test FailureCategory.LOCAL_OPENSSL_BROKEN.
 case "$1" in
