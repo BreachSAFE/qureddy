@@ -78,6 +78,7 @@ def _capture_final_bytes(
         target,
         "--format",
         "cbom",
+        "--reproducible",
         "--openssl",
         str(openssl),
     ]
@@ -128,7 +129,7 @@ def _validate_installed_console(binary: Path, console: Path) -> None:
             expected_exit=_TARGET_FAILURE_EXIT,
         )
         if normalized_volatile_fields(first) != normalized_volatile_fields(second):
-            msg = "installed console output is nondeterministic beyond serialNumber and timestamp"
+            msg = "installed console output is nondeterministic in reproducible mode"
             raise RuntimeError(msg)
         _assert_positive_inventory(first)
         for path, payload in (
