@@ -20,9 +20,17 @@ QuReddy's CLI is **Typer + Rich + structlog** running on top of **Click 8**. Rul
 
 > **Why this matters.** The shipped `scan tls` and `scan ssh` commands share one command-group convention, output contract, and exit-code surface. New scanner work must follow the same reviewable rules.
 
+## Contents
+
+1. [Universal CLI conventions](#1-universal-cli-conventions)
+2. [Python and Typer-specific conventions](#2-python--typer-specific-conventions)
+3. [QuReddy-specific decisions](#3-qureddy-specific-decisions)
+4. [Scope exclusions](#4-what-this-document-does-not-cover)
+5. [References](#5-references)
+
 ---
 
-## Section 1 — Universal CLI Conventions
+## 1. Universal CLI Conventions
 
 These rules apply to every Unix-style CLI. They are **not** QuReddy-specific.
 
@@ -64,7 +72,7 @@ When the user types `--v`, `--vv`, `--verbos`, or applies `--version` to a subco
 
 ---
 
-## Section 2 — Python / Typer-Specific Conventions
+## 2. Python / Typer-Specific Conventions
 
 These rules are how Section 1 translates into the QuReddy implementation.
 
@@ -109,7 +117,7 @@ A user running `qureddy scan tls badtarget.example` gets a one-line error and ex
 
 ---
 
-## Section 3 — QuReddy-Specific Decisions
+## 3. QuReddy-Specific Decisions
 
 Decisions that diverge from defaults or shared conventions, with rationale.
 
@@ -133,7 +141,7 @@ Click's default for `qureddy scan tls --version` is "no such option: --version."
 
 ---
 
-## Section 4 — What This Document Does NOT Cover
+## 4. What This Document Does NOT Cover
 
 - **Help text wording.** Per-PR copywriting; not a rule.
 - **Specific scanner behavior.** Owned by the active implementation skill in `.agents/skills/`.
@@ -144,7 +152,7 @@ Click's default for `qureddy scan tls --version` is "no such option: --version."
 
 ---
 
-## References
+## 5. References
 
 - [clig.dev — Command Line Interface Guidelines](https://clig.dev) — the modern canonical reference.
 - [POSIX `getopt(3)`](https://pubs.opengroup.org/onlinepubs/9699919799/functions/getopt.html) — flag parsing baseline.

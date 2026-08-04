@@ -7,15 +7,15 @@ adds post-quantum confidentiality while retaining a classical component.
 
 ## Contents
 
-- [Threats addressed](#threats-addressed)
-- [Why combine two primitives](#why-combine-two-primitives)
-- [Why ML-KEM-768 and X25519](#why-ml-kem-768-and-x25519)
-- [Readiness vocabulary](#readiness-vocabulary)
-- [Key exchange and authentication](#key-exchange-and-authentication)
-- [Why collection starts now](#why-collection-starts-now)
-- [Related documentation](#related-documentation)
+1. [Threats addressed](#1-threats-addressed)
+2. [Why combine two primitives](#2-why-combine-two-primitives)
+3. [Why ML-KEM-768 and X25519](#3-why-ml-kem-768-and-x25519)
+4. [Readiness vocabulary](#4-readiness-vocabulary)
+5. [Key exchange and authentication](#5-key-exchange-and-authentication)
+6. [Why collection starts now](#6-why-collection-starts-now)
+7. [Related documentation](#7-related-documentation)
 
-## Threats addressed
+## 1. Threats addressed
 
 Classical elliptic-curve key exchange is vulnerable to Shor's algorithm on a
 sufficiently capable quantum computer. ML-KEM is standardized in
@@ -26,7 +26,7 @@ Hybrid key exchange derives session key material from both a classical and a
 post-quantum contribution. The security goal is that session confidentiality
 survives when at least one approved contribution remains secure.
 
-## Why combine two primitives
+## 2. Why combine two primitives
 
 Replacing a mature classical primitive immediately would make the new
 post-quantum primitive the only protection. A hybrid combines migration
@@ -36,7 +36,7 @@ This is a transition posture, not proof that every aspect of the connection is
 post-quantum. Protocol authentication can remain classical even when key
 exchange is hybrid.
 
-## Why ML-KEM-768 and X25519
+## 3. Why ML-KEM-768 and X25519
 
 ML-KEM-768 is the middle ML-KEM parameter set in FIPS 203. X25519 is the
 classical component used by the TLS group that QuReddy requests.
@@ -49,7 +49,7 @@ instead of forcing a choice.
 An algorithm name in a handshake is an observation. It is not proof that the
 remote software or cryptographic module has a FIPS validation.
 
-## Readiness vocabulary
+## 4. Readiness vocabulary
 
 | Value | Meaning |
 | --- | --- |
@@ -63,7 +63,7 @@ remote software or cryptographic module has a FIPS validation.
 `transitional_hybrid` is narrower than `quantum_safe`. It states the observed
 transition mechanism.
 
-## Key exchange and authentication
+## 5. Key exchange and authentication
 
 Hybrid key exchange protects session key establishment against harvest now,
 decrypt later exposure. TLS authentication can still depend on classical
@@ -74,7 +74,7 @@ The TLS scanner observes the leaf certificate signature algorithm but does not
 validate the chain. It does not claim that all certificates, keys, signatures,
 or application data paths are post-quantum.
 
-## Why collection starts now
+## 6. Why collection starts now
 
 An adversary can retain encrypted traffic before a cryptographically relevant
 quantum computer exists. A future capability could affect the confidentiality
@@ -84,7 +84,7 @@ Deployment and evidence collection therefore precede the future threat.
 QuReddy measures the current endpoint posture so an operator can identify the
 migration gap without treating a forecast date as a prerequisite.
 
-## Related documentation
+## 7. Related documentation
 
 - [Harvest now, decrypt later](hndl.md)
 - [Threat model](threat-model.md)

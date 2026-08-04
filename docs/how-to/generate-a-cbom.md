@@ -5,13 +5,13 @@ Bill of Materials to standard output.
 
 ## Contents
 
-- [TLS endpoint](#tls-endpoint)
-- [SSH endpoint](#ssh-endpoint)
-- [Validate the final bytes](#validate-the-final-bytes)
-- [Evidence limits](#evidence-limits)
-- [Related documentation](#related-documentation)
+1. [TLS endpoint](#1-tls-endpoint)
+2. [SSH endpoint](#2-ssh-endpoint)
+3. [Validate the final bytes](#3-validate-the-final-bytes)
+4. [Evidence limits](#4-evidence-limits)
+5. [Related documentation](#5-related-documentation)
 
-## TLS endpoint
+## 1. TLS endpoint
 
 TLS scanning requires OpenSSL 3.5 LTS or newer:
 
@@ -19,7 +19,7 @@ TLS scanning requires OpenSSL 3.5 LTS or newer:
 qureddy scan tls example.com --format cbom > example-tls.cbom.json
 ```
 
-## SSH endpoint
+## 2. SSH endpoint
 
 SSH scanning has no OpenSSL dependency:
 
@@ -31,7 +31,7 @@ QuReddy writes the CBOM document to stdout. Redirect it to a file as shown
 above, and use the process exit code to distinguish a successful scan from a
 target, local-dependency, usage, or internal failure.
 
-## Validate the final bytes
+## 3. Validate the final bytes
 
 QuReddy emits CycloneDX 1.7. The release gate validates the final bytes against
 the pinned CycloneDX 1.7.1 JSON schemas, `cyclonedx-cli` 0.33.1, and QuReddy's
@@ -69,13 +69,13 @@ python -c 'import json; print(json.load(open("github-ssh.cbom.json"))["specVersi
 
 The expected value is `1.7`.
 
-## Evidence limits
+## 4. Evidence limits
 
 The CBOM reports observations made by QuReddy. It is not a claim of complete
 cryptographic inventory, remote implementation identity, certificate trust,
 or revocation validation.
 
-## Related documentation
+## 5. Related documentation
 
 - [CLI options](../reference/cli.md)
 - [Exit codes](../reference/exit-codes.md)

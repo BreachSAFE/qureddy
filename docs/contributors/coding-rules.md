@@ -10,6 +10,40 @@ QuReddy targets the **OpenSSF Best Practices passing tier**. Rules below are map
 
 > **Note on repository-only references.** Two rules reference `docs/SECURITY_EXCEPTIONS.md` and `docs/STANDARDS.md`; keep those references explicit until the corresponding repository files exist. Do not create empty placeholder files.
 
+## Contents
+
+1. [Scope and Discipline](#section-1--scope-and-discipline)
+2. [File and Function Size](#section-2--file-and-function-size)
+3. [Naming](#section-3--naming)
+4. [Type Hints and Static Typing](#section-4--type-hints-and-static-typing)
+5. [Imports](#section-5--imports)
+6. [Error Handling](#section-6--error-handling)
+7. [Subprocess Discipline](#section-7--subprocess-discipline)
+8. [Logging](#section-8--logging)
+9. [Testing](#section-9--testing)
+10. [Comments and Docstrings](#section-10--comments-and-docstrings)
+11. [Output and CLI](#section-11--output-and-cli)
+12. [Security Hygiene](#section-12--security-hygiene)
+13. [Dependencies](#section-13--dependencies)
+14. [Distribution and Platform Support](#section-14--distribution-and-platform-support)
+15. [When You Don't Know](#section-15--when-you-dont-know)
+16. [What “Done” Means](#section-16--what-done-means)
+17. [Things You Do Not Do](#section-17--things-you-do-not-do)
+18. [Voice in Code](#section-18--voice-in-code)
+19. [Voice in Responses](#section-19--voice-in-responses)
+20. [When You Disagree With This Document](#section-20--when-you-disagree-with-this-document)
+21. [CI/CD Pipeline](#section-21--cicd-pipeline-7-phases)
+22. [Quality Gates](#section-22--quality-gates-tier-1-per-pr-tier-2-per-release)
+23. [Pre-commit Hooks](#section-23--pre-commit-hooks)
+24. [Self-Scanning](#section-24--self-scanning)
+25. [Documentation Link Discipline](#section-25--documentation-link-discipline)
+26. [Security Bar](#section-26--security-bar-hard-merge-blockers)
+27. [Branch Protection and Merge Hygiene](#section-27--branch-protection-and-merge-hygiene)
+28. [Anti-Theater Rules](#section-28--anti-theater-rules)
+29. [OpenSSF Best Practices Alignment](#section-29--openssf-best-practices-alignment)
+30. [PR Review Checklist](#30-quick-reference--pr-review-checklist-tier-1-must-pass)
+31. [Release Checklist](#31-quick-reference--release-checklist-tier-2-must-pass-before-tag)
+
 ---
 
 ## Section 1 — Scope and Discipline
@@ -925,7 +959,7 @@ The rules above are written to satisfy the badge criteria. Specific OpenSSF requ
 
 ---
 
-## Quick Reference — PR Review Checklist (Tier 1: Must Pass)
+## 30. Quick Reference — PR Review Checklist (Tier 1: Must Pass)
 
 The minimum checklist for every PR. Long enough to catch real issues, short enough to actually use.
 
@@ -964,7 +998,7 @@ If any of these are unchecked, the PR is not ready.
 
 ---
 
-## Quick Reference — Release Checklist (Tier 2: Must Pass Before Tag)
+## 31. Quick Reference — Release Checklist (Tier 2: Must Pass Before Tag)
 
 In addition to Tier 1:
 

@@ -9,16 +9,16 @@ collection.
 
 ## Contents
 
-- [Component map](#component-map)
-- [Dependency direction](#dependency-direction)
-- [TLS scan flow](#tls-scan-flow)
-- [SSH scan flow](#ssh-scan-flow)
-- [Output flow](#output-flow)
-- [Evidence boundary](#evidence-boundary)
-- [Failure routing](#failure-routing)
-- [Related documentation](#related-documentation)
+1. [Component map](#1-component-map)
+2. [Dependency direction](#2-dependency-direction)
+3. [TLS scan flow](#3-tls-scan-flow)
+4. [SSH scan flow](#4-ssh-scan-flow)
+5. [Output flow](#5-output-flow)
+6. [Evidence boundary](#6-evidence-boundary)
+7. [Failure routing](#7-failure-routing)
+8. [Related documentation](#8-related-documentation)
 
-## Component map
+## 1. Component map
 
 ```mermaid
 flowchart TB
@@ -96,7 +96,7 @@ flowchart TB
     cbom --> models
 ```
 
-## Dependency direction
+## 2. Dependency direction
 
 The dependency direction is:
 
@@ -115,7 +115,7 @@ and write to a caller-supplied stream.
 Renderers do not open sockets, run OpenSSL, or refetch certificates. CBOM uses
 the certificate observation captured during the TLS scan.
 
-## TLS scan flow
+## 3. TLS scan flow
 
 ```mermaid
 sequenceDiagram
@@ -150,7 +150,7 @@ The TLS scan can contain partial evidence. Certificate collection, forced key
 exchange probes, and legacy protocol probes are separate operations. One
 successful operation does not erase another operation's failure.
 
-## SSH scan flow
+## 4. SSH scan flow
 
 ```mermaid
 sequenceDiagram
@@ -173,7 +173,7 @@ sequenceDiagram
 The probe does not authenticate, invoke an SSH client, open a channel, or
 modify the endpoint. It reads the cleartext offer and closes the socket.
 
-## Output flow
+## 5. Output flow
 
 ```mermaid
 flowchart LR
@@ -199,7 +199,7 @@ one parseable default machine stream.
 Explicit verbosity requests diagnostics. A caller that requests `-v`, `-vv`,
 or `-vvv` must keep the streams separate.
 
-## Evidence boundary
+## 6. Evidence boundary
 
 Raw network and subprocess text crosses a parser boundary before it becomes
 typed evidence. Findings reference that evidence. The summary rolls findings
@@ -210,7 +210,7 @@ implementation identity. CycloneDX represents the endpoint as the metadata
 root, local tools under metadata tool provenance, and positively observed
 cryptographic assets as components provided by the endpoint.
 
-## Failure routing
+## 7. Failure routing
 
 | Failure class | Scanner | Exit | Retry |
 | --- | --- | --- | --- |
@@ -224,7 +224,7 @@ cryptographic assets as components provided by the endpoint.
 The exact categories and retry state machine are documented in the
 [failure category reference](../reference/failure-categories.md).
 
-## Related documentation
+## 8. Related documentation
 
 - [JSON output](../reference/json-schema.md)
 - [CycloneDX CBOM output](../reference/cbom.md)

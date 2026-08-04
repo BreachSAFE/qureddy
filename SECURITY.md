@@ -11,16 +11,16 @@ QuReddy is a security tool. We take vulnerability reports seriously.
 
 ## Contents
 
-- [Supported versions](#supported-versions)
-- [Report a vulnerability](#report-a-vulnerability)
-- [Response targets](#response-targets)
-- [Disclosure policy](#disclosure-policy)
-- [Scope](#scope)
-- [Enforced security checks](#enforced-security-checks)
-- [Release controls](#release-controls)
-- [Security exceptions](#security-exceptions)
+1. [Supported versions](#1-supported-versions)
+2. [Report a vulnerability](#2-report-a-vulnerability)
+3. [Response targets](#3-response-targets)
+4. [Disclosure policy](#4-disclosure-policy)
+5. [Scope](#5-scope)
+6. [Enforced security checks](#6-enforced-security-checks)
+7. [Release controls](#7-release-controls)
+8. [Security exceptions](#8-security-exceptions)
 
-## Supported Versions
+## 1. Supported Versions
 
 | Version | Supported |
 |---|---|
@@ -31,7 +31,7 @@ QuReddy is a security tool. We take vulnerability reports seriously.
 Security fixes target `main` and the latest `0.2.x` release. No backport
 commitment exists for earlier versions.
 
-## Report a vulnerability
+## 2. Report a vulnerability
 
 **Do not file a public GitHub issue for vulnerabilities.**
 
@@ -46,7 +46,7 @@ If you cannot use GitHub Security Advisories, email the maintainer; the contact 
 - The version (commit SHA or release tag) you tested against
 - Your contact info for follow-up
 
-## Response targets
+## 3. Response targets
 
 We commit to:
 
@@ -57,7 +57,7 @@ We commit to:
 
 If we miss any of these, the maintainer has failed the OpenSSF Best Practices criterion. You are entitled to escalate by re-opening the report or going public with the details and disclosure timeline.
 
-## Disclosure Policy
+## 4. Disclosure Policy
 
 We follow **coordinated disclosure**:
 
@@ -69,7 +69,7 @@ We follow **coordinated disclosure**:
 
 We will not retaliate against reporters acting in good faith. We will not pursue legal action against researchers who follow this disclosure policy.
 
-## Scope
+## 5. Scope
 
 In scope:
 - The QuReddy CLI and Python package (`breachsafe-qureddy`)
@@ -83,7 +83,7 @@ Out of scope:
 - Social engineering of contributors
 - Denial of service against the QuReddy maintainers
 
-## Enforced security checks
+## 6. Enforced security checks
 
 The repository enforces:
 
@@ -97,13 +97,13 @@ The repository enforces:
 - **CycloneDX 1.7 final-byte conformance** against pinned schemas, an independent validator, and semantic checks
 - **Exact artifact inspection and clean installation** for the wheel and source distribution
 
-## Release controls
+## 7. Release controls
 
 OpenSSF badge advancement, Sigstore signatures, SLSA provenance, Docker
 publication, and hosted release settings require externally verifiable
 artifacts or repository settings before they are treated as active controls.
 
-## Security Exceptions
+## 8. Security Exceptions
 
 Time-bounded security exceptions are documented in `docs/SECURITY_EXCEPTIONS.md` (when first exception is recorded). Format:
 

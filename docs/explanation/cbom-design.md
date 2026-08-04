@@ -2,7 +2,14 @@
 
 Why `--format cbom` is shaped the way it is, and what a consumer can rely on.
 
-## Two consumers, different needs
+## Contents
+
+1. [Two consumers, different needs](#1-two-consumers-different-needs)
+2. [The decision](#2-the-decision-one-valid-cyclonedx-17-document-two-layers)
+3. [What a consumer can rely on](#3-what-a-consumer-can-rely-on)
+4. [Decision (settled)](#4-decision-settled)
+
+## 1. Two consumers, different needs
 
 A scan produces three kinds of information: the observed cryptographic assets
 (KEX groups, cipher suites, protocols, the leaf certificate and its signature
@@ -23,7 +30,7 @@ A CBOM is, in CycloneDX's own document-type model, an inventory. Findings and
 document. The full scan report already exists in `--format json` (the
 `qureddy.scan.v1` contract).
 
-## The decision: one valid CycloneDX 1.7 document, two layers
+## 2. The decision: one valid CycloneDX 1.7 document, two layers
 
 1. Native crypto layer. Every observed asset is a real `component` with native
    `cryptoProperties`. Algorithms carry `algorithmProperties` (primitive,
@@ -48,7 +55,7 @@ Content addressing is opt-in: `--reproducible` omits the per-run identity fields
 OpenSSL path, retry-varying attempt count) so the same scan is byte- and
 digest-identical.
 
-## What a consumer can rely on
+## 3. What a consumer can rely on
 
 - The document is valid CycloneDX 1.7 and parses in every 1.7 tool. There is no
   tool it breaks; worst case for an unaware tool is that the extension layer is
@@ -63,7 +70,7 @@ digest-identical.
 - Prowler and TAO consume QuReddy's `--format json` (`qureddy.scan.v1`) through the
   endpoint collector, not the CBOM as CycloneDX.
 
-## Decision (settled)
+## 4. Decision (settled)
 
 Keep the CBOM as-is: a lean, valid CycloneDX 1.7 with a native crypto layer plus
 the `qureddy:` extension layer. Generic tools ignore the extensions without

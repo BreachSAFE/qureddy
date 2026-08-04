@@ -6,14 +6,14 @@ the process exit code. TLS retries accept a strict subset.
 
 ## Contents
 
-- [Category table](#category-table)
-- [SSH failure mapping](#ssh-failure-mapping)
-- [TLS retry allowlist](#tls-retry-allowlist)
-- [Retry behavior](#retry-behavior)
-- [JSON and CBOM locations](#json-and-cbom-locations)
-- [Related documentation](#related-documentation)
+1. [Category table](#1-category-table)
+2. [SSH failure mapping](#2-ssh-failure-mapping)
+3. [TLS retry allowlist](#3-tls-retry-allowlist)
+4. [Retry behavior](#4-retry-behavior)
+5. [JSON and CBOM locations](#5-json-and-cbom-locations)
+6. [Related documentation](#6-related-documentation)
 
-## Category table
+## 1. Category table
 
 | Value | Exit | Retryable | Meaning |
 | --- | --- | --- | --- |
@@ -35,7 +35,7 @@ the process exit code. TLS retries accept a strict subset.
 The `local_openssl_*` categories apply only to TLS. SSH does not resolve or run
 OpenSSL.
 
-## SSH failure mapping
+## 2. SSH failure mapping
 
 The SSH probe maps socket and timeout causes to `target_connect_failed`.
 Malformed identification or KEXINIT responses map to `parse_ambiguous`.
@@ -43,7 +43,7 @@ Malformed identification or KEXINIT responses map to `parse_ambiguous`.
 SSH exposes no retry options in version 0.2.13. An operator or calling system
 may invoke the command again, but QuReddy does not retry SSH internally.
 
-## TLS retry allowlist
+## 3. TLS retry allowlist
 
 `--retry-on` accepts only:
 
@@ -58,7 +58,7 @@ Unknown categories and non-retryable categories fail argument validation with
 exit `4`. Local capability failures are not retryable because waiting does not
 change the selected OpenSSL installation.
 
-## Retry behavior
+## 4. Retry behavior
 
 The first TLS probe result selects the triggering category. QuReddy retries
 only when that category is in both the built-in allowlist and the operator's
@@ -73,7 +73,7 @@ Retries stop when:
 `--retries` accepts `0..3`. `--retry-delay` accepts `0.0..10.0` seconds.
 Supplying a positive retry count without `--retry-on` exits `4`.
 
-## JSON and CBOM locations
+## 5. JSON and CBOM locations
 
 JSON can contain a category in:
 
@@ -95,7 +95,7 @@ qureddy:scan.failure_category
 
 The failure property is absent when no top-level failure category exists.
 
-## Related documentation
+## 6. Related documentation
 
 - [CLI options](cli.md)
 - [Exit codes](exit-codes.md)

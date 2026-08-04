@@ -5,15 +5,15 @@ planned milestone, open issue, or accepted design as a delivered artifact.
 
 ## Contents
 
-- [Status definitions](#status-definitions)
-- [Milestone table](#milestone-table)
-- [Current release program](#current-release-program)
-- [Non-goals](#non-goals)
-- [Historical implementation material](#historical-implementation-material)
-- [Decision records](#decision-records)
-- [Related documentation](#related-documentation)
+1. [Status definitions](#1-status-definitions)
+2. [Milestone table](#2-milestone-table)
+3. [Current release program](#3-current-release-program)
+4. [Non-goals](#4-non-goals)
+5. [Historical implementation material](#5-historical-implementation-material)
+6. [Decision records](#6-decision-records)
+7. [Related documentation](#7-related-documentation)
 
-## Status definitions
+## 1. Status definitions
 
 | Status | Meaning |
 | --- | --- |
@@ -22,7 +22,7 @@ planned milestone, open issue, or accepted design as a delivered artifact.
 | Release candidate | Code and metadata are staged for publication; registry rehearsal is incomplete |
 | Planned | Tracked intent without a shipped implementation |
 
-## Milestone table
+## 2. Milestone table
 
 | Milestone | Status | Scope | Evidence date |
 | --- | --- | --- | --- |
@@ -35,7 +35,7 @@ planned milestone, open issue, or accepted design as a delivered artifact.
 | Packaging and TestPyPI | Release candidate | Installable wheel and source distribution, release gate, documentation, TestPyPI rehearsal | Public issues #33 through #36 |
 | Enterprise P2 | Planned | Operated fleet, persistence, integrations, tenancy, and support | No shipped product in this repository |
 
-## Current release program
+## 3. Current release program
 
 The public release sequence is:
 
@@ -57,7 +57,7 @@ The public release sequence is:
 Publication is not complete until issue #36 records the registry installation
 and rendering evidence.
 
-## Non-goals
+## 4. Non-goals
 
 QuReddy does not provide:
 
@@ -69,7 +69,7 @@ QuReddy does not provide:
 - support for end-of-life platforms;
 - a hosted multi-tenant service in this repository.
 
-## Historical implementation material
+## 5. Historical implementation material
 
 `.agents/skills/breachsafe-implement/SKILL.md` and
 `docs/contributors/agents/mvp-0.1-bootstrap-prompt.md` describe the original
@@ -80,12 +80,12 @@ Current changes must follow the repository contributor rules, accepted ADRs,
 public issue acceptance criteria, code, tests, and installed artifact
 behavior.
 
-## Maintainer decision records
+## 6. Decision records
 
 Architecture decision records are maintained locally for contributors and are
 not part of the customer documentation or release artifacts.
 
-## Related documentation
+## 7. Related documentation
 
 - [Changelog](../../CHANGELOG.md)
 - [Local release gate](../contributors/local-release-gate.md)

@@ -7,17 +7,18 @@ control.
 
 ## Contents
 
-- [Operator assumptions](#operator-assumptions)
-- [Scanner host assumptions](#scanner-host-assumptions)
-- [Network assumptions](#network-assumptions)
-- [Target assumptions](#target-assumptions)
-- [In-scope protections](#in-scope-protections)
-- [Out-of-scope threats](#out-of-scope-threats)
-- [Privacy and data handling](#privacy-and-data-handling)
-- [Report a vulnerability](#report-a-vulnerability)
-- [Related documentation](#related-documentation)
+1. [Operator assumptions](#1-operator-assumptions)
+2. [Scanner host assumptions](#2-scanner-host-assumptions)
+3. [Network assumptions](#3-network-assumptions)
+4. [Target assumptions](#4-target-assumptions)
+5. [Target selection and SSRF boundary](#5-target-selection-and-ssrf-boundary)
+6. [In-scope protections](#6-in-scope-protections)
+7. [Out-of-scope threats](#7-out-of-scope-threats)
+8. [Privacy and data handling](#8-privacy-and-data-handling)
+9. [Report a vulnerability](#9-report-a-vulnerability)
+10. [Related documentation](#10-related-documentation)
 
-## Operator assumptions
+## 1. Operator assumptions
 
 The operator:
 
@@ -29,7 +30,7 @@ The operator:
 
 QuReddy does not scan stealthily or discover targets automatically.
 
-## Scanner host assumptions
+## 2. Scanner host assumptions
 
 The Python interpreter, installed package, dependencies, operating system,
 network resolver, and selected OpenSSL binary are trusted.
@@ -42,7 +43,7 @@ the binary's supply-chain integrity at runtime.
 
 SSH scanning does not run OpenSSL.
 
-## Network assumptions
+## 3. Network assumptions
 
 The network path:
 
@@ -55,7 +56,7 @@ The network path:
 A network attacker that can alter DNS or traffic can influence the
 observation. QuReddy does not use an out-of-band endpoint identity channel.
 
-## Target assumptions
+## 4. Target assumptions
 
 TLS targets return protocol output that the supported OpenSSL collector can
 parse. SSH targets return an SSH identification string and KEXINIT packet
@@ -65,7 +66,7 @@ Malformed or conflicting responses become typed target or parse failures.
 Target-controlled text is treated as untrusted data and is not evaluated as
 code.
 
-## Target selection and SSRF boundary
+## 5. Target selection and SSRF boundary
 
 QuReddy connects to whatever target it is given and does no target filtering by
 default. Scanning `localhost`, an RFC1918 host, a link-local address, or a cloud
@@ -87,7 +88,7 @@ that resolves to an internal address (including DNS-rebinding) is not caught by
 name. A service that accepts untrusted targets should also validate the resolved
 address at connect time and run the scanner in an egress-restricted network.
 
-## In-scope protections
+## 6. In-scope protections
 
 QuReddy provides:
 
@@ -105,7 +106,7 @@ QuReddy provides:
 These properties limit scanner behavior and preserve evidence. They do not
 secure the target.
 
-## Out-of-scope threats
+## 7. Out-of-scope threats
 
 QuReddy does not defend against:
 
@@ -123,7 +124,7 @@ QuReddy does not defend against:
 Use a dedicated TLS vulnerability scanner for vulnerability assessment.
 QuReddy's scope is post-quantum readiness evidence.
 
-## Privacy and data handling
+## 8. Privacy and data handling
 
 QuReddy makes no telemetry, analytics, update-check, or BreachSAFE service
 connection. It connects to the target named by the operator.
@@ -134,7 +135,7 @@ digests. Standard output, redirected files, logs, and artifacts remain under
 operator control. Operators must protect them according to their target and
 environment sensitivity.
 
-## Report a vulnerability
+## 9. Report a vulnerability
 
 Do not report a vulnerability in a public issue. Follow the private process in
 [`SECURITY.md`](../../SECURITY.md).
@@ -142,7 +143,7 @@ Do not report a vulnerability in a public issue. Follow the private process in
 Questions about expected scope or classification may use the public issue
 tracker when they contain no sensitive target data.
 
-## Related documentation
+## 10. Related documentation
 
 - [Why hybrid post-quantum](why-hybrid-pq.md)
 - [Harvest now, decrypt later](hndl.md)

@@ -7,19 +7,19 @@ SSH scanning works without OpenSSL. TLS scanning requires a separate OpenSSL
 
 ## Contents
 
-- [Prerequisites](#prerequisites)
-- [Install with pipx](#install-with-pipx)
-- [Install on macOS](#install-on-macos)
-- [Install on Linux](#install-on-linux)
-- [Install on Windows](#install-on-windows)
-- [Install in a virtual environment](#install-in-a-virtual-environment)
-- [Select OpenSSL for TLS](#select-openssl-for-tls)
-- [Verify the installation](#verify-the-installation)
-- [Upgrade or uninstall](#upgrade-or-uninstall)
-- [Troubleshooting](#troubleshooting)
-- [Related documentation](#related-documentation)
+1. [Prerequisites](#1-prerequisites)
+2. [Install with pipx](#2-install-with-pipx)
+3. [Install on macOS](#3-install-on-macos)
+4. [Install on Linux](#4-install-on-linux)
+5. [Install on Windows](#5-install-on-windows)
+6. [Install in a virtual environment](#6-install-in-a-virtual-environment)
+7. [Select OpenSSL for TLS](#7-select-openssl-for-tls)
+8. [Verify the installation](#8-verify-the-installation)
+9. [Upgrade or uninstall](#9-upgrade-or-uninstall)
+10. [Troubleshooting](#10-troubleshooting)
+11. [Related documentation](#11-related-documentation)
 
-## Prerequisites
+## 1. Prerequisites
 
 QuReddy requires:
 
@@ -40,9 +40,9 @@ On Windows PowerShell, use the Python launcher:
 py -3.12 --version
 ```
 
-## Install with pipx
+## 2. Install with pipx
 
-> **Pre-release (TestPyPI).** QuReddy 0.2.13 is being published to
+> **Pre-release (TestPyPI).** QuReddy 0.2.13 is available on
 > [TestPyPI](https://test.pypi.org/project/breachsafe-qureddy/) while the PyPI
 > release is finalized. Until then, install from TestPyPI and pull runtime
 > dependencies from PyPI:
@@ -78,7 +78,7 @@ newer (for example 3.13), a bare `pipx install` fails with
 `No matching distribution found`; pass `--python 3.12` (macOS/Linux) or use the
 `py -3.12` launcher (Windows) as shown in the platform sections below.
 
-## Install on macOS
+## 3. Install on macOS
 
 Homebrew can install Python, pipx, and OpenSSL:
 
@@ -92,7 +92,7 @@ export QUREDDY_OPENSSL="$(brew --prefix openssl@3.5)/bin/openssl"
 Do not select `/usr/bin/openssl`; current macOS systems expose LibreSSL at that
 path, and QuReddy rejects LibreSSL for TLS scans.
 
-## Install on Linux
+## 4. Install on Linux
 
 Install Python 3.12 and pipx from the distribution's supported package source.
 Then run:
@@ -114,7 +114,7 @@ If the version is older than 3.5.0 or the group list does not contain
 from the [official OpenSSL source](https://openssl-library.org/source/).
 Record the resulting path in `QUREDDY_OPENSSL`.
 
-## Install on Windows
+## 5. Install on Windows
 
 Install Python 3.12 and pipx, then run in PowerShell:
 
@@ -144,7 +144,7 @@ $env:QUREDDY_OPENSSL = "C:\Path\To\OpenSSL\bin\openssl.exe"
 
 SSH scans do not need this step.
 
-## Install in a virtual environment
+## 6. Install in a virtual environment
 
 Use this path when an application or CI job already manages an environment:
 
@@ -166,7 +166,7 @@ qureddy --version
 
 Do not install into the operating system's managed Python environment.
 
-## Select OpenSSL for TLS
+## 7. Select OpenSSL for TLS
 
 QuReddy resolves the collector binary in this order:
 
@@ -184,7 +184,7 @@ Confirm both the version and required group:
 The selected binary must report OpenSSL 3.5.0 or newer and list
 `X25519MLKEM768`.
 
-## Verify the installation
+## 8. Verify the installation
 
 The version and help commands are offline:
 
@@ -214,7 +214,7 @@ qureddy scan ssh github.com --format json |
 Get-Content github-ssh.json | ConvertFrom-Json | Out-Null
 ```
 
-## Upgrade or uninstall
+## 9. Upgrade or uninstall
 
 For a pipx installation:
 
@@ -230,7 +230,7 @@ python -m pip install --upgrade breachsafe-qureddy
 python -m pip uninstall breachsafe-qureddy
 ```
 
-## Troubleshooting
+## 10. Troubleshooting
 
 ### `qureddy` is not found
 
@@ -278,7 +278,7 @@ qureddy scan ssh github.com --format json > scan.json 2> scan.log
 Without `-v`, `-vv`, or `-vvv`, successful JSON and CBOM scans keep standard
 error empty.
 
-## Related documentation
+## 11. Related documentation
 
 - [Your first scan](../tutorials/your-first-scan.md)
 - [CLI reference](../reference/cli.md)

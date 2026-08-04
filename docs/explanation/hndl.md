@@ -7,15 +7,15 @@ breaks the original key exchange.
 
 ## Contents
 
-- [Threat sequence](#threat-sequence)
-- [Why ephemeral classical exchange is affected](#why-ephemeral-classical-exchange-is-affected)
-- [Why migration cannot wait](#why-migration-cannot-wait)
-- [What hybrid exchange protects](#what-hybrid-exchange-protects)
-- [What it does not protect](#what-it-does-not-protect)
-- [How QuReddy uses this model](#how-qureddy-uses-this-model)
-- [Related documentation](#related-documentation)
+1. [Threat sequence](#1-threat-sequence)
+2. [Why ephemeral classical exchange is affected](#2-why-ephemeral-classical-exchange-is-affected)
+3. [Why migration cannot wait](#3-why-migration-cannot-wait)
+4. [What hybrid exchange protects](#4-what-hybrid-exchange-protects)
+5. [What it does not protect](#5-what-it-does-not-protect)
+6. [How QuReddy uses this model](#6-how-qureddy-uses-this-model)
+7. [Related documentation](#7-related-documentation)
 
-## Threat sequence
+## 1. Threat sequence
 
 The HNDL sequence is:
 
@@ -29,7 +29,7 @@ The target data must remain sensitive long enough for the later step to
 matter. The required protection date therefore depends on data lifetime and
 migration time, not only on a forecast for quantum hardware.
 
-## Why ephemeral classical exchange is affected
+## 2. Why ephemeral classical exchange is affected
 
 TLS 1.3 X25519 creates an ephemeral shared secret. Destroying the ephemeral
 private values provides forward secrecy against later compromise of a
@@ -41,7 +41,7 @@ can then become useful even though the ephemeral private values were erased.
 Forward secrecy against classical long-term key compromise is not the same as
 post-quantum confidentiality.
 
-## Why migration cannot wait
+## 3. Why migration cannot wait
 
 Protection added after a session was captured cannot change that historical
 session. An operator needs the post-quantum contribution in place before the
@@ -51,7 +51,7 @@ Migration also takes time across clients, servers, proxies, load balancers,
 inspection systems, and operational policy. Evidence about current
 negotiation is needed before scheduling that work.
 
-## What hybrid exchange protects
+## 4. What hybrid exchange protects
 
 A correctly designed hybrid key exchange combines classical and post-quantum
 secret contributions. Breaking the classical contribution later should not be
@@ -62,7 +62,7 @@ For TLS, QuReddy requests `X25519MLKEM768` and records the negotiated group.
 For SSH, it records recognized hybrid key exchanges in the server offer. These
 are endpoint observations, not a proof about every connection path.
 
-## What it does not protect
+## 5. What it does not protect
 
 Hybrid key exchange does not by itself protect:
 
@@ -76,7 +76,7 @@ Hybrid key exchange does not by itself protect:
 Authentication migration and key exchange migration are related but separate
 work.
 
-## How QuReddy uses this model
+## 6. How QuReddy uses this model
 
 QuReddy treats a recognized hybrid key exchange as
 `transitional_hybrid`. Classical-only key exchange is
@@ -86,7 +86,7 @@ The scanner reports observations and findings. It does not estimate a quantum
 computer date, calculate data sensitivity, select a business deadline, or
 perform remediation.
 
-## Related documentation
+## 7. Related documentation
 
 - [Why hybrid post-quantum](why-hybrid-pq.md)
 - [Threat model](threat-model.md)

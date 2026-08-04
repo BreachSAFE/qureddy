@@ -6,15 +6,15 @@ BreachSAFE GitHub Container Registry (GHCR).
 
 ## Contents
 
-- [Pull the release image](#pull-the-release-image)
-- [Run a TLS scan](#run-a-tls-scan)
-- [Run an SSH scan](#run-an-ssh-scan)
-- [Write JSON or CBOM output](#write-json-or-cbom-output)
-- [Pin the image digest](#pin-the-image-digest)
-- [Build locally](#build-locally)
-- [Publish a release image](#publish-a-release-image)
+1. [Pull the release image](#1-pull-the-release-image)
+2. [Run a TLS scan](#2-run-a-tls-scan)
+3. [Run an SSH scan](#3-run-an-ssh-scan)
+4. [Write JSON or CBOM output](#4-write-json-or-cbom-output)
+5. [Pin the image digest](#5-pin-the-image-digest)
+6. [Build locally](#6-build-locally)
+7. [Publish a release image](#7-publish-a-release-image)
 
-## Pull the release image
+## 1. Pull the release image
 
 ```bash
 docker pull ghcr.io/breachsafe/qureddy:latest
@@ -23,7 +23,7 @@ docker pull ghcr.io/breachsafe/qureddy:latest
 The image includes the TLS collector. A host OpenSSL installation and
 `QUREDDY_OPENSSL` setting are unnecessary inside the container.
 
-## Run a TLS scan
+## 2. Run a TLS scan
 
 ```bash
 docker run --rm ghcr.io/breachsafe/qureddy:latest \
@@ -37,7 +37,7 @@ docker run --rm ghcr.io/breachsafe/qureddy:latest \
   scan tls 1.1.1.1:443 --sni one.one.one.one
 ```
 
-## Run an SSH scan
+## 3. Run an SSH scan
 
 ```bash
 docker run --rm ghcr.io/breachsafe/qureddy:latest \
@@ -46,7 +46,7 @@ docker run --rm ghcr.io/breachsafe/qureddy:latest \
 
 SSH scans need outbound TCP 22 access and do not invoke OpenSSL.
 
-## Write JSON or CBOM output
+## 4. Write JSON or CBOM output
 
 ```bash
 docker run --rm ghcr.io/breachsafe/qureddy:latest \
@@ -62,7 +62,7 @@ documented exit-code contract applies inside the container, including exit
 code `2` for a target handshake failure and `3` for a local TLS collector
 failure.
 
-## Pin the image digest
+## 5. Pin the image digest
 
 ```bash
 docker pull ghcr.io/breachsafe/qureddy:latest
@@ -72,7 +72,7 @@ docker image inspect ghcr.io/breachsafe/qureddy:latest \
 
 Replace the tag with the returned `@sha256:...` reference in production jobs.
 
-## Build locally
+## 6. Build locally
 
 ```bash
 python -m build --wheel
@@ -83,7 +83,7 @@ docker run --rm qureddy:local --version
 The Dockerfile verifies the OpenSSL source archive SHA-256 before compiling
 and copies only the installed runtime into the final image.
 
-## Publish a release image
+## 7. Publish a release image
 
 The repository workflow at `.github/workflows/container.yml` publishes only
 through an explicit manual dispatch with `publish=true`. It authenticates to
