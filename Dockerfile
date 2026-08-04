@@ -25,7 +25,7 @@ RUN curl --fail --location --proto '=https' --connect-timeout 30 --max-time 300 
 
 FROM python:3.12.13-slim-bookworm@sha256:8a7e7cc04fd3e2bd787f7f24e22d5d119aa590d429b50c95dfe12b3abe52f48b
 
-ARG QUREDDY_VERSION=0.2.0
+ARG QUREDDY_VERSION=0.2.13
 LABEL org.opencontainers.image.title="QuReddy" \
       org.opencontainers.image.description="Post-quantum readiness scanner for TLS and SSH endpoints" \
       org.opencontainers.image.source="https://github.com/breachsafe/qureddy" \

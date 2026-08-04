@@ -1,7 +1,7 @@
 # Changelog
 
 [![Status: Alpha](https://img.shields.io/badge/status-alpha-blue?style=flat-square)](https://github.com/breachsafe/qureddy)
-[![Version](https://img.shields.io/badge/version-0.2.1-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.13-blue?style=flat-square)](CHANGELOG.md)
 [![Keep a Changelog](https://img.shields.io/badge/keep%20a%20changelog-1.1.0-orange?style=flat-square)](https://keepachangelog.com/en/1.1.0/)
 [![SemVer](https://img.shields.io/badge/SemVer-2.0.0-blue?style=flat-square)](https://semver.org/spec/v2.0.0.html)
 
@@ -11,13 +11,23 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.13] - 2026-08-04
+
 ### Changed
 
 - Future releases are source-available under PolyForm Noncommercial License 1.0.0.
   Releases through v0.2.12 remain available under their published Apache-2.0 terms.
+- Release-facing documentation, package metadata, and Docker OCI metadata now identify
+  the PolyForm license consistently.
+
+### Fixed
+
+- Docker's default build argument and container-publication workflow now use the current
+  release version instead of stale 0.2.x defaults.
 
 ## Contents
 
+- [0.2.13](#0213---2026-08-04)
 - [0.2.12](#0212---2026-07-28)
 - [0.2.11](#0211---2026-07-28)
 - [0.2.10](#0210---2026-07-28)

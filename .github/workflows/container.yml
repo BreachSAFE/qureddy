@@ -16,7 +16,7 @@ on:
       version:
         description: Image version to publish
         required: true
-        default: 0.2.3
+        default: 0.2.13
       publish:
         description: Push the multi-architecture image to GHCR
         required: true

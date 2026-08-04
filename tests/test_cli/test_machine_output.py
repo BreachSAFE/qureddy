@@ -149,6 +149,7 @@ def test_installed_classical_cbom_final_bytes_include_certificate() -> None:
         dependencies = {item["ref"]: item for item in payload["dependencies"]}
         assert dependencies["endpoint"]["provides"] == [
             "crypto/algorithm/ecdsa-with-sha256",
+            "crypto/algorithm/tls_aes_256_gcm_sha384",
             "crypto/algorithm/x25519",
             "crypto/certificate/leaf",
             "crypto/protocol/tls-tlsv1.3",

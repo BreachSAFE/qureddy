@@ -11,7 +11,7 @@ Docker documentation intentionally uses the floating ``:latest`` tag and is not
 version-stamped, so it never needs a bump.
 
 Usage:
-    python scripts/bump_version.py 0.2.3   # set the version and propagate
+    python scripts/bump_version.py 0.2.13  # set the version and propagate
     python scripts/bump_version.py --check  # verify everything already agrees (CI)
 """
 
