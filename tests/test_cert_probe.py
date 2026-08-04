@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 """Tests for qureddy.scanners.tls.cert_probe (rapid-prototype module).
 
 Written test-first against the python-oss-crypto-reviewer REJECT verdict

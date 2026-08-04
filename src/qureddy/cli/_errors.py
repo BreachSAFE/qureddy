@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 """Exit-code surface, stderr diagnostics, and Click usage-error classifiers.
 
 Per skill §"Exit codes" + issue #12:

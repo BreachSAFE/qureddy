@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 # Common dev commands. Run `just` to see the list. Run `just <task>` to invoke.
 # Install just: https://github.com/casey/just
 

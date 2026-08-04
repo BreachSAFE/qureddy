@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 # Pre-commit hooks per docs/contributors/coding-rules.md Section 23.
 # Install once: pre-commit install
 # Run manually: pre-commit run --all-files

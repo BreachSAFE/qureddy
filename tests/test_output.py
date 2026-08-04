@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 """Tests for the Rich console output adapter."""
 
 from __future__ import annotations
@@ -319,7 +319,7 @@ class TestExistingContractStillHolds:
 
         Pins via the imported `HEADER` (not a hardcoded literal) so a
         version bump propagates without test churn. Pre-extraction
-        hardcoding `\"QuReddy 0.1.0 by BreachSAFE OSS\"` was the
+        hardcoding `\"QuReddy 0.1.0 by BreachSAFE\"` was the
         version-drift bug the branding extraction fixed.
         """
         monkeypatch.setenv("NO_COLOR", "1")

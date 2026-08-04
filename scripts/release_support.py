@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 """Fail-closed evidence, tool, source-policy, and archive support."""
 
 from __future__ import annotations
@@ -289,6 +289,7 @@ def inspect_archives(artifacts: list[Path]) -> None:
         "CODE_OF_CONDUCT.md",
         "CONTRIBUTING.md",
         "LICENSE",
+        "NOTICE",
         "README.md",
         "REUSE.toml",
         "SECURITY.md",

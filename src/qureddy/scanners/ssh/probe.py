@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 """Read an SSH server's cleartext KEXINIT posture. No crypto, no external binary.
 
 SSH transmits its offered algorithm name-lists (RFC 4253 SSH_MSG_KEXINIT) in

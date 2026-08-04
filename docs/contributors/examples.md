@@ -13,7 +13,7 @@ The active implementation skill in `.agents/skills/` defines the canonical model
 ### Good
 
 ```python
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 """Domain models for QuReddy core."""
 from __future__ import annotations
 
@@ -79,7 +79,7 @@ class scan_record(BaseModel):  # wrong case (Rule 3.4)
 ### Good
 
 ```python
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 """Tests for ScanTarget normalization."""
 from __future__ import annotations
 
@@ -185,7 +185,7 @@ OpenSSL subprocess calls live **only** in `src/qureddy/scanners/tls/openssl_prob
 ### Good
 
 ```python
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 """OpenSSL 3.5 LTS+ subprocess probe for TLS scans."""
 from __future__ import annotations
 
@@ -359,7 +359,7 @@ log.info(f"got back {full_subprocess_stdout}")  # logging full subprocess output
 ### Good
 
 ```python
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 """Domain-specific exception hierarchy."""
 from __future__ import annotations
 
@@ -466,7 +466,7 @@ def parse_target(input_str, sni_override=None):
 ### Good
 
 ```python
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 """Typer CLI entry point for the qureddy command."""
 from __future__ import annotations
 
@@ -559,7 +559,7 @@ Use `model.model_dump(mode="json")`. Do not hand-build dicts.
 ### Good
 
 ```python
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 """JSON output adapter."""
 from __future__ import annotations
 

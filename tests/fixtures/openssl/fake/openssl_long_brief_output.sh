@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # SPDX-FileCopyrightText: 2026 BreachSAFE
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 # Fake openssl with a successful s_client -brief output whose group line
 # appears after EXCERPT_LIMIT. Used to prove parsing is not capped by JSON
 # excerpt length.

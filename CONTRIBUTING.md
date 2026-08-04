@@ -5,7 +5,7 @@
 [![Code Style: Ruff](https://img.shields.io/badge/code%20style-ruff-D7FF64?style=flat-square&logo=ruff&logoColor=black)](https://docs.astral.sh/ruff/)
 [![Type Checked: mypy strict](https://img.shields.io/badge/type%20check-mypy%20strict-blue?style=flat-square)](https://mypy-lang.org/)
 [![Coverage](https://img.shields.io/badge/coverage-%E2%89%A580%25-brightgreen?style=flat-square)](pyproject.toml)
-[![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue?style=flat-square)](LICENSE)
+[![License: PolyForm Noncommercial](https://img.shields.io/badge/license-PolyForm%20Noncommercial-orange?style=flat-square)](LICENSE)
 
 Thanks for considering a contribution. This document covers what you need to know.
 
@@ -128,7 +128,7 @@ Adding a runtime dependency requires PR justification per Rule 13.1:
 
 - Replaces ≥ 50 lines of code we would have written
 - Actively maintained (commit in last 12 months)
-- Apache 2.0-compatible license (no GPL, no AGPL, no LGPL)
+- License and distribution terms compatible with PolyForm Noncommercial; preserve all upstream notices
 - Recognizable maintainer
 
 GPL, AGPL, and LGPL dependencies do not meet the documented dependency policy.
@@ -162,10 +162,10 @@ Examples:
 
 ## License
 
-By contributing, you agree that your contributions are licensed under the Apache License 2.0. Every source file must have an SPDX header:
+By contributing, you confirm that you have authority to contribute the material and agree that your contribution is licensed under the PolyForm Noncommercial License 1.0.0. Every first-party source file must have an SPDX header:
 
 ```python
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 ```
 
 `reuse lint` enforces this in CI.

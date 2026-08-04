@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 """Tests for the canonical branding module.
 
 The branding module is the single source of truth for project name,
@@ -39,8 +39,8 @@ def test_source_url_is_breachsafe_qureddy() -> None:
     assert SOURCE_URL == "https://github.com/breachsafe/qureddy"
 
 
-def test_license_is_apache_2() -> None:
-    assert LICENSE_NAME == "Apache-2.0"
+def test_license_is_polyform_noncommercial() -> None:
+    assert LICENSE_NAME == "PolyForm-Noncommercial-1.0.0"
 
 
 def test_version_banner_uses_canonical_version() -> None:
@@ -48,7 +48,7 @@ def test_version_banner_uses_canonical_version() -> None:
 
     Pin against the imported value so a 0.1.0 → 0.2.0 bump in
     `__init__.py` automatically propagates without breaking the format
-    contract. The original `HEADER = "QuReddy 0.1.0 by BreachSAFE OSS"`
+    contract. The original `HEADER = "QuReddy 0.1.0 by BreachSAFE"`
     was a hardcoded-version drift bug; this test prevents its return.
     """
     assert __version__ in VERSION_BANNER
@@ -61,13 +61,13 @@ def test_console_header_uses_canonical_version() -> None:
     """The Rich-output HEADER also reads from `__version__`.
 
     Before this refactor, `output/console.py` defined
-    `HEADER = "QuReddy 0.1.0 by BreachSAFE OSS"` with the version
+    `HEADER = "QuReddy 0.1.0 by BreachSAFE"` with the version
     hardcoded as a literal — drifts on every release. After: HEADER
     references `__version__` via the branding module so help, verdict,
     and JSON consumers all agree about which version they're seeing.
     """
     assert __version__ in HEADER
-    assert "BreachSAFE OSS" in HEADER
+    assert "BreachSAFE" in HEADER
     assert "QuReddy" in HEADER
 
 
@@ -90,7 +90,7 @@ def test_cli_module_re_exports_canonical_branding() -> None:
 def test_console_module_re_exports_canonical_header() -> None:
     """`qureddy.output.console` consumes HEADER via import, not literal.
 
-    Before refactor: `HEADER = "QuReddy 0.1.0 by BreachSAFE OSS"` —
+    Before refactor: `HEADER = "QuReddy 0.1.0 by BreachSAFE"` —
     a literal that drifts on every release. After: HEADER comes from
     the branding module.
     """

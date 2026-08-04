@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 """Live network tests against the canonical authorized targets.
 
 Per docs/contributors/coding-rules.md Rule 9.4 these run as part of the default

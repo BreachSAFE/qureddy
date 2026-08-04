@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 """Evidence-record builders for the TLS scanner.
 
 Pure functions that turn a `ProbeResult` into the locked `Evidence`

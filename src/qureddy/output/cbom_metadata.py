@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 """``qureddy:``-namespaced ``metadata.properties`` emitters for the CBOM.
 
 These functions append QuReddy provenance to ``bom.metadata`` (the local
