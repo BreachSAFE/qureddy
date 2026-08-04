@@ -17,7 +17,6 @@ QuReddy's CLI is **Typer + Rich + structlog** running on top of **Click 8**. Rul
 > [exit-code reference](../reference/exit-codes.md), current source and tests,
 > and the canonical public
 > [release documentation issue](https://github.com/breachsafe/qureddy/issues/35).
-
 > **Why this matters.** The shipped `scan tls` and `scan ssh` commands share one command-group convention, output contract, and exit-code surface. New scanner work must follow the same reviewable rules.
 
 ## Contents

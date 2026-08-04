@@ -5,7 +5,7 @@
 [![Secret Scan: gitleaks](https://img.shields.io/badge/secret%20scan-gitleaks-red?style=flat-square)](https://github.com/gitleaks/gitleaks)
 [![SPDX: reuse](https://img.shields.io/badge/license%20headers-reuse-green?style=flat-square)](https://reuse.software/)
 [![OpenSSF Best Practices](https://img.shields.io/badge/OpenSSF-passing-yellow?style=flat-square)](https://www.bestpractices.dev/)
-[![Disclosure SLA](https://img.shields.io/badge/disclosure%20SLA-5%20business%20days-brightgreen?style=flat-square)](#response-targets)
+[![Disclosure SLA](https://img.shields.io/badge/disclosure%20SLA-5%20business%20days-brightgreen?style=flat-square)](#3-response-targets)
 
 QuReddy is a security tool. We take vulnerability reports seriously.
 
@@ -72,12 +72,14 @@ We will not retaliate against reporters acting in good faith. We will not pursue
 ## 5. Scope
 
 In scope:
+
 - The QuReddy CLI and Python package (`breachsafe-qureddy`)
 - Distributed Docker images when published
 - The 7-phase CI pipeline if it produces unsigned or compromised artifacts
 - Documentation that misleads users about cryptographic posture
 
 Out of scope:
+
 - Vulnerabilities in dependencies that have been disclosed and patched upstream; file with the upstream project
 - Theoretical issues without a working PoC
 - Social engineering of contributors

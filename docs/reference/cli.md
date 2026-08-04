@@ -62,7 +62,7 @@ qureddy scan ssh [OPTIONS] TARGET
 
 | Argument | Requirement |
 | --- | --- |
-| `TARGET` | Required SSH target; see [target syntax](#target-syntax) |
+| `TARGET` | Required SSH target; see [target syntax](#5-target-syntax) |
 
 | Option | Type | Default | Meaning |
 | --- | --- | --- | --- |
@@ -93,7 +93,7 @@ qureddy scan tls [OPTIONS] TARGET
 
 | Argument | Requirement |
 | --- | --- |
-| `TARGET` | Required TLS target; see [target syntax](#target-syntax) |
+| `TARGET` | Required TLS target; see [target syntax](#5-target-syntax) |
 
 | Option | Type | Default | Meaning |
 | --- | --- | --- | --- |

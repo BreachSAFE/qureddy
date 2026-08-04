@@ -139,6 +139,7 @@ Exceptions: `cls`, `self`, `cfg` for argparse Namespace. Local variable abbrevia
 ## Section 4 — Type Hints and Static Typing
 
 **Rule 4.1 — Every public function has type hints on every parameter and return value.**
+
 ```python
 def parse_target(input_str: str, sni_override: str | None = None) -> ScanTarget:
     ...
@@ -195,11 +196,13 @@ Every error type in QuReddy descends from `QureddyError` (defined in `core/error
 
 **Rule 6.2 — Never `except: pass`.**
 Bare except clauses swallow `KeyboardInterrupt` and `SystemExit`. Even `except Exception: pass` masks bugs and makes the system silently wrong. If you catch an exception, do one of:
+
 - Re-raise after logging context: `log.warning("...", exc_info=True); raise`
 - Transform into a domain error: `raise TLSHandshakeFailed(...) from e`
 - Handle it specifically with a comment explaining why suppression is correct
 
 **Rule 6.3 — `except` blocks catch specific types.**
+
 ```python
 try:
     result = subprocess.run(...)
@@ -230,18 +233,22 @@ When new external tools are added (e.g., `ssh-audit` for the SSH scanner), each 
 `os.system` does not capture output cleanly and uses shell parsing. `subprocess.Popen` is fine when you genuinely need streaming I/O, but justify it in a comment.
 
 **Rule 7.3 — Args as a list, never a shell string. `shell=False` always.**
+
 ```python
 subprocess.run(["openssl", "s_client", "-connect", f"{host}:{port}"], ...)
 ```
+
 `shell=True` is a shell injection vulnerability. Forbidden.
 
 **Rule 7.4 — Always set `timeout`.**
 Default for QuReddy probes is 30 seconds. No subprocess call goes without one.
 
 **Rule 7.5 — Always capture stdout and stderr.**
+
 ```python
 subprocess.run([...], capture_output=True, text=True, ...)
 ```
+
 Inspect both, even if you only care about stdout. Stderr often contains the real error.
 
 **Rule 7.6 — `check=False`, inspect returncode manually.**
@@ -255,30 +262,38 @@ Subprocess stdout/stderr can contain large amounts of data. Log SHA-256 hashes a
 ## Section 8 — Logging
 
 **Rule 8.1 — Every module gets a logger.**
+
 ```python
 from qureddy.core.logging import get_logger
 log = get_logger(__name__)
 ```
+
 The logger name is `__name__`, which gives `qureddy.scanners.tls.openssl_probe` automatically.
 
 **Rule 8.2 — All logs go to stderr. All scan output goes to stdout. Never mix them.**
 Non-negotiable. The user must be able to do:
+
 ```
 qureddy scan tls google.com --format json > findings.json 2> scan.log
 ```
+
 If logs leak into stdout, every downstream consumer breaks.
 
 **Rule 8.3 — Structured logging only.**
 Pass key-value context to log calls. Do not format strings:
+
 ```python
 log.info("starting hybrid probe", host=host, port=port, group="X25519MLKEM768")
 ```
+
 Not:
+
 ```python
 log.info(f"starting hybrid probe to {host}:{port}")
 ```
 
 **Rule 8.4 — Log levels, used consistently.**
+
 - DEBUG: flow detail useful only when debugging (parser decisions, internal state)
 - INFO: milestones (scan started, probe completed, finding produced)
 - WARNING: recoverable problem (probe failed but scan continues)
@@ -348,6 +363,7 @@ Google style. Includes Args, Returns, Raises sections where applicable.
 
 **Rule 10.2 — Comments explain why, not what.**
 The code says what. Comments explain why the code is the way it is.
+
 ```python
 # OpenSSL 3.5.7 LTS emits "Server Temp Key" but not "Negotiated TLS1.3 group"
 # in -brief mode for X25519MLKEM768. Parse the former.
@@ -380,6 +396,7 @@ Scan results: Rich table or JSON output. Logs, progress messages, errors: stderr
 Restated from Rule 8.7 because of how often this gets violated.
 
 **Rule 11.3 — CLI errors produce specific exit codes.**
+
 - 0: scan completed successfully
 - 1: reserved for high-severity findings when that policy is enabled
 - 2: target scan failed
@@ -414,11 +431,13 @@ Same input must produce byte-identical output. Sort lists by `id`, dependencies 
 `verify=False` in requests, `ssl.CERT_NONE` in ssl context. If a target has a bad cert, that is a finding. The scanner does not work around bad TLS.
 
 **Rule 12.2 — `pathlib.Path.resolve()` for any user-supplied path.**
+
 ```python
 path = Path(user_input).resolve()
 if not path.is_relative_to(allowed_root):
     raise ConfigurationError(f"Path outside allowed root: {path}")
 ```
+
 Prevents path traversal attacks.
 
 **Rule 12.3 — `secrets` module for security-relevant randomness.**
@@ -441,6 +460,7 @@ Globals are frozen tuples/strings/ints/Enums. Module-level mutable lists or dict
 ## Section 13 — Dependencies
 
 **Rule 13.1 — Every new dependency must justify itself.**
+
 - Replaces at least 50 lines of code we would have written
 - Actively maintained (commit in last 12 months)
 - License and distribution terms compatible with this source-available release; preserve all upstream notices
@@ -471,6 +491,7 @@ Both paths target the same modern platforms. Neither runs on EOL operating syste
 CI runs the full test suite on **all three platforms** (ubuntu-latest, macos-latest, windows-latest).
 
 Code is written to work on both install paths:
+
 - File paths use `pathlib.Path`, never hardcoded `/tmp` or `/usr/local`
 - Subprocess calls find tools via `PATH`, not absolute paths
 - Configuration locations are platform-aware (use `platformdirs`)
@@ -660,6 +681,7 @@ python scripts/audit_phase.py
 ```
 
 Audit checks:
+
 - Phase 1 ran and reported 0 critical issues
 - Phase 2 collected at least 20 unit tests; coverage >= 80%
 - Phase 3 collected at least 5 integration tests
@@ -716,6 +738,7 @@ CI runs on the matrix: **ubuntu-latest × macos-latest × windows-latest × Pyth
 Pre-commit hooks run locally before push. Configured in `.pre-commit-config.yaml`. Contributors install once with `pre-commit install`.
 
 Required hooks:
+
 - `ruff check --fix`
 - `ruff format`
 - `trailing-whitespace`
@@ -740,6 +763,7 @@ QuReddy scans itself before release. We are a security tool. We dogfood our own 
 Once the scanner exists for a target type, the release workflow runs `qureddy` against the project's own infrastructure and committed fixtures. Output is captured as a CI artifact and reviewed.
 
 **Rule 24.2 — Required scans before every release:**
+
 - Dependency vulnerability scan (`pip-audit`)
 - Dependency license scan (`pip-licenses`)
 - Secrets scan (`trufflehog` against full history)
@@ -750,6 +774,7 @@ Once the scanner exists for a target type, the release workflow runs `qureddy` a
 - SBOM/CBOM generation check (the artifact is produced and validated)
 
 **Rule 24.3 — Required scans before merge when relevant:**
+
 - `ruff check` (always)
 - `ruff format --check` (always)
 - `mypy --strict` (always)
@@ -761,6 +786,7 @@ Once the scanner exists for a target type, the release workflow runs `qureddy` a
 
 **Rule 24.4 — Self-scan results are saved as CI artifacts.**
 Each release workflow uploads:
+
 - `qureddy-self-scan.json` — output of QuReddy run against project's targets
 - `qureddy-self-scan.cbom.json` - validated CycloneDX 1.7 CBOM artifact
 - `pip-audit.json`, `bandit.json`, `pip-licenses.json`
@@ -768,6 +794,7 @@ Each release workflow uploads:
 Retained for at least 90 days. Linked from GitHub release notes.
 
 **Rule 24.5 — A scan failure has two acceptable resolutions.**
+
 1. Fix the underlying issue before merge
 2. Document the accepted finding with `SELF-SCAN ACCEPTED: <finding>, because <reason>, expires <date or issue>` and obtain reviewer approval
 
@@ -844,6 +871,7 @@ Findings are the product. Changing how a finding is classified, what severity it
 
 **Rule 26.11 — Security-sensitive changes require focused tests, scans, and explanation.**
 PRs that change TLS handshake handling, certificate parsing, signature verification, secrets handling, subprocess invocation, path handling, or deserialization must include:
+
 - Focused unit tests for the unsafe-input case
 - Secrets scan output (clean)
 - Static security scan output (clean at MEDIUM)
@@ -851,9 +879,11 @@ PRs that change TLS handshake handling, certificate parsing, signature verificat
 - Explicit explanation of any accepted residual risk
 
 **Rule 26.12 — Security exceptions are time-bounded and reviewed.**
+
 ```
 SECURITY EXCEPTION ACCEPTED: <rule>, because <reason>, expires <date or issue>
 ```
+
 Tracked in `docs/SECURITY_EXCEPTIONS.md` (created when the first exception is recorded) until expired or closed.
 
 **Rule 26.13 — Refuse insecure shortcuts even when asked.**
@@ -871,6 +901,7 @@ QuReddy reports on crypto. We do not use weak crypto in our own code. SHA-1 only
 
 **Rule 27.1 — `main` branch is protected.**
 GitHub branch protection:
+
 - Require pull request before merging
 - Require the current Linux, macOS, and Windows `Local release gate` checks to pass
 - Require branches to be up to date before merging
@@ -964,6 +995,7 @@ The rules above are written to satisfy the badge criteria. Specific OpenSSF requ
 The minimum checklist for every PR. Long enough to catch real issues, short enough to actually use.
 
 **Code:**
+
 - [ ] No file over 400 lines
 - [ ] No function over 50 lines (30 line norm)
 - [ ] No class over 200 lines
@@ -976,11 +1008,13 @@ The minimum checklist for every PR. Long enough to catch real issues, short enou
 - [ ] No `print()` in library code
 
 **Tests:**
+
 - [ ] `pytest` passes (all phases) with >=80% coverage
 - [ ] Error paths and boundary values tested
 - [ ] No new `@pytest.mark.skip` or `@pytest.mark.acceptance`
 
 **Security (Tier 1 per-PR):**
+
 - [ ] `bandit` passes at MEDIUM threshold
 - [ ] Secret scan on diff clean (`gitleaks` or `trufflehog`)
 - [ ] No `verify=False`, `shell=True`, `eval`/`exec`, `pickle.loads`
@@ -990,6 +1024,7 @@ The minimum checklist for every PR. Long enough to catch real issues, short enou
 (`pip-audit` and `pip-licenses` run as Tier 2 per-release per Section 22; per-PR, they only fire when `pyproject.toml` or `uv.lock` changes.)
 
 **Process:**
+
 - [ ] Anti-pattern audit recorded in PR description
 - [ ] CHANGELOG.md updated when behavior changes
 - [ ] Audit phase (`scripts/audit_phase.py`) passes

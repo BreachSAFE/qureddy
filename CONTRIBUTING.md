@@ -80,9 +80,11 @@ QuReddy's capability check exits 3 with a clear message when OpenSSL is missing 
 2. **Branch from `main`**. Branch naming: `<type>/<short-description>` (e.g., `feat/cert-scanner`, `fix/openssl-version-parse`).
 3. **One thing per PR.** Per Rule 1.3 in CODING_RULES, do not bundle a refactor with a feature with a bug fix. If your PR description splits into "Part 1" and "Part 2," it should be two PRs.
 4. **Run the gates locally** before pushing:
+
    ```
    just gates
    ```
+
 5. **Open a PR.** Fill out the PR template. The audit checklist is non-negotiable.
 6. **Self-review your own diff.** The `audit-pr` skill output goes in the PR description.
 7. **CI must pass on all three platforms** (ubuntu, macos, windows) before merge.
@@ -156,6 +158,7 @@ Conventional Commits format:
 Types we use: `feat`, `fix`, `docs`, `test`, `refactor`, `build`, `ci`, `chore`, `perf`, `security`.
 
 Examples:
+
 - `feat(scanner): add TLS 1.3 hybrid probe`
 - `fix(parser): reject ClientHello-only X25519MLKEM768`
 - `docs(coding-rules): clarify retry allowlist`
