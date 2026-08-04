@@ -80,6 +80,18 @@ semgrep:
 hooks:
     uv run --locked pre-commit run --all-files
 
+# Validate documentation structure and Markdown style locally. This target is
+# intentionally local: QuReddy does not spend hosted-runner credits on docs.
+docs:
+    uv run --locked python scripts/check_docs.py
+    npm exec --yes --package markdownlint-cli2@0.23.2 -- markdownlint-cli2
+
+# Check external documentation links manually. Install Lychee first, for example
+# with `brew install lychee` on macOS; external sites are not a PR-time gate.
+docs-links:
+    lychee --root-dir . --accept 200,206,429 --verbose --no-progress \
+        "*.md" "docs/**/*.md" "tests/fixtures/**/*.md"
+
 # Build and verify one release-candidate artifact set with local evidence.
 release-gate:
     python3 scripts/release_gate.py

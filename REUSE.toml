@@ -19,6 +19,8 @@ path = [
     ".gitignore",
     ".gitattributes",
     ".editorconfig",
+    ".lycheeignore",
+    ".markdownlint-cli2.jsonc",
     "justfile",
     "uv.lock",
     "scripts/release-tools.json",

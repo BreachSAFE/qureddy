@@ -50,16 +50,19 @@ The "Commands run" panel shows the `-servername one.one.one.one` argument passed
 ## 5. Common variations
 
 **IPv4 with non-default port:**
+
 ```bash
 qureddy scan tls 1.1.1.1:8443 --sni one.one.one.one
 ```
 
 **IPv6 (use bracket notation):**
+
 ```bash
 qureddy scan tls "[2606:4700:4700::1111]:443" --sni one.one.one.one
 ```
 
 **JSON output** (when scripting):
+
 ```bash
 qureddy scan tls 1.1.1.1:443 --sni one.one.one.one --format json
 ```

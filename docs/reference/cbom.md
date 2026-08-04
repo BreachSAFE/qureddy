@@ -146,7 +146,7 @@ bom-ref: crypto/certificate/leaf
 cryptoProperties.assetType: certificate
 ```
 
-See [certificate fields](#certificate-fields) for the populated properties and
+See [certificate fields](#11-certificate-fields) for the populated properties and
 limits.
 
 ## 7. Relationships

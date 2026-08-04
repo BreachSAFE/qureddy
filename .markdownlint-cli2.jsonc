@@ -1,0 +1,22 @@
+{
+  // QuReddy keeps tables compact and command lines copyable. Structural rules
+  // remain enabled; the disabled presentation rules do not affect rendering
+  // or link resolution.
+  "config": {
+    "default": true,
+    "MD013": false,
+    "MD024": { "siblings_only": true },
+    "MD033": false,
+    "MD034": false,
+    "MD040": false,
+    "MD041": false,
+    "MD046": false,
+    "MD051": false,
+    "MD060": false
+  },
+  "globs": [
+    "*.md",
+    "docs/**/*.md",
+    "tests/fixtures/**/*.md"
+  ]
+}

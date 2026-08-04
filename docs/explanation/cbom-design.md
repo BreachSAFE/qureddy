@@ -83,7 +83,7 @@ re-model findings as CycloneDX `vulnerabilities` (see below). Issue #169 closed.
 ### Rationale against `vulnerabilities`
 
 The alternative considered was re-modelling findings as CycloneDX `vulnerabilities`
-+ `ratings` (and evidence as `components[].evidence`) so foreign tools understand
+with `ratings` (and evidence as `components[].evidence`) so foreign tools understand
 them natively. It was rejected: PQ-readiness has no CVE identifier, so a
 `vulnerability` entry needs a synthetic id that a generic scanner would surface as a
 non-CVE finding, polluting vulnerability dashboards. The interoperability gain does

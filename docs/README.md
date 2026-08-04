@@ -30,11 +30,13 @@ A page that does two of these jobs is doing neither well. When in doubt, split i
 ## 2. QuReddy documentation
 
 ### [Tutorials](tutorials/)
+
 Learning-oriented walkthroughs for someone new to the tool.
 
 - [Your first PQ readiness scan](tutorials/your-first-scan.md)
 
 ### [How-to guides](how-to/)
+
 Task-oriented recipes for someone who already knows the basics.
 
 - [Run with Docker and GHCR](how-to/docker.md)
@@ -45,6 +47,7 @@ Task-oriented recipes for someone who already knows the basics.
 - [Generate a CBOM](how-to/generate-a-cbom.md)
 
 ### [Reference](reference/)
+
 Look-it-up information. Comprehensive, accurate, dry.
 
 - [CLI options](reference/cli.md) — every flag, every default, every value
@@ -54,6 +57,7 @@ Look-it-up information. Comprehensive, accurate, dry.
 - [Failure categories](reference/failure-categories.md) — the `FailureCategory` enum, what each value means, retry eligibility
 
 ### [Explanation](explanation/)
+
 Conceptual discussion. Why we made the choices we did.
 
 - [Architecture](explanation/architecture.md) — module map, scan flow, output stream contract, failure-category routing
