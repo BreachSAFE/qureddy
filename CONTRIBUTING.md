@@ -34,7 +34,7 @@ Read these in order:
 
 ## Project state
 
-QuReddy 0.2.0 ships TLS and SSH scanners with Rich, JSON, and CycloneDX 1.7
+QuReddy 0.2.13 ships TLS and SSH scanners with Rich, JSON, and CycloneDX 1.7
 CBOM output. Certificate signature observation and legacy TLS enumeration are
 part of the TLS scan. Full certificate chain analysis, config scanning, source
 scanning, hosted operation, and remediation are not shipped.

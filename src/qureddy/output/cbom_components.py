@@ -70,7 +70,10 @@ def add_algorithm_components(
     for evidence in result.evidence:
         if evidence.observation_type in _POSITIVE_OBSERVATIONS and evidence.negotiated_group:
             seen = groups.get(evidence.negotiated_group)
-            if seen is None or _OBSERVATION_RANK[evidence.observation_type] > _OBSERVATION_RANK[seen]:
+            if (
+                seen is None
+                or _OBSERVATION_RANK[evidence.observation_type] > _OBSERVATION_RANK[seen]
+            ):
                 groups[evidence.negotiated_group] = evidence.observation_type
     for group in sorted(groups):
         ref = f"crypto/algorithm/{group.lower()}"
@@ -115,7 +118,10 @@ def add_cipher_suite_components(
     for evidence in result.evidence:
         if evidence.observation_type in _POSITIVE_OBSERVATIONS and evidence.cipher_suite:
             seen = suites.get(evidence.cipher_suite)
-            if seen is None or _OBSERVATION_RANK[evidence.observation_type] > _OBSERVATION_RANK[seen]:
+            if (
+                seen is None
+                or _OBSERVATION_RANK[evidence.observation_type] > _OBSERVATION_RANK[seen]
+            ):
                 suites[evidence.cipher_suite] = evidence.observation_type
     for suite in sorted(suites):
         ref = f"crypto/algorithm/{suite.lower()}"

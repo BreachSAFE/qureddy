@@ -11,7 +11,7 @@ Docker documentation intentionally uses the floating ``:latest`` tag and is not
 version-stamped, so it never needs a bump.
 
 Usage:
-    python scripts/bump_version.py 0.2.3   # set the version and propagate
+    python scripts/bump_version.py 0.2.13  # set the version and propagate
     python scripts/bump_version.py --check  # verify everything already agrees (CI)
 """
 
@@ -62,9 +62,7 @@ def _read_pyproject_version() -> str:
 
 
 def _set(text: str, pattern: re.Pattern[str], new_version: str) -> tuple[str, int]:
-    return pattern.subn(
-        lambda m: m.group(0).replace(m.group("v"), new_version), text
-    )
+    return pattern.subn(lambda m: m.group(0).replace(m.group("v"), new_version), text)
 
 
 def _golden_mismatches(version: str) -> list[str]:
@@ -102,9 +100,7 @@ def bump(new_version: str) -> int:
     """Set pyproject version and propagate to the README badge + golden contracts."""
     if not _SEMVER.match(new_version):
         sys.exit(f"bump_version: {new_version!r} is not a SemVer string")
-    PYPROJECT.write_text(
-        _set(PYPROJECT.read_text(), _PYPROJECT_VERSION, new_version)[0]
-    )
+    PYPROJECT.write_text(_set(PYPROJECT.read_text(), _PYPROJECT_VERSION, new_version)[0])
     readme, n = _set(README.read_text(), _BADGE, new_version)
     README.write_text(readme)
     golden_updates = 0
@@ -112,14 +108,11 @@ def bump(new_version: str) -> int:
         path = GOLDEN / name
         text = path.read_text()
         for pat in patterns:
-            text, k = pat.subn(
-                lambda m: f"{m.group('pre')}{new_version}{m.group('post')}", text
-            )
+            text, k = pat.subn(lambda m: f"{m.group('pre')}{new_version}{m.group('post')}", text)
             golden_updates += k
         path.write_text(text)
     print(
-        f"bump_version: set version {new_version} "
-        f"(pyproject + {n} badge + {golden_updates} golden)"
+        f"bump_version: set version {new_version} (pyproject + {n} badge + {golden_updates} golden)"
     )
     print("Next: run `uv lock` (sync uv.lock), add a CHANGELOG entry, and tag the release.")
     return 0

@@ -27,12 +27,12 @@ planned milestone, open issue, or accepted design as a delivered artifact.
 | Milestone | Status | Scope | Evidence date |
 | --- | --- | --- | --- |
 | MVP 0.1 | Shipped | TLS 1.3 hybrid and classical control probes, Rich and JSON output, typed failures | Public `v0.1.0` tag, 2026-05-10 |
-| MVP 0.2 | Shipped | Leaf certificate signature observation and legacy TLS 1.0, 1.1, and 1.2 enumeration | Current 0.2.12 source and tests |
+| MVP 0.2 | Shipped | Leaf certificate signature observation and legacy TLS 1.0, 1.1, and 1.2 enumeration | Current 0.2.13 source and tests |
 | MVP 0.3 | Shipped and independently verified | CycloneDX 1.7 CBOM output with pinned schema, CLI, semantic, and determinism checks | Public PRs #48 and #51, 2026-07-27 |
 | MVP 0.4 | Shipped | SSH and SFTP endpoint scanner with key exchange and host key observations | Public PR #22, 2026-07-23 |
 | MVP 0.5 | Planned | Local cryptographic configuration scanner | No shipped artifact |
 | MVP 0.6 | Planned | Source-code scanner | No shipped artifact |
-| PyPI 0.2.0 | Release candidate | Installable wheel and source distribution, release gate, documentation, TestPyPI rehearsal | Public issues #33 through #36 |
+| Packaging and TestPyPI | Release candidate | Installable wheel and source distribution, release gate, documentation, TestPyPI rehearsal | Public issues #33 through #36 |
 | Enterprise P2 | Planned | Operated fleet, persistence, integrations, tenancy, and support | No shipped product in this repository |
 
 ## Current release program

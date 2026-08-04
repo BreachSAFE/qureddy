@@ -8,9 +8,7 @@ from qureddy.core.models import Asset, ObservationType
 from qureddy.scanners.tls._legacy_findings import evidence_from_legacy_result
 from qureddy.scanners.tls.legacy_probe import LegacyProtocolResult
 
-_ASSET = Asset(
-    id="asset-1", asset_type="tls.endpoint", locator="tls://x:443", display_name="x:443"
-)
+_ASSET = Asset(id="asset-1", asset_type="tls.endpoint", locator="tls://x:443", display_name="x:443")
 
 
 def _evidence(*, offered: bool, accepted: tuple[str, ...], incomplete: bool = False) -> object:

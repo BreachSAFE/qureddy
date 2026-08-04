@@ -55,9 +55,7 @@ def validate_cbom_semantics(payload: dict[str, Any]) -> None:
                     dangling.add(ref)
     # Also walk the intra-component crypto references the CI conformance harness checks,
     # so a dangling ref fails at runtime, not only in CI (#144).
-    dangling.update(
-        ref for ref in _intra_component_crypto_refs(payload) if ref not in known_refs
-    )
+    dangling.update(ref for ref in _intra_component_crypto_refs(payload) if ref not in known_refs)
     if dangling:
         msg = f"dangling references: {', '.join(sorted(dangling))}"
         raise ValueError(msg)
