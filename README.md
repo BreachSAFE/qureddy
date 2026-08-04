@@ -2,7 +2,7 @@
 
 [![Version](https://img.shields.io/badge/version-0.2.12-blue?style=flat-square)](https://github.com/breachsafe/qureddy/blob/main/CHANGELOG.md)
 [![Python](https://img.shields.io/badge/python-3.12-blue?style=flat-square&logo=python&logoColor=white)](https://www.python.org/downloads/)
-[![License: PolyForm Noncommercial](https://img.shields.io/badge/license-PolyForm%20Noncommercial-orange?style=flat-square)](https://github.com/breachsafe/qureddy/blob/main/LICENSE)
+[![License: PolyForm Noncommercial](https://img.shields.io/badge/license-PolyForm%20Noncommercial-orange?style=flat-square)](LICENSE)
 [![Code Style: Ruff](https://img.shields.io/badge/code%20style-ruff-D7FF64?style=flat-square&logo=ruff&logoColor=black)](https://docs.astral.sh/ruff/)
 [![Type Checked: mypy strict](https://img.shields.io/badge/type%20check-mypy%20strict-blue?style=flat-square)](https://mypy-lang.org/)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/breachsafe/qureddy/badge)](https://securityscorecards.dev/viewer/?uri=github.com/breachsafe/qureddy)
@@ -65,7 +65,7 @@ BreachSAFE QuReddy 0.2.12 -- https://www.breachsafe.ai
 ```
 
 `pipx` creates an isolated environment and places `qureddy` on your command
-path. See the [installation and troubleshooting guide](https://github.com/breachsafe/qureddy/blob/main/docs/how-to/install.md)
+path. See the [installation and troubleshooting guide](docs/how-to/install.md)
 for macOS, Linux, Windows, virtual environment, upgrade, and uninstall
 instructions.
 
@@ -85,7 +85,7 @@ docker run --rm ghcr.io/breachsafe/qureddy:latest \
 For reproducible deployments, pin an explicit version tag (for example
 `ghcr.io/breachsafe/qureddy:0.2.12`) or a `@sha256:` digest instead of `:latest`.
 
-See the [Docker and GHCR guide](https://github.com/breachsafe/qureddy/blob/main/docs/how-to/docker.md)
+See the [Docker and GHCR guide](docs/how-to/docker.md)
 for digest pinning, local builds, output redirection, and publication policy.
 
 ## Run the first SSH scan
@@ -122,7 +122,7 @@ openssl list -tls1_3 -tls-groups
 ```
 
 If `openssl` is not the intended binary, set `QUREDDY_OPENSSL` or pass
-`--openssl PATH`. The [installation guide](https://github.com/breachsafe/qureddy/blob/main/docs/how-to/install.md) documents
+`--openssl PATH`. The [installation guide](docs/how-to/install.md) documents
 the supported resolution order and failure diagnostics.
 
 ## Run the first TLS scan
@@ -164,15 +164,15 @@ The crypto assets use native CycloneDX `cryptoProperties`, so any CycloneDX 1.7
 crypto-aware tool understands the inventory and post-quantum posture. QuReddy's
 interpretation and provenance ride in `qureddy:`-namespaced `metadata.properties`,
 which unaware tools ignore without failing. Add `--reproducible` for a byte- and
-digest-identical document. See [the CBOM design doc](https://github.com/breachsafe/qureddy/blob/main/docs/explanation/cbom-design.md)
+digest-identical document. See [the CBOM design doc](docs/explanation/cbom-design.md)
 for the design and interoperability boundary.
 
 Machine modes write one parseable document to standard output. Without an
 explicit verbosity flag, successful scans keep standard error empty.
 
-See [generate and validate a CBOM](https://github.com/breachsafe/qureddy/blob/main/docs/how-to/generate-a-cbom.md),
-[JSON output](https://github.com/breachsafe/qureddy/blob/main/docs/reference/json-schema.md), and
-[CBOM output](https://github.com/breachsafe/qureddy/blob/main/docs/reference/cbom.md)
+See [generate and validate a CBOM](docs/how-to/generate-a-cbom.md),
+[JSON output](docs/reference/json-schema.md), and
+[CBOM output](docs/reference/cbom.md)
 for the exact contracts.
 
 ## Interpret the evidence
@@ -196,7 +196,7 @@ QuReddy separates four kinds of statement:
 | `70` | Internal QuReddy error | Process wide |
 
 Scripts must branch on the exit code instead of treating a readiness finding
-as process failure. See the [exit code reference](https://github.com/breachsafe/qureddy/blob/main/docs/reference/exit-codes.md).
+as process failure. See the [exit code reference](docs/reference/exit-codes.md).
 
 ## Network and privacy scope
 
@@ -221,22 +221,22 @@ every operating system package repository supplies a suitable OpenSSL build.
 
 ## Documentation and support
 
-- [Documentation index](https://github.com/breachsafe/qureddy/blob/main/docs/README.md)
-- [CLI reference](https://github.com/breachsafe/qureddy/blob/main/docs/reference/cli.md)
-- [Install and troubleshoot](https://github.com/breachsafe/qureddy/blob/main/docs/how-to/install.md)
-- [Scan SSH or SFTP](https://github.com/breachsafe/qureddy/blob/main/docs/how-to/scan-ssh.md)
-- [Security policy and private disclosure](https://github.com/breachsafe/qureddy/blob/main/SECURITY.md)
+- [Documentation index](docs/README.md)
+- [CLI reference](docs/reference/cli.md)
+- [Install and troubleshoot](docs/how-to/install.md)
+- [Scan SSH or SFTP](docs/how-to/scan-ssh.md)
+- [Security policy and private disclosure](SECURITY.md)
 - [Public issue tracker](https://github.com/breachsafe/qureddy/issues)
 
 Do not file security vulnerabilities in the public issue tracker. Follow
-[`SECURITY.md`](https://github.com/breachsafe/qureddy/blob/main/SECURITY.md)
+[`SECURITY.md`](SECURITY.md)
 for private reporting.
 
 ## Contributing
 
-See [`CONTRIBUTING.md`](https://github.com/breachsafe/qureddy/blob/main/CONTRIBUTING.md)
+See [`CONTRIBUTING.md`](CONTRIBUTING.md)
 and the
-[contributor documentation](https://github.com/breachsafe/qureddy/tree/main/docs/contributors/).
+[contributor documentation](docs/contributors/).
 The repository enforces
 formatting, lint, strict type checking, tests, security scans, dependency
 audits, license metadata, file size policy, CBOM conformance, and release
@@ -245,6 +245,5 @@ artifact checks.
 ## License
 
 PolyForm Noncommercial License 1.0.0. Commercial use requires a separate
-license from BreachSAFE. See [`LICENSE`](https://github.com/breachsafe/qureddy/blob/main/LICENSE),
-[`LICENSES/`](https://github.com/breachsafe/qureddy/tree/main/LICENSES/), and
-[`REUSE.toml`](https://github.com/breachsafe/qureddy/blob/main/REUSE.toml).
+license from BreachSAFE. See [`LICENSE`](LICENSE),
+[`LICENSES/`](LICENSES/), and [`REUSE.toml`](REUSE.toml).
