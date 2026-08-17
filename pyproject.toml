@@ -101,7 +101,7 @@ Issues = "https://github.com/breachsafe/qureddy/issues"
 Changelog = "https://github.com/breachsafe/qureddy/blob/main/CHANGELOG.md"
 
 [build-system]
-requires = ["hatchling==1.31.0"]
+requires = ["hatchling==1.32.0"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
