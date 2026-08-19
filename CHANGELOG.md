@@ -1,7 +1,7 @@
 # Changelog
 
 [![Status: Alpha](https://img.shields.io/badge/status-alpha-blue?style=flat-square)](https://github.com/breachsafe/qureddy)
-[![Version](https://img.shields.io/badge/version-0.2.13-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.14-blue?style=flat-square)](CHANGELOG.md)
 [![Keep a Changelog](https://img.shields.io/badge/keep%20a%20changelog-1.1.0-orange?style=flat-square)](https://keepachangelog.com/en/1.1.0/)
 [![SemVer](https://img.shields.io/badge/SemVer-2.0.0-blue?style=flat-square)](https://semver.org/spec/v2.0.0.html)
 
@@ -10,6 +10,17 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and version
 numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.2.14] - 2026-08-19
+
+### Added
+
+- `--log PATH` on `scan tls`: capture a run's structured logs to a file (INFO and above;
+  honors `--json-logs`). stdout stays the `--format` data channel. When capturing to a file,
+  the machine-format auto-quiet does not apply and the level is floored at INFO so a clean run
+  still records its story. A path that cannot be written is a usage error (exit 4), reported
+  before any scan work, and the file is closed even when the run exits early. `scan ssh` shares
+  the same log-capture helper (`start_run_logging`) so the wiring lives in one place.
 
 ## [0.2.13] - 2026-08-04
 
@@ -27,21 +38,22 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Contents
 
-1. [0.2.13](#0213---2026-08-04)
-2. [0.2.12](#0212---2026-07-28)
-3. [0.2.11](#0211---2026-07-28)
-4. [0.2.10](#0210---2026-07-28)
-5. [0.2.9](#029---2026-07-28)
-6. [0.2.8](#028---2026-07-28)
-7. [0.2.7](#027---2026-07-28)
-8. [0.2.6](#026---2026-07-28)
-9. [0.2.5](#025---2026-07-28)
-10. [0.2.4](#024---2026-07-28)
-11. [0.2.3](#023---2026-07-27)
-12. [0.2.2](#022---2026-07-27)
-13. [0.2.1](#021---2026-07-27)
-14. [0.2.0](#020---2026-07-27)
-15. [0.1.0](#010---2026-05-10)
+1. [0.2.14](#0214---2026-08-19)
+2. [0.2.13](#0213---2026-08-04)
+3. [0.2.12](#0212---2026-07-28)
+4. [0.2.11](#0211---2026-07-28)
+5. [0.2.10](#0210---2026-07-28)
+6. [0.2.9](#029---2026-07-28)
+7. [0.2.8](#028---2026-07-28)
+8. [0.2.7](#027---2026-07-28)
+9. [0.2.6](#026---2026-07-28)
+10. [0.2.5](#025---2026-07-28)
+11. [0.2.4](#024---2026-07-28)
+12. [0.2.3](#023---2026-07-27)
+13. [0.2.2](#022---2026-07-27)
+14. [0.2.1](#021---2026-07-27)
+15. [0.2.0](#020---2026-07-27)
+16. [0.1.0](#010---2026-05-10)
 
 ## [0.2.12] - 2026-07-28
 
