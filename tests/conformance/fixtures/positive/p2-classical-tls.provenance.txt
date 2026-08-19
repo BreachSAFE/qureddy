@@ -6,4 +6,4 @@ captured_utc: 2026-07-27T01:45:06Z
 source: minimized replay of tests/fixtures/openssl/brief_classical_example_com.txt
 producer_commit: bdaa5669bff7b46a8b6e6c48f1003a3acb26808a
 installed_wheel_sha256: ddb96f9e62e16805dba045483eaa55c2f7ac4bc4f63397a7dfd80207ab82dc38
-sha256: 83b77d204a87bc1e439849e3698be4a9b770a5c1fa6d1bf7c0499fab205d2c9d
+sha256: db51a5d2d8e4bf8308bae28a85776334458eb855f759a2b2fbb76533db283caa
