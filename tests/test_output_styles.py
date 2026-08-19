@@ -52,7 +52,7 @@ class TestColorStyleRules:
 
 class TestUnknownRecommendationLibreSSL:
     """Issue #188: the UNKNOWN-readiness recommendation must be LibreSSL-
-    specific and actionable, not the generic "install OpenSSL 3.5+" copy
+    specific and actionable, not the generic "install OpenSSL 3.5.7 LTS" copy
     every other local-capability failure gets."""
 
     def test_headline_names_libressl_category(self) -> None:

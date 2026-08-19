@@ -20,7 +20,7 @@ def _load(name: str) -> str:
 
 
 class TestRealHybridCapture:
-    """Real OpenSSL 3.6.3 capture against pq.cloudflareresearch.com."""
+    """Pinned-baseline replay derived from a live pq.cloudflareresearch.com capture."""
 
     def test_negotiated_line_is_recognized(self) -> None:
         result = parse_brief_output(
@@ -40,7 +40,7 @@ class TestRealHybridCapture:
 
 
 class TestRealClassicalCapture:
-    """Real OpenSSL 3.6.3 capture against example.com."""
+    """Pinned-baseline replay derived from a live example.com capture."""
 
     def test_classical_x25519_recognized_via_peer_temp_key(self) -> None:
         result = parse_brief_output(
@@ -133,7 +133,7 @@ class TestBoundaryRegexAnchoring:
 
     def test_group_inside_comment_line_is_ignored(self) -> None:
         stdout = (
-            "# TODO: confirm X25519MLKEM768 once OpenSSL 3.6 ships\n"
+            "# TODO: confirm X25519MLKEM768 in a future probe\n"
             "Protocol version: TLSv1.3\n"
             "Ciphersuite: TLS_AES_128_GCM_SHA256\n"
             "Peer Temp Key: X25519, 253 bits\n"

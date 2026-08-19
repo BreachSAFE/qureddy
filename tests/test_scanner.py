@@ -53,7 +53,7 @@ class TestTLSScannerOrchestration:
         scanner = TLSScanner(openssl_path="/fixture/openssl")
         dependency = OpenSSLDependency(
             path="/fixture/openssl",
-            version="3.6.3",
+            version="3.5.7",
             supports_tls13_groups=True,
             supports_x25519mlkem768=True,
         )
@@ -89,7 +89,7 @@ class TestTLSScannerOrchestration:
         scanner = TLSScanner(openssl_path="/fixture/openssl")
         dependency = OpenSSLDependency(
             path="/fixture/openssl",
-            version="3.6.3",
+            version="3.5.7",
             supports_tls13_groups=True,
             supports_x25519mlkem768=True,
         )

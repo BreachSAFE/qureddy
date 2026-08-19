@@ -23,7 +23,7 @@ last-resort internal-error code.
 |---|---|---|---|
 | **0** | `EXIT_OK` | Scan succeeded | Both probes ran, evidence parsed, summary built. The target may still be `quantum_vulnerable`; that's a finding, not a failure. |
 | **2** | `EXIT_TARGET_FAILED` | Target scan failed | Probes ran but the target is unreachable, refused TLS, MTU-blackholed, parser-rejected, etc. The target's problem (or the network between you and it). |
-| **3** | `EXIT_LOCAL_DEPENDENCY` | Local OpenSSL is missing or unsupported | `openssl` not found on PATH, or version below 3.5.0, or the binary doesn't list `X25519MLKEM768` as a TLS 1.3 group. Install OpenSSL 3.5 LTS or newer and re-run. |
+| **3** | `EXIT_LOCAL_DEPENDENCY` | Local OpenSSL is missing or unsupported | `openssl` not found on PATH, or version below 3.5.7, or the binary doesn't list `X25519MLKEM768` as a TLS 1.3 group. Install OpenSSL 3.5.7 LTS and re-run. |
 | **4** | `EXIT_USAGE` | Usage or configuration error | Bad flag value (e.g. `--format yaml`), unknown retry category, `--retries` without `--retry-on`, malformed target string. |
 | **70** | `EXIT_INTERNAL_ERROR` | Internal qureddy bug | An unhandled exception escaped to `main()`'s last-resort catch (e.g., a programming error in qureddy itself, an unhandled dependency failure). **This is qureddy's problem, not yours.** Open an issue with the printed error message and a reproducer. Code 70 is BSD `sysexits.h` `EX_SOFTWARE`. |
 

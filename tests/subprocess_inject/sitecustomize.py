@@ -40,7 +40,7 @@ if os.environ.get("QUREDDY_TEST_FORCE_CLASSICAL_RESULT") == "1":
                 "dependencies": [
                     {
                         "path": "/fixture/openssl",
-                        "version": "3.6.3",
+                        "version": "3.5.7",
                         "supports_tls13_groups": True,
                         "supports_x25519mlkem768": True,
                     }

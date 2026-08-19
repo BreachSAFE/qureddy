@@ -65,7 +65,7 @@ class LocalOpenSSLIsLibreSSL(_LocalOpenSSLProblem):
 
 
 class LocalOpenSSLTooOld(_LocalOpenSSLProblem):
-    """OpenSSL is below 3.5.0.
+    """OpenSSL is below 3.5.7.
 
     Maps to FailureCategory.LOCAL_OPENSSL_TOO_OLD. Triggers exit code 3.
     """

@@ -175,8 +175,8 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
-- Standardized on OpenSSL 3.5 LTS across CI, the setup action, and contributor docs;
-  removed 3.6.3 references (the shipped image already builds 3.5.7 LTS).
+- Standardized the exact OpenSSL 3.5.7 LTS baseline across CI, the setup action,
+  fixtures, and contributor documentation.
 - Removed em and en dashes from shipped and user-facing documentation per the project
   style rule.
 

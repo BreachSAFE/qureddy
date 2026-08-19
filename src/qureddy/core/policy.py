@@ -122,9 +122,9 @@ MVP_POLICY: tuple[PolicyRule, ...] = (
             # not evidence the hybrid probe failed — a hybrid-only server
             # is *expected* to reject pure classical) fired this exact
             # rule, turning a correct transitional_hybrid scan into a
-            # reported "probe failed" / exit 2. Live-verified: a real
-            # hybrid-only OpenSSL 3.6 server (accepts X25519MLKEM768,
-            # rejects X25519) negotiated hybrid cleanly while its classical
+            # reported "probe failed" / exit 2. Live-verified with the pinned
+            # OpenSSL 3.5.7 LTS client: a hybrid-only server (accepts
+            # X25519MLKEM768, rejects X25519) negotiated hybrid cleanly while its classical
             # control failed with TLS_HANDSHAKE_FAILED — that failure must
             # not attribute to the hybrid probe.
             RuleCondition(field=RuleField.PROBE_ROLE, probe_role=ProbeRole.HYBRID_READINESS),

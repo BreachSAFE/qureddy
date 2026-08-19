@@ -39,6 +39,6 @@ Run details
  started                  2026-04-26T00:00:00Z
  completed                2026-04-26T00:00:00Z
  duration                 0.0s
- openssl_path             /opt/homebrew/opt/openssl@3/bin/openssl
- openssl_version          3.6.3
+ openssl_path             /opt/homebrew/opt/openssl@3.5/bin/openssl
+ openssl_version          3.5.7
  openssl_hybrid_support   yes

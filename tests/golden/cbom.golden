@@ -328,7 +328,7 @@
             },
             {
               "name": "qureddy:openssl.path",
-              "value": "/opt/homebrew/opt/openssl@3/bin/openssl"
+              "value": "/opt/homebrew/opt/openssl@3.5/bin/openssl"
             },
             {
               "name": "qureddy:openssl.supports_tls13_groups",
@@ -340,7 +340,7 @@
             }
           ],
           "type": "application",
-          "version": "3.6.3"
+          "version": "3.5.7"
         },
         {
           "bom-ref": "tool/qureddy",

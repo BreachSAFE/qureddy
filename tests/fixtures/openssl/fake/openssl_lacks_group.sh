@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Fake openssl: version 3.6.3 (passes the version gate) but lists no
+# Fake openssl: pinned version 3.5.7 (passes the version gate) but lists no
 # X25519MLKEM768 group. Tests FailureCategory.LOCAL_OPENSSL_LACKS_GROUP.
 case "$1" in
     version)
-        echo "OpenSSL 3.6.3 1 Apr 2026"
+        echo "OpenSSL 3.5.7 1 Apr 2026"
         ;;
     list)
         echo "TLS 1.3 supported groups:"

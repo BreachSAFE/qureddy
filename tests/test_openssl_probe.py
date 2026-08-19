@@ -127,7 +127,7 @@ class TestProbeCapability:
         dep = probe_capability(fake_openssl("openssl_ok"))
         assert dep.failure_category is None
         assert dep.supports_x25519mlkem768 is True
-        assert dep.version == "3.6.3"
+        assert dep.version == "3.5.7"
 
     def test_broken_returncode_flagged(self) -> None:
         with pytest.raises(LocalOpenSSLBroken) as exc_info:
@@ -164,7 +164,7 @@ class TestRaiseIfUnusable:
         with pytest.raises(LocalOpenSSLTooOld) as exc_info:
             raise_if_unusable(dep)
         message = str(exc_info.value)
-        assert "OpenSSL 3.4.0 is below required 3.5.0" in message
+        assert "OpenSSL 3.4.0 is below required 3.5.7" in message
         assert "pip installs QuReddy, not OpenSSL" in message
         assert "QUREDDY_OPENSSL" in message
 

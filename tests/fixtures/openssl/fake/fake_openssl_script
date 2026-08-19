@@ -16,16 +16,16 @@ if scenario == "openssl_broken_returncode":
 if scenario == "openssl_too_old":
     print("OpenSSL 3.4.0 1 Jan 2026" if command == "version" else "x25519:secp256r1")
 elif scenario == "openssl_lacks_group":
-    print("OpenSSL 3.6.3 1 Apr 2026" if command == "version" else "x25519:secp256r1")
+    print("OpenSSL 3.5.7 1 Apr 2026" if command == "version" else "x25519:secp256r1")
 elif scenario == "openssl_unparseable_version":
     print("GibberishSSL build unknown" if command == "version" else "X25519MLKEM768:x25519")
 elif scenario == "openssl_libressl":
     print("LibreSSL 3.3.6" if command == "version" else "invalid command")
 elif scenario == "openssl_ok":
-    print("OpenSSL 3.6.3 7 Apr 2026" if command == "version" else "X25519MLKEM768:x25519")
+    print("OpenSSL 3.5.7 7 Apr 2026" if command == "version" else "X25519MLKEM768:x25519")
 elif scenario == "openssl_connect_refused":
     if command == "version":
-        print("OpenSSL 3.6.3 7 Apr 2026")
+        print("OpenSSL 3.5.7 7 Apr 2026")
     elif command == "list":
         print("X25519MLKEM768:x25519")
     else:
@@ -33,7 +33,7 @@ elif scenario == "openssl_connect_refused":
         raise SystemExit(1)
 elif scenario == "openssl_handshake_failure":
     if command == "version":
-        print("OpenSSL 3.6.3 7 Apr 2026")
+        print("OpenSSL 3.5.7 7 Apr 2026")
     elif command == "list":
         print("X25519MLKEM768:x25519")
     else:
@@ -49,7 +49,7 @@ elif scenario == "openssl_stream_boundary_phantom":
     print("X25519MLKEM768", file=sys.stderr)
 elif scenario == "openssl_classical_replay":
     if command == "version":
-        print("OpenSSL 3.6.3 7 Apr 2026")
+        print("OpenSSL 3.5.7 7 Apr 2026")
     elif command == "list":
         print("X25519MLKEM768:x25519:secp256r1")
     else:

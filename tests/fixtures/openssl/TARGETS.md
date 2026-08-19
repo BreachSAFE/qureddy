@@ -75,7 +75,7 @@ Every failure category enumerated by the scanner needs at least one captured fix
 |---|---|
 | `local_openssl_missing` | Synthesize: rename `openssl` binary or set `--openssl /nonexistent`. |
 | `local_openssl_too_old` | Synthesize: point `--openssl` at an older OpenSSL binary if available. |
-| `local_openssl_lacks_group` | Use the `openssl_lacks_group` fixture with an OpenSSL 3.6.3 version banner and no hybrid group. |
+| `local_openssl_lacks_group` | Use the `openssl_lacks_group` fixture with an OpenSSL 3.5.7 version banner and no hybrid group. |
 | `target_connect_failed` | A non-routable host like `192.0.2.1:443` (RFC 5737 TEST-NET-1). |
 | `tls_handshake_failed` | `tls-v1-0.badssl.com:1010`. |
 | `sni_required_or_wrong` | A virtual-hosted target that 421s without correct SNI. |

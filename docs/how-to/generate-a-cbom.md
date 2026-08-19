@@ -13,7 +13,7 @@ Bill of Materials to standard output.
 
 ## 1. TLS endpoint
 
-TLS scanning requires OpenSSL 3.5 LTS or newer:
+TLS scanning requires OpenSSL 3.5.7 LTS:
 
 ```bash
 qureddy scan tls example.com --format cbom > example-tls.cbom.json

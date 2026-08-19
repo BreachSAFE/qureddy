@@ -24,12 +24,12 @@ from qureddy.scanners.tls.scanner import TLSScanner
 def _openssl_path() -> str:
     """Resolve a real OpenSSL 3.5 LTS+ binary that supports X25519MLKEM768.
 
-    Order: explicit homebrew openssl@3 → `QUREDDY_OPENSSL` → `PATH`.
+    Order: explicit homebrew openssl@3.5 → `QUREDDY_OPENSSL` → `PATH`.
     Live tests fail if no capable binary is present. CI provisions the
     dependency explicitly, and a missing prerequisite must remain visible.
     """
     candidates = [
-        "/opt/homebrew/opt/openssl@3/bin/openssl",
+        "/opt/homebrew/opt/openssl@3.5/bin/openssl",
         os.environ.get("QUREDDY_OPENSSL"),
         shutil.which("openssl"),
     ]
@@ -47,7 +47,7 @@ def _openssl_path() -> str:
                 return resolved
     pytest.fail(
         "no OpenSSL 3.5 LTS+ binary with X25519MLKEM768 found "
-        "(install openssl@3 or set QUREDDY_OPENSSL)",
+        "(install openssl@3.5 or set QUREDDY_OPENSSL)",
     )
     raise RuntimeError("unreachable")
 

@@ -385,7 +385,7 @@ class LocalOpenSSLMissing(QureddyError):
 
 
 class LocalOpenSSLTooOld(QureddyError):
-    """OpenSSL found but version is below 3.5.0.
+    """OpenSSL found but version is below 3.5.7.
 
     Raised by the capability check. Maps to FailureCategory.LOCAL_OPENSSL_TOO_OLD.
     """
@@ -415,7 +415,7 @@ class OpenSSLError(QureddyException):
 def find_openssl() -> str:
     if not path:
         raise OpenSSLError("openssl missing")
-    if version < "3.5.0":
+    if version < "3.5.7":
         raise OpenSSLError("openssl old")  # caller can't tell these apart (Rule 6.1)
 ```
 

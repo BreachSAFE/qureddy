@@ -30,10 +30,10 @@ from qureddy.scanners.tls.openssl_probe._constants import (
 )
 
 _INSTALL_GUIDANCE = (
-    "pip installs QuReddy, not OpenSSL. Install OpenSSL 3.5 LTS or newer separately, then pass "
+    "pip installs QuReddy, not OpenSSL. Install OpenSSL 3.5.7 LTS separately, then pass "
     "--openssl PATH or set QUREDDY_OPENSSL. macOS: brew install openssl@3.5. "
-    "Linux: install OpenSSL 3.5 LTS or newer from your distribution or trusted vendor. "
-    "Windows: install a maintained OpenSSL 3.5 LTS or newer distribution and pass its full path."
+    "Linux: install OpenSSL 3.5.7 LTS from your distribution or trusted vendor. "
+    "Windows: install a maintained OpenSSL 3.5.7 LTS distribution and pass its full path."
 )
 
 

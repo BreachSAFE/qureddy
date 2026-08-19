@@ -66,11 +66,11 @@ just gates               # runs the full Tier 1 gate suite
 just hooks               # runs pre-commit hooks against all files (CI-equivalent local check)
 ```
 
-You also need OpenSSL 3.5 LTS or newer on your `PATH` for the TLS scanner to work end-to-end:
+You also need OpenSSL 3.5.7 LTS on your `PATH` for the TLS scanner to work end-to-end:
 
 - macOS: `brew install openssl@3.5` (the OpenSSL 3.5 LTS line)
 - Linux: use a supported vendor build or the official OpenSSL source
-- Windows: install a trusted OpenSSL 3.5 LTS or newer build and set its path
+- Windows: install a trusted OpenSSL 3.5.7 LTS build and set its path
 
 QuReddy's capability check exits 3 with a clear message when OpenSSL is missing or too old.
 

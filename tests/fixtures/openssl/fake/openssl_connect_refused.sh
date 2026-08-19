@@ -5,7 +5,7 @@
 # Used to test FailureCategory.TARGET_CONNECT_FAILED classification.
 case "$1" in
     version)
-        echo "OpenSSL 3.6.3 7 Apr 2026"
+        echo "OpenSSL 3.5.7 7 Apr 2026"
         ;;
     list)
         echo "X25519MLKEM768:x25519:secp256r1"

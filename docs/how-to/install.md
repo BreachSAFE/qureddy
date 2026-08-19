@@ -3,7 +3,7 @@
 Install the `breachsafe-qureddy` distribution with Python 3.12 or newer. Use `pipx` for
 the command line application or install into a managed virtual environment.
 SSH scanning works without OpenSSL. TLS scanning requires a separate OpenSSL
-3.5 LTS or newer binary.
+3.5.7 LTS binary.
 
 ## Contents
 
@@ -26,7 +26,7 @@ QuReddy requires:
 - Python `>=3.12`
 - macOS, Linux, or Windows
 - network reachability to the target
-- OpenSSL 3.5 LTS or newer for `scan tls` only
+- OpenSSL 3.5.7 LTS for `scan tls` only
 
 Check Python before installing:
 
@@ -109,7 +109,7 @@ openssl version
 openssl list -tls1_3 -tls-groups
 ```
 
-If the version is older than 3.5.0 or the group list does not contain
+If the version is older than 3.5.7 or the group list does not contain
 `X25519MLKEM768`, install a supported vendor build or build a current release
 from the [official OpenSSL source](https://openssl-library.org/source/).
 Record the resulting path in `QUREDDY_OPENSSL`.
@@ -134,7 +134,7 @@ py -3.12 -m pipx install `
   breachsafe-qureddy
 ```
 
-For TLS scans, install a trusted OpenSSL 3.5 LTS or newer Windows build. QuReddy
+For TLS scans, install a trusted OpenSSL 3.5.7 LTS Windows build. QuReddy
 does not bundle or endorse a third party OpenSSL binary. Set the full path:
 
 ```powershell
@@ -181,7 +181,7 @@ Confirm both the version and required group:
 "${QUREDDY_OPENSSL:-openssl}" list -tls1_3 -tls-groups
 ```
 
-The selected binary must report OpenSSL 3.5.0 or newer and list
+The selected binary must report OpenSSL 3.5.7 or newer and list
 `X25519MLKEM768`.
 
 ## 8. Verify the installation

@@ -2,7 +2,7 @@
 # Fake openssl that satisfies capability detection but does not run probes.
 case "$1" in
     version)
-        echo "OpenSSL 3.6.3 7 Apr 2026"
+        echo "OpenSSL 3.5.7 7 Apr 2026"
         ;;
     list)
         echo "TLS 1.3 supported groups:"

@@ -72,8 +72,8 @@ def _build_result() -> ScanResult:
         negotiated_group="X25519MLKEM768",
     )
     dependency = OpenSSLDependency(
-        path="/opt/homebrew/opt/openssl@3/bin/openssl",
-        version="3.6.3",
+        path="/opt/homebrew/opt/openssl@3.5/bin/openssl",
+        version="3.5.7",
         supports_tls13_groups=True,
         supports_x25519mlkem768=True,
     )
@@ -162,7 +162,7 @@ class TestCycloneDx17Contract:
         # derive from the same source the emitter uses (importlib.metadata via _branding),
         # so a version bump never rots this assertion (#112).
         assert tools_by_ref["tool/qureddy"]["version"] == PROJECT_VERSION
-        assert tools_by_ref["tool/openssl"]["version"] == "3.6.3"
+        assert tools_by_ref["tool/openssl"]["version"] == "3.5.7"
         assert "crypto-library/openssl" not in json.dumps(payload)
         assert "dependsOn" not in deps_by_ref["endpoint"]
 

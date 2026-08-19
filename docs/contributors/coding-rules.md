@@ -626,7 +626,7 @@ Artifact: `phase-2-unit.xml`, `coverage-unit.xml`
 
 ### Phase 3 — Integration Tests (Real OpenSSL, No Network)
 
-Real OpenSSL 3.5.7 LTS or newer subprocess. Verifies capability detection and `-brief` parsing against a real binary, but no network connections.
+Real OpenSSL 3.5.7 LTS subprocess. Verifies capability detection and `-brief` parsing against a real binary, but no network connections.
 
 ```
 pytest tests/test_openssl_probe.py
@@ -710,7 +710,7 @@ CI quality gates are split into two tiers based on cost-benefit at MVP scale.
 | Static security | 1 | `bandit` (MEDIUM threshold) | |
 | Secrets scan | 1 | `gitleaks` (or `trufflehog`) on diff | |
 | Unit tests | 2 | `pytest` excluding `tests/live/` (>=80% coverage) | |
-| Integration tests | 3 | `pytest tests/test_openssl_probe.py` | needs OpenSSL 3.5.7 LTS or newer on runner |
+| Integration tests | 3 | `pytest tests/test_openssl_probe.py` | needs OpenSSL 3.5.7 LTS on runner |
 | Live tests | 4 | `pytest tests/live/` | needs network; 3 retries via `pytest-rerunfailures` |
 | Audit | 7 | `scripts/audit_phase.py` | reads phase artifacts, asserts on counts |
 
@@ -729,7 +729,7 @@ CI quality gates are split into two tiers based on cost-benefit at MVP scale.
 
 Promote a Tier 2 gate to per-PR execution when its runtime and signal justify the cost.
 
-CI runs on the matrix: **ubuntu-latest × macos-latest × windows-latest × Python 3.12**. All three platforms must pass for both tiers. OpenSSL 3.5.7 LTS or newer is installed per-platform during CI setup.
+CI runs on the matrix: **ubuntu-latest × macos-latest × windows-latest × Python 3.12**. All three platforms must pass for both tiers. OpenSSL 3.5.7 LTS is installed per-platform during CI setup.
 
 ---
 
