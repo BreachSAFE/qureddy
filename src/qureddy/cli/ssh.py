@@ -30,7 +30,7 @@ from qureddy.cli._options import (
 )
 from qureddy.cli.main import scan_app
 from qureddy.core.errors import SSHProbeError, TargetParseError
-from qureddy.core.logging import configure_logging
+from qureddy.core.logging import start_run_logging
 from qureddy.core.models import OutputFormat
 from qureddy.core.targets import parse_ssh_target
 from qureddy.output.cbom import render_cbom
@@ -131,7 +131,8 @@ def scan_ssh_cmd(
     # verbosity/logging surface consistent across subcommands.
     machine_format = fmt is not OutputFormat.RICH
     effective_quiet = quiet or (machine_format and verbose == 0)
-    configure_logging(verbosity=verbose, json_logs=json_logs, quiet=effective_quiet)
+    # log=None: `scan ssh` has no --log yet; shares the helper so log-capture wiring is not duplicated.
+    start_run_logging(verbosity=verbose, json_logs=json_logs, quiet=effective_quiet, log=None)
     try:
         scan_target = parse_ssh_target(target, block_internal=_block_internal_targets())
     except TargetParseError as exc:

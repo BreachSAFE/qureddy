@@ -308,3 +308,19 @@ def test_unrelated_v_word_does_not_trigger_verbosity_hint(
     assert "single-dash" not in combined.lower(), (
         f"unrelated --view typo got verbosity hint: {combined!r}"
     )
+
+
+def test_scan_tls_bad_log_path_is_usage_error_not_traceback(tmp_path) -> None:
+    """A --log path that cannot be opened is a usage error (exit 4), never a traceback.
+
+    Filesystem failures vary by OS (FileExistsError, IsADirectoryError, NotADirectoryError,
+    PermissionError); the guard catches their common base OSError, so the exit is 4 on any
+    platform regardless of errno. The open fails before any scan, so no network is used.
+    """
+    a_file = tmp_path / "a_file"
+    a_file.write_text("x")  # a regular file; using it as a parent directory must fail
+    result = CliRunner().invoke(
+        app, ["scan", "tls", "example.com", "--log", str(a_file / "sub.log")]
+    )
+    assert result.exit_code == 4, result.output
+    assert "Traceback" not in result.output

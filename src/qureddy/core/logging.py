@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import logging
 import os
+from pathlib import Path
 from typing import Any, TextIO
 
 import structlog
@@ -18,6 +19,16 @@ def _open_stderr_fd() -> TextIO:
 
 
 _STDERR = _open_stderr_fd()
+
+
+def _open_log_file(path: Path) -> TextIO:
+    """Open a file to capture a run's logs, creating parent directories as needed.
+
+    Returns a line-buffered text stream for ``configure_logging(log_stream=...)``. Backs the
+    ``--log PATH`` option; logs are diagnostics and stay off stdout. The caller owns closing it.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    return path.open("w", buffering=1, encoding="utf-8")
 
 
 def configure_logging(
@@ -69,6 +80,19 @@ def configure_logging(
         logger_factory=structlog.PrintLoggerFactory(file=stream),
         cache_logger_on_first_use=True,
     )
+
+
+def start_run_logging(
+    *, verbosity: int, json_logs: bool, quiet: bool, log: Path | None
+) -> TextIO | None:
+    """Configure logging for one CLI run, capturing to a file when ``log`` is set.
+
+    Returns the opened log-file stream (the caller closes it) or ``None`` when logging to
+    stderr. Shared by the scan subcommands so the log-capture wiring lives in one place.
+    """
+    stream = _open_log_file(log) if log is not None else None
+    configure_logging(verbosity=verbosity, json_logs=json_logs, quiet=quiet, log_stream=stream)
+    return stream
 
 
 def get_logger(name: str) -> structlog.stdlib.BoundLogger:

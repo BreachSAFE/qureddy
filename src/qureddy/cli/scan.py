@@ -26,6 +26,7 @@ from qureddy.cli._help import _NO_WRAP_CONTEXT_SETTINGS, _colorize_help_text
 from qureddy.cli._options import (
     FormatOpt,
     JsonLogsOpt,
+    LogOpt,
     OpenSSLOpt,
     QuietOpt,
     ReproducibleOpt,
@@ -40,7 +41,7 @@ from qureddy.cli._options import (
 from qureddy.cli._render import _render
 from qureddy.cli.main import scan_app
 from qureddy.core.errors import RetryConfigError, TargetParseError
-from qureddy.core.logging import configure_logging
+from qureddy.core.logging import start_run_logging
 from qureddy.core.models import FailureCategory, OutputFormat, ScanTarget
 from qureddy.core.retry import parse_retry_on, validate_retry_args
 from qureddy.core.targets import parse_target
@@ -139,6 +140,7 @@ def scan_tls(
     verbose: VerboseOpt = 0,
     json_logs: JsonLogsOpt = False,
     quiet: QuietOpt = False,
+    log: LogOpt = None,
     reproducible: ReproducibleOpt = False,
 ) -> None:
     """Scan a TLS endpoint for post-quantum readiness."""
@@ -152,12 +154,29 @@ def scan_tls(
     # asking for diagnostics and accepting they must keep stdout/stderr
     # genuinely separate (not `2>&1`) to still get clean JSON.
     machine_format = output_format in (OutputFormat.JSON, OutputFormat.CBOM)
-    effective_quiet = quiet or (machine_format and verbose == 0)
-    configure_logging(verbosity=verbose, json_logs=json_logs, quiet=effective_quiet)
-    retry_set = _parse_retry_args(retry_on, retries, retry_delay)
-    scan_target = _parse_cli_target(target, sni)
-    structlog.contextvars.bind_contextvars(target=scan_target.locator)
+    if log is not None:
+        # Capturing to a file: the machine-format auto-quiet (which keeps stderr clean) does not
+        # apply, and floor the level at INFO so a clean run still records its story. Otherwise a
+        # successful machine-format scan would write an empty log (WARNING level, no warnings).
+        effective_quiet = quiet
+        log_verbosity = verbose if quiet else max(verbose, 1)
+    else:
+        effective_quiet = quiet or (machine_format and verbose == 0)
+        log_verbosity = verbose
     try:
+        log_stream = start_run_logging(
+            verbosity=log_verbosity, json_logs=json_logs, quiet=effective_quiet, log=log
+        )
+    except OSError as exc:
+        # A bad --log path (unwritable, or a parent that is a file) is a usage error, not a
+        # traceback: fail honestly with exit 4 before any scan work happens.
+        _fail(f"cannot write --log file {log}: {exc.strerror or exc}", EXIT_USAGE)
+    try:
+        # Everything after the log is opened lives in this try so the stream is always closed,
+        # even when arg parsing exits early (e.g. an invalid --retry-on).
+        retry_set = _parse_retry_args(retry_on, retries, retry_delay)
+        scan_target = _parse_cli_target(target, sni)
+        structlog.contextvars.bind_contextvars(target=scan_target.locator)
         scanner = TLSScanner(
             openssl_path=openssl,
             retry=RetryConfig(retries=retries, retry_delay=retry_delay, retry_on=retry_set),
@@ -169,6 +188,8 @@ def scan_tls(
         raise typer.Exit(code=exit_code)
     finally:
         structlog.contextvars.clear_contextvars()
+        if log_stream is not None:
+            log_stream.close()
 
 
 def _parse_retry_args(

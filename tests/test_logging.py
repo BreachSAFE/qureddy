@@ -13,7 +13,7 @@ import pytest
 import structlog
 import structlog.dev
 
-from qureddy.core.logging import configure_logging, get_logger
+from qureddy.core.logging import configure_logging, get_logger, start_run_logging
 
 
 def test_default_verbosity_is_warning() -> None:
@@ -164,3 +164,25 @@ def test_console_renderer_color_honors_tty_and_no_color(
     assert _renderer_color_flag(stream_is_tty=True) is True, (
         "TTY stream without NO_COLOR should enable color"
     )
+
+
+def test_start_run_logging_captures_to_file(tmp_path) -> None:
+    """`--log PATH`: start_run_logging opens a possibly-new path and logs land in it.
+
+    Diagnostics are captured to a file that need not exist yet, on the logging axis, never
+    on stdout.
+    """
+    logfile = tmp_path / "logs" / "run.log"  # parent dir does not exist yet
+    stream = start_run_logging(verbosity=1, json_logs=False, quiet=False, log=logfile)
+    try:
+        get_logger("qureddy.cli").info("scan.start", target="tls://example.com:443")
+    finally:
+        assert stream is not None
+        stream.close()
+    assert logfile.exists(), "start_run_logging did not create the log file and its parents"
+    assert "scan.start" in logfile.read_text(), "diagnostics were not captured to the --log file"
+
+
+def test_start_run_logging_returns_none_without_log() -> None:
+    """No `--log` path: logs go to stderr and there is no file stream to manage."""
+    assert start_run_logging(verbosity=0, json_logs=False, quiet=False, log=None) is None

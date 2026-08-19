@@ -9,6 +9,7 @@ single canonical declaration of one CLI option.
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Annotated
 
 import typer
@@ -111,3 +112,11 @@ VerboseOpt = Annotated[
 ]
 JsonLogsOpt = Annotated[bool, typer.Option("--json-logs", help="Emit JSON-formatted logs.")]
 QuietOpt = Annotated[bool, typer.Option("-q", "--quiet", help="Suppress non-error logs.")]
+LogOpt = Annotated[
+    Path | None,
+    typer.Option(
+        "--log",
+        help="Capture this run's logs to a file (INFO and above; honors --json-logs). "
+        "Default: logs go to stderr.",
+    ),
+]
