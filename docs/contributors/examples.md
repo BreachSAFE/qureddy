@@ -198,7 +198,7 @@ OpenSSL subprocess calls live **only** in `src/qureddy/scanners/tls/openssl_prob
 
 ```python
 # SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
-"""OpenSSL 3.5 LTS+ subprocess probe for TLS scans."""
+"""Exact OpenSSL 3.5.7 LTS subprocess probe for TLS scans."""
 from __future__ import annotations
 
 import hashlib
@@ -391,6 +391,14 @@ class LocalOpenSSLTooOld(QureddyError):
     """
 
 
+class LocalOpenSSLVersionMismatch(QureddyError):
+    """OpenSSL or its linked library does not match exact 3.5.7 LTS.
+
+    Raised by the capability check. Maps to
+    FailureCategory.LOCAL_OPENSSL_VERSION_MISMATCH.
+    """
+
+
 class TargetParseError(QureddyError):
     """User input could not be parsed into a valid ScanTarget."""
 
@@ -488,7 +496,7 @@ import typer
 
 from qureddy.core.errors import (
     LocalOpenSSLLacksGroup, LocalOpenSSLMissing, LocalOpenSSLTooOld,
-    QureddyError, TargetParseError,
+    LocalOpenSSLVersionMismatch, QureddyError, TargetParseError,
 )
 from qureddy.core.logging import configure_logging
 from qureddy.core.targets import parse_target
@@ -523,7 +531,12 @@ def scan_tls(
 
     try:
         result = TLSScanner(openssl_path=openssl).scan(scan_target, timeout_seconds=timeout)
-    except (LocalOpenSSLMissing, LocalOpenSSLTooOld, LocalOpenSSLLacksGroup) as e:
+    except (
+        LocalOpenSSLMissing,
+        LocalOpenSSLTooOld,
+        LocalOpenSSLVersionMismatch,
+        LocalOpenSSLLacksGroup,
+    ) as e:
         typer.echo(f"qureddy: local openssl problem: {e}", err=True)
         raise typer.Exit(code=3)
     except QureddyError as e:

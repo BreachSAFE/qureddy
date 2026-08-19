@@ -23,7 +23,7 @@ last-resort internal-error code.
 |---|---|---|---|
 | **0** | `EXIT_OK` | Scan succeeded | Both probes ran, evidence parsed, summary built. The target may still be `quantum_vulnerable`; that's a finding, not a failure. |
 | **2** | `EXIT_TARGET_FAILED` | Target scan failed | Probes ran but the target is unreachable, refused TLS, MTU-blackholed, parser-rejected, etc. The target's problem (or the network between you and it). |
-| **3** | `EXIT_LOCAL_DEPENDENCY` | Local OpenSSL is missing or unsupported | `openssl` not found on PATH, or version below 3.5.7, or the binary doesn't list `X25519MLKEM768` as a TLS 1.3 group. Install OpenSSL 3.5.7 LTS and re-run. |
+| **3** | `EXIT_LOCAL_DEPENDENCY` | Local OpenSSL is missing or unsupported | `openssl` not found on PATH, the binary or linked library does not match exact 3.5.7, or the binary doesn't list `X25519MLKEM768` as a TLS 1.3 group. Install OpenSSL 3.5.7 LTS and re-run. |
 | **4** | `EXIT_USAGE` | Usage or configuration error | Bad flag value (e.g. `--format yaml`), unknown retry category, `--retries` without `--retry-on`, malformed target string. |
 | **70** | `EXIT_INTERNAL_ERROR` | Internal qureddy bug | An unhandled exception escaped to `main()`'s last-resort catch (e.g., a programming error in qureddy itself, an unhandled dependency failure). **This is qureddy's problem, not yours.** Open an issue with the printed error message and a reproducer. Code 70 is BSD `sysexits.h` `EX_SOFTWARE`. |
 
@@ -70,7 +70,7 @@ esac
 ```bash
 qureddy scan tls "$TARGET" --format json > scan.json
 case $? in
-  3) echo "::error::OpenSSL 3.5 LTS+ missing on this runner" ;;
+  3) echo "::error::Exact OpenSSL 3.5.7 LTS missing on this runner" ;;
   2) echo "::warning::Scan against $TARGET failed" ;;
   4) echo "::error::Bad flags in CI config" ;;
 esac

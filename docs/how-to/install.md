@@ -181,7 +181,7 @@ Confirm both the version and required group:
 "${QUREDDY_OPENSSL:-openssl}" list -tls1_3 -tls-groups
 ```
 
-The selected binary must report OpenSSL 3.5.7 or newer and list
+The selected binary must report exactly OpenSSL 3.5.7 and list
 `X25519MLKEM768`.
 
 ## 8. Verify the installation

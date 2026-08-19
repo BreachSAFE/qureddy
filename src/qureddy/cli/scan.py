@@ -101,7 +101,7 @@ EXIT CODES:
 \b
 {EXIT_OK}   scan succeeded
 {EXIT_TARGET_FAILED}   target scan failed (handshake, parse, etc.)
-{EXIT_LOCAL_DEPENDENCY}   local dependency missing or unsupported (OpenSSL <3.5)
+{EXIT_LOCAL_DEPENDENCY}   local dependency missing or unsupported (requires OpenSSL 3.5.7 LTS)
 {EXIT_USAGE}   usage / configuration error
 {EXIT_INTERNAL_ERROR}  internal qureddy error (BSD sysexits.h EX_SOFTWARE)
 
@@ -111,7 +111,7 @@ ENVIRONMENT:
 NO_COLOR         Disable ANSI color (https://no-color.org).
 
 \b
-QUREDDY_OPENSSL  Override path to the OpenSSL 3.5 LTS+ binary
+QUREDDY_OPENSSL  Override path to the exact OpenSSL 3.5.7 LTS binary
                  (precedence: --openssl > $QUREDDY_OPENSSL > $PATH).
 
 Project: {PROJECT_URL}

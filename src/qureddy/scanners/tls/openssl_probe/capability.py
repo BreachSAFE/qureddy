@@ -7,16 +7,20 @@ from __future__ import annotations
 import os
 import shutil
 
+from packaging.version import Version
+
 from qureddy.core.errors import (
     LocalOpenSSLBroken,
     LocalOpenSSLIsLibreSSL,
     LocalOpenSSLLacksGroup,
     LocalOpenSSLMissing,
     LocalOpenSSLTooOld,
+    LocalOpenSSLVersionMismatch,
     LocalOpenSSLVersionUnreadable,
 )
 from qureddy.core.models import FailureCategory, OpenSSLDependency
 from qureddy.scanners.tls.openssl_probe._capability_io import (
+    extract_library_version,
     extract_libressl_version,
     extract_version,
     parse_group_list,
@@ -26,7 +30,7 @@ from qureddy.scanners.tls.openssl_probe._constants import (
     DEFAULT_TIMEOUT_SECONDS,
     ENV_OVERRIDE,
     HYBRID_GROUP,
-    MIN_OPENSSL_VERSION,
+    PINNED_OPENSSL_VERSION,
 )
 
 _INSTALL_GUIDANCE = (
@@ -87,15 +91,20 @@ def _dependency_from_capability(
     supports_hybrid: bool,
 ) -> OpenSSLDependency:
     version = extract_version(version_text)
+    library_version = extract_library_version(version_text)
     libressl_version = extract_libressl_version(version_text)
     failure_category: FailureCategory | None = None
-    rendered_version = str(version) if version is not None else libressl_version
+    rendered_version = _render_version(version, library_version) or libressl_version
     if libressl_version is not None:
         failure_category = FailureCategory.LOCAL_OPENSSL_IS_LIBRESSL
-    elif version is None:
+    elif version is None or ("(Library:" in version_text and library_version is None):
         failure_category = FailureCategory.LOCAL_OPENSSL_VERSION_UNREADABLE
-    elif version < MIN_OPENSSL_VERSION:
+    elif version < PINNED_OPENSSL_VERSION and version.base_version != str(PINNED_OPENSSL_VERSION):
         failure_category = FailureCategory.LOCAL_OPENSSL_TOO_OLD
+    elif version != PINNED_OPENSSL_VERSION or (
+        library_version is not None and library_version != PINNED_OPENSSL_VERSION
+    ):
+        failure_category = FailureCategory.LOCAL_OPENSSL_VERSION_MISMATCH
     elif not supports_hybrid:
         failure_category = FailureCategory.LOCAL_OPENSSL_LACKS_GROUP
     return OpenSSLDependency(
@@ -107,6 +116,15 @@ def _dependency_from_capability(
     )
 
 
+def _render_version(version: Version | None, library_version: Version | None) -> str | None:
+    """Render an explicit CLI/library mismatch without changing clean output."""
+    if version is None:
+        return None
+    if library_version is not None and library_version != version:
+        return f"{version} (Library: OpenSSL {library_version})"
+    return str(version)
+
+
 def raise_if_unusable(dep: OpenSSLDependency) -> None:
     """Translate an unusable dependency into its public typed exception."""
     category = dep.failure_category
@@ -115,14 +133,21 @@ def raise_if_unusable(dep: OpenSSLDependency) -> None:
     if category is FailureCategory.LOCAL_OPENSSL_VERSION_UNREADABLE:
         message = (
             f"OpenSSL at {dep.path} has unparseable version output "
-            f"(required: {MIN_OPENSSL_VERSION})"
+            f"(required: {PINNED_OPENSSL_VERSION})"
         )
         raise LocalOpenSSLVersionUnreadable(message, dependency=dep)
     if category is FailureCategory.LOCAL_OPENSSL_IS_LIBRESSL:
         raise LocalOpenSSLIsLibreSSL(_libressl_guidance(dep), dependency=dep)
     if category is FailureCategory.LOCAL_OPENSSL_TOO_OLD:
         raise LocalOpenSSLTooOld(
-            f"OpenSSL {dep.version} is below required {MIN_OPENSSL_VERSION}. {_INSTALL_GUIDANCE}",
+            f"OpenSSL {dep.version} is below required {PINNED_OPENSSL_VERSION}. "
+            f"{_INSTALL_GUIDANCE}",
+            dependency=dep,
+        )
+    if category is FailureCategory.LOCAL_OPENSSL_VERSION_MISMATCH:
+        raise LocalOpenSSLVersionMismatch(
+            f"OpenSSL {dep.version} does not match required {PINNED_OPENSSL_VERSION}. "
+            f"{_INSTALL_GUIDANCE}",
             dependency=dep,
         )
     if category is FailureCategory.LOCAL_OPENSSL_LACKS_GROUP:
@@ -135,7 +160,7 @@ def raise_if_unusable(dep: OpenSSLDependency) -> None:
 def _libressl_guidance(dep: OpenSSLDependency) -> str:
     return (
         f"{dep.path} is LibreSSL {dep.version}, not OpenSSL — install OpenSSL "
-        f"{MIN_OPENSSL_VERSION}+ with {HYBRID_GROUP}. On macOS: brew install "
+        f"{PINNED_OPENSSL_VERSION} LTS with {HYBRID_GROUP}. On macOS: brew install "
         "openssl@3.5, then pass --openssl $(brew --prefix openssl@3.5)/bin/openssl "
         f"or export {ENV_OVERRIDE}=$(brew --prefix openssl@3.5)/bin/openssl."
     )

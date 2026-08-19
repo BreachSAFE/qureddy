@@ -25,8 +25,9 @@ from qureddy.core.errors import (
     LocalOpenSSLMissing,
     LocalOpenSSLTooOld,
     LocalOpenSSLVersionUnreadable,
+    QureddyError,
 )
-from qureddy.core.models import FailureCategory, ProbeResult
+from qureddy.core.models import FailureCategory, OpenSSLDependency, ProbeResult
 from qureddy.scanners.tls.openssl_probe import (
     _classify_failure,
     probe_capability,
@@ -36,6 +37,20 @@ from qureddy.scanners.tls.openssl_probe import (
 )
 from qureddy.scanners.tls.openssl_probe._results import result_from_timeout
 from tests._fake_openssl import fake_openssl
+
+
+def _probe_synthetic_version(
+    version_banner: str,
+    *,
+    openssl_path: str = "/synthetic/openssl",
+) -> OpenSSLDependency:
+    """Probe a deterministic version banner with the required TLS group available."""
+    with patch.object(
+        capability_module,
+        "run_openssl",
+        side_effect=[version_banner, "X25519MLKEM768:x25519"],
+    ):
+        return probe_capability(openssl_path)
 
 
 def test_public_api_exports_exact_adr_symbols_by_identity() -> None:
@@ -156,6 +171,166 @@ class TestProbeCapability:
         dep = probe_capability(fake_openssl("openssl_libressl"))
         assert dep.failure_category is FailureCategory.LOCAL_OPENSSL_IS_LIBRESSL
         assert dep.version == "3.3.6"
+
+
+class TestExactOpenSSLVersionContract:
+    def test_exact_baseline_is_accepted(self) -> None:
+        dep = _probe_synthetic_version("OpenSSL 3.5.7 7 Apr 2026")
+
+        assert dep.failure_category is None
+        assert dep.version == "3.5.7"
+        assert dep.supports_x25519mlkem768 is True
+
+    @pytest.mark.parametrize(
+        ("version_banner", "expected_category"),
+        [
+            pytest.param(
+                "OpenSSL 3.5.6 1 Apr 2026",
+                "local_openssl_too_old",
+                id="lower-patch",
+            ),
+            pytest.param(
+                "OpenSSL 3.5.8 1 Jun 2026",
+                "local_openssl_version_mismatch",
+                id="higher-patch",
+            ),
+            pytest.param(
+                "OpenSSL 3.4.99 1 Jan 2026",
+                "local_openssl_too_old",
+                id="different-minor",
+            ),
+            pytest.param(
+                "OpenSSL 4.0.0 1 Jan 2027",
+                "local_openssl_version_mismatch",
+                id="different-major",
+            ),
+        ],
+    )
+    def test_every_parseable_nonbaseline_release_is_rejected(
+        self,
+        version_banner: str,
+        expected_category: str,
+    ) -> None:
+        dep = _probe_synthetic_version(version_banner)
+
+        assert dep.failure_category is not None
+        assert dep.failure_category.value == expected_category
+
+    def test_moving_alias_cannot_bypass_exact_release_gate(self) -> None:
+        dep = _probe_synthetic_version(
+            "OpenSSL 3.5.8 1 Jun 2026",
+            openssl_path="/opt/homebrew/opt/openssl@3/bin/openssl",
+        )
+
+        assert dep.failure_category is not None
+        assert dep.failure_category.value == "local_openssl_version_mismatch"
+
+    @pytest.mark.parametrize(
+        "version_banner",
+        [
+            pytest.param("OpenSSL 3.5.7-dev 1 Jun 2026", id="development-suffix"),
+            pytest.param("OpenSSL 3.5.7-beta1 1 Jun 2026", id="prerelease-suffix"),
+        ],
+    )
+    def test_release_suffix_cannot_satisfy_exact_baseline(self, version_banner: str) -> None:
+        dep = _probe_synthetic_version(version_banner)
+
+        assert dep.failure_category is not None
+        assert dep.failure_category.value == "local_openssl_version_mismatch"
+
+    def test_linked_library_must_match_cli_version_and_exact_baseline(self) -> None:
+        dep = _probe_synthetic_version(
+            "OpenSSL 3.5.7 9 Jun 2026 (Library: OpenSSL 3.5.8 1 Jun 2026)",
+        )
+
+        assert dep.failure_category is not None
+        assert dep.failure_category.value == "local_openssl_version_mismatch"
+        with pytest.raises(QureddyError) as exc_info:
+            raise_if_unusable(dep)
+
+        message = str(exc_info.value)
+        assert "Library" in message
+        assert "3.5.8" in message
+        assert "required 3.5.7" in message
+
+    def test_matching_cli_and_linked_library_versions_are_accepted(self) -> None:
+        dep = _probe_synthetic_version(
+            "OpenSSL 3.5.7 9 Jun 2026 (Library: OpenSSL 3.5.7 9 Jun 2026)",
+        )
+
+        assert dep.failure_category is None
+        assert dep.version == "3.5.7"
+
+    @pytest.mark.parametrize(
+        ("version_banner", "expected_category"),
+        [
+            pytest.param(
+                "OpenSSL 3",
+                FailureCategory.LOCAL_OPENSSL_VERSION_UNREADABLE,
+                id="moving-major-channel",
+            ),
+            pytest.param(
+                "OpenSSL 3.5",
+                FailureCategory.LOCAL_OPENSSL_VERSION_UNREADABLE,
+                id="moving-minor-channel",
+            ),
+            pytest.param(
+                "LibreSSL rolling",
+                FailureCategory.LOCAL_OPENSSL_IS_LIBRESSL,
+                id="different-product",
+            ),
+            pytest.param(
+                "VendorTLS development snapshot",
+                FailureCategory.LOCAL_OPENSSL_VERSION_UNREADABLE,
+                id="unparseable",
+            ),
+        ],
+    )
+    def test_nonexact_version_inputs_keep_specific_failure_categories(
+        self,
+        version_banner: str,
+        expected_category: FailureCategory,
+    ) -> None:
+        dep = _probe_synthetic_version(version_banner)
+
+        assert dep.failure_category is expected_category
+
+    @pytest.mark.parametrize(
+        "version_banner",
+        [
+            pytest.param("OpenSSL 3.5.6 1 Apr 2026", id="lower-patch"),
+            pytest.param("OpenSSL 3.5.8 1 Jun 2026", id="higher-patch"),
+            pytest.param("OpenSSL 4.0.0 1 Jan 2027", id="different-major"),
+        ],
+    )
+    def test_parseable_mismatch_error_names_detected_and_required_versions(
+        self,
+        version_banner: str,
+    ) -> None:
+        dep = _probe_synthetic_version(version_banner)
+
+        with pytest.raises(QureddyError) as exc_info:
+            raise_if_unusable(dep)
+
+        message = str(exc_info.value)
+        assert dep.version is not None
+        assert dep.version in message
+        assert "3.5.7" in message
+        assert "3.5.7+" not in message
+        assert "or newer" not in message.lower()
+
+    def test_libressl_guidance_names_exact_supported_release(self) -> None:
+        dep = _probe_synthetic_version("LibreSSL rolling")
+
+        with pytest.raises(LocalOpenSSLIsLibreSSL) as exc_info:
+            raise_if_unusable(dep)
+
+        message = str(exc_info.value)
+        assert "LibreSSL rolling" in message
+        assert "3.5.7" in message
+        assert "3.5.7+" not in message
+        assert "--openssl" in message
+        assert "QUREDDY_OPENSSL" in message
 
 
 class TestRaiseIfUnusable:

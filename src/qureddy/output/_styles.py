@@ -217,7 +217,7 @@ def unknown_recommendation(failure: FailureCategory | None) -> str:
         # Issue #249: this category now also covers a capability check
         # that timed out (binary present and executable, just
         # unresponsive) as well as one that exited nonzero — "Install
-        # OpenSSL 3.5 LTS+" is actively wrong for the first case (there's
+        # "Install OpenSSL" is actively wrong for the first case (there's
         # nothing to install) and unhelpfully vague for the second.
         return (
             "OpenSSL failed the capability check — it either exited with an "
@@ -228,7 +228,7 @@ def unknown_recommendation(failure: FailureCategory | None) -> str:
         )
     if failure in LOCAL_CAPABILITY_CATEGORIES:
         return (
-            "Install OpenSSL 3.5 LTS+ with PQ group support and re-run. "
+            "Install exact OpenSSL 3.5.7 LTS with PQ group support and re-run. "
             "The target's PQ posture is genuinely unknown until then."
         )
     return "Re-run the scan. Check connectivity, SNI, and that the target accepts TLS 1.3."

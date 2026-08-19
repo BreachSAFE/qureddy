@@ -220,6 +220,53 @@ def test_local_openssl_too_old_exits_3() -> None:
     assert payload["summary"]["readiness"] == "unknown"
 
 
+def test_local_openssl_version_mismatch_exits_3(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A parseable release above the exact pin stays on the typed exit-3 surface."""
+
+    def synthetic_capability_output(
+        args: list[str],
+        *,
+        timeout_seconds: int,
+    ) -> str:
+        assert timeout_seconds > 0
+        if args[-1] == "version":
+            return "OpenSSL 3.5.8 1 Jun 2026"
+        assert args[-3:] == ["list", "-tls1_3", "-tls-groups"]
+        return "X25519MLKEM768:x25519"
+
+    monkeypatch.setattr(
+        "qureddy.scanners.tls.openssl_probe.capability.run_openssl",
+        synthetic_capability_output,
+    )
+    result = CliRunner().invoke(
+        app,
+        [
+            "scan",
+            "tls",
+            "example.com",
+            "--openssl",
+            fake_openssl("openssl_ok"),
+            "--format",
+            "json",
+        ],
+    )
+
+    assert result.exit_code == 3
+    payload = json.loads(result.stdout)
+    dependency = payload["dependencies"][0]
+    assert payload["scan"]["status"] == "local_openssl_version_mismatch"
+    assert payload["summary"]["failure_category"] == "local_openssl_version_mismatch"
+    assert payload["summary"]["readiness"] == "unknown"
+    assert dependency["failure_category"] == "local_openssl_version_mismatch"
+    assert dependency["version"] == "3.5.8"
+    assert "OpenSSL 3.5.8" in result.stderr
+    assert "required 3.5.7" in result.stderr
+    assert "3.5.7+" not in result.stderr
+    assert "or newer" not in result.stderr.lower()
+
+
 def test_local_openssl_lacks_group_exits_3() -> None:
     runner = CliRunner()
     result = runner.invoke(

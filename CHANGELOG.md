@@ -317,7 +317,7 @@ contains:
 ### Added
 
 - forced `X25519MLKEM768` hybrid and `X25519` classical control probes through
-  OpenSSL 3.5 or newer;
+  the supported OpenSSL runtime;
 - Rich and `qureddy.scan.v1` JSON output;
 - typed target, handshake, SNI, middlebox, parser, and local OpenSSL failures;
 - bounded retry configuration for selected transient TLS failures;
