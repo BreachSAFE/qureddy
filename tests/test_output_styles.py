@@ -64,6 +64,8 @@ class TestUnknownRecommendationLibreSSL:
         assert "LibreSSL" in recommendation
         assert "--openssl" in recommendation
         assert "QUREDDY_OPENSSL" in recommendation
+        assert "checksum-verified" in recommendation
+        assert "moving channel" in recommendation
 
     def test_other_local_categories_keep_generic_message(self) -> None:
         """Regression guard: the new branch must not swallow the existing

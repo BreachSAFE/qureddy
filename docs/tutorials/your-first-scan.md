@@ -78,14 +78,27 @@ openssl version
 openssl list -tls1_3 -tls-groups
 ```
 
-On macOS with Homebrew:
+On macOS, Homebrew's `openssl@3.5` formula is a moving 3.5.x channel. Inspect
+it before selecting it:
 
 ```bash
 brew install openssl@3.5
-export QUREDDY_OPENSSL="$(brew --prefix openssl@3.5)/bin/openssl"
+QUREDDY_OPENSSL_CANDIDATE="$(brew --prefix openssl@3.5)/bin/openssl"
+"$QUREDDY_OPENSSL_CANDIDATE" version
+"$QUREDDY_OPENSSL_CANDIDATE" list -tls1_3 -tls-groups
 ```
 
-Use the [installation guide](../how-to/install.md) for Linux and Windows.
+Export the candidate only when the executable and any explicitly reported
+`Library:` version are both exactly 3.5.7 and the group list contains
+`X25519MLKEM768`:
+
+```bash
+export QUREDDY_OPENSSL="$QUREDDY_OPENSSL_CANDIDATE"
+```
+
+If the formula has moved, use the checksum-pinned source build or container
+documented in the [installation guide](../how-to/install.md). The same guide
+covers Linux and Windows.
 
 ## 6. Scan a TLS endpoint
 

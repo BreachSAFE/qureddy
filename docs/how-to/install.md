@@ -80,17 +80,38 @@ newer (for example 3.13), a bare `pipx install` fails with
 
 ## 3. Install on macOS
 
-Homebrew can install Python, pipx, and OpenSSL:
+Homebrew can install Python and pipx:
 
 ```bash
-brew install python@3.12 pipx openssl@3.5
+brew install python@3.12 pipx
 pipx ensurepath
 pipx install --python "$(brew --prefix python@3.12)/bin/python3.12" breachsafe-qureddy
-export QUREDDY_OPENSSL="$(brew --prefix openssl@3.5)/bin/openssl"
 ```
 
 Do not select `/usr/bin/openssl`; current macOS systems expose LibreSSL at that
 path, and QuReddy rejects LibreSSL for TLS scans.
+
+Homebrew's `openssl@3.5` formula is a moving 3.5.x channel, not an exact patch
+pin. If you use it, inspect the installed runtime before selecting it:
+
+```bash
+brew install openssl@3.5
+QUREDDY_OPENSSL_CANDIDATE="$(brew --prefix openssl@3.5)/bin/openssl"
+"$QUREDDY_OPENSSL_CANDIDATE" version
+"$QUREDDY_OPENSSL_CANDIDATE" list -tls1_3 -tls-groups
+```
+
+Export the candidate only when the executable and any explicitly reported
+`Library:` version are both exactly 3.5.7 and the group list contains
+`X25519MLKEM768`:
+
+```bash
+export QUREDDY_OPENSSL="$QUREDDY_OPENSSL_CANDIDATE"
+```
+
+If the formula has moved, use the repository's
+[checksum-pinned 3.5.7 source-build recipe](../../.github/actions/setup-openssl/action.yml)
+or the [QuReddy container](docker.md); do not bypass the version gate.
 
 ## 4. Install on Linux
 
@@ -109,10 +130,13 @@ openssl version
 openssl list -tls1_3 -tls-groups
 ```
 
-If the version is older than 3.5.7 or the group list does not contain
-`X25519MLKEM768`, install a supported vendor build or build a current release
-from the [official OpenSSL source](https://openssl-library.org/source/).
-Record the resulting path in `QUREDDY_OPENSSL`.
+If the executable or any explicitly reported linked-library version is not
+exactly 3.5.7, or the group list does not contain `X25519MLKEM768`, install an
+exact 3.5.7 vendor build or use the repository's
+[checksum-pinned 3.5.7 source-build recipe](../../.github/actions/setup-openssl/action.yml)
+against the [official OpenSSL source](https://openssl-library.org/source/).
+Do not substitute a current or moving release. Record the resulting path in
+`QUREDDY_OPENSSL`.
 
 ## 5. Install on Windows
 

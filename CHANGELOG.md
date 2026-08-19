@@ -11,6 +11,13 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- TLS capability detection now requires exact OpenSSL 3.5.7 for both the
+  executable and any explicitly reported linked library. Releases below the
+  pin remain `local_openssl_too_old`; other parseable releases use
+  `local_openssl_version_mismatch` and exit `3`.
+
 ## [0.2.14] - 2026-08-19
 
 ### Added

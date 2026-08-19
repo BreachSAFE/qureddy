@@ -34,10 +34,13 @@ from qureddy.scanners.tls.openssl_probe._constants import (
 )
 
 _INSTALL_GUIDANCE = (
-    "pip installs QuReddy, not OpenSSL. Install OpenSSL 3.5.7 LTS separately, then pass "
-    "--openssl PATH or set QUREDDY_OPENSSL. macOS: brew install openssl@3.5. "
-    "Linux: install OpenSSL 3.5.7 LTS from your distribution or trusted vendor. "
-    "Windows: install a maintained OpenSSL 3.5.7 LTS distribution and pass its full path."
+    "pip installs QuReddy, not OpenSSL. Install a checksum-verified OpenSSL 3.5.7 LTS "
+    "build separately, then pass --openssl PATH or set QUREDDY_OPENSSL. macOS: the "
+    "Homebrew openssl@3.5 formula is a moving channel; select it only after `openssl "
+    "version` reports 3.5.7 for the executable and any explicitly reported linked "
+    "library. Linux: install exact OpenSSL 3.5.7 LTS from your distribution or trusted "
+    "vendor. Windows: install a maintained exact OpenSSL 3.5.7 LTS distribution and "
+    "pass its full path."
 )
 
 
@@ -159,8 +162,9 @@ def raise_if_unusable(dep: OpenSSLDependency) -> None:
 
 def _libressl_guidance(dep: OpenSSLDependency) -> str:
     return (
-        f"{dep.path} is LibreSSL {dep.version}, not OpenSSL — install OpenSSL "
-        f"{PINNED_OPENSSL_VERSION} LTS with {HYBRID_GROUP}. On macOS: brew install "
-        "openssl@3.5, then pass --openssl $(brew --prefix openssl@3.5)/bin/openssl "
-        f"or export {ENV_OVERRIDE}=$(brew --prefix openssl@3.5)/bin/openssl."
+        f"{dep.path} is LibreSSL {dep.version}, not OpenSSL — install a checksum-verified "
+        f"OpenSSL {PINNED_OPENSSL_VERSION} LTS build with {HYBRID_GROUP}, then pass "
+        f"--openssl PATH or set {ENV_OVERRIDE}. On macOS, Homebrew openssl@3.5 is a "
+        "moving channel; select it only after `openssl version` reports 3.5.7 for the "
+        "executable and any explicitly reported linked library."
     )

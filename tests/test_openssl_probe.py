@@ -24,6 +24,7 @@ from qureddy.core.errors import (
     LocalOpenSSLLacksGroup,
     LocalOpenSSLMissing,
     LocalOpenSSLTooOld,
+    LocalOpenSSLVersionMismatch,
     LocalOpenSSLVersionUnreadable,
     QureddyError,
 )
@@ -70,6 +71,7 @@ def test_public_api_exports_exact_adr_symbols_by_identity() -> None:
     }
     assert set(openssl_probe_api.__all__) == expected
     assert openssl_probe_api.MIN_OPENSSL_VERSION is constants_module.MIN_OPENSSL_VERSION
+    assert constants_module.MIN_OPENSSL_VERSION is constants_module.PINNED_OPENSSL_VERSION
     assert openssl_probe_api.EXCERPT_LIMIT is constants_module.EXCERPT_LIMIT
     assert openssl_probe_api.DEFAULT_TIMEOUT_SECONDS is constants_module.DEFAULT_TIMEOUT_SECONDS
     assert openssl_probe_api.CLASSICAL_GROUP is constants_module.CLASSICAL_GROUP
@@ -95,6 +97,8 @@ class TestResolveOpenSSLPath:
         assert "Linux:" in message
         assert "Windows:" in message
         assert "--openssl PATH" in message
+        assert "checksum-verified OpenSSL 3.5.7" in message
+        assert "moving channel" in message
 
     def test_non_executable_raises(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         non_exec = tmp_path / "fake_openssl"
@@ -245,7 +249,7 @@ class TestExactOpenSSLVersionContract:
 
         assert dep.failure_category is not None
         assert dep.failure_category.value == "local_openssl_version_mismatch"
-        with pytest.raises(QureddyError) as exc_info:
+        with pytest.raises(LocalOpenSSLVersionMismatch) as exc_info:
             raise_if_unusable(dep)
 
         message = str(exc_info.value)
@@ -296,20 +300,33 @@ class TestExactOpenSSLVersionContract:
         assert dep.failure_category is expected_category
 
     @pytest.mark.parametrize(
-        "version_banner",
+        ("version_banner", "expected_error"),
         [
-            pytest.param("OpenSSL 3.5.6 1 Apr 2026", id="lower-patch"),
-            pytest.param("OpenSSL 3.5.8 1 Jun 2026", id="higher-patch"),
-            pytest.param("OpenSSL 4.0.0 1 Jan 2027", id="different-major"),
+            pytest.param(
+                "OpenSSL 3.5.6 1 Apr 2026",
+                LocalOpenSSLTooOld,
+                id="lower-patch",
+            ),
+            pytest.param(
+                "OpenSSL 3.5.8 1 Jun 2026",
+                LocalOpenSSLVersionMismatch,
+                id="higher-patch",
+            ),
+            pytest.param(
+                "OpenSSL 4.0.0 1 Jan 2027",
+                LocalOpenSSLVersionMismatch,
+                id="different-major",
+            ),
         ],
     )
-    def test_parseable_mismatch_error_names_detected_and_required_versions(
+    def test_parseable_nonbaseline_error_names_detected_and_required_versions(
         self,
         version_banner: str,
+        expected_error: type[QureddyError],
     ) -> None:
         dep = _probe_synthetic_version(version_banner)
 
-        with pytest.raises(QureddyError) as exc_info:
+        with pytest.raises(expected_error) as exc_info:
             raise_if_unusable(dep)
 
         message = str(exc_info.value)
@@ -331,6 +348,8 @@ class TestExactOpenSSLVersionContract:
         assert "3.5.7+" not in message
         assert "--openssl" in message
         assert "QUREDDY_OPENSSL" in message
+        assert "checksum-verified" in message
+        assert "moving channel" in message
 
 
 class TestRaiseIfUnusable:

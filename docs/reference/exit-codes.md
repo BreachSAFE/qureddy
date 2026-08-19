@@ -51,7 +51,7 @@ case $? in
     exit 1
     ;;
   3)
-    echo "Runner is misconfigured (OpenSSL too old or missing)"
+    echo "Runner is misconfigured (OpenSSL missing, broken, non-3.5.7, or lacks the required group)"
     exit 1
     ;;
   4)
