@@ -37,7 +37,6 @@ def result_from_timeout(
         stdout=stdout,
         stderr=stderr,
         parser_input=parser_input,
-        stdout_excerpt=stdout[:EXCERPT_LIMIT],
         stderr_excerpt_override=annotated_stderr[:EXCERPT_LIMIT],
         return_code=-1,
         duration_ms=duration_ms,
@@ -57,7 +56,6 @@ def build_probe_result(
     stdout: str,
     stderr: str,
     parser_input: str,
-    stdout_excerpt: str,
     return_code: int,
     duration_ms: int,
     attempt_number: int,
@@ -65,7 +63,26 @@ def build_probe_result(
     failure_category: FailureCategory | None,
     stderr_excerpt_override: str | None = None,
 ) -> ProbeResult:
-    """Build a result while hashing the unmodified subprocess bytes."""
+    """Build a result, deriving each stream's sha256 and excerpt from one value.
+
+    Evidence-integrity contract (issue #202): for each stream the sha256 and
+    the excerpt are computed here from one local value — ``stdout_sha256`` and
+    ``stdout_excerpt`` both come from ``stdout``, and the excerpt is exactly
+    its first ``EXCERPT_LIMIT`` characters. A consumer given the excerpt and
+    the full stream can therefore verify that every byte shown in the excerpt
+    is covered by the attesting hash: the excerpt is a verifiable prefix of the
+    hashed stream. The same holds for stderr, except the timeout branch may
+    pass ``stderr_excerpt_override`` to append a clearly namespaced
+    ``[qureddy] ...`` annotation AFTER the raw stderr; the raw stderr stays a
+    prefix of the shown excerpt, so no target byte is left unattested.
+
+    ``parser_input`` (combined stdout+stderr) is a SEPARATE field the parser
+    consumes; it is deliberately NEVER used to derive an excerpt. The #202 bug
+    was exactly that: the caller passed ``parser_input[:EXCERPT_LIMIT]`` as the
+    stdout excerpt, so an empty-stdout probe emitted the empty-string hash next
+    to an excerpt showing the stderr transcript — the hash attested a different
+    byte stream than the excerpt was derived from.
+    """
     return ProbeResult(
         command=ProbeCommand(
             executable=args[0],
@@ -76,7 +93,7 @@ def build_probe_result(
         stdout_sha256=hashlib.sha256(stdout.encode("utf-8", "replace")).hexdigest(),
         stderr_sha256=hashlib.sha256(stderr.encode("utf-8", "replace")).hexdigest(),
         parser_input=parser_input,
-        stdout_excerpt=stdout_excerpt,
+        stdout_excerpt=stdout[:EXCERPT_LIMIT],
         stderr_excerpt=stderr_excerpt_override
         if stderr_excerpt_override is not None
         else stderr[:EXCERPT_LIMIT],
