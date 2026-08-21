@@ -7,6 +7,7 @@ Use Case 4 (Detect Unsupported Local OpenSSL) is covered here.
 
 from __future__ import annotations
 
+import hashlib
 import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
@@ -577,6 +578,65 @@ class TestTimeoutPreservesPartialOutput:
         # the probe added on the timeout branch.
         assert "CONNECTION ESTABLISHED" in result.stderr_excerpt
         assert "[qureddy] timeout after 1s" in result.stderr_excerpt
+
+
+class TestEvidenceIntegrityExcerptMatchesHash:
+    """Issue #202: an excerpt must be derived from the same byte stream its
+    sibling sha256 attests.
+
+    `openssl s_client -brief` writes its transcript to stderr and leaves
+    stdout empty. The pre-fix probe derived `stdout_excerpt` from the
+    COMBINED stdout+stderr stream while `stdout_sha256` hashed stdout alone,
+    so an empty-stdout probe emitted the empty-string hash beside an excerpt
+    showing the whole stderr transcript. An auditor recomputing the hash
+    would conclude the evidence had been altered.
+    """
+
+    @staticmethod
+    def _completed(stdout: str, stderr: str) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(
+            args=["openssl", "s_client"], returncode=0, stdout=stdout, stderr=stderr
+        )
+
+    def _assert_stream_integrity(self, excerpt: str, sha256_hex: str, full_stream: str) -> None:
+        """A consumer given `excerpt` + `full_stream` can verify the hash."""
+        limit = constants_module.EXCERPT_LIMIT
+        # The excerpt is a faithful prefix of the exact stream the hash attests.
+        assert full_stream.startswith(excerpt)
+        assert excerpt == full_stream[:limit]
+        assert sha256_hex == hashlib.sha256(full_stream.encode("utf-8", "replace")).hexdigest()
+
+    def test_empty_stdout_excerpt_matches_empty_stdout_hash(self) -> None:
+        transcript = (
+            "CONNECTED(00000003)\n"
+            "Protocol version: TLSv1.3\n"
+            "Ciphersuite: TLS_AES_256_GCM_SHA384\n"
+            "Negotiated TLS1.3 group: X25519MLKEM768\n"
+        )
+        # Real `s_client -brief`: transcript on stderr, stdout empty.
+        with patch("subprocess.run", return_value=self._completed("", transcript)):
+            result = run_hybrid_probe(fake_openssl("openssl_ok"), "example.com", 443, "example.com")
+
+        empty_hash = hashlib.sha256(b"").hexdigest()
+        assert result.stdout_sha256 == empty_hash
+        # The honest excerpt beside an empty-stdout hash must ALSO be empty;
+        # the bug showed the stderr transcript here (integrity mismatch).
+        assert result.stdout_excerpt == ""
+        # Both streams honour the integrity contract end to end.
+        self._assert_stream_integrity(result.stdout_excerpt, result.stdout_sha256, "")
+        self._assert_stream_integrity(result.stderr_excerpt, result.stderr_sha256, transcript)
+
+    def test_stdout_excerpt_never_bleeds_stderr_bytes(self) -> None:
+        stdout = "STDOUT-ONLY-BYTES\n"
+        stderr = "STDERR-ONLY-BYTES\n"
+        with patch("subprocess.run", return_value=self._completed(stdout, stderr)):
+            result = run_hybrid_probe(fake_openssl("openssl_ok"), "example.com", 443, "example.com")
+
+        # stdout_excerpt is derived from stdout ONLY — not the combined stream.
+        assert result.stdout_excerpt == stdout
+        assert "STDERR-ONLY-BYTES" not in result.stdout_excerpt
+        self._assert_stream_integrity(result.stdout_excerpt, result.stdout_sha256, stdout)
+        self._assert_stream_integrity(result.stderr_excerpt, result.stderr_sha256, stderr)
 
 
 class TestLocalOpenSSLExceptionsCarryDependency:

@@ -15,7 +15,6 @@ from qureddy.scanners.tls._net import build_connect_target
 from qureddy.scanners.tls.openssl_probe._constants import (
     CLASSICAL_GROUP,
     DEFAULT_TIMEOUT_SECONDS,
-    EXCERPT_LIMIT,
     HYBRID_GROUP,
 )
 from qureddy.scanners.tls.openssl_probe._logging import (
@@ -122,7 +121,6 @@ def _run_probe(
         stdout=completed.stdout,
         stderr=completed.stderr,
         parser_input=parser_input,
-        stdout_excerpt=parser_input[:EXCERPT_LIMIT],
         return_code=completed.returncode,
         duration_ms=duration_ms,
         attempt_number=attempt_number,
