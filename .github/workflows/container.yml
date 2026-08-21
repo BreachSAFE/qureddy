@@ -11,6 +11,8 @@ on:
       - .github/workflows/container.yml
       - pyproject.toml
       - src/**
+  release:
+    types: [published]
   workflow_dispatch:
     inputs:
       version:
@@ -73,12 +75,37 @@ jobs:
           set -e
           test "$rc" = 2
 
+  # Resolve the image version once, from the release tag on a `release` event
+  # (strip the leading `v` from `vX.Y.Z`) or from the dispatch input otherwise.
+  # Inputs pass through env (not inline ${{ }}) for script-injection hardening.
+  version:
+    name: Resolve image version
+    if: (github.event_name == 'workflow_dispatch' && inputs.publish == true) || github.event_name == 'release'
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.resolve.outputs.version }}
+    steps:
+      - name: Resolve version
+        id: resolve
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          TAG: ${{ github.event.release.tag_name }}
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          if [ "$EVENT_NAME" = "release" ]; then
+            VERSION="${TAG#v}"
+          else
+            VERSION="$INPUT_VERSION"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
   # Build each architecture on its OWN NATIVE runner (no QEMU emulation: emulating an
   # arm64 OpenSSL-from-source build hangs 30+ min). Each job pushes by digest; the
   # `manifest` job stitches them into the multi-arch tags.
   publish:
     name: Build ${{ matrix.arch }} image
-    if: github.event_name == 'workflow_dispatch' && inputs.publish == true
+    needs: version
+    if: (github.event_name == 'workflow_dispatch' && inputs.publish == true) || github.event_name == 'release'
     strategy:
       fail-fast: false
       matrix:
@@ -105,9 +132,9 @@ jobs:
       - name: Build + push ${{ matrix.arch }} by digest (native, no emulation)
         id: build
         env:
-          # Pass the dispatch input through env, not inline ${{ }}, so it cannot break
+          # Pass the resolved version through env, not inline ${{ }}, so it cannot break
           # out of the shell command (script-injection hardening).
-          QUREDDY_VERSION: ${{ inputs.version }}
+          QUREDDY_VERSION: ${{ needs.version.outputs.version }}
         run: |
           docker buildx build \
             --platform "linux/${{ matrix.arch }}" \
@@ -126,8 +153,8 @@ jobs:
 
   manifest:
     name: Merge multi-arch manifest
-    needs: publish
-    if: github.event_name == 'workflow_dispatch' && inputs.publish == true
+    needs: [version, publish]
+    if: (github.event_name == 'workflow_dispatch' && inputs.publish == true) || github.event_name == 'release'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -142,10 +169,13 @@ jobs:
       - name: Log in to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io --username "${{ github.actor }}" --password-stdin
       - name: Create + push multi-arch tags from per-arch digests
+        # Version passes through env (not inline ${{ }}) for script-injection hardening.
+        env:
+          QUREDDY_VERSION: ${{ needs.version.outputs.version }}
         run: |
           refs=""
           for f in digests/*; do refs="$refs ghcr.io/breachsafe/qureddy@$(cat "$f")"; done
-          for tag in "${{ inputs.version }}" latest "sha-${GITHUB_SHA::12}"; do
+          for tag in "$QUREDDY_VERSION" latest "sha-${GITHUB_SHA::12}"; do
             docker buildx imagetools create --tag "ghcr.io/breachsafe/qureddy:$tag" $refs
           done
-          docker buildx imagetools inspect "ghcr.io/breachsafe/qureddy:${{ inputs.version }}"
+          docker buildx imagetools inspect "ghcr.io/breachsafe/qureddy:$QUREDDY_VERSION"
