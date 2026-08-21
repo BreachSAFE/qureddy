@@ -46,8 +46,9 @@ def _without_document_identity(output: str) -> str:
     """Normalize the per-run document-identity values allowed to vary.
 
     Besides the CycloneDX serialNumber and emission timestamp, the CBOM carries the
-    scan id and scan start/finish times (#152); those are run-identity, not content,
-    so they are normalized here to keep the final-bytes-repeatable contract meaningful.
+    scan id and scan start/finish times (#152) and per-probe wall-clock durations
+    (evidence.NN.duration_ms) — all run-identity/timing, not content — so they are
+    normalized here to keep the final-bytes-repeatable contract meaningful (#176/#208).
     """
     output = re.sub(
         r'("serialNumber": )"urn:uuid:[^"]+"',
@@ -59,9 +60,16 @@ def _without_document_identity(output: str) -> str:
         r'\1"<document-timestamp>"',
         output,
     )
-    return re.sub(
+    output = re.sub(
         r'("name": "qureddy:scan\.(?:id|started_at|completed_at)",\s*"value": )"[^"]*"',
         r'\1"<run-identity>"',
+        output,
+    )
+    # Per-probe duration_ms is wall-clock timing — non-deterministic run to run
+    # (the flaky field behind #176/#208). Normalize it like the other run-identity.
+    return re.sub(
+        r'("name": "qureddy:evidence\.\d+\.duration_ms",\s*"value": )"[^"]*"',
+        r'\1"<duration>"',
         output,
     )
 
