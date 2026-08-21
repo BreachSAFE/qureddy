@@ -232,6 +232,43 @@ class TestCycloneDx17Contract:
             prop["name"] != "qureddy:certificate.serial" for prop in component.get("properties", [])
         )
 
+    def test_slh_dsa_cert_signature_emits_post_quantum_level(self) -> None:
+        # #201: an SLH-DSA (FIPS 205) cert must emit a non-zero
+        # nistQuantumSecurityLevel in the CBOM, not fall through to level 0 as a
+        # classical signature. Before the fix this asserted 0 (false negative).
+        certificate = CertificateObservation(
+            subject="CN=BreachSAFE Demo Root",
+            issuer="CN=BreachSAFE Demo Root",
+            not_before="Jul 17 07:18:11 2026 GMT",
+            not_after="Jul 17 07:18:11 2027 GMT",
+            serial="0123456789ABCDEF",
+            signature_algorithm="SLH-DSA-SHA2-128s",
+            public_key_summary="Public Key Algorithm: SLH-DSA-SHA2-128s",
+            is_self_signed=True,
+            is_post_quantum_signature=True,
+        )
+        certificate_evidence = Evidence(
+            id="ev-cert",
+            asset_id="asset-1",
+            evidence_type="tls.cert.signature",
+            observation_type=ObservationType.OBSERVED,
+            source="qureddy.scanners.tls.cert_sig",
+            certificate=certificate,
+        )
+        result = _build_result().model_copy(
+            update={"evidence": (*_build_result().evidence, certificate_evidence)}
+        )
+        payload = _render(result)
+        algorithm = next(
+            item
+            for item in payload["components"]
+            if item["bom-ref"] == "crypto/algorithm/slh-dsa-sha2-128s"
+        )
+        properties = algorithm["cryptoProperties"]["algorithmProperties"]
+        assert properties["primitive"] == "signature"
+        assert properties["parameterSetIdentifier"] == "SLH-DSA-SHA2-128S"
+        assert properties["nistQuantumSecurityLevel"] == 1
+
     def test_certificate_dates_survive_non_english_host_locale(self) -> None:
         # #116: cert validity dates were parsed with a locale-dependent strptime and
         # silently dropped on a non-English host. Render under a forced non-English

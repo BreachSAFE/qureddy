@@ -33,6 +33,7 @@ from qureddy.core.models import (
     Readiness,
     Severity,
 )
+from qureddy.scanners.tls.cert_sig import pqc_signature_standard
 
 if TYPE_CHECKING:
     from qureddy.scanners.tls.cert_probe import CertificateInfo
@@ -109,7 +110,8 @@ def finding_from_certificate(
             f"{certificate.signature_algorithm} as the CA/issuer signature over "
             "the certificate. "
             + (
-                "This is a NIST-standardized post-quantum signature algorithm (FIPS 204). "
+                "This is a NIST-standardized post-quantum signature algorithm "
+                f"({pqc_signature_standard(certificate.signature_algorithm)}). "
                 if pq
                 else "This is a classical (non-post-quantum) signature algorithm. "
             )
