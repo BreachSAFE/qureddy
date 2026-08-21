@@ -33,14 +33,13 @@ classifiers = [
 # typer upper bound (issue #186): 0.16+ vendors its own internal
 # exception module instead of re-raising real click exceptions, which
 # silently broke the exit-code-4 usage-error contract in cli.py. Code
-# now handles this explicitly through 0.26. Typer 0.27 changed its
-# CliRunner stream-capture contract and breaks QuReddy's stdout/stderr
-# separation tests, so the upper bound forces a deliberate compatibility
-# fix before that upgrade. Click 8.3.3 is the first release containing
-# the fix for PYSEC-2026-2132.
+# now handles this explicitly. Typer 0.27 was verified compatible: the
+# full suite (521 tests), including the stdout/stderr separation tests
+# from #189/#194/#30, passes against 0.27.1, so the bound is <0.28.
+# Click 8.3.3 is the first release containing the fix for PYSEC-2026-2132.
 #
 dependencies = [
-    "typer>=0.23.1,<0.27",
+    "typer>=0.23.1,<0.28",
     "click>=8.3.3,<8.5",
     "rich>=13.7",
     "pydantic>=2.7",
@@ -58,13 +57,14 @@ dev = [
     "pytest>=8.0",
     "pytest-cov>=5.0",
     "pytest-rerunfailures>=14.0",
-    # ruff upper bound: CI resolves this fresh, so an unpinned range let CI
-    # jump to 0.16 while local envs sat on 0.15 — and 0.16 starts format-
-    # checking Python code blocks inside Markdown, flagging private skill
-    # files that must stay byte-identical to the canonical library. Bumping past
-    # 0.16 requires deciding the
-    # markdown-format policy (exclude those trees) in the same PR.
-    "ruff>=0.15,<0.16",
+    # ruff upper bound: 0.16 starts format-checking Python code blocks
+    # embedded in Markdown (```python fences). docs/contributors/ holds
+    # intentional anti-pattern examples that must stay byte-for-byte, so
+    # the markdown-format policy is set alongside this bump: `[tool.ruff.format]`
+    # excludes `**/*.md` from the FORMATTER only (lint still scans everything,
+    # real .py files still format-checked). 0.16.4 verified green under that
+    # policy; bound is <0.17.
+    "ruff>=0.15,<0.17",
     "mypy>=1.10",
     "bandit>=1.7",
     "pip-audit>=2.7",
@@ -136,6 +136,16 @@ include = [
 line-length = 100
 target-version = "py312"
 src = ["src", "tests"]
+
+[tool.ruff.format]
+# ruff 0.16 began format-checking Python code fenced in Markdown
+# (```python blocks). docs/contributors/{examples,coding-rules,
+# cli-design-rules}.md hold INTENTIONAL anti-pattern snippets that must
+# stay byte-for-byte to illustrate the rules they violate; reformatting
+# them would defeat the docs. Exclude Markdown from the FORMATTER only —
+# real .py/.pyi files are still formatted and `ruff check` (lint) is
+# unaffected and continues to scan everything.
+exclude = ["**/*.md"]
 
 [tool.ruff.lint]
 select = [
