@@ -117,10 +117,13 @@ def _style_ssh_kex(result: ScanResult) -> Text:
 
 
 def _style_ssh_hostkeys(result: ScanResult) -> Text:
-    """Summarize SSH host-key posture (weak vs classical) for the table."""
-    for ev in result.evidence:
-        if ev.evidence_type == "ssh.hostkey":
-            return Text("weak algorithm offered", style="bold red")
+    """Summarize SSH host-key posture (weak vs classical) for the table.
+
+    Every offered host key is now recorded as ssh.hostkey evidence (so the CBOM can
+    inventory it), so the weak signal comes from the finding, not the evidence type.
+    """
+    if any(f.rule_id == "ssh.hostkey.weak" for f in result.findings):
+        return Text("weak algorithm offered", style="bold red")
     return Text("classical", style="dim")
 
 

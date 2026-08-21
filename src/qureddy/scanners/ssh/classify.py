@@ -27,6 +27,29 @@ _WEAK_HOST_KEYS = frozenset(_WEAK_HOST_KEY_NOTES)
 # host-key type exists in OpenSSH as of this writing).
 _CLASSICAL_HOST_KEY_PREFIXES = ("ssh-ed25519", "ecdsa-sha2-", "ssh-rsa", "rsa-sha2-", "ssh-dss")
 
+# Weak/deprecated key-exchange algorithms, keyed to a justification note. Matched
+# by exact name (the scanner already collects the offered KEX name-list, so this
+# reads what the probe has, no new collection). ssh-audit fails/warns on these
+# small-group or SHA-1 key exchanges; each entry cites why it is weak.
+_WEAK_KEX_NOTES = MappingProxyType(
+    {
+        # 1024-bit MODP group (Oakley group 2) plus a SHA-1 hash.
+        "diffie-hellman-group1-sha1": (
+            "1024-bit MODP group (Oakley group 2) with SHA-1 (RFC 4253; "
+            "off by default since OpenSSH 7.0)"
+        ),
+        # 2048-bit group but a deprecated SHA-1 hash; SHA-2 variant preferred.
+        "diffie-hellman-group14-sha1": "SHA-1 key-exchange hash (RFC 8268 prefers the SHA-2 variant)",
+        # Group-exchange with a SHA-1 hash; disabled by default in modern OpenSSH.
+        "diffie-hellman-group-exchange-sha1": (
+            "SHA-1 key-exchange hash (off by default in modern OpenSSH)"
+        ),
+        # 1024-bit RSA transport key with a SHA-1 hash (RFC 4432).
+        "rsa1024-sha1": "1024-bit RSA transport key with SHA-1 (RFC 4432)",
+    }
+)
+_WEAK_KEX = frozenset(_WEAK_KEX_NOTES)
+
 # name -> human note, for reporting
 KEX_NOTES = MappingProxyType(
     {
@@ -46,8 +69,23 @@ def weak_host_keys(offer_host_keys: tuple[str, ...]) -> tuple[str, ...]:
     return tuple(a for a in offer_host_keys if a in _WEAK_HOST_KEYS)
 
 
+def weak_host_key_note(algorithm: str) -> str | None:
+    """The weakness justification for one host-key algorithm, or None if not weak."""
+    return _WEAK_HOST_KEY_NOTES.get(algorithm)
+
+
 def weak_host_key_reasons(offer_host_keys: tuple[str, ...]) -> tuple[str, ...]:
     """One 'name: reason' note per weak host-key algorithm offered, for reporting."""
     return tuple(
         f"{a}: {_WEAK_HOST_KEY_NOTES[a]}" for a in offer_host_keys if a in _WEAK_HOST_KEY_NOTES
     )
+
+
+def weak_kex(offer_kex: tuple[str, ...]) -> tuple[str, ...]:
+    """Deprecated/weak key-exchange algorithms offered (e.g. diffie-hellman-group1-sha1)."""
+    return tuple(a for a in offer_kex if a in _WEAK_KEX)
+
+
+def weak_kex_reasons(offer_kex: tuple[str, ...]) -> tuple[str, ...]:
+    """One 'name: reason' note per weak key-exchange algorithm offered, for reporting."""
+    return tuple(f"{a}: {_WEAK_KEX_NOTES[a]}" for a in offer_kex if a in _WEAK_KEX)

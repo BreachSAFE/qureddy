@@ -73,6 +73,66 @@ def test_ssh_hybrid_observation_emits_17_crypto_assets() -> None:
     assert protocol == {"type": "ssh", "version": "2.0"}
 
 
+def test_ssh_rsa_sha1_hostkey_flagged_weak() -> None:
+    # A2/#143: ssh-rsa (SHA-1, RFC 8332) is weak even when no ssh-dss is offered.
+    r = _run(("curve25519-sha256",), ("ssh-rsa", "rsa-sha2-256", "ssh-ed25519"))
+    assert r.summary.readiness is Readiness.CLASSICALLY_WEAK
+    weak = next(f for f in r.findings if f.rule_id == "ssh.hostkey.weak")
+    assert "ssh-rsa" in weak.title
+    # rsa-sha2-256 (SHA-2) and ssh-ed25519 must NOT be dragged into the weak set.
+    assert "rsa-sha2-256" not in weak.title
+    assert "ssh-ed25519" not in weak.title
+
+
+def test_weak_kex_group1_sha1_flagged() -> None:
+    # A2/#143: widen weak detection to the KEX name-list the probe already collects.
+    r = _run(("diffie-hellman-group1-sha1", "curve25519-sha256"), ("ssh-ed25519",))
+    assert r.summary.readiness is Readiness.CLASSICALLY_WEAK
+    weak = next(f for f in r.findings if f.rule_id == "ssh.kex.weak")
+    assert "diffie-hellman-group1-sha1" in weak.title
+
+
+def test_strong_kex_and_hostkeys_have_no_weak_findings() -> None:
+    # A modern offer must not raise a false weak KEX/host-key finding.
+    r = _run(("curve25519-sha256", "diffie-hellman-group14-sha256"), ("ssh-ed25519",))
+    rules = {f.rule_id for f in r.findings}
+    assert "ssh.kex.weak" not in rules
+    assert "ssh.hostkey.weak" not in rules
+
+
+def test_host_keys_emitted_as_cbom_components() -> None:
+    # A5/#143: the CBOM previously dropped host keys; every offered host key must
+    # now appear as a signature-classified crypto asset the endpoint provides.
+    result = _run(("curve25519-sha256",), ("ssh-ed25519", "rsa-sha2-256"))
+    stream = io.StringIO()
+    render_cbom(result, stream)
+    payload = json.loads(stream.getvalue())
+    components = {item["bom-ref"]: item for item in payload["components"]}
+    assert "crypto/algorithm/ssh-ed25519" in components
+    assert "crypto/algorithm/rsa-sha2-256" in components
+    # Classified honestly as classical signatures (no PQ resistance).
+    props = components["crypto/algorithm/ssh-ed25519"]["cryptoProperties"]["algorithmProperties"]
+    assert props["primitive"] == "signature"
+    assert props["nistQuantumSecurityLevel"] == 0
+    endpoint = next(d for d in payload["dependencies"] if d["ref"] == "endpoint")
+    assert "crypto/algorithm/ssh-ed25519" in endpoint["provides"]
+    assert "crypto/algorithm/rsa-sha2-256" in endpoint["provides"]
+
+
+def test_weak_dss_hostkey_present_in_cbom_inventory() -> None:
+    # A5/#143: the specific gap called out live — a weak ssh-dss host key was
+    # observed yet absent from the CBOM. It must now be an inventory component.
+    result = _run(("mlkem768x25519-sha256",), ("ssh-dss", "ssh-ed25519"))
+    stream = io.StringIO()
+    render_cbom(result, stream)
+    payload = json.loads(stream.getvalue())
+    refs = {item["bom-ref"] for item in payload["components"]}
+    assert "crypto/algorithm/ssh-dss" in refs
+    assert "crypto/algorithm/ssh-ed25519" in refs
+    # The PQ hybrid KEX asset stays a KEM group, not a signature.
+    assert "crypto/algorithm/mlkem768x25519-sha256" in refs
+
+
 def test_ssh_rich_output_has_no_tls_cert_recommendation() -> None:
     """SSH scan must not emit the TLS cert-axis recommendation or probe rows."""
     r = _run(("mlkem768x25519-sha256",), ("ssh-ed25519",))
