@@ -79,6 +79,30 @@ jobs:
         run: |
           gh release upload "${{ github.event.release.tag_name }}" dist/* --clobber
 
+  # Enforcement (#232): a signing STEP existing in the build job does NOT prove it
+  # RAN. 0.2.14-0.2.16 shipped unsigned because release.yml never executed for those
+  # tags (drafts / disabled workflow) and nothing caught it. This job runs AFTER the
+  # build job has signed + uploaded, re-reads the just-published GitHub Release, and
+  # FAILS the workflow unless the wheel and sdist each carry a .sigstore bundle. So
+  # "the signing step silently didn't run" can no longer ship quietly.
+  verify-signing:
+    name: verify release is signed
+    needs: build
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read         # gh release view / download + gh attestation verify
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Verify the published release is actually signed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          bash scripts/verify_release_signed.sh \
+            "${{ github.event.release.tag_name }}" "${{ github.repository }}"
+
   testpypi:
     name: publish to TestPyPI (OIDC)
     needs: build
