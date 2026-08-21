@@ -32,7 +32,7 @@ cleartext KEXINIT offer directly and do not require OpenSSL.
 
 ## 1. Install
 
-> **Pre-release (TestPyPI):** QuReddy 0.2.13 is available on **TestPyPI**
+> **Pre-release (TestPyPI):** QuReddy is available on **TestPyPI**
 > while the PyPI release is finalized. Install with (**Python 3.12+**):
 >
 > ```bash
@@ -61,7 +61,7 @@ qureddy --version
 The expected version line is:
 
 ```text
-BreachSAFE QuReddy 0.2.13 -- https://www.breachsafe.ai
+BreachSAFE QuReddy <version> -- https://www.breachsafe.ai
 ```
 
 `pipx` creates an isolated environment and places `qureddy` on your command
@@ -83,7 +83,7 @@ docker run --rm ghcr.io/breachsafe/qureddy:latest \
 ```
 
 For reproducible deployments, pin an explicit version tag (for example
-`ghcr.io/breachsafe/qureddy:0.2.13`) or a `@sha256:` digest instead of `:latest`.
+`ghcr.io/breachsafe/qureddy:<version>`) or a `@sha256:` digest instead of `:latest`.
 
 See the [Docker and GHCR guide](docs/how-to/docker.md)
 for digest pinning, local builds, output redirection, and publication policy.
