@@ -29,7 +29,7 @@ ARG QUREDDY_VERSION=0.2.14
 LABEL org.opencontainers.image.title="QuReddy" \
       org.opencontainers.image.description="Post-quantum readiness scanner for TLS and SSH endpoints" \
       org.opencontainers.image.source="https://github.com/breachsafe/qureddy" \
-      org.opencontainers.image.licenses="PolyForm-Noncommercial-1.0.0" \
+      org.opencontainers.image.licenses="Apache-2.0" \
       org.opencontainers.image.version="${QUREDDY_VERSION}"
 
 COPY --from=openssl-build /opt/openssl /opt/openssl
