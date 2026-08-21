@@ -333,9 +333,20 @@ show_missing = true
 # not block. Reviewed: 2026-04-26. Re-review when interrogate drops
 # the `py` dependency or when an alternative pip-audit dep tree exists.
 #
+# PYSEC-2026-3721: vulnerability in pip itself, fixed in pip 26.2. Like
+# GHSA-58qw-9mgm-455v above, this is a vulnerability in pip (the package
+# manager), not in qureddy or any of its runtime deps. pip is dev/build
+# tooling and the venv-seed package manager; qureddy never invokes pip
+# at runtime, and pip is not a declared runtime dependency. Upgrade path:
+# the CI runtime-dependency audit upgrades the seeded pip to >=26.2, which
+# actually resolves this advisory; the ID is recorded here (and passed via
+# `pip-audit --ignore-vuln` in CI) so a seeded/older pip can never block a
+# runtime-dependency audit on tooling-only grounds. Reviewed: 2026-08-21.
+#
 ignore-vulns = [
     "GHSA-58qw-9mgm-455v",
     "PYSEC-2022-42969",
+    "PYSEC-2026-3721",
 ]
 
 # ============================================================================
