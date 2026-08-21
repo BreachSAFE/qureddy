@@ -5,10 +5,15 @@
 from __future__ import annotations
 
 import contextlib
+import hashlib
 import io
 import json
 import locale
+import os
+import subprocess
+import sys
 from datetime import UTC, datetime
+from pathlib import Path
 
 import pytest
 
@@ -21,6 +26,8 @@ from qureddy.core.models import (
     Finding,
     ObservationType,
     OpenSSLDependency,
+    ProbeCommand,
+    ProbeResult,
     Readiness,
     ScanMetadata,
     ScanResult,
@@ -102,6 +109,71 @@ def _render(result: ScanResult) -> dict:
     buf = io.StringIO()
     render_cbom(result, buf)
     return json.loads(buf.getvalue())
+
+
+# The openssl subcommand a real probe records; only the interpreter/prefix path
+# differs from one host to the next. It carries the target and forced group,
+# which are semantic and must survive canonicalization verbatim (#207).
+_PROBE_ARGS: tuple[str, ...] = (
+    "s_client",
+    "-connect",
+    "example.com:443",
+    "-groups",
+    "X25519MLKEM768",
+    "-servername",
+    "example.com",
+)
+
+
+def _build_result_with_probe(executable: str) -> ScanResult:
+    """A scan whose sole evidence carries a ProbeResult run from ``executable``.
+
+    Two hosts observing identical crypto differ only in where their openssl binary
+    lives (e.g. /opt/homebrew/opt/openssl@3.5/bin/openssl vs /usr/bin/openssl). This
+    lets a test vary that host-specific path while holding the observed crypto and
+    the probe's semantic arguments fixed (#207).
+    """
+    result = _build_result()
+    probe_evidence = Evidence(
+        id="ev-1",
+        asset_id=result.assets[0].id,
+        evidence_type="tls.negotiation",
+        observation_type=ObservationType.NEGOTIATED,
+        source="qureddy.scanners.tls.parse",
+        protocol_version="TLSv1.3",
+        cipher_suite="TLS_AES_256_GCM_SHA384",
+        negotiated_group="X25519MLKEM768",
+        probe_result=ProbeResult(
+            command=ProbeCommand(
+                executable=executable,
+                args=_PROBE_ARGS,
+                timeout_seconds=30,
+            ),
+            return_code=0,
+            stdout_sha256="a" * 64,
+            stderr_sha256="b" * 64,
+            duration_ms=42,
+            attempt_number=1,
+        ),
+    )
+    return result.model_copy(update={"evidence": (probe_evidence,)})
+
+
+def _render_reproducible_bytes(result: ScanResult) -> str:
+    buf = io.StringIO()
+    render_cbom(result, buf, reproducible=True)
+    return buf.getvalue()
+
+
+def _emit_reproducible_cbom_bytes() -> str:
+    """Render a fixed, probe-bearing scan in reproducible mode.
+
+    Called both in-process and from a child interpreter (a distinct
+    ``PYTHONHASHSEED``) so a test can prove the serialized bytes do not depend on
+    set/dict iteration order across processes (#196).
+    """
+    result = _build_result_with_probe("/opt/homebrew/opt/openssl@3.5/bin/openssl")
+    return _render_reproducible_bytes(result)
 
 
 @contextlib.contextmanager
@@ -421,3 +493,71 @@ class TestCbomSemanticGuard:
 
         with pytest.raises(ValueError, match="secret-like"):
             validate_cbom_semantics(payload)
+
+
+def _command_hash_property(payload: dict, prefix: str = "qureddy:evidence.00") -> str:
+    for prop in payload["metadata"]["properties"]:
+        if prop["name"] == f"{prefix}.command_sha256":
+            return prop["value"]
+    msg = f"no {prefix}.command_sha256 property in CBOM"
+    raise AssertionError(msg)
+
+
+class TestReproducibleHostPathCanonicalization:
+    """Reproducible CBOM must not encode host-specific probe executable paths (#207)."""
+
+    _HOST_A = "/opt/homebrew/opt/openssl@3.5/bin/openssl"
+    _HOST_B = "/usr/bin/openssl"
+
+    def test_reproducible_cbom_is_byte_identical_across_host_openssl_paths(self) -> None:
+        # #207: two hosts observing identical crypto, differing only in where their
+        # openssl binary lives, must produce byte-identical reproducible CBOM.
+        host_a = _render_reproducible_bytes(_build_result_with_probe(self._HOST_A))
+        host_b = _render_reproducible_bytes(_build_result_with_probe(self._HOST_B))
+        assert host_a == host_b
+
+    def test_reproducible_command_hash_is_over_basename_not_absolute_path(self) -> None:
+        # The hashed command must attribute the openssl subcommand (basename + args)
+        # without binding to the host install location.
+        payload = json.loads(_render_reproducible_bytes(_build_result_with_probe(self._HOST_A)))
+        expected = hashlib.sha256(
+            " ".join(["openssl", *_PROBE_ARGS]).encode(),
+        ).hexdigest()
+        assert _command_hash_property(payload) == expected
+
+    def test_non_reproducible_output_retains_host_specific_path(self) -> None:
+        # Guardrail: operator diagnostics still get the exact local path, so the two
+        # hosts' non-reproducible command hashes DO differ. This also proves the fix
+        # is scoped to reproducible mode (and that the path genuinely leaked before).
+        payload_a = _render(_build_result_with_probe(self._HOST_A))
+        payload_b = _render(_build_result_with_probe(self._HOST_B))
+        assert _command_hash_property(payload_a) != _command_hash_property(payload_b)
+        expected_a = hashlib.sha256(
+            " ".join([self._HOST_A, *_PROBE_ARGS]).encode(),
+        ).hexdigest()
+        assert _command_hash_property(payload_a) == expected_a
+
+    def test_reproducible_cbom_is_byte_identical_across_pythonhashseed(self) -> None:
+        # #196: prove set/dict iteration order cannot alter emitted bytes across
+        # processes by regenerating the same reproducible scan under two distinct
+        # PYTHONHASHSEED values and comparing the final byte streams exactly.
+        repo_root = Path(__file__).resolve().parents[1]
+        child = (
+            "import sys; from tests.test_cbom import _emit_reproducible_cbom_bytes; "
+            "sys.stdout.write(_emit_reproducible_cbom_bytes())"
+        )
+        outputs: list[str] = []
+        for seed in ("1", "2"):
+            env = {**os.environ, "PYTHONHASHSEED": seed}
+            completed = subprocess.run(  # noqa: S603 - fixed interpreter + literal script.
+                [sys.executable, "-c", child],
+                check=True,
+                capture_output=True,
+                text=True,
+                cwd=repo_root,
+                env=env,
+            )
+            outputs.append(completed.stdout)
+        assert outputs[0] == outputs[1]
+        # sanity: the compared bytes are a real CBOM, not empty/error output.
+        assert json.loads(outputs[0])["bomFormat"] == "CycloneDX"

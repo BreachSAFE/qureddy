@@ -11,6 +11,7 @@ module under the file-size ceiling; the rendered CBOM is unchanged (#171).
 from __future__ import annotations
 
 import hashlib
+from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from cyclonedx.model import Property
@@ -137,7 +138,20 @@ def add_evidence_provenance(bom: Bom, result: ScanResult, *, reproducible: bool)
         ]
         probe = evidence.probe_result
         if probe is not None:
-            command = " ".join([probe.command.executable, *probe.command.args])
+            # The probe executable is an absolute, host-specific path (e.g.
+            # /opt/homebrew/opt/openssl@3.5/bin/openssl vs /usr/bin/openssl). In
+            # reproducible mode canonicalize it to its basename before joining and
+            # hashing, so two hosts that ran the same openssl subcommand from
+            # different install locations produce a byte-identical command digest
+            # (#207). The subcommand args are semantic (target host:port, forced
+            # group), not host paths, so they are preserved verbatim. Non-
+            # reproducible output keeps the exact local path for operator diagnostics.
+            executable = (
+                PurePosixPath(probe.command.executable).name
+                if reproducible
+                else probe.command.executable
+            )
+            command = " ".join([executable, *probe.command.args])
             pairs.extend(
                 [
                     (f"{prefix}.command_sha256", hashlib.sha256(command.encode()).hexdigest()),
