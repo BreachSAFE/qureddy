@@ -41,11 +41,11 @@ typecheck:
 
 # Run the test suite with coverage.
 test:
-    uv run --locked pytest --cov=qureddy --cov-fail-under=80
+    uv run --locked pytest --cov=qureddy --cov-fail-under=90
 
 # Run only unit tests (excludes tests/live/).
 test-unit:
-    uv run --locked pytest --ignore=tests/live --cov=qureddy --cov-fail-under=80
+    uv run --locked pytest --ignore=tests/live --cov=qureddy --cov-fail-under=90
 
 # Run only live tests (network required).
 test-live:

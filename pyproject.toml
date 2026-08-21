@@ -57,6 +57,10 @@ dev = [
     "pytest>=8.0",
     "pytest-cov>=5.0",
     "pytest-rerunfailures>=14.0",
+    # Property-based testing (issue #131): fuzz the untrusted-input parsers
+    # (parse_target / parse_ssh_target) whose example-test blind spots shipped
+    # #116/#128/#130. Deterministic in CI via a derandomized profile.
+    "hypothesis>=6.100",
     # ruff upper bound: 0.16 starts format-checking Python code blocks
     # embedded in Markdown (```python fences). docs/contributors/ holds
     # intentional anti-pattern examples that must stay byte-for-byte, so
@@ -300,7 +304,7 @@ exclude_lines = [
     "if TYPE_CHECKING:",
     "if __name__ == .__main__.:",
 ]
-fail_under = 80
+fail_under = 90
 show_missing = true
 
 # ============================================================================
@@ -372,6 +376,8 @@ extend_exclude = ["scratch"]
 # in this list permanently. The jsonschema/RFC3339 packages and their
 # stubs are imported only by tests/conformance/, which deptry does not
 # scan; they are required by the independent final-byte test gate.
+# hypothesis is imported only by the property tests under tests/ (issue
+# #131), which deptry likewise does not scan, so it is listed here too.
 DEP002 = [
     "bandit",
     "pip-audit",
@@ -388,4 +394,5 @@ DEP002 = [
     "rfc3339-validator",
     "types-jsonschema",
     "types-rfc3339-validator",
+    "hypothesis",
 ]

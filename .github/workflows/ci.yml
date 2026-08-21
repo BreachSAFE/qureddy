@@ -118,7 +118,7 @@ jobs:
             --cov=qureddy \
             --cov-report=term-missing \
             --cov-report=xml:coverage.xml \
-            --cov-fail-under=80 \
+            --cov-fail-under=90 \
             --junitxml=pytest-results.xml
 
       - name: Upload coverage
