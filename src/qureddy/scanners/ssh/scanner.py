@@ -167,18 +167,75 @@ def _kex_observation(asset: Asset, algorithms: tuple[str, ...]) -> tuple[Evidenc
     return _hybrid_kex_observation(asset, pq) if pq else _classical_kex_observation(asset)
 
 
-def _weak_host_key_observation(
-    asset: Asset, algorithms: tuple[str, ...]
-) -> tuple[Evidence, Finding] | None:
-    """Build the weak-host-key result pair, if a weak algorithm is offered."""
-    weak = classify.weak_host_keys(algorithms)
-    if not weak:
-        return None
-    reasons = classify.weak_host_key_reasons(algorithms)
+def _host_key_evidence(asset: Asset, algorithm: str) -> tuple[Evidence, bool]:
+    """One OFFERED evidence record for a single host-key algorithm.
+
+    Every offered host-key algorithm becomes evidence (not only the weak ones) so
+    the CBOM can emit the full observed host-key inventory the way the TLS path
+    emits its algorithms. The boolean flags whether this algorithm is weak.
+    """
+    note = classify.weak_host_key_note(algorithm)
+    notes = (f"{algorithm}: {note}",) if note else (f"host-key algorithm offered: {algorithm}",)
     evidence = Evidence(
         id=_uid("ev"),
         asset_id=asset.id,
         evidence_type="ssh.hostkey",
+        observation_type=ObservationType.OFFERED,
+        source="qureddy.scanners.ssh.probe",
+        protocol="ssh",
+        protocol_version="2.0",
+        negotiated_group=algorithm,
+        notes=notes,
+    )
+    return evidence, note is not None
+
+
+def _host_key_observations(
+    asset: Asset, algorithms: tuple[str, ...]
+) -> tuple[list[Evidence], Finding | None]:
+    """Evidence for every offered host key, plus a weak finding if any are weak."""
+    evidence: list[Evidence] = []
+    weak_ids: list[str] = []
+    for algorithm in algorithms:
+        record, is_weak = _host_key_evidence(asset, algorithm)
+        evidence.append(record)
+        if is_weak:
+            weak_ids.append(record.id)
+    if not weak_ids:
+        return evidence, None
+    weak = classify.weak_host_keys(algorithms)
+    finding = Finding(
+        id=_uid("finding"),
+        asset_id=asset.id,
+        evidence_ids=tuple(weak_ids),
+        rule_id="ssh.hostkey.weak",
+        finding_type="ssh.hostkey.weak",
+        title=f"Weak SSH host-key algorithm offered ({', '.join(weak)})",
+        description=(
+            "Deprecated or SHA-1 host-key algorithms offered. DSA keys are fixed at "
+            "1024-bit; ssh-rsa signs with SHA-1 (RFC 8332). Both are disabled by "
+            "default in modern OpenSSH."
+        ),
+        severity=Severity.MEDIUM,
+        readiness=Readiness.CLASSICALLY_WEAK,
+        confidence=Confidence.HIGH,
+        protocol="ssh",
+    )
+    return evidence, finding
+
+
+def _weak_kex_observation(
+    asset: Asset, algorithms: tuple[str, ...]
+) -> tuple[Evidence, Finding] | None:
+    """Build the weak-KEX result pair, if a deprecated key exchange is offered."""
+    weak = classify.weak_kex(algorithms)
+    if not weak:
+        return None
+    reasons = classify.weak_kex_reasons(algorithms)
+    evidence = Evidence(
+        id=_uid("ev"),
+        asset_id=asset.id,
+        evidence_type="ssh.kex.weak",
         observation_type=ObservationType.OFFERED,
         source="qureddy.scanners.ssh.probe",
         protocol="ssh",
@@ -189,13 +246,12 @@ def _weak_host_key_observation(
         id=_uid("finding"),
         asset_id=asset.id,
         evidence_ids=(evidence.id,),
-        rule_id="ssh.hostkey.weak",
-        finding_type="ssh.hostkey.weak",
-        title=f"Weak SSH host-key algorithm offered ({', '.join(weak)})",
+        rule_id="ssh.kex.weak",
+        finding_type="ssh.kex.weak",
+        title=f"Weak SSH key-exchange algorithm offered ({', '.join(weak)})",
         description=(
-            "Deprecated or SHA-1 host-key algorithms offered. DSA keys are fixed at "
-            "1024-bit; ssh-rsa signs with SHA-1 (RFC 8332). Both are disabled by "
-            "default in modern OpenSSH."
+            "Deprecated key-exchange algorithms offered. Small (1024-bit) MODP groups "
+            "and SHA-1 key-exchange hashes are disabled by default in modern OpenSSH."
         ),
         severity=Severity.MEDIUM,
         readiness=Readiness.CLASSICALLY_WEAK,
@@ -250,9 +306,15 @@ def scan_ssh(target: ScanTarget, *, timeout_seconds: int = 8) -> ScanResult:
     kex_evidence, kex_finding = _kex_observation(asset, offer.kex_algorithms)
     evidence = [kex_evidence]
     findings = [kex_finding]
-    weak_result = _weak_host_key_observation(asset, offer.host_key_algorithms)
-    if weak_result is not None:
-        weak_evidence, weak_finding = weak_result
-        evidence.append(weak_evidence)
-        findings.append(weak_finding)
+    weak_kex_result = _weak_kex_observation(asset, offer.kex_algorithms)
+    if weak_kex_result is not None:
+        weak_kex_evidence, weak_kex_finding = weak_kex_result
+        evidence.append(weak_kex_evidence)
+        findings.append(weak_kex_finding)
+    host_key_evidence, weak_host_key_finding = _host_key_observations(
+        asset, offer.host_key_algorithms
+    )
+    evidence.extend(host_key_evidence)
+    if weak_host_key_finding is not None:
+        findings.append(weak_host_key_finding)
     return _build_ssh_success_result(target, asset, evidence, findings, started)
