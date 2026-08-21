@@ -1,7 +1,7 @@
 # Changelog
 
 [![Status: Alpha](https://img.shields.io/badge/status-alpha-blue?style=flat-square)](https://github.com/breachsafe/qureddy)
-[![Version](https://img.shields.io/badge/version-0.2.16-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.17-blue?style=flat-square)](CHANGELOG.md)
 [![Keep a Changelog](https://img.shields.io/badge/keep%20a%20changelog-1.1.0-orange?style=flat-square)](https://keepachangelog.com/en/1.1.0/)
 [![SemVer](https://img.shields.io/badge/SemVer-2.0.0-blue?style=flat-square)](https://semver.org/spec/v2.0.0.html)
 
@@ -10,6 +10,31 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and version
 numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.2.17] - 2026-08-21
+
+### Added
+
+- Output ergonomics for `scan tls` and `scan ssh`: `--output PATH` (`-o`) writes the
+  machine document to a file while stdout stays clean, `--compact` minifies JSON and
+  CBOM, and `--min-severity` filters the findings table. (#133)
+- SSH host keys now appear in the CBOM as cryptographic-asset components, and weak SSH
+  key-exchange algorithms such as diffie-hellman-group1-sha1 are flagged. (#143)
+
+### Fixed
+
+- SLH-DSA (FIPS 205) certificate signatures are now classified as post-quantum. (#201)
+- Evidence integrity: `stdout_sha256` now attests exactly the stream that `stdout_excerpt`
+  is a prefix of. (#202)
+- `--reproducible` CBOM output is now byte-identical across hosts. Host-specific
+  executable paths are canonicalized before hashing. (#207, #196)
+
+### Security
+
+- The Docker wheel install is recognized as pinned by OpenSSF Scorecard
+  (Pinned-Dependencies 10/10), with an optional `QUREDDY_WHEEL_SHA256` integrity gate. (#221)
+- OpenSSF Scorecard and CI hardening: least-privilege workflow permissions, CodeQL on
+  push, and a canonical-source provenance gate. (#224, #229)
 
 ## [0.2.16] - 2026-08-21
 
