@@ -15,11 +15,12 @@ from qureddy._branding import HEADER
 from qureddy.output._styles import BRAND_CYAN
 from qureddy.output.console._commands import _commands_panel
 from qureddy.output.console._errors import _errors_table
+from qureddy.output.console._evidence import _SEVERITY_ORDER
 from qureddy.output.console._tables import _findings_table, _run_details_table, _summary_table
 from qureddy.output.console._verdict import _verdict_panel
 
 if TYPE_CHECKING:
-    from qureddy.core.models import ScanResult
+    from qureddy.core.models import Finding, ScanResult, Severity
 
 # `-vvv` (verbosity == 3) is the threshold for surfacing the exact
 # OpenSSL commands run. The DEBUG log channel already carries the same
@@ -33,6 +34,7 @@ def render_rich(
     stream: IO[str] | None = None,
     *,
     verbosity: int = 0,
+    min_severity: Severity | None = None,
 ) -> None:
     """Render a ScanResult to the given stream (default: current sys.stdout).
 
@@ -53,6 +55,13 @@ def render_rich(
          Probe args are also logged at DEBUG level on stderr at -vv/-vvv,
          and are always present in JSON output regardless of verbosity.
 
+    ``min_severity`` (issue #133) trims the findings *table* to findings at or
+    above the given severity — a human-output convenience for scanning a noisy
+    report. It is display-only: the verdict panel and the summary table's total
+    `findings` count still reflect every finding, and the machine formats
+    (json/cbom) are never filtered, so the issue #30 machine-document contract
+    is untouched.
+
     Honors NO_COLOR per https://no-color.org.
     """
     target_stream = stream if stream is not None else sys.stdout
@@ -63,9 +72,10 @@ def render_rich(
     console.print(_verdict_panel(result))
     console.print()
     console.print(_summary_table(result))
-    if result.findings:
+    shown_findings = _filter_by_min_severity(result.findings, min_severity)
+    if shown_findings:
         console.print()
-        console.print(_findings_table(result))
+        console.print(_findings_table(result, findings=shown_findings))
     console.print()
     console.print(_run_details_table(result))
     errors_table = _errors_table(result)
@@ -77,6 +87,22 @@ def render_rich(
         if commands_panel is not None:
             console.print()
             console.print(commands_panel)
+
+
+def _filter_by_min_severity(
+    findings: tuple[Finding, ...],
+    min_severity: Severity | None,
+) -> tuple[Finding, ...]:
+    """Keep findings at or above ``min_severity`` (rich-table display only).
+
+    ``None`` means no filter. Severity ranks come from the shared
+    ``_SEVERITY_ORDER`` (critical=0 .. info=4), so "at or above medium" keeps
+    critical/high/medium and drops low/info.
+    """
+    if min_severity is None:
+        return findings
+    threshold = _SEVERITY_ORDER[min_severity]
+    return tuple(f for f in findings if _SEVERITY_ORDER[f.severity] <= threshold)
 
 
 def _header_text() -> Text:

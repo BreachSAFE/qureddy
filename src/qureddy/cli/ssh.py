@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import os
 import re
-import sys
 
 import typer
 
@@ -20,22 +19,23 @@ from qureddy.cli._errors import (
 )
 from qureddy.cli._help import _NO_WRAP_CONTEXT_SETTINGS, _colorize_help_text
 from qureddy.cli._options import (
+    CompactOpt,
     FormatOpt,
     JsonLogsOpt,
+    MinSeverityOpt,
+    OutputOpt,
     QuietOpt,
     ReproducibleOpt,
     SshTargetArg,
     TimeoutOpt,
     VerboseOpt,
 )
+from qureddy.cli._render import _open_output_file, _render
 from qureddy.cli.main import scan_app
 from qureddy.core.errors import SSHProbeError, TargetParseError
 from qureddy.core.logging import start_run_logging
-from qureddy.core.models import OutputFormat
+from qureddy.core.models import OutputFormat, ScanResult, ScanTarget
 from qureddy.core.targets import parse_ssh_target
-from qureddy.output.cbom import render_cbom
-from qureddy.output.console import render_rich
-from qureddy.output.json import render_json
 from qureddy.scanners.ssh.scanner import build_ssh_failure_result, scan_ssh
 
 _SCAN_SSH_EPILOG = _colorize_help_text(f"""\
@@ -52,6 +52,22 @@ qureddy scan ssh sftp.vendor.example.com:2222
 \b
 # Machine-readable JSON.
 qureddy scan ssh github.com --format json
+
+\b
+# Compact JSON written straight to a file (stdout stays empty and clean).
+qureddy scan ssh github.com --format json --compact --output scan.json
+
+\b
+# Human report trimmed to medium-and-above findings (machine formats stay complete).
+qureddy scan ssh github.com --min-severity medium
+
+OUTPUT:
+
+\b
+--output / -o    Write the rendered document to a file instead of stdout
+                 (a path that cannot be opened exits 4).
+--compact        Minify JSON/CBOM to one line (--format json | cbom).
+--min-severity   Rich only: hide findings below this severity.
 
 VERDICTS:
 
@@ -119,6 +135,9 @@ def _block_internal_targets() -> bool:
 def scan_ssh_cmd(
     target: SshTargetArg,
     fmt: FormatOpt = OutputFormat.RICH,
+    output: OutputOpt = None,
+    compact: CompactOpt = False,
+    min_severity: MinSeverityOpt = None,
     timeout: TimeoutOpt = 8,
     verbose: VerboseOpt = 0,
     json_logs: JsonLogsOpt = False,
@@ -137,9 +156,42 @@ def scan_ssh_cmd(
         scan_target = parse_ssh_target(target, block_internal=_block_internal_targets())
     except TargetParseError as exc:
         _fail(f"invalid target: {exc}", EXIT_USAGE)
-    exit_code = EXIT_OK
+    # --output stream is owned here so a rich-mode probe failure (which exits
+    # before rendering) still closes it; a bad path exits 4 before the scan.
+    output_stream = _open_output_file(output)
     try:
-        result = scan_ssh(scan_target, timeout_seconds=timeout)
+        result, exit_code = _run_ssh_probe(scan_target, timeout, machine_format=machine_format)
+        _render(
+            result,
+            fmt,
+            verbose,
+            reproducible=reproducible,
+            compact=compact,
+            min_severity=min_severity,
+            stream=output_stream,
+        )
+        if exit_code != EXIT_OK:
+            raise typer.Exit(code=exit_code)
+    finally:
+        if output_stream is not None:
+            output_stream.close()
+
+
+def _run_ssh_probe(
+    scan_target: ScanTarget,
+    timeout: int,
+    *,
+    machine_format: bool,
+) -> tuple[ScanResult, int]:
+    """Run the SSH probe; map a failure to a document + exit or a rich early-exit.
+
+    On success returns ``(result, 0)``. On an ``SSHProbeError`` the cleaned
+    message is echoed to stderr; rich mode then exits 2 with no document, while
+    machine formats return a failure document carrying ``summary.failure_category``
+    plus exit 2 (issue #30) so stdout is never left empty.
+    """
+    try:
+        return scan_ssh(scan_target, timeout_seconds=timeout), EXIT_OK
     except SSHProbeError as exc:
         # Present a clean, classified message on stderr — never the raw
         # OSError/errno. Exit 2 (target scan failed), same contract as tls.
@@ -147,17 +199,5 @@ def scan_ssh_cmd(
         _echo_operator_diagnostic(f"ssh scan failed: {cleaned}", machine_format=machine_format)
         if not machine_format:
             raise typer.Exit(code=EXIT_TARGET_FAILED) from None
-        # Machine formats emit exactly one parseable document even on
-        # probe failure (issue #30): the failure travels in the document
-        # (summary.failure_category) plus the exit code, matching the
-        # `scan tls` failure paths instead of leaving stdout empty.
         result = build_ssh_failure_result(scan_target, exc, cleaned_error=cleaned)
-        exit_code = EXIT_TARGET_FAILED
-    if fmt is OutputFormat.JSON:
-        render_json(result, sys.stdout)
-    elif fmt is OutputFormat.CBOM:
-        render_cbom(result, sys.stdout, reproducible=reproducible)
-    else:
-        render_rich(result, sys.stdout, verbosity=verbose)
-    if exit_code != EXIT_OK:
-        raise typer.Exit(code=exit_code)
+        return result, EXIT_TARGET_FAILED

@@ -127,13 +127,18 @@ def _style_ssh_hostkeys(result: ScanResult) -> Text:
     return Text("classical", style="dim")
 
 
-def _findings_table(result: ScanResult) -> Table:
+def _findings_table(result: ScanResult, *, findings: tuple[Finding, ...] | None = None) -> Table:
     """Findings table.
 
     Keep the human table compact while retaining the fields that distinguish
     observed crypto: severity, stable rule ID, protocol, group, and algorithm.
     The full readiness enum remains in JSON and the scan-details block.
+
+    ``findings`` overrides which findings are rendered (used by the
+    ``--min-severity`` display filter, issue #133); it defaults to every
+    finding on ``result``.
     """
+    rows = result.findings if findings is None else findings
     table = Table(
         title="Findings",
         title_style="bold",
@@ -151,7 +156,7 @@ def _findings_table(result: ScanResult) -> Table:
     table.add_column("Protocol", no_wrap=True, width=8)
     table.add_column("Crypto", no_wrap=False, overflow="fold", width=20)
 
-    for finding in sorted(result.findings, key=lambda item: _SEVERITY_ORDER[item.severity]):
+    for finding in sorted(rows, key=lambda item: _SEVERITY_ORDER[item.severity]):
         details = _finding_crypto_detail(finding)
         table.add_row(
             style_severity(finding.severity),

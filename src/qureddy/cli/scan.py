@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import TextIO
+from typing import IO, TextIO
 
 import structlog
 import typer
@@ -26,10 +26,13 @@ from qureddy.cli._errors import (
 from qureddy.cli._execute import _execute_scan
 from qureddy.cli._help import _NO_WRAP_CONTEXT_SETTINGS, _colorize_help_text
 from qureddy.cli._options import (
+    CompactOpt,
     FormatOpt,
     JsonLogsOpt,
     LogOpt,
+    MinSeverityOpt,
     OpenSSLOpt,
+    OutputOpt,
     QuietOpt,
     ReproducibleOpt,
     RetriesOpt,
@@ -40,11 +43,11 @@ from qureddy.cli._options import (
     TimeoutOpt,
     VerboseOpt,
 )
-from qureddy.cli._render import _render
+from qureddy.cli._render import _open_output_file, _render
 from qureddy.cli.main import scan_app
 from qureddy.core.errors import RetryConfigError, TargetParseError
 from qureddy.core.logging import start_run_logging
-from qureddy.core.models import FailureCategory, OutputFormat, ScanTarget
+from qureddy.core.models import FailureCategory, OutputFormat, ScanTarget, Severity
 from qureddy.core.retry import parse_retry_on, validate_retry_args
 from qureddy.core.targets import parse_target
 from qureddy.scanners.tls.openssl_probe import DEFAULT_TIMEOUT_SECONDS
@@ -85,6 +88,22 @@ qureddy scan tls 1.1.1.1:443 --sni one.one.one.one
 \b
 # Tolerate transient network hiccups (3 retries, 2s apart).
 qureddy scan tls flaky.example.com --retry-on tls_handshake_failed --retries 3 --retry-delay 2
+
+\b
+# Compact JSON written straight to a file (stdout stays empty and clean).
+qureddy scan tls example.com --format json --compact --output scan.json
+
+\b
+# Human report trimmed to medium-and-above findings (machine formats stay complete).
+qureddy scan tls example.com --min-severity medium
+
+OUTPUT:
+
+\b
+--output / -o    Write the rendered document to a file instead of stdout
+                 (a path that cannot be opened exits 4).
+--compact        Minify JSON/CBOM to one line (--format json | cbom).
+--min-severity   Rich only: hide findings below this severity.
 
 SCAN BEHAVIOR:
 
@@ -134,6 +153,13 @@ def _open_run_log(
         effective_quiet = quiet
         log_verbosity = verbose if quiet else max(verbose, 1)
     else:
+        # JSON/CBOM stdout is a single machine-parsed document. The #15 fd-snapshot
+        # fix only guards in-process stream rebinding (CliRunner, etc.); it cannot
+        # protect real shell `2>&1` (the OS merged fd 1/2 before Python started —
+        # #194), so a WARNING+ log line would corrupt that document for any real
+        # `| jq` consumer. Default to quiet in these formats so the common case is
+        # safe; an explicit -v/-vv/-vvv still wins (the user then accepts they must
+        # keep stdout/stderr genuinely separate, not `2>&1`, to keep clean JSON).
         effective_quiet = quiet or (machine_format and verbose == 0)
         log_verbosity = verbose
     try:
@@ -159,6 +185,9 @@ def scan_tls(
     sni: SniOpt = None,
     openssl: OpenSSLOpt = None,
     output_format: FormatOpt = OutputFormat.RICH,
+    output: OutputOpt = None,
+    compact: CompactOpt = False,
+    min_severity: MinSeverityOpt = None,
     timeout: TimeoutOpt = DEFAULT_TIMEOUT_SECONDS,
     retry_on: RetryOnOpt = None,
     retries: RetriesOpt = 0,
@@ -170,22 +199,64 @@ def scan_tls(
     reproducible: ReproducibleOpt = False,
 ) -> None:
     """Scan a TLS endpoint for post-quantum readiness."""
-    # JSON/CBOM stdout is a single machine-parsed document. The #15 fd-snapshot
-    # fix only protects against in-process stream rebinding (CliRunner, etc.);
-    # it cannot protect real shell `2>&1` (the OS has already merged fd 1/2
-    # before Python starts — see issue #194). A WARNING+ log line during the
-    # scan silently corrupts that document for any real `| jq`-style consumer.
-    # Default to quiet in these formats so the common case is safe by
-    # default; an explicit -v/-vv/-vvv still wins, since that's the user
-    # asking for diagnostics and accepting they must keep stdout/stderr
-    # genuinely separate (not `2>&1`) to still get clean JSON.
     machine_format = output_format in (OutputFormat.JSON, OutputFormat.CBOM)
     log_stream = _open_run_log(
         log=log, machine_format=machine_format, verbose=verbose, json_logs=json_logs, quiet=quiet
     )
     try:
-        # Everything after the log is opened lives in this try so the stream is always closed,
-        # even when arg parsing exits early (e.g. an invalid --retry-on).
+        # All scan/render work (including opening --output) lives in this try so
+        # the log stream is always closed, even when arg parsing exits early
+        # (an invalid --retry-on, or a bad --output path) — see #194 for why a
+        # stray log line must never reach the machine document on stdout.
+        exit_code = _scan_and_render(
+            target=target,
+            sni=sni,
+            openssl=openssl,
+            output_format=output_format,
+            output=output,
+            compact=compact,
+            min_severity=min_severity,
+            timeout=timeout,
+            retry_on=retry_on,
+            retries=retries,
+            retry_delay=retry_delay,
+            verbose=verbose,
+            reproducible=reproducible,
+            machine_format=machine_format,
+        )
+        raise typer.Exit(code=exit_code)
+    finally:
+        structlog.contextvars.clear_contextvars()
+        if log_stream is not None:
+            log_stream.close()
+
+
+def _scan_and_render(
+    *,
+    target: str,
+    sni: str | None,
+    openssl: str | None,
+    output_format: OutputFormat,
+    output: Path | None,
+    compact: bool,
+    min_severity: Severity | None,
+    timeout: int,
+    retry_on: str | None,
+    retries: int,
+    retry_delay: float,
+    verbose: int,
+    reproducible: bool,
+    machine_format: bool,
+) -> int:
+    """Open ``--output``, run one TLS scan, render, and return the exit code.
+
+    The ``--output`` stream (when set) is owned here so it is always closed, and
+    a path that cannot be opened exits 4 before any scan work — the same
+    contract as ``--log``. When ``--output`` is unset the renderer writes to
+    stdout as before.
+    """
+    output_stream: IO[str] | None = _open_output_file(output)
+    try:
         retry_set = _parse_retry_args(retry_on, retries, retry_delay)
         scan_target = _parse_cli_target(target, sni)
         structlog.contextvars.bind_contextvars(target=scan_target.locator)
@@ -196,12 +267,19 @@ def scan_tls(
         result, exit_code = _execute_scan(
             scanner, scan_target, timeout, machine_format=machine_format
         )
-        _render(result, output_format, verbose, reproducible=reproducible)
-        raise typer.Exit(code=exit_code)
+        _render(
+            result,
+            output_format,
+            verbose,
+            reproducible=reproducible,
+            compact=compact,
+            min_severity=min_severity,
+            stream=output_stream,
+        )
+        return exit_code
     finally:
-        structlog.contextvars.clear_contextvars()
-        if log_stream is not None:
-            log_stream.close()
+        if output_stream is not None:
+            output_stream.close()
 
 
 def _parse_retry_args(
