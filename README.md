@@ -1,13 +1,13 @@
 # BreachSAFE QuReddy
 
-[![Version](https://img.shields.io/badge/version-0.2.15-blue?style=flat-square)](https://github.com/breachsafe/qureddy/blob/main/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.16-blue?style=flat-square)](https://github.com/breachsafe/qureddy/blob/main/CHANGELOG.md)
 [![Python](https://img.shields.io/badge/python-3.12-blue?style=flat-square&logo=python&logoColor=white)](https://www.python.org/downloads/)
-[![License: PolyForm Noncommercial](https://img.shields.io/badge/license-PolyForm%20Noncommercial-orange?style=flat-square)](LICENSE)
+[![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue?style=flat-square)](LICENSE)
 [![Code Style: Ruff](https://img.shields.io/badge/code%20style-ruff-D7FF64?style=flat-square&logo=ruff&logoColor=black)](https://docs.astral.sh/ruff/)
 [![Type Checked: mypy strict](https://img.shields.io/badge/type%20check-mypy%20strict-blue?style=flat-square)](https://mypy-lang.org/)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/breachsafe/qureddy/badge)](https://securityscorecards.dev/viewer/?uri=github.com/breachsafe/qureddy)
 
-QuReddy is a source-available command line scanner for post-quantum readiness at
+QuReddy is an open-source command line scanner for post-quantum readiness at
 TLS and SSH endpoints. It records the protocol and cryptographic evidence that
 the endpoint exposes to a client, then reports the observed readiness posture.
 
@@ -259,6 +259,5 @@ artifact checks.
 
 ## 13. License
 
-PolyForm Noncommercial License 1.0.0. Commercial use requires a separate
-license from BreachSAFE. See [`LICENSE`](LICENSE),
+Apache License 2.0 (OSI-approved open source). See [`LICENSE`](LICENSE),
 [`LICENSES/`](LICENSES/), and [`REUSE.toml`](REUSE.toml).

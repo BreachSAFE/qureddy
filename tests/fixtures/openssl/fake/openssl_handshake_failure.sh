@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # SPDX-FileCopyrightText: 2026 BreachSAFE
-# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+# SPDX-License-Identifier: Apache-2.0
 # Fake openssl that simulates a TLS handshake failure (badssl tls1.2 shape).
 # Used to test FailureCategory.TLS_HANDSHAKE_FAILED classification when
 # the failure is an actual handshake-layer alert, not a connect error.

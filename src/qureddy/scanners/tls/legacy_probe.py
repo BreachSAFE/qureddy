@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
-# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+# SPDX-License-Identifier: Apache-2.0
 """Legacy TLS protocol + full cipher-suite enumeration (issue #192).
 
 `openssl_probe.py` only ever asks "does this target negotiate the one

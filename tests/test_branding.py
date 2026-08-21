@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
-# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+# SPDX-License-Identifier: Apache-2.0
 """Tests for the canonical branding module.
 
 The branding module is the single source of truth for project name,
@@ -39,8 +39,8 @@ def test_source_url_is_breachsafe_qureddy() -> None:
     assert SOURCE_URL == "https://github.com/breachsafe/qureddy"
 
 
-def test_license_is_polyform_noncommercial() -> None:
-    assert LICENSE_NAME == "PolyForm-Noncommercial-1.0.0"
+def test_license_is_apache_2_0() -> None:
+    assert LICENSE_NAME == "Apache-2.0"
 
 
 def test_version_banner_uses_canonical_version() -> None:

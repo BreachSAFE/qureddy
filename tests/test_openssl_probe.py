@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
-# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+# SPDX-License-Identifier: Apache-2.0
 """Tests for openssl_probe capability detection using fake binaries.
 
 Use Case 4 (Detect Unsupported Local OpenSSL) is covered here.

@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
-# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+# SPDX-License-Identifier: Apache-2.0
 """Canonical branding constants for QuReddy.
 
 Single source of truth for the project name, URL, source URL, license,
@@ -37,7 +37,7 @@ from qureddy import __version__ as _qureddy_version
 PROJECT_NAME = "BreachSAFE QuReddy"
 PROJECT_URL = "https://www.breachsafe.ai"
 SOURCE_URL = "https://github.com/breachsafe/qureddy"
-LICENSE_NAME = "PolyForm-Noncommercial-1.0.0"
+LICENSE_NAME = "Apache-2.0"
 PROJECT_VERSION = _qureddy_version
 
 # One-line description, used in CLI help (root + callback). Single source so

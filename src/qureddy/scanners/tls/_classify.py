@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
-# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+# SPDX-License-Identifier: Apache-2.0
 """OpenSSL stderr classifier.
 
 Maps a nonzero OpenSSL run's stderr to a `FailureCategory` via a

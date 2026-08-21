@@ -1,4 +1,4 @@
-<!-- SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0 -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 ---
 name: Question
 about: Ask about how QuReddy works or how to use it

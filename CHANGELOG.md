@@ -1,7 +1,7 @@
 # Changelog
 
 [![Status: Alpha](https://img.shields.io/badge/status-alpha-blue?style=flat-square)](https://github.com/breachsafe/qureddy)
-[![Version](https://img.shields.io/badge/version-0.2.15-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.16-blue?style=flat-square)](CHANGELOG.md)
 [![Keep a Changelog](https://img.shields.io/badge/keep%20a%20changelog-1.1.0-orange?style=flat-square)](https://keepachangelog.com/en/1.1.0/)
 [![SemVer](https://img.shields.io/badge/SemVer-2.0.0-blue?style=flat-square)](https://semver.org/spec/v2.0.0.html)
 
@@ -10,6 +10,16 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and version
 numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.2.16] - 2026-08-21
+
+### Changed
+
+- Relicensed back to the **Apache License 2.0** (OSI-approved open source). QuReddy is
+  the open-source scanner; the PolyForm Noncommercial license now applies only to the
+  separate QuReddy Pro edition. Releases 0.2.13-0.2.15 were published under PolyForm
+  Noncommercial and those copies retain those terms; 0.2.16 onward is Apache-2.0. This
+  restores OpenSSF Best Practices badge eligibility (PolyForm is not OSI-approved).
 
 ## [0.2.15] - 2026-08-21
 
@@ -47,23 +57,24 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Contents
 
-1. [0.2.15](#0215---2026-08-21)
-2. [0.2.14](#0214---2026-08-19)
-3. [0.2.13](#0213---2026-08-04)
-4. [0.2.12](#0212---2026-07-28)
-5. [0.2.11](#0211---2026-07-28)
-6. [0.2.10](#0210---2026-07-28)
-7. [0.2.9](#029---2026-07-28)
-8. [0.2.8](#028---2026-07-28)
-9. [0.2.7](#027---2026-07-28)
-10. [0.2.6](#026---2026-07-28)
-11. [0.2.5](#025---2026-07-28)
-12. [0.2.4](#024---2026-07-28)
-13. [0.2.3](#023---2026-07-27)
-14. [0.2.2](#022---2026-07-27)
-15. [0.2.1](#021---2026-07-27)
-16. [0.2.0](#020---2026-07-27)
-17. [0.1.0](#010---2026-05-10)
+1. [0.2.16](#0216---2026-08-21)
+2. [0.2.15](#0215---2026-08-21)
+3. [0.2.14](#0214---2026-08-19)
+4. [0.2.13](#0213---2026-08-04)
+5. [0.2.12](#0212---2026-07-28)
+6. [0.2.11](#0211---2026-07-28)
+7. [0.2.10](#0210---2026-07-28)
+8. [0.2.9](#029---2026-07-28)
+9. [0.2.8](#028---2026-07-28)
+10. [0.2.7](#027---2026-07-28)
+11. [0.2.6](#026---2026-07-28)
+12. [0.2.5](#025---2026-07-28)
+13. [0.2.4](#024---2026-07-28)
+14. [0.2.3](#023---2026-07-27)
+15. [0.2.2](#022---2026-07-27)
+16. [0.2.1](#021---2026-07-27)
+17. [0.2.0](#020---2026-07-27)
+18. [0.1.0](#010---2026-05-10)
 
 ## [0.2.12] - 2026-07-28
 

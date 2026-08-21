@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
-# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+# SPDX-License-Identifier: Apache-2.0
 """Shared `-connect host:port` construction for the TLS probe modules.
 
 Extracted after the same fix (issue #187's bug class) landed twice

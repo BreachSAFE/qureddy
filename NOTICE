@@ -1,16 +1,8 @@
-Required Notice: Copyright BreachSAFE (https://www.breachsafe.ai)
+BreachSAFE QuReddy
+Copyright 2026 BreachSAFE (https://www.breachsafe.ai)
 
-This release's BreachSAFE-owned source and documentation are licensed under the
-PolyForm Noncommercial License 1.0.0. Commercial use requires a separate
-license from BreachSAFE.
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
 
-Historical release notice: QuReddy releases through v0.2.12 were distributed
-under Apache License 2.0. Those historical license grants remain effective for
-copies distributed under those releases.
-
-Third-party and standard materials remain subject to their own copyright,
-license, and notice terms. In particular, vendored CycloneDX schemas in
-tests/conformance/schemas/ retain their upstream Apache-2.0 attribution.
-
-OpenSSL material redistributed in QuReddy container images is provided under
-Apache-2.0. Python dependencies retain their respective upstream licenses.
+This product bundles vendored CycloneDX JSON schemas under
+tests/conformance/schemas/, which are Copyright the CycloneDX contributors
+and licensed under the Apache License, Version 2.0.

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # SPDX-FileCopyrightText: 2026 BreachSAFE
-# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+# SPDX-License-Identifier: Apache-2.0
 # Fake openssl that writes partial output, then sleeps past the timeout.
 # Used to verify that subprocess.TimeoutExpired-driven ProbeResult
 # preserves the bytes the process produced before the kill, instead of

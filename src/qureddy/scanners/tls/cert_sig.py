@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 Paul Volosen <paulvolosen@gmail.com>
-# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+# SPDX-License-Identifier: Apache-2.0
 """Detect the leaf certificate's issuer signature algorithm (PQC vs classical).
 
 Issue #226 correction: this module reads the CA/issuer's signature *over the

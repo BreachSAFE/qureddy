@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
-# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+# SPDX-License-Identifier: Apache-2.0
 """Import-compatibility contract for the `qureddy.cli` package (ADR 0005).
 
 The cli.py -> cli/ package split must preserve every externally-relied-on

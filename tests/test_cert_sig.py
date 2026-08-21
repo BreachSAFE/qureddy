@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 Paul Volosen <paulvolosen@gmail.com>
-# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+# SPDX-License-Identifier: Apache-2.0
 """Tests for leaf-certificate signature-algorithm detection (issue #7)."""
 
 from __future__ import annotations

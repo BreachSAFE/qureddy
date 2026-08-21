@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
-# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+# SPDX-License-Identifier: Apache-2.0
 """String constants for `ScanMetadata.status`.
 
 The `status` field on `ScanMetadata` is `str` (not an enum) per the

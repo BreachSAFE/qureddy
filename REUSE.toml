@@ -1,6 +1,6 @@
 version = 1
 
-# First-party BreachSAFE material is source-available under PolyForm
+# First-party BreachSAFE material is open source under Apache-2.0
 # Noncommercial. Source files carry inline headers; these annotations cover
 # formats where a header is unsuitable or would be regenerated away.
 
@@ -26,43 +26,43 @@ path = [
     "scripts/release-tools.json",
 ]
 SPDX-FileCopyrightText = "2026 BreachSAFE"
-SPDX-License-Identifier = "PolyForm-Noncommercial-1.0.0"
+SPDX-License-Identifier = "Apache-2.0"
 
 [[annotations]]
 path = "docs/**"
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 BreachSAFE"
-SPDX-License-Identifier = "PolyForm-Noncommercial-1.0.0"
+SPDX-License-Identifier = "Apache-2.0"
 
 [[annotations]]
 path = ".github/**"
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 BreachSAFE"
-SPDX-License-Identifier = "PolyForm-Noncommercial-1.0.0"
+SPDX-License-Identifier = "Apache-2.0"
 
 [[annotations]]
 path = ".[Cc][Ll][Aa][Uu][Dd][Ee]/**"
 precedence = "override"
 SPDX-FileCopyrightText = "2026 BreachSAFE"
-SPDX-License-Identifier = "PolyForm-Noncommercial-1.0.0"
+SPDX-License-Identifier = "Apache-2.0"
 
 [[annotations]]
 path = ".agents/**"
 precedence = "override"
 SPDX-FileCopyrightText = "2026 BreachSAFE"
-SPDX-License-Identifier = "PolyForm-Noncommercial-1.0.0"
+SPDX-License-Identifier = "Apache-2.0"
 
 [[annotations]]
 path = "tests/fixtures/**"
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 BreachSAFE"
-SPDX-License-Identifier = "PolyForm-Noncommercial-1.0.0"
+SPDX-License-Identifier = "Apache-2.0"
 
 [[annotations]]
 path = "tests/golden/**"
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 BreachSAFE"
-SPDX-License-Identifier = "PolyForm-Noncommercial-1.0.0"
+SPDX-License-Identifier = "Apache-2.0"
 
 # These vendored schemas are upstream CycloneDX material, not BreachSAFE code.
 [[annotations]]
@@ -86,7 +86,3 @@ path = "LICENSES/Apache-2.0.txt"
 SPDX-FileCopyrightText = "2004 Apache Software Foundation"
 SPDX-License-Identifier = "Apache-2.0"
 
-[[annotations]]
-path = "LICENSES/PolyForm-Noncommercial-1.0.0.txt"
-SPDX-FileCopyrightText = "PolyForm Project contributors"
-SPDX-License-Identifier = "PolyForm-Noncommercial-1.0.0"

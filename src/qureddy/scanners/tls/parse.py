@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
-# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+# SPDX-License-Identifier: Apache-2.0
 """Parse OpenSSL `s_client -brief` output into structured negotiation data.
 
 Normalized for the pinned OpenSSL 3.5.7 LTS baseline from live

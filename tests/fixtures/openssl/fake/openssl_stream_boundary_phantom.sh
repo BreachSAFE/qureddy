@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # SPDX-FileCopyrightText: 2026 BreachSAFE
-# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+# SPDX-License-Identifier: Apache-2.0
 # Fake openssl whose stdout/stderr boundary forms a misleading group line
 # only if the two streams are concatenated without a separator.
 case "$1" in

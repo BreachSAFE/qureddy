@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # SPDX-FileCopyrightText: 2026 BreachSAFE
-# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+# SPDX-License-Identifier: Apache-2.0
 # Fake openssl that simulates a connection refused error.
 # Used to test FailureCategory.TARGET_CONNECT_FAILED classification.
 case "$1" in

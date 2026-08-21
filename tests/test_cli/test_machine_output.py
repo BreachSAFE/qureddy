@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
-# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+# SPDX-License-Identifier: Apache-2.0
 """Machine-output purity: --format json/cbom emits exactly one parseable document.
 
 Issue #30 contract: in machine formats the structured document plus the

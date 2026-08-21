@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
-# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+# SPDX-License-Identifier: Apache-2.0
 """CycloneDX crypto-asset component builders for the CBOM.
 
 The algorithm/cipher-suite/protocol/certificate cryptographic-asset

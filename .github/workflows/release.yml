@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+# SPDX-License-Identifier: Apache-2.0
 # Publish the built wheel + sdist to TestPyPI (and, when ready, PyPI) via OIDC Trusted
 # Publishing — NO API tokens in the repo. Register a matching TestPyPI "pending publisher":
 #   owner=breachsafe  repo=qureddy  workflow=release.yml  environment=testpypi
