@@ -8,6 +8,8 @@ The TLS scanner has a dedicated public entry point alongside `cli/ssh.py`.
 from __future__ import annotations
 
 import os
+from pathlib import Path
+from typing import TextIO
 
 import structlog
 import typer
@@ -118,6 +120,30 @@ Project: {PROJECT_URL}
 """)
 
 
+def _open_run_log(
+    *, log: Path | None, machine_format: bool, verbose: int, json_logs: bool, quiet: bool
+) -> TextIO | None:
+    """Configure logging for one scan run; return the log-file stream (caller closes it).
+
+    With ``--log`` set, machine-format auto-quiet does not apply and the level is floored at
+    INFO so a clean run still records its story (otherwise a successful machine-format scan
+    writes an empty WARNING-level log). A ``--log`` path that cannot be opened is a usage
+    error (exit 4), reported before any scan work.
+    """
+    if log is not None:
+        effective_quiet = quiet
+        log_verbosity = verbose if quiet else max(verbose, 1)
+    else:
+        effective_quiet = quiet or (machine_format and verbose == 0)
+        log_verbosity = verbose
+    try:
+        return start_run_logging(
+            verbosity=log_verbosity, json_logs=json_logs, quiet=effective_quiet, log=log
+        )
+    except OSError as exc:
+        _fail(f"cannot write --log file {log}: {exc.strerror or exc}", EXIT_USAGE)
+
+
 @scan_app.command(
     "tls",
     epilog=_SCAN_TLS_EPILOG,
@@ -154,23 +180,9 @@ def scan_tls(
     # asking for diagnostics and accepting they must keep stdout/stderr
     # genuinely separate (not `2>&1`) to still get clean JSON.
     machine_format = output_format in (OutputFormat.JSON, OutputFormat.CBOM)
-    if log is not None:
-        # Capturing to a file: the machine-format auto-quiet (which keeps stderr clean) does not
-        # apply, and floor the level at INFO so a clean run still records its story. Otherwise a
-        # successful machine-format scan would write an empty log (WARNING level, no warnings).
-        effective_quiet = quiet
-        log_verbosity = verbose if quiet else max(verbose, 1)
-    else:
-        effective_quiet = quiet or (machine_format and verbose == 0)
-        log_verbosity = verbose
-    try:
-        log_stream = start_run_logging(
-            verbosity=log_verbosity, json_logs=json_logs, quiet=effective_quiet, log=log
-        )
-    except OSError as exc:
-        # A bad --log path (unwritable, or a parent that is a file) is a usage error, not a
-        # traceback: fail honestly with exit 4 before any scan work happens.
-        _fail(f"cannot write --log file {log}: {exc.strerror or exc}", EXIT_USAGE)
+    log_stream = _open_run_log(
+        log=log, machine_format=machine_format, verbose=verbose, json_logs=json_logs, quiet=quiet
+    )
     try:
         # Everything after the log is opened lives in this try so the stream is always closed,
         # even when arg parsing exits early (e.g. an invalid --retry-on).
