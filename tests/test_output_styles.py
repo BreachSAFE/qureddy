@@ -64,9 +64,16 @@ class TestUnknownRecommendationLibreSSL:
         assert "LibreSSL" in recommendation
         assert "--openssl" in recommendation
         assert "QUREDDY_OPENSSL" in recommendation
+        assert "checksum-verified" in recommendation
+        assert "moving channel" in recommendation
 
     def test_other_local_categories_keep_generic_message(self) -> None:
         """Regression guard: the new branch must not swallow the existing
-        generic message for the other four local-capability categories."""
-        recommendation = unknown_recommendation(FailureCategory.LOCAL_OPENSSL_TOO_OLD)
-        assert "Install OpenSSL 3.5 LTS+" in recommendation
+        generic message for other local-capability categories."""
+        for category in (
+            FailureCategory.LOCAL_OPENSSL_TOO_OLD,
+            FailureCategory.LOCAL_OPENSSL_VERSION_MISMATCH,
+        ):
+            recommendation = unknown_recommendation(category)
+            assert "Install exact OpenSSL 3.5.7 LTS" in recommendation
+            assert "3.5.7+" not in recommendation

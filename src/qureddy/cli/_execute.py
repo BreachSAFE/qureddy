@@ -20,6 +20,7 @@ from qureddy.core.errors import (
     LocalOpenSSLLacksGroup,
     LocalOpenSSLMissing,
     LocalOpenSSLTooOld,
+    LocalOpenSSLVersionMismatch,
     LocalOpenSSLVersionUnreadable,
     QureddyError,
 )
@@ -55,6 +56,7 @@ def _execute_scan(
         LocalOpenSSLBroken,
         LocalOpenSSLMissing,
         LocalOpenSSLTooOld,
+        LocalOpenSSLVersionMismatch,
         LocalOpenSSLVersionUnreadable,
         LocalOpenSSLIsLibreSSL,
         LocalOpenSSLLacksGroup,

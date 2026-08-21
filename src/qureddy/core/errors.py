@@ -71,6 +71,13 @@ class LocalOpenSSLTooOld(_LocalOpenSSLProblem):
     """
 
 
+class LocalOpenSSLVersionMismatch(_LocalOpenSSLProblem):
+    """OpenSSL is parseable but does not match the pinned 3.5.7 release.
+
+    Maps to FailureCategory.LOCAL_OPENSSL_VERSION_MISMATCH. Triggers exit code 3.
+    """
+
+
 class LocalOpenSSLLacksGroup(_LocalOpenSSLProblem):
     """OpenSSL does not list X25519MLKEM768 as a TLS 1.3 group.
 

@@ -11,6 +11,13 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- TLS capability detection now requires exact OpenSSL 3.5.7 for both the
+  executable and any explicitly reported linked library. Releases below the
+  pin remain `local_openssl_too_old`; other parseable releases use
+  `local_openssl_version_mismatch` and exit `3`.
+
 ## [0.2.14] - 2026-08-19
 
 ### Added
@@ -317,7 +324,7 @@ contains:
 ### Added
 
 - forced `X25519MLKEM768` hybrid and `X25519` classical control probes through
-  OpenSSL 3.5 or newer;
+  the supported OpenSSL runtime;
 - Rich and `qureddy.scan.v1` JSON output;
 - typed target, handshake, SNI, middlebox, parser, and local OpenSSL failures;
 - bounded retry configuration for selected transient TLS failures;

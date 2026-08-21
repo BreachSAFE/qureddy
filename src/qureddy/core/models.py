@@ -133,6 +133,7 @@ class FailureCategory(str, Enum):
     LOCAL_OPENSSL_VERSION_UNREADABLE = "local_openssl_version_unreadable"
     LOCAL_OPENSSL_IS_LIBRESSL = "local_openssl_is_libressl"
     LOCAL_OPENSSL_TOO_OLD = "local_openssl_too_old"
+    LOCAL_OPENSSL_VERSION_MISMATCH = "local_openssl_version_mismatch"
     LOCAL_OPENSSL_LACKS_GROUP = "local_openssl_lacks_group"
     TARGET_SCAN_FAILED = "target_scan_failed"
     TARGET_CONNECT_FAILED = "target_connect_failed"
@@ -144,9 +145,9 @@ class FailureCategory(str, Enum):
     UNEXPECTED_GROUP = "unexpected_group"
 
 
-# The six "operator's environment is the problem" categories, defined once
+# The "operator's environment is the problem" categories, defined once
 # so policy.py, _summary.py, and _styles.py import the same set instead of
-# each hand-typing an identical copy (issue #209) — confirmed live: adding
+# each hand-typing an identical copy — confirmed live: adding
 # LOCAL_OPENSSL_IS_LIBRESSL required editing all three copies in the same
 # commit, with nothing enforcing they stay in sync.
 LOCAL_CAPABILITY_CATEGORIES: frozenset[FailureCategory] = frozenset(
@@ -156,6 +157,7 @@ LOCAL_CAPABILITY_CATEGORIES: frozenset[FailureCategory] = frozenset(
         FailureCategory.LOCAL_OPENSSL_VERSION_UNREADABLE,
         FailureCategory.LOCAL_OPENSSL_IS_LIBRESSL,
         FailureCategory.LOCAL_OPENSSL_TOO_OLD,
+        FailureCategory.LOCAL_OPENSSL_VERSION_MISMATCH,
         FailureCategory.LOCAL_OPENSSL_LACKS_GROUP,
     }
 )

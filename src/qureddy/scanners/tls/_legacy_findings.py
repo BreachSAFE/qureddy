@@ -113,7 +113,7 @@ def finding_from_legacy_result(
 
     Severity: HIGH when the accepted-cipher list contains a known-weak
     marker (see legacy_probe.WEAK_CIPHER_MARKERS and its documented gap
-    for RC4/3DES/DES on the required OpenSSL 3.5 LTS+ build), MEDIUM
+    for RC4/3DES/DES on the required OpenSSL 3.5.7 LTS build), MEDIUM
     otherwise. The classical-protocol-only case is LOW: it is expected,
     common behavior, not a defect being flagged.
     """

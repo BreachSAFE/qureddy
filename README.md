@@ -105,13 +105,28 @@ successful scan exits `0` even when it reports a vulnerable posture.
 TLS scanning requires OpenSSL 3.5.7 LTS with the
 `X25519MLKEM768` TLS group. LibreSSL is not supported.
 
-On macOS with Homebrew:
+On macOS, Homebrew's `openssl@3.5` formula is a moving 3.5.x channel. Inspect
+the installed runtime before selecting it:
 
 ```bash
 brew install openssl@3.5
-export QUREDDY_OPENSSL="$(brew --prefix openssl@3.5)/bin/openssl"
+QUREDDY_OPENSSL_CANDIDATE="$(brew --prefix openssl@3.5)/bin/openssl"
+"$QUREDDY_OPENSSL_CANDIDATE" version
+"$QUREDDY_OPENSSL_CANDIDATE" list -tls1_3 -tls-groups
+```
+
+Export the candidate only when the executable and any explicitly reported
+`Library:` version are both exactly 3.5.7 and the group list contains
+`X25519MLKEM768`:
+
+```bash
+export QUREDDY_OPENSSL="$QUREDDY_OPENSSL_CANDIDATE"
 qureddy scan tls --help
 ```
+
+If the formula has moved, use the repository's
+[checksum-pinned 3.5.7 source-build recipe](.github/actions/setup-openssl/action.yml)
+or the [QuReddy container](docs/how-to/docker.md); do not bypass the version gate.
 
 Linux and Windows installations vary by distribution. Confirm the selected
 binary before scanning:

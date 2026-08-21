@@ -22,6 +22,7 @@ the process exit code. TLS retries accept a strict subset.
 | `local_openssl_version_unreadable` | `3` | no | Version output did not match supported OpenSSL syntax |
 | `local_openssl_is_libressl` | `3` | no | The selected binary identified itself as LibreSSL |
 | `local_openssl_too_old` | `3` | no | OpenSSL version is below 3.5.7 |
+| `local_openssl_version_mismatch` | `3` | no | The OpenSSL executable or linked library does not match the exact supported 3.5.7 LTS release |
 | `local_openssl_lacks_group` | `3` | no | OpenSSL does not list `X25519MLKEM768` as a TLS 1.3 group |
 | `target_scan_failed` | `2` | no | The scanner caught a typed target failure without a more specific category |
 | `target_connect_failed` | `2` | yes for TLS | DNS, TCP connection, route, refusal, or timeout failure |

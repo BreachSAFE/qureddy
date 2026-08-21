@@ -12,7 +12,13 @@ from packaging.version import InvalidVersion, Version
 from qureddy.core.errors import LocalOpenSSLBroken, LocalOpenSSLMissing
 from qureddy.core.models import FailureCategory, OpenSSLDependency
 
-_OPENSSL_VERSION_PATTERN = re.compile(r"OpenSSL\s+(?P<version>\d+\.\d+\.\d+)")
+_OPENSSL_RELEASE_FRAGMENT = r"\d+\.\d+\.\d+(?:[-+][0-9A-Za-z][0-9A-Za-z._-]*)?"
+_OPENSSL_VERSION_PATTERN = re.compile(
+    rf"^\s*OpenSSL\s+(?P<version>{_OPENSSL_RELEASE_FRAGMENT})(?=\s|$)",
+)
+_OPENSSL_LIBRARY_VERSION_PATTERN = re.compile(
+    rf"\(Library:\s*OpenSSL\s+(?P<version>{_OPENSSL_RELEASE_FRAGMENT})(?=\s|\))",
+)
 _LIBRESSL_VERSION_PATTERN = re.compile(r"LibreSSL\s+(?P<version>\S+)")
 
 
@@ -65,6 +71,17 @@ def _broken_dependency(path: str) -> OpenSSLDependency:
 
 def extract_version(text: str) -> Version | None:
     match = _OPENSSL_VERSION_PATTERN.search(text)
+    if not match:
+        return None
+    try:
+        return Version(match.group("version"))
+    except InvalidVersion:
+        return None
+
+
+def extract_library_version(text: str) -> Version | None:
+    """Return an explicitly reported linked-library version, when present."""
+    match = _OPENSSL_LIBRARY_VERSION_PATTERN.search(text)
     if not match:
         return None
     try:
