@@ -76,6 +76,10 @@ The rules and conventions for working *on* QuReddy (not *with* it) live separate
 
 These follow Diátaxis internally too — `coding-rules.md` is reference, `examples.md` is how-to, etc. — but they sit under `contributors/` because they're not for end users of the `qureddy` CLI.
 
+Architecture decision records live under [`adr/`](adr/):
+
+- [`adr/0001-ssh-evidence-and-classification.md`](adr/0001-ssh-evidence-and-classification.md) — where SSH host-key inventory and weak-primitive classification sit relative to the honest-evidence boundary
+
 ## 4. Editorial rules
 
 These keep Diátaxis from drifting:
