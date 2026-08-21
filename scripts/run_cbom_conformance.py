@@ -70,6 +70,7 @@ def _capture_final_bytes(
     openssl: Path,
     target: str,
     expected_exit: int,
+    env: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     command = [
         str(console),
@@ -88,6 +89,7 @@ def _capture_final_bytes(
         capture_output=True,
         text=True,
         timeout=30,
+        env=env,
     )
     if completed.returncode != expected_exit or completed.stderr:
         msg = (
@@ -97,6 +99,51 @@ def _capture_final_bytes(
         raise RuntimeError(msg)
     output.write_text(completed.stdout, encoding="utf-8")
     return cast("dict[str, Any]", json.loads(completed.stdout))
+
+
+def _validate_hash_seed_determinism(binary: Path, console: Path) -> None:
+    """Prove reproducible CBOM bytes are stable across Python hash seeds (#196).
+
+    The in-process repeatability check proves repeated rendering inside one
+    interpreter is stable, but not that set/dict iteration order cannot shift the
+    emitted bytes between processes. LeanSpec's filler regenerates its public
+    vectors under two distinct ``PYTHONHASHSEED`` values before byte comparison;
+    mirror that here by replaying the same classical scan through the installed
+    console under ``PYTHONHASHSEED=1`` and ``PYTHONHASHSEED=2`` and comparing the
+    final byte streams exactly, then re-running the pinned schema, semantic, and
+    independent CycloneDX CLI gates on each output.
+    """
+    suffix = ".cmd" if os.name == "nt" else ".sh"
+    classical_replay = ROOT / f"tests/conformance/shims/openssl_classical_replay{suffix}"
+    with tempfile.TemporaryDirectory(prefix="qureddy-cbom-hashseed-") as directory:
+        root = Path(directory)
+        seed_bytes: list[str] = []
+        seed_paths: list[Path] = []
+        for seed in ("1", "2"):
+            path = root / f"classical-seed-{seed}.cbom.json"
+            environment = {**os.environ, "PYTHONHASHSEED": seed}
+            payload = _capture_final_bytes(
+                console,
+                path,
+                openssl=classical_replay,
+                target="192.0.2.10",
+                expected_exit=0,
+                env=environment,
+            )
+            if errors := official_errors(payload):
+                raise RuntimeError(f"seed {seed}: official schema errors: {errors!r}")
+            if errors := semantic_errors(payload):
+                raise RuntimeError(f"seed {seed}: semantic errors: {errors!r}")
+            if errors := independent_cli_errors(binary, path):
+                raise RuntimeError(f"seed {seed}: cyclonedx-cli errors: {errors!r}")
+            seed_bytes.append(path.read_text(encoding="utf-8"))
+            seed_paths.append(path)
+        if seed_bytes[0] != seed_bytes[1]:
+            msg = (
+                "reproducible CBOM bytes differ across PYTHONHASHSEED "
+                f"({seed_paths[0].name} vs {seed_paths[1].name})"
+            )
+            raise RuntimeError(msg)
 
 
 def _validate_installed_console(binary: Path, console: Path) -> None:
@@ -165,6 +212,7 @@ def main() -> None:
     verify_independent_cli(cyclonedx_cli, args.tool_asset_key)
     _validate_fixture_matrix(cyclonedx_cli)
     _validate_installed_console(cyclonedx_cli, qureddy_console)
+    _validate_hash_seed_determinism(cyclonedx_cli, qureddy_console)
     print("CycloneDX 1.7 final-byte conformance: PASS")
 
 

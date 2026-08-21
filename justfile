@@ -92,6 +92,13 @@ docs-links:
     lychee --root-dir . --accept 200,206,429 --verbose --no-progress \
         "*.md" "docs/**/*.md" "tests/fixtures/**/*.md"
 
+# Prove reproducible CBOM bytes are stable across host paths and Python hash
+# seeds (#207/#196). Hermetic: no network, no cyclonedx-cli. The pinned
+# independent-CLI cross-seed check runs inside the full `release-gate`.
+cbom-determinism:
+    uv run --locked pytest \
+        tests/test_cbom.py::TestReproducibleHostPathCanonicalization -q
+
 # Build and verify one release-candidate artifact set with local evidence.
 release-gate:
     python3 scripts/release_gate.py
