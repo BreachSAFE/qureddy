@@ -51,6 +51,7 @@ from qureddy.output.cbom_metadata import (
     openssl_tool_properties,
 )
 from qureddy.output.cbom_semantics import validate_cbom_semantics
+from qureddy.output.cbom_ssh import add_ssh_host_key_components
 
 if TYPE_CHECKING:
     from qureddy.core.certificate import CertificateObservation
@@ -64,6 +65,7 @@ def render_cbom(
     stream: IO[str] | None = None,
     *,
     reproducible: bool = False,
+    compact: bool = False,
 ) -> None:
     """Render typed scan observations as CycloneDX 1.7.
 
@@ -75,6 +77,10 @@ def render_cbom(
     serialNumber and metadata.timestamp, plus the scan id and start/finish
     times) are omitted so the same scan is byte- and digest-reproducible for
     content addressing (#162). The observed crypto content is unchanged.
+
+    When ``compact`` is set the final document is minified to a single line
+    (issue #133); the default stays indent=2. Either way exactly one parseable
+    CycloneDX document plus a trailing newline is written (issue #30).
     """
     target_stream = stream if stream is not None else sys.stdout
     bom = Bom()
@@ -104,6 +110,7 @@ def render_cbom(
     add_finding_verdicts(bom, result)
 
     algorithm_refs = add_algorithm_components(bom, result, provides_edges)
+    add_ssh_host_key_components(bom, result, provides_edges)
     add_cipher_suite_components(bom, result, provides_edges)
     add_protocol_components(bom, result, algorithm_refs, provides_edges)
     certificate = _captured_certificate(result)
@@ -116,6 +123,7 @@ def render_cbom(
         provides_edges,
         certificate.serial if certificate is not None else None,
         target_stream,
+        compact=compact,
     )
 
 
@@ -162,8 +170,15 @@ def _write_with_library_gap_patches(
     provides_edges: dict[str, list[str]],
     certificate_serial: str | None,
     stream: IO[str],
+    *,
+    compact: bool = False,
 ) -> None:
-    """Serialize with the library, then fill its two missing 1.7 fields."""
+    """Serialize with the library, then fill its two missing 1.7 fields.
+
+    The library serialization is only an intermediate parsed back into a dict,
+    so its indentation is irrelevant; the final ``json.dumps`` controls the
+    emitted layout — indented by default, single-line minified when ``compact``.
+    """
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", message=".*no defined dependencies.*")
         serialized = JsonV1Dot7(bom).output_as_string(indent=2)
@@ -184,5 +199,8 @@ def _write_with_library_gap_patches(
     validate_cbom_semantics(payload)
     # Keep final machine bytes representable on locale-dependent Windows
     # streams. JSON consumers recover the original Unicode from escapes.
-    stream.write(json.dumps(payload, indent=2, ensure_ascii=True))
+    if compact:
+        stream.write(json.dumps(payload, separators=(",", ":"), ensure_ascii=True))
+    else:
+        stream.write(json.dumps(payload, indent=2, ensure_ascii=True))
     stream.write("\n")

@@ -117,20 +117,28 @@ def _style_ssh_kex(result: ScanResult) -> Text:
 
 
 def _style_ssh_hostkeys(result: ScanResult) -> Text:
-    """Summarize SSH host-key posture (weak vs classical) for the table."""
-    for ev in result.evidence:
-        if ev.evidence_type == "ssh.hostkey":
-            return Text("weak algorithm offered", style="bold red")
+    """Summarize SSH host-key posture (weak vs classical) for the table.
+
+    Every offered host key is now recorded as ssh.hostkey evidence (so the CBOM can
+    inventory it), so the weak signal comes from the finding, not the evidence type.
+    """
+    if any(f.rule_id == "ssh.hostkey.weak" for f in result.findings):
+        return Text("weak algorithm offered", style="bold red")
     return Text("classical", style="dim")
 
 
-def _findings_table(result: ScanResult) -> Table:
+def _findings_table(result: ScanResult, *, findings: tuple[Finding, ...] | None = None) -> Table:
     """Findings table.
 
     Keep the human table compact while retaining the fields that distinguish
     observed crypto: severity, stable rule ID, protocol, group, and algorithm.
     The full readiness enum remains in JSON and the scan-details block.
+
+    ``findings`` overrides which findings are rendered (used by the
+    ``--min-severity`` display filter, issue #133); it defaults to every
+    finding on ``result``.
     """
+    rows = result.findings if findings is None else findings
     table = Table(
         title="Findings",
         title_style="bold",
@@ -148,7 +156,7 @@ def _findings_table(result: ScanResult) -> Table:
     table.add_column("Protocol", no_wrap=True, width=8)
     table.add_column("Crypto", no_wrap=False, overflow="fold", width=20)
 
-    for finding in sorted(result.findings, key=lambda item: _SEVERITY_ORDER[item.severity]):
+    for finding in sorted(rows, key=lambda item: _SEVERITY_ORDER[item.severity]):
         details = _finding_crypto_detail(finding)
         table.add_row(
             style_severity(finding.severity),

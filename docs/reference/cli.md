@@ -67,6 +67,9 @@ qureddy scan ssh [OPTIONS] TARGET
 | Option | Type | Default | Meaning |
 | --- | --- | --- | --- |
 | `--format` | `rich`, `json`, or `cbom` | `rich` | Select output; repeated values use the last occurrence |
+| `--output`, `-o` | path | standard output | Write the rendered document to a file instead of standard output; standard output stays empty; a path that cannot be opened exits `4` |
+| `--compact` | flag | off | Minify `--format json` or `cbom` to a single line; no effect on `rich` |
+| `--min-severity` | `critical`, `high`, `medium`, `low`, or `info` | none | Rich output only: hide findings below this severity; machine formats stay complete |
 | `--timeout` | integer `1..300` | `8` | Socket timeout in seconds |
 | `-v`, `--verbose` | count | `0` | `-v` INFO; `-vv` DEBUG; `-vvv` DEBUG plus traceability detail |
 | `--json-logs` | flag | off | Write structured diagnostic logs to standard error |
@@ -101,6 +104,9 @@ qureddy scan tls [OPTIONS] TARGET
 | `--sni` | text | target hostname | Override TLS Server Name Indication; required for IP targets that need a virtual host |
 | `--openssl` | path | automatic | Select an OpenSSL 3.5.7 LTS binary |
 | `--format` | `rich`, `json`, or `cbom` | `rich` | Select output; repeated values use the last occurrence |
+| `--output`, `-o` | path | standard output | Write the rendered document to a file instead of standard output; standard output stays empty; a path that cannot be opened exits `4` |
+| `--compact` | flag | off | Minify `--format json` or `cbom` to a single line; no effect on `rich` |
+| `--min-severity` | `critical`, `high`, `medium`, `low`, or `info` | none | Rich output only: hide findings below this severity; machine formats stay complete |
 | `--timeout` | integer `1..300` | `30` | Timeout for each probe in seconds |
 | `--retry-on` | comma separated categories | none | Retry only the named allowlisted failure categories |
 | `--retries` | integer `0..3` | `0` | Additional attempts; requires `--retry-on` |
@@ -121,6 +127,8 @@ Examples:
 qureddy scan tls pq.cloudflareresearch.com
 qureddy scan tls 1.1.1.1:443 --sni one.one.one.one
 qureddy scan tls example.com --format json
+qureddy scan tls example.com --format json --compact --output scan.json
+qureddy scan tls example.com --min-severity medium
 qureddy scan tls example.com --format cbom
 qureddy scan tls example.com --openssl /absolute/path/to/openssl
 qureddy scan tls flaky.example --retry-on tls_handshake_failed --retries 3
@@ -168,6 +176,11 @@ before DNS or socket access.
 | `rich` | Human terminal report with optional color |
 | `json` | QuReddy scan document with schema version `qureddy.scan.v1` |
 | `cbom` | CycloneDX 1.7 CBOM containing positively observed cryptographic assets |
+
+`json` and `cbom` are indented by default. `--compact` minifies either to a
+single line for streaming to `jq` or a log shipper. `--min-severity` trims the
+`rich` findings table only; the `json` and `cbom` documents always carry every
+finding, so the machine-document contract holds regardless of the filter.
 
 ## 7. Output streams
 

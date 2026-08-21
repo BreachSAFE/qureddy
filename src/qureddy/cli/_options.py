@@ -16,7 +16,7 @@ import typer
 
 from qureddy._branding import VERSION_BANNER
 from qureddy.cli._errors import EXIT_OK
-from qureddy.core.models import OutputFormat
+from qureddy.core.models import OutputFormat, Severity
 from qureddy.core.retry import MAX_RETRIES, MAX_RETRY_DELAY_SECONDS
 
 _MAX_TIMEOUT_SECONDS = 300
@@ -118,5 +118,31 @@ LogOpt = Annotated[
         "--log",
         help="Capture this run's logs to a file (INFO and above; honors --json-logs). "
         "Default: logs go to stderr.",
+    ),
+]
+OutputOpt = Annotated[
+    Path | None,
+    typer.Option(
+        "--output",
+        "-o",
+        help="Write the rendered document to a file instead of standard output "
+        "(stdout stays clean; exit codes unchanged). A path that cannot be opened exits 4.",
+    ),
+]
+CompactOpt = Annotated[
+    bool,
+    typer.Option(
+        "--compact",
+        help="Machine formats (--format json | cbom): emit minified single-line JSON. "
+        "Default: indented. No effect on --format rich.",
+    ),
+]
+MinSeverityOpt = Annotated[
+    Severity | None,
+    typer.Option(
+        "--min-severity",
+        help="Rich output only: hide findings below this severity "
+        "(critical | high | medium | low | info). Machine formats (json/cbom) stay complete.",
+        case_sensitive=False,
     ),
 ]

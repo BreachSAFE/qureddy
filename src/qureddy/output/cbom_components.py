@@ -41,14 +41,14 @@ if TYPE_CHECKING:
 
 ENDPOINT_REF = "endpoint"
 CERTIFICATE_REF = "crypto/certificate/leaf"
-_POSITIVE_OBSERVATIONS = frozenset(
+POSITIVE_OBSERVATIONS = frozenset(
     {ObservationType.NEGOTIATED, ObservationType.OFFERED, ObservationType.OBSERVED}
 )
 
 
 # Strongest-signal ordering: a group seen negotiated outranks one merely offered or
 # observed on a control probe, so the CBOM records the actual handshake outcome (#150).
-_OBSERVATION_RANK: MappingProxyType[ObservationType, int] = MappingProxyType(
+OBSERVATION_RANK: MappingProxyType[ObservationType, int] = MappingProxyType(
     {
         ObservationType.OBSERVED: 0,
         ObservationType.OFFERED: 1,
@@ -69,12 +69,15 @@ def add_algorithm_components(
     algorithm_refs: dict[str, str] = {}
     groups: dict[str, ObservationType] = {}
     for evidence in result.evidence:
-        if evidence.observation_type in _POSITIVE_OBSERVATIONS and evidence.negotiated_group:
+        # SSH host-key algorithms are signature primitives, not KEX groups; they get
+        # their own signature-classified components in add_ssh_host_key_components (#143).
+        if (
+            evidence.observation_type in POSITIVE_OBSERVATIONS
+            and evidence.negotiated_group
+            and evidence.evidence_type != "ssh.hostkey"
+        ):
             seen = groups.get(evidence.negotiated_group)
-            if (
-                seen is None
-                or _OBSERVATION_RANK[evidence.observation_type] > _OBSERVATION_RANK[seen]
-            ):
+            if seen is None or OBSERVATION_RANK[evidence.observation_type] > OBSERVATION_RANK[seen]:
                 groups[evidence.negotiated_group] = evidence.observation_type
     for group in sorted(groups):
         ref = f"crypto/algorithm/{group.lower()}"
@@ -117,12 +120,9 @@ def add_cipher_suite_components(
     """
     suites: dict[str, ObservationType] = {}
     for evidence in result.evidence:
-        if evidence.observation_type in _POSITIVE_OBSERVATIONS and evidence.cipher_suite:
+        if evidence.observation_type in POSITIVE_OBSERVATIONS and evidence.cipher_suite:
             seen = suites.get(evidence.cipher_suite)
-            if (
-                seen is None
-                or _OBSERVATION_RANK[evidence.observation_type] > _OBSERVATION_RANK[seen]
-            ):
+            if seen is None or OBSERVATION_RANK[evidence.observation_type] > OBSERVATION_RANK[seen]:
                 suites[evidence.cipher_suite] = evidence.observation_type
     for suite in sorted(suites):
         ref = f"crypto/algorithm/{suite.lower()}"
@@ -198,7 +198,7 @@ _SIGNATURE_FUNCTIONS = (CryptoFunction.SIGN, CryptoFunction.VERIFY)
 _CLASSICAL_SIGNATURE_MARKERS = ("ecdsa", "rsa", "ed25519", "ed448", "dsa", "dss")
 
 
-def _signature_algorithm_properties(name: str) -> AlgorithmProperties | None:
+def signature_algorithm_properties(name: str) -> AlgorithmProperties | None:
     """Classify a certificate or host-key signature algorithm (#177, #201).
 
     Every signature is the SIGNATURE primitive with sign/verify functions. ML-DSA
@@ -263,7 +263,7 @@ def _positive_protocol_evidence(result: ScanResult) -> list[Evidence]:
     return [
         evidence
         for evidence in result.evidence
-        if evidence.observation_type in _POSITIVE_OBSERVATIONS and evidence.protocol_version
+        if evidence.observation_type in POSITIVE_OBSERVATIONS and evidence.protocol_version
     ]
 
 
@@ -406,7 +406,7 @@ def _add_signature_algorithm_component(
             bom_ref=ref,
             crypto_properties=CryptoProperties(
                 asset_type=CryptoAssetType.ALGORITHM,
-                algorithm_properties=_signature_algorithm_properties(signature_algorithm),
+                algorithm_properties=signature_algorithm_properties(signature_algorithm),
             ),
         )
     )
