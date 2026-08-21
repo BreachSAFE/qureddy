@@ -89,6 +89,15 @@ dev = [
     # any input; defusedxml is the project-mandated alternative.
     "defusedxml>=0.7",
 ]
+# Coverage-guided fuzzing of the untrusted-input parsers (issue #86, #37).
+# Fuzz-only and optional: atheris is NOT installed by the normal dev extra
+# or the release gate, and the harnesses under tests/fuzz/ (named fuzz_*.py,
+# so pytest never collects them) import it behind a guard. atheris builds
+# against libFuzzer/Clang and is exercised in the ClusterFuzzLite container
+# (see .clusterfuzzlite/ and .github/workflows/cifuzz.yml), not in unit CI.
+fuzz = [
+    "atheris>=2.3",
+]
 
 [project.scripts]
 # `qureddy.cli:main` (NOT `:app`) is the install-time entrypoint. The
@@ -378,6 +387,8 @@ extend_exclude = ["scratch"]
 # scan; they are required by the independent final-byte test gate.
 # hypothesis is imported only by the property tests under tests/ (issue
 # #131), which deptry likewise does not scan, so it is listed here too.
+# atheris (fuzz optional group, issue #86) is imported only by the harnesses
+# under tests/fuzz/, which deptry does not scan, so it is listed here as well.
 DEP002 = [
     "bandit",
     "pip-audit",
@@ -395,4 +406,5 @@ DEP002 = [
     "types-jsonschema",
     "types-rfc3339-validator",
     "hypothesis",
+    "atheris",
 ]
