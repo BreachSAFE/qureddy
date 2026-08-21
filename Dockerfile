@@ -43,8 +43,11 @@ RUN addgroup --gid 1000 qureddy \
     && mkdir -p /var/lib/qureddy \
     && chown qureddy:qureddy /var/lib/qureddy
 
-COPY dist/breachsafe_qureddy-*.whl /tmp/
-RUN pip install --no-cache-dir /tmp/breachsafe_qureddy-*.whl \
+# Copy + install only the wheel matching this build's version. A glob over all
+# dist/*.whl breaks when a dev's dist/ has accumulated multiple versions
+# (pip: "conflicting dependencies" installing two versions of the same package).
+COPY dist/breachsafe_qureddy-${QUREDDY_VERSION}-*.whl /tmp/
+RUN pip install --no-cache-dir /tmp/breachsafe_qureddy-${QUREDDY_VERSION}-*.whl \
     && rm -f /tmp/breachsafe_qureddy-*.whl
 
 USER qureddy
