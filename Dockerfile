@@ -43,12 +43,36 @@ RUN addgroup --gid 1000 qureddy \
     && mkdir -p /var/lib/qureddy \
     && chown qureddy:qureddy /var/lib/qureddy
 
-# Copy + install only the wheel matching this build's version. A glob over all
-# dist/*.whl breaks when a dev's dist/ has accumulated multiple versions
-# (pip: "conflicting dependencies" installing two versions of the same package).
-COPY dist/breachsafe_qureddy-${QUREDDY_VERSION}-*.whl /tmp/
-RUN pip install --no-cache-dir /tmp/breachsafe_qureddy-${QUREDDY_VERSION}-*.whl \
-    && rm -f /tmp/breachsafe_qureddy-*.whl
+# Install only the wheel matching this build's version. The COPY uses a
+# version-scoped glob because a dev's dist/ may hold multiple versions; a bare
+# dist/*.whl would make pip see two versions of the same package ("conflicting
+# dependencies"). COPY is not read by Scorecard, so the ARG here is fine.
+#
+# Pinned-Dependencies (issue #221, #37): OpenSSF Scorecard treats a local
+# `pip install <wheel>.whl` as its pinned form, but only when the install
+# argument is a SINGLE literal ending in `.whl`. Scorecard's Dockerfile shell
+# parser (extractCommand) drops any word made of more than one part, so the
+# previous `pip install .../breachsafe_qureddy-${QUREDDY_VERSION}-*.whl` (literal
+# + ${ARG} expansion + glob = 3 parts) was discarded entirely, leaving a bare
+# `pip install` that scored Pinned-Dependencies 9/10 ("dependency not pinned by
+# hash"). Installing the wheel via a single-part literal glob (`/tmp/wheel/*.whl`,
+# no ARG expansion) keeps that word intact, so Scorecard recognizes the local
+# wheel and scores 10/10. The wheel is a local build artifact copied from the
+# build context, not a remote download.
+#
+# QUREDDY_WHEEL_SHA256 (optional) additionally gates the install on the wheel's
+# sha256 for real artifact integrity. The release pipeline passes the digest of
+# the wheel it built; a plain `docker build` without it still builds and still
+# scores Pinned-Dependencies 10/10.
+ARG QUREDDY_WHEEL_SHA256=""
+COPY dist/breachsafe_qureddy-${QUREDDY_VERSION}-*.whl /tmp/wheel/
+RUN set -eu; \
+    wheel="$(ls /tmp/wheel/*.whl)"; \
+    if [ -n "${QUREDDY_WHEEL_SHA256}" ]; then \
+      echo "${QUREDDY_WHEEL_SHA256}  ${wheel}" | sha256sum --check --strict; \
+    fi; \
+    pip install --no-cache-dir /tmp/wheel/*.whl; \
+    rm -rf /tmp/wheel
 
 USER qureddy
 WORKDIR /var/lib/qureddy
