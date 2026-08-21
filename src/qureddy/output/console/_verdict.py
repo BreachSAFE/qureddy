@@ -25,6 +25,7 @@ from qureddy.scanners.tls._cert_findings import (
     FINDING_TYPE_PQ_SIGNATURE,
 )
 from qureddy.scanners.tls._legacy_findings import FINDING_TYPE_LEGACY_PROTOCOL_OFFERED
+from qureddy.scanners.tls.cert_sig import pqc_signature_standard
 
 if TYPE_CHECKING:
     from qureddy.core.models import ScanResult
@@ -189,9 +190,10 @@ def _cert_axis_recommendation(result: ScanResult) -> str:
             "(fetch failed, timed out, or was skipped)."
         )
     if cert_finding.finding_type == FINDING_TYPE_PQ_SIGNATURE:
+        standard = pqc_signature_standard(cert_finding.algorithm or "")
         return (
             f"Both axes are post-quantum: hybrid key exchange and a "
-            f"{cert_finding.algorithm} certificate signature (FIPS 204)."
+            f"{cert_finding.algorithm} certificate signature ({standard})."
         )
     return (
         f"Monitor; key exchange is PQ-hybrid but the certificate signature "

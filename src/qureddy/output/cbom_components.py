@@ -31,6 +31,7 @@ from cyclonedx.model.crypto import (
 )
 
 from qureddy.core.models import ObservationType
+from qureddy.scanners.tls.cert_sig import classify_pqc_signature
 
 if TYPE_CHECKING:
     from cyclonedx.model.bom import Bom
@@ -192,32 +193,31 @@ def _algorithm_properties(group: str) -> AlgorithmProperties | None:
 
 
 _SIGNATURE_FUNCTIONS = (CryptoFunction.SIGN, CryptoFunction.VERIFY)
-# ML-DSA (FIPS 204) parameter set -> NIST security category.
-_MLDSA_SECURITY_LEVEL: MappingProxyType[str, int] = MappingProxyType(
-    {"ml-dsa-44": 2, "ml-dsa-65": 3, "ml-dsa-87": 5}
-)
 # Substrings that identify a classical (non-PQ) signature algorithm, drawn from X.509
 # signatureAlgorithm names and SSH host-key identifiers.
 _CLASSICAL_SIGNATURE_MARKERS = ("ecdsa", "rsa", "ed25519", "ed448", "dsa", "dss")
 
 
 def _signature_algorithm_properties(name: str) -> AlgorithmProperties | None:
-    """Classify a certificate or host-key signature algorithm (#177).
+    """Classify a certificate or host-key signature algorithm (#177, #201).
 
     Every signature is the SIGNATURE primitive with sign/verify functions. ML-DSA
-    (FIPS 204) carries its NIST security category; a classical signature (ECDSA, RSA,
-    EdDSA, DSA) has no post-quantum resistance (nistQuantumSecurityLevel 0). A name we
-    can't classify keeps a minimal algorithmProperties rather than fabricating a level.
+    (FIPS 204) and SLH-DSA (FIPS 205) each carry their NIST security category
+    (from cert_sig's single classification table); a classical signature (ECDSA,
+    RSA, EdDSA, DSA) has no post-quantum resistance (nistQuantumSecurityLevel 0).
+    A name we can't classify keeps a minimal algorithmProperties rather than
+    fabricating a level. The PQC check runs before the classical-marker scan
+    because both ML-DSA and SLH-DSA names contain the classical substring ``dsa``.
     """
-    normalized = name.lower().replace("-", "").replace("_", "")
-    for parameter_set, level in _MLDSA_SECURITY_LEVEL.items():
-        if parameter_set.replace("-", "") in normalized:
-            return AlgorithmProperties(
-                primitive=CryptoPrimitive.SIGNATURE,
-                parameter_set_identifier=parameter_set.upper(),
-                crypto_functions=list(_SIGNATURE_FUNCTIONS),
-                nist_quantum_security_level=level,
-            )
+    classified = classify_pqc_signature(name)
+    if classified is not None:
+        parameter_set, level = classified
+        return AlgorithmProperties(
+            primitive=CryptoPrimitive.SIGNATURE,
+            parameter_set_identifier=parameter_set.upper(),
+            crypto_functions=list(_SIGNATURE_FUNCTIONS),
+            nist_quantum_security_level=level,
+        )
     if any(marker in name.lower() for marker in _CLASSICAL_SIGNATURE_MARKERS):
         return AlgorithmProperties(
             primitive=CryptoPrimitive.SIGNATURE,
