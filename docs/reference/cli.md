@@ -71,6 +71,7 @@ qureddy scan ssh [OPTIONS] TARGET
 | `-v`, `--verbose` | count | `0` | `-v` INFO; `-vv` DEBUG; `-vvv` DEBUG plus traceability detail |
 | `--json-logs` | flag | off | Write structured diagnostic logs to standard error |
 | `-q`, `--quiet` | flag | off | Suppress non-error diagnostic logs |
+| `--reproducible` | flag | off | Omit per-run identity (serial, timestamps, scan id and timing) so the CBOM or JSON is byte-identical across runs for content addressing |
 | `-h`, `--help` | flag | n/a | Print SSH help and exit |
 
 The SSH scanner reads the server identification and KEXINIT offer through a
@@ -107,6 +108,8 @@ qureddy scan tls [OPTIONS] TARGET
 | `-v`, `--verbose` | count | `0` | `-v` INFO; `-vv` DEBUG; `-vvv` DEBUG plus command traceability |
 | `--json-logs` | flag | off | Write structured diagnostic logs to standard error |
 | `-q`, `--quiet` | flag | off | Suppress non-error diagnostic logs |
+| `--log` | path | standard error | Capture the run's structured logs to a file at INFO and above; honors `--json-logs`; standard output stays the `--format` data channel; a bad path exits `4` |
+| `--reproducible` | flag | off | Omit per-run identity (serial, timestamps, scan id and timing) so the CBOM or JSON is byte-identical across runs for content addressing |
 | `-h`, `--help` | flag | n/a | Print TLS help and exit |
 
 `--timeout` applies to each capability, handshake, legacy protocol, and

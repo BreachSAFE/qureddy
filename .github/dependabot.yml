@@ -54,6 +54,16 @@ updates:
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
+      # Intentional upper-bound pins in pyproject.toml; stop Dependabot from
+      # re-proposing bumps past them.
+      # ruff pinned <0.16 (0.16 starts markdown-format-checking private skill
+      # files); do not accept the minor bump past the pin (PR #188).
+      - dependency-name: "ruff"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      # typer pinned <0.27 (exit-code contract); do not accept the minor bump
+      # past the pin (PR #197).
+      - dependency-name: "typer"
+        update-types: ["version-update:semver-minor"]
 
   # ---------------------------------------------------------------------------
   # GitHub Actions used in .github/workflows/
