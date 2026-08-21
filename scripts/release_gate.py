@@ -33,7 +33,7 @@ def _static_commands(uv: Path, gitleaks: Path, gate: Gate) -> None:
         ("ruff-lint", [*run, "ruff", "check", "."]),
         ("ruff-format", [*run, "ruff", "format", "--check", "."]),
         ("mypy", [*run, "mypy", "src/qureddy", "--strict"]),
-        ("tests", [*run, "pytest", "--ignore=tests/live", "--cov=qureddy", "--cov-fail-under=80"]),
+        ("tests", [*run, "pytest", "--ignore=tests/live", "--cov=qureddy", "--cov-fail-under=90"]),
         ("file-size", [*run, "python", "scripts/check_size_policy.py"]),
         ("bandit", [*run, "bandit", "-r", "-ll", "src/qureddy", "scripts"]),
         ("deptry", [*run, "deptry", "."]),
