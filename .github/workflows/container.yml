@@ -46,10 +46,28 @@ jobs:
         with:
           python-version: "3.12"
       - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+      # Single source of truth: [project] version in pyproject.toml. The Dockerfile
+      # COPYs dist/breachsafe_qureddy-<version>-*.whl and its ARG QUREDDY_VERSION
+      # default is intentionally stale, so the build MUST be told the real version.
+      # Export via $GITHUB_ENV (not inline ${{ }}) so it can't break out of the shell.
+      - name: Resolve version from pyproject.toml
+        run: |
+          set -euo pipefail
+          VERSION="$(grep -m1 -E '^version[[:space:]]*=' pyproject.toml | sed -E 's/.*"([^"]+)".*/\1/')"
+          test -n "$VERSION" || { echo "ERROR: could not read version from pyproject.toml" >&2; exit 1; }
+          echo "QUREDDY_VERSION=$VERSION" >> "$GITHUB_ENV"
       - name: Build release wheel
         run: uv tool run --from "build==1.3.0" python -m build --wheel
       - name: Build image
-        run: docker build --tag qureddy-container:smoke .
+        run: |
+          docker build \
+            --build-arg "QUREDDY_VERSION=${QUREDDY_VERSION}" \
+            --tag qureddy-container:smoke .
+      - name: Verify version banner
+        run: |
+          set -euo pipefail
+          docker run --rm qureddy-container:smoke --version \
+            | grep -F "BreachSAFE QuReddy ${QUREDDY_VERSION}"
       - name: Verify runtime identity and capability
         run: |
           test "$(docker run --rm --entrypoint sh qureddy-container:smoke -c 'id -u')" = "1000"
