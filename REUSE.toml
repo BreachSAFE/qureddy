@@ -21,6 +21,7 @@ path = [
     ".editorconfig",
     ".lycheeignore",
     ".markdownlint-cli2.jsonc",
+    ".jscpd.json",
     "justfile",
     "uv.lock",
     "scripts/release-tools.json",
