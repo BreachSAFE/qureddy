@@ -30,7 +30,7 @@ from typer.testing import CliRunner
 
 import qureddy.cli._errors as errors_module
 from qureddy.cli import app
-from qureddy.cli._errors import _stderr_merged_into_stdout
+from qureddy.cli._errors import _echo_operator_diagnostic, _stderr_merged_into_stdout
 from tests._fake_openssl import fake_openssl
 
 # Resolved once to a full path so subprocess calls below satisfy Bandit's
@@ -40,6 +40,12 @@ _SUBPROCESS_INJECT_DIR = Path(__file__).parent.parent / "subprocess_inject"
 # Generous ceiling: every scenario here fails fast (fake openssl binary or
 # refused loopback connect); the timeout only guards against a hang.
 _SUBPROCESS_TIMEOUT = 60
+
+
+def _raise_probe_failure() -> bool:
+    """Windows-only helper: force `_windows_standard_handles_match` to fail so
+    the real-fd-but-undetermined path is exercised on nt as well (#344 item 2)."""
+    raise OSError("handle probe unavailable")
 
 
 def _without_document_identity(output: str) -> str:
@@ -325,3 +331,68 @@ class TestStderrMergedDetection:
         monkeypatch.setattr(sys, "stdout", io.StringIO())
         monkeypatch.setattr(sys, "stderr", io.StringIO())
         assert _stderr_merged_into_stdout() is False
+
+    def test_no_real_fd_stays_fail_open_even_in_machine_mode(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """#344 item 2 boundary: an in-process stream (fileno() raises) has no
+        fd-level table to have been merged, so it must fail *open* (return
+        False) regardless of `default_when_undetermined`. This is what keeps
+        the CliRunner/pytest hint visible."""
+        monkeypatch.setattr(sys, "stdout", io.StringIO())
+        monkeypatch.setattr(sys, "stderr", io.StringIO())
+        assert _stderr_merged_into_stdout() is False
+        assert _stderr_merged_into_stdout(default_when_undetermined=True) is False
+
+    def test_fails_closed_when_real_fd_stat_is_unavailable(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """#344 item 2: with real file descriptors present but introspection
+        (`os.fstat`) failing, machine mode must fail *closed* — assume merged
+        and suppress — rather than risk leaking into the machine document."""
+
+        def _fstat_boom(_fd: int) -> object:
+            raise OSError("fstat unavailable")
+
+        with (
+            (tmp_path / "out.log").open("w") as out_stream,
+            (tmp_path / "err.log").open("w") as err_stream,
+        ):
+            monkeypatch.setattr(sys, "stdout", out_stream)
+            monkeypatch.setattr(sys, "stderr", err_stream)
+            monkeypatch.setattr(errors_module.os, "fstat", _fstat_boom)
+            if os.name == "nt":
+                monkeypatch.setattr(
+                    errors_module, "_windows_standard_handles_match", _raise_probe_failure
+                )
+            # Historical default (fail open) when undetermined.
+            assert _stderr_merged_into_stdout() is False
+            # Machine mode opts into fail-closed.
+            assert _stderr_merged_into_stdout(default_when_undetermined=True) is True
+
+    def test_diagnostic_suppressed_in_machine_mode_when_stat_unavailable(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """#344 item 2: the operator diagnostic is suppressed in a machine
+        format when real-fd introspection fails, and still printed in rich
+        mode."""
+
+        def _fstat_boom(_fd: int) -> object:
+            raise OSError("fstat unavailable")
+
+        monkeypatch.setattr(errors_module.os, "fstat", _fstat_boom)
+        if os.name == "nt":
+            monkeypatch.setattr(
+                errors_module, "_windows_standard_handles_match", _raise_probe_failure
+            )
+        err_path = tmp_path / "err.log"
+
+        with err_path.open("w") as err_stream:
+            monkeypatch.setattr(sys, "stderr", err_stream)
+            _echo_operator_diagnostic("boom-machine", machine_format=True)
+        assert "boom-machine" not in err_path.read_text()
+
+        with err_path.open("w") as err_stream:
+            monkeypatch.setattr(sys, "stderr", err_stream)
+            _echo_operator_diagnostic("boom-rich", machine_format=False)
+        assert "boom-rich" in err_path.read_text()

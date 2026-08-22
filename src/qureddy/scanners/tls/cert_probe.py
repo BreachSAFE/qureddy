@@ -141,7 +141,7 @@ def fetch_certificate_pem(
     stdout = _run_openssl(args, event_prefix="cert_probe.fetch", timeout_seconds=timeout_seconds)
     pem_start = stdout.find("-----BEGIN CERTIFICATE-----")
     pem_end = stdout.find("-----END CERTIFICATE-----")
-    if pem_start == -1 or pem_end == -1:
+    if -1 in (pem_start, pem_end):
         return ""
     return stdout[pem_start : pem_end + len("-----END CERTIFICATE-----")]
 
@@ -157,10 +157,9 @@ def _x509(
     On timeout, returns "" — see `_run_openssl`.
     """
     full_args = [openssl_path, "x509", "-noout", *args]
-    stdout = _run_openssl(
+    return _run_openssl(
         full_args, event_prefix="cert_probe.x509", timeout_seconds=timeout_seconds, input_text=pem
-    )
-    return stdout.strip()
+    ).strip()
 
 
 def _is_self_signed(
@@ -246,9 +245,22 @@ def _certificate_dates(openssl_path: str, pem: str, timeout_seconds: int) -> tup
     return values["before"], values["after"]
 
 
-_PUBLIC_KEY_ALGORITHM = re.compile(r"Public Key Algorithm:\s*(?P<alg>[A-Za-z0-9._-]+)")
+# Anchored to a whole ``-text`` line (leading indent + trailing space only),
+# same discipline as cert_sig.SIGNATURE_ALGORITHM. #344 item 3: an unanchored
+# ``.search`` would also match a ``Public Key Algorithm: …`` string smuggled
+# into a subject/issuer DN (printed on the ``Subject:`` line, which precedes the
+# real ``Subject Public Key Info`` block, so it would win the first match). The
+# real field is always the entire content of its own line; requiring that closes
+# the DN-injection gap uniformly rather than by ordering luck.
+_PUBLIC_KEY_ALGORITHM = re.compile(
+    r"^[^\S\r\n]*Public Key Algorithm:[^\S\r\n]*(?P<alg>[A-Za-z0-9._-]+)[^\S\r\n]*$",
+    re.MULTILINE,
+)
 # "Public-Key: (2048 bit)" — the size is the same line the summary already keeps.
-_PUBLIC_KEY_BITS = re.compile(r"Public-Key:\s*\((?P<bits>\d+)\s*bit\)")
+_PUBLIC_KEY_BITS = re.compile(
+    r"^[^\S\r\n]*Public-Key:[^\S\r\n]*\((?P<bits>\d+)[^\S\r\n]*bit\)[^\S\r\n]*$",
+    re.MULTILINE,
+)
 
 
 def _certificate_text_details(
@@ -263,7 +275,11 @@ def _certificate_text_details(
     """
     text = _x509(openssl_path, pem, "-text", timeout_seconds=timeout_seconds)
     cert_sig = parse_certificate_signature(text)
-    public_key_line = next((line for line in text.splitlines() if "Public-Key:" in line), "")
+    # Anchor to line-start (#344 item 3): a bare ``"Public-Key:" in line``
+    # substring test would also catch the token smuggled into a DN value.
+    public_key_line = next(
+        (line for line in text.splitlines() if line.strip().startswith("Public-Key:")), ""
+    )
     algorithm_match = _PUBLIC_KEY_ALGORITHM.search(text)
     bits_match = _PUBLIC_KEY_BITS.search(text)
     return (

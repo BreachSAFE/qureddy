@@ -34,9 +34,10 @@ if TYPE_CHECKING:
     from qureddy.core.models import Finding, ScanResult
 
 
-def _summary_table(result: ScanResult) -> Table:
+def _field_value_table(title: str) -> Table:
+    """A two-column Field/Value table shared by the scan-details and run-details blocks."""
     table = Table(
-        title="Scan details",
+        title=title,
         title_style="bold",
         title_justify="left",
         show_header=True,
@@ -47,6 +48,11 @@ def _summary_table(result: ScanResult) -> Table:
     )
     table.add_column("Field", style="bold cyan", no_wrap=True)
     table.add_column("Value", style=BODY_TEXT)
+    return table
+
+
+def _summary_table(result: ScanResult) -> Table:
+    table = _field_value_table("Scan details")
 
     summary = result.summary
     scan = result.scan
@@ -81,18 +87,7 @@ def _run_details_table(result: ScanResult) -> Table:
     duration = (result.scan.completed_at - result.scan.started_at).total_seconds()
     completed = result.scan.completed_at.isoformat(timespec="seconds").replace("+00:00", "Z")
     started = result.scan.started_at.isoformat(timespec="seconds").replace("+00:00", "Z")
-    table = Table(
-        title="Run details",
-        title_style="bold",
-        title_justify="left",
-        show_header=True,
-        header_style="bold cyan",
-        show_lines=False,
-        box=box.SIMPLE_HEAD,
-        pad_edge=False,
-    )
-    table.add_column("Field", style="bold cyan", no_wrap=True)
-    table.add_column("Value", style=BODY_TEXT)
+    table = _field_value_table("Run details")
     table.add_row("scan_id", Text(result.scan.scan_id))
     table.add_row("scanner", Text(result.scan.scanner_name))
     table.add_row("version", Text(result.scan.scanner_version))

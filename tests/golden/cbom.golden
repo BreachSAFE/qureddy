@@ -9,7 +9,7 @@
           "type": "application"
         }
       },
-      "bom-ref": "annotation/00-tls.hybrid.negotiated_x25519mlkem768",
+      "bom-ref": "annotation/00-tls.hybrid.negotiated_pq",
       "subjects": [
         "crypto/algorithm/x25519mlkem768"
       ],
@@ -154,7 +154,7 @@
         },
         {
           "name": "qureddy:rule_id",
-          "value": "tls.hybrid.negotiated_x25519mlkem768"
+          "value": "tls.hybrid.negotiated_pq"
         }
       ],
       "type": "cryptographic-asset"
@@ -282,7 +282,7 @@
           "bom-ref": "tool/qureddy",
           "name": "qureddy",
           "type": "application",
-          "version": "0.2.33"
+          "version": "0.2.34"
         }
       ]
     }

@@ -38,7 +38,7 @@ def _fail(message: str, code: int) -> NoReturn:
     raise typer.Exit(code=code)
 
 
-def _stderr_merged_into_stdout() -> bool:
+def _stderr_merged_into_stdout(*, default_when_undetermined: bool = False) -> bool:
     """True when fd 2 writes into the same non-tty open file as fd 1.
 
     Detects genuine shell-level `2>&1` (dup2 on the real file descriptor
@@ -46,10 +46,28 @@ def _stderr_merged_into_stdout() -> bool:
     an interactive terminal. In-process stream substitutes without a
     real file descriptor (CliRunner, pytest capture objects) report
     False — there is no fd-level merge to corrupt.
+
+    `default_when_undetermined` is the answer returned when we DO hold real
+    file descriptors but cannot introspect whether they are merged
+    (``os.isatty``/``os.fstat`` raising, or the Windows handle probe failing).
+    The historical default is False (fail open — print the diagnostic); the
+    machine-mode caller passes True (fail closed): #344 item 2 — a real but
+    introspection-resistant `2>&1` must not be able to leak the stderr
+    diagnostic into the machine document on stdout.
+
+    A `fileno()` that raises is a *different* case and always returns False
+    regardless of this flag: an in-process stream substitute (CliRunner,
+    pytest capture, StringIO) has no real file descriptor, so there is no
+    fd-level table for a `dup2()` `2>&1` to have merged — nothing on stdout
+    can be corrupted, and the operator should see the hint.
     """
     try:
         stdout_fd = sys.stdout.fileno()
         stderr_fd = sys.stderr.fileno()
+    except (AttributeError, OSError, ValueError):
+        # No real file descriptor: provably not an fd-level `2>&1`. Fail open.
+        return False
+    try:
         # A shared interactive tty is not a machine pipeline: nothing
         # downstream parses stdout, and the operator should see the hint.
         if os.isatty(stderr_fd):
@@ -59,7 +77,8 @@ def _stderr_merged_into_stdout() -> bool:
         stdout_stat = os.fstat(stdout_fd)
         stderr_stat = os.fstat(stderr_fd)
     except (AttributeError, OSError, ValueError):
-        return False
+        # We hold real fds but cannot tell whether they are merged.
+        return default_when_undetermined
     return (stdout_stat.st_dev, stdout_stat.st_ino) == (stderr_stat.st_dev, stderr_stat.st_ino)
 
 
@@ -107,8 +126,13 @@ def _echo_operator_diagnostic(message: str, *, machine_format: bool) -> None:
     an operator courtesy (issue #274). Under fd-level `2>&1` that courtesy
     would land inside the machine document, so it is suppressed there —
     and only there. Rich mode always echoes.
+
+    #344 item 2: when fd introspection cannot determine whether streams are
+    merged, machine mode fails closed (`default_when_undetermined=True`) —
+    an undetectable `2>&1` must not be able to leak this diagnostic into the
+    machine document. Rich mode never reaches this guard.
     """
-    if machine_format and _stderr_merged_into_stdout():
+    if machine_format and _stderr_merged_into_stdout(default_when_undetermined=True):
         return
     if machine_format and os.name == "nt":
         # A redirected Windows stderr can inherit a legacy code page.  Keep
