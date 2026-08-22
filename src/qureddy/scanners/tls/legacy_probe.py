@@ -68,9 +68,10 @@ import re
 import subprocess
 from dataclasses import dataclass
 
-from qureddy.core.errors import LocalOpenSSLMissing
 from qureddy.core.logging import get_logger
 from qureddy.scanners.tls._net import build_connect_target
+from qureddy.scanners.tls.openssl_probe.executor import LaunchStatus, raise_for_launch
+from qureddy.scanners.tls.openssl_probe.executor import run_openssl as execute
 
 _log = get_logger(__name__)
 
@@ -156,30 +157,26 @@ def has_weak_cipher(accepted_ciphers: tuple[str, ...]) -> bool:
 def _run_openssl(
     args: list[str], *, event_prefix: str, timeout_seconds: int
 ) -> subprocess.CompletedProcess[str] | None:
-    """One subprocess.run call; returns None on timeout (degrade gracefully).
+    """One openssl call via the executor; returns None on timeout (degrade).
 
-    Same shape as cert_probe.py's `_run_openssl` — list-form args,
-    shell=False, timeout, both streams captured, check=False.
+    Callers read ``.returncode`` / ``.stdout`` / ``.stderr`` off the returned
+    ``CompletedProcess``, so the executor outcome is re-wrapped into one to keep
+    those call sites unchanged. A missing or unlaunchable binary now raises the
+    typed exit-3 error via ``raise_for_launch`` (the OSError was previously
+    uncaught and crashed the sweep).
     """
     _log.info(f"{event_prefix}.start", args=args, timeout_seconds=timeout_seconds)
-    try:
-        completed = subprocess.run(  # noqa: S603 -- list-form, shell=False
-            args,
-            stdin=subprocess.DEVNULL,
-            capture_output=True,
-            text=True,
-            timeout=timeout_seconds,
-            check=False,
-            shell=False,
-        )
-    except subprocess.TimeoutExpired:
+    outcome = execute(args, timeout_seconds=timeout_seconds)
+    if outcome.timed_out:
         _log.warning(f"{event_prefix}.timeout", args=args, timeout_seconds=timeout_seconds)
         return None
-    except FileNotFoundError as exc:
-        _log.error(f"{event_prefix}.openssl_missing", openssl_path=args[0])
-        raise LocalOpenSSLMissing(str(exc)) from exc
-    _log.info(f"{event_prefix}.complete", return_code=completed.returncode)
-    return completed
+    if outcome.launch is not LaunchStatus.OK:
+        _log.error(f"{event_prefix}.openssl_unlaunchable", openssl_path=args[0])
+    raise_for_launch(outcome, args[0])
+    _log.info(f"{event_prefix}.complete", return_code=outcome.returncode)
+    return_code = outcome.returncode
+    assert return_code is not None  # noqa: S101 -- OK launch guarantees an exit code
+    return subprocess.CompletedProcess(args, return_code, outcome.stdout, outcome.stderr)
 
 
 def _candidate_ciphers(

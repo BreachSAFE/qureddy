@@ -225,8 +225,8 @@ If a function logs an error and then raises, the caller will likely log it again
 
 ## Section 7 — Subprocess Discipline
 
-**Rule 7.1 — All OpenSSL subprocess calls live in one module.**
-`src/qureddy/scanners/tls/openssl_probe.py`. No other module calls OpenSSL via `subprocess.run`. Enforced by `scripts/audit_phase.py` boundary check.
+**Rule 7.1 — All OpenSSL subprocess execution lives in one module.**
+`src/qureddy/scanners/tls/openssl_probe/executor.py`. It is the only file under `src/qureddy/scanners/tls/` that may call `subprocess.run` / `Popen` / `call`; every probe (`probe.py`, `_capability_io.py`, `cert_probe.py`, `legacy_probe.py`) routes through `executor.run_openssl`, which returns an `OpenSSLOutcome` and never raises for a process outcome. Launch failures become the typed exit-3 errors via `executor.raise_for_launch`. Enforced by `scripts/check_openssl_boundary.py`, wired into `scripts/release_gate.py`.
 When new external tools are added (e.g., `ssh-audit` for the SSH scanner), each gets its own dedicated probe module.
 
 **Rule 7.2 — `subprocess.run`, never `os.system` or `subprocess.Popen` without justification.**

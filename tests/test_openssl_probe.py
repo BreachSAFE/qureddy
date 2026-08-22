@@ -112,15 +112,23 @@ class TestResolveOpenSSLPath:
 class TestProbeCapability:
     def test_non_launchable_binary_is_typed_local_failure(self) -> None:
         with (
-            patch("subprocess.run", side_effect=OSError(193, "not a valid application")),
+            patch(
+                "qureddy.scanners.tls.openssl_probe.executor.subprocess.run",
+                side_effect=OSError(193, "not a valid application"),
+            ),
             pytest.raises(LocalOpenSSLBroken, match="could not be launched"),
         ):
             probe_capability(fake_openssl("openssl_ok"))
 
     def test_probe_launch_oserror_is_typed_local_failure(self) -> None:
         with (
-            patch("subprocess.run", side_effect=OSError(193, "not a valid application")),
-            pytest.raises(LocalOpenSSLBroken, match="became unlaunchable"),
+            patch(
+                "qureddy.scanners.tls.openssl_probe.executor.subprocess.run",
+                side_effect=OSError(193, "not a valid application"),
+            ),
+            # #296: launch failures are now centralized in executor.raise_for_launch,
+            # so both call sites report the same canonical "could not be launched".
+            pytest.raises(LocalOpenSSLBroken, match="could not be launched"),
         ):
             run_hybrid_probe(
                 fake_openssl("openssl_ok"),

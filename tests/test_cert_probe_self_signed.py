@@ -17,6 +17,9 @@ import subprocess
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
+from qureddy.core.errors import LocalOpenSSLBroken, LocalOpenSSLMissing
 from qureddy.scanners.tls.cert_probe import parse_certificate
 
 FIXTURE_PEM = (Path(__file__).parent / "fixtures" / "certs" / "self_signed.pem").read_text()
@@ -52,7 +55,10 @@ class TestIsSelfSignedVerifyPath:
         that lets is_self_signed be True -- DN equality alone never proves it."""
         with (
             patch("qureddy.scanners.tls.cert_probe._x509", side_effect=_x509_self_issued),
-            patch("qureddy.scanners.tls.cert_probe.subprocess.run", return_value=_completed(0)),
+            patch(
+                "qureddy.scanners.tls.openssl_probe.executor.subprocess.run",
+                return_value=_completed(0),
+            ),
         ):
             info = parse_certificate("/fixture/openssl", FIXTURE_PEM)
         assert info.is_self_signed is True
@@ -63,7 +69,10 @@ class TestIsSelfSignedVerifyPath:
         signature failure"): self-issued-but-not-self-signed must read False."""
         with (
             patch("qureddy.scanners.tls.cert_probe._x509", side_effect=_x509_self_issued),
-            patch("qureddy.scanners.tls.cert_probe.subprocess.run", return_value=_completed(2)),
+            patch(
+                "qureddy.scanners.tls.openssl_probe.executor.subprocess.run",
+                return_value=_completed(2),
+            ),
         ):
             info = parse_certificate("/fixture/openssl", FIXTURE_PEM)
         assert info.is_self_signed is False
@@ -74,25 +83,42 @@ class TestIsSelfSignedVerifyPath:
         with (
             patch("qureddy.scanners.tls.cert_probe._x509", side_effect=_x509_self_issued),
             patch(
-                "qureddy.scanners.tls.cert_probe.subprocess.run",
+                "qureddy.scanners.tls.openssl_probe.executor.subprocess.run",
                 side_effect=subprocess.TimeoutExpired(cmd=["openssl", "verify"], timeout=30),
             ),
         ):
             info = parse_certificate("/fixture/openssl", FIXTURE_PEM)
         assert info.is_self_signed is False
 
-    def test_verify_oserror_resolves_to_false(self) -> None:
-        """An OSError launching `openssl verify` (e.g. a non-executable path on
-        Windows) also resolves to False, not an unhandled traceback."""
+    def test_verify_oserror_propagates_typed_local_error(self) -> None:
+        """#374 security fix: an OSError launching `openssl verify` (a
+        non-executable path / Windows WinError 193) is a broken *local*
+        toolchain, so it must propagate as the typed exit-3 error — NOT be
+        swallowed as `is_self_signed=False`, which would silently make every
+        cert look not-self-signed whenever the local openssl is broken."""
         with (
             patch("qureddy.scanners.tls.cert_probe._x509", side_effect=_x509_self_issued),
             patch(
-                "qureddy.scanners.tls.cert_probe.subprocess.run",
+                "qureddy.scanners.tls.openssl_probe.executor.subprocess.run",
                 side_effect=OSError("exec format error"),
             ),
+            pytest.raises(LocalOpenSSLBroken),
         ):
-            info = parse_certificate("/fixture/openssl", FIXTURE_PEM)
-        assert info.is_self_signed is False
+            parse_certificate("/fixture/openssl", FIXTURE_PEM)
+
+    def test_verify_missing_binary_propagates_typed_local_error(self) -> None:
+        """A missing openssl in the verify path is a local-dependency failure,
+        so it must propagate as LocalOpenSSLMissing (exit-3), never resolve to
+        a silent is_self_signed=False (#374)."""
+        with (
+            patch("qureddy.scanners.tls.cert_probe._x509", side_effect=_x509_self_issued),
+            patch(
+                "qureddy.scanners.tls.openssl_probe.executor.subprocess.run",
+                side_effect=FileNotFoundError("no such file"),
+            ),
+            pytest.raises(LocalOpenSSLMissing),
+        ):
+            parse_certificate("/fixture/openssl", FIXTURE_PEM)
 
     def test_temp_cert_file_is_removed_after_verify(self) -> None:
         """The securely-created temp cert file must be unlinked in `finally`
@@ -107,7 +133,9 @@ class TestIsSelfSignedVerifyPath:
 
         with (
             patch("qureddy.scanners.tls.cert_probe._x509", side_effect=_x509_self_issued),
-            patch("qureddy.scanners.tls.cert_probe.subprocess.run", side_effect=_capture),
+            patch(
+                "qureddy.scanners.tls.openssl_probe.executor.subprocess.run", side_effect=_capture
+            ),
         ):
             parse_certificate("/fixture/openssl", FIXTURE_PEM)
 

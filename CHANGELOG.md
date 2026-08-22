@@ -1,7 +1,7 @@
 # Changelog
 
 [![Status: Alpha](https://img.shields.io/badge/status-alpha-blue?style=flat-square)](https://github.com/breachsafe/qureddy)
-[![Version](https://img.shields.io/badge/version-0.2.38-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.39-blue?style=flat-square)](CHANGELOG.md)
 [![Keep a Changelog](https://img.shields.io/badge/keep%20a%20changelog-1.1.0-orange?style=flat-square)](https://keepachangelog.com/en/1.1.0/)
 [![SemVer](https://img.shields.io/badge/SemVer-2.0.0-blue?style=flat-square)](https://semver.org/spec/v2.0.0.html)
 
@@ -10,6 +10,26 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and version
 numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.2.39] - 2026-08-22
+
+### Security
+
+- **OpenSSL launch failure can no longer masquerade as a certificate claim** (`#374`):
+  `_is_self_signed` previously caught `OSError`/timeout and returned `False`, laundering a
+  local-verifier failure into "certificate is not self-signed". A launch failure now raises
+  the typed local-dependency error (exit 3). Certificate and legacy probes likewise no longer
+  leak an uncaught `OSError` (Windows WinError 193 / permission-denied) as exit 70.
+
+### Changed
+
+- **All OpenSSL subprocess execution is centralized in one executor** (`#296`):
+  new `openssl_probe/executor.py` owns list-form invocation, `shell=False`, stdin selection,
+  stream capture, timeout, and partial-output handling, returning a typed `OpenSSLOutcome`
+  (with `MISSING`/`UNLAUNCHABLE` classification). The five call sites keep their distinct
+  domain policies but share one mechanism, resolving the drifted error handling. Enforced by
+  a new AST boundary check (`scripts/check_openssl_boundary.py`) in the release gate; Rule 7.1
+  documentation corrected to match reality.
 
 ## [0.2.38] - 2026-08-22
 
@@ -377,45 +397,46 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Contents
 
-1. [0.2.38](#0238---2026-08-22)
-2. [0.2.37](#0237---2026-08-22)
-3. [0.2.36](#0236---2026-08-22)
-4. [0.2.35](#0235---2026-08-22)
-5. [0.2.34](#0234---2026-08-22)
-6. [0.2.33](#0233---2026-08-22)
-7. [0.2.32](#0232---2026-08-22)
-8. [0.2.31](#0231---2026-08-22)
-9. [0.2.30](#0230---2026-08-22)
-10. [0.2.29](#0229---2026-08-22)
-11. [0.2.28](#0228---2026-08-22)
-12. [0.2.27](#0227---2026-08-22)
-13. [0.2.26](#0226---2026-08-22)
-14. [0.2.25](#0225---2026-08-22)
-15. [0.2.24](#0224---2026-08-22)
-16. [0.2.23](#0223---2026-08-22)
-17. [0.2.22](#0222---2026-08-22)
-18. [0.2.21](#0221---2026-08-22)
-19. [0.2.20](#0220---2026-08-22)
-20. [0.2.18](#0218---2026-08-22)
-21. [0.2.17](#0217---2026-08-21)
-22. [0.2.16](#0216---2026-08-21)
-23. [0.2.15](#0215---2026-08-21)
-24. [0.2.14](#0214---2026-08-19)
-25. [0.2.13](#0213---2026-08-04)
-26. [0.2.12](#0212---2026-07-28)
-27. [0.2.11](#0211---2026-07-28)
-28. [0.2.10](#0210---2026-07-28)
-29. [0.2.9](#029---2026-07-28)
-30. [0.2.8](#028---2026-07-28)
-31. [0.2.7](#027---2026-07-28)
-32. [0.2.6](#026---2026-07-28)
-33. [0.2.5](#025---2026-07-28)
-34. [0.2.4](#024---2026-07-28)
-35. [0.2.3](#023---2026-07-27)
-36. [0.2.2](#022---2026-07-27)
-37. [0.2.1](#021---2026-07-27)
-38. [0.2.0](#020---2026-07-27)
-39. [0.1.0](#010---2026-05-10)
+1. [0.2.39](#0239---2026-08-22)
+2. [0.2.38](#0238---2026-08-22)
+3. [0.2.37](#0237---2026-08-22)
+4. [0.2.36](#0236---2026-08-22)
+5. [0.2.35](#0235---2026-08-22)
+6. [0.2.34](#0234---2026-08-22)
+7. [0.2.33](#0233---2026-08-22)
+8. [0.2.32](#0232---2026-08-22)
+9. [0.2.31](#0231---2026-08-22)
+10. [0.2.30](#0230---2026-08-22)
+11. [0.2.29](#0229---2026-08-22)
+12. [0.2.28](#0228---2026-08-22)
+13. [0.2.27](#0227---2026-08-22)
+14. [0.2.26](#0226---2026-08-22)
+15. [0.2.25](#0225---2026-08-22)
+16. [0.2.24](#0224---2026-08-22)
+17. [0.2.23](#0223---2026-08-22)
+18. [0.2.22](#0222---2026-08-22)
+19. [0.2.21](#0221---2026-08-22)
+20. [0.2.20](#0220---2026-08-22)
+21. [0.2.18](#0218---2026-08-22)
+22. [0.2.17](#0217---2026-08-21)
+23. [0.2.16](#0216---2026-08-21)
+24. [0.2.15](#0215---2026-08-21)
+25. [0.2.14](#0214---2026-08-19)
+26. [0.2.13](#0213---2026-08-04)
+27. [0.2.12](#0212---2026-07-28)
+28. [0.2.11](#0211---2026-07-28)
+29. [0.2.10](#0210---2026-07-28)
+30. [0.2.9](#029---2026-07-28)
+31. [0.2.8](#028---2026-07-28)
+32. [0.2.7](#027---2026-07-28)
+33. [0.2.6](#026---2026-07-28)
+34. [0.2.5](#025---2026-07-28)
+35. [0.2.4](#024---2026-07-28)
+36. [0.2.3](#023---2026-07-27)
+37. [0.2.2](#022---2026-07-27)
+38. [0.2.1](#021---2026-07-27)
+39. [0.2.0](#020---2026-07-27)
+40. [0.1.0](#010---2026-05-10)
 
 ## [0.2.12] - 2026-07-28
 

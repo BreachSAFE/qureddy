@@ -12,10 +12,10 @@ from urllib.parse import urlsplit
 import pytest
 from typer.testing import CliRunner
 
-import qureddy.scanners.tls.openssl_probe._capability_io as capability_io
 from qureddy._branding import HEADER
 from qureddy.cli import _render as render_module
 from qureddy.cli import app, main
+from qureddy.scanners.tls.openssl_probe import executor
 from tests._fake_openssl import fake_openssl
 
 
@@ -161,7 +161,8 @@ class TestCapabilityFailureNoDoubleProbe:
             stdout = "OpenSSL 3.4.0 1 Jan 2026" if args[1] == "version" else "x25519"
             return subprocess.CompletedProcess(args, 0, stdout=stdout, stderr="")
 
-        monkeypatch.setattr(capability_io.subprocess, "run", run_fake)
+        # #296: the single subprocess boundary now lives in the executor.
+        monkeypatch.setattr(executor.subprocess, "run", run_fake)
         fake = fake_openssl("openssl_too_old")
 
         runner = CliRunner()

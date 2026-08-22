@@ -33,7 +33,7 @@ class TestTimeoutClassification:
     @staticmethod
     def _timeout_result(output: bytes) -> ProbeResult:
         exc = subprocess.TimeoutExpired(cmd=["openssl"], timeout=2, output=output, stderr=b"")
-        return result_from_timeout(["openssl"], exc, datetime.now(UTC), 2, 1)
+        return result_from_timeout(["openssl"], exc.stdout, exc.stderr, datetime.now(UTC), 2, 1)
 
     def test_timeout_before_connect_is_unreachable(self) -> None:
         result = self._timeout_result(b"")
@@ -174,7 +174,9 @@ class TestTimeoutPreservesPartialOutput:
             output=b"CONNECTED(00000003)\npartial-stdout-marker\n",
             stderr=b"",
         )
-        with patch("subprocess.run", side_effect=timeout):
+        with patch(
+            "qureddy.scanners.tls.openssl_probe.executor.subprocess.run", side_effect=timeout
+        ):
             result = run_hybrid_probe(
                 fake_openssl("openssl_ok"),
                 "192.0.2.99",
@@ -198,7 +200,9 @@ class TestTimeoutPreservesPartialOutput:
             output=b"partial-stdout-marker\n",
             stderr=b"CONNECTION ESTABLISHED\n",
         )
-        with patch("subprocess.run", side_effect=timeout):
+        with patch(
+            "qureddy.scanners.tls.openssl_probe.executor.subprocess.run", side_effect=timeout
+        ):
             result = run_hybrid_probe(
                 fake_openssl("openssl_ok"),
                 "192.0.2.99",
@@ -246,7 +250,10 @@ class TestEvidenceIntegrityExcerptMatchesHash:
             "Negotiated TLS1.3 group: X25519MLKEM768\n"
         )
         # Real `s_client -brief`: transcript on stderr, stdout empty.
-        with patch("subprocess.run", return_value=self._completed("", transcript)):
+        with patch(
+            "qureddy.scanners.tls.openssl_probe.executor.subprocess.run",
+            return_value=self._completed("", transcript),
+        ):
             result = run_hybrid_probe(fake_openssl("openssl_ok"), "example.com", 443, "example.com")
 
         empty_hash = hashlib.sha256(b"").hexdigest()
@@ -261,7 +268,10 @@ class TestEvidenceIntegrityExcerptMatchesHash:
     def test_stdout_excerpt_never_bleeds_stderr_bytes(self) -> None:
         stdout = "STDOUT-ONLY-BYTES\n"
         stderr = "STDERR-ONLY-BYTES\n"
-        with patch("subprocess.run", return_value=self._completed(stdout, stderr)):
+        with patch(
+            "qureddy.scanners.tls.openssl_probe.executor.subprocess.run",
+            return_value=self._completed(stdout, stderr),
+        ):
             result = run_hybrid_probe(fake_openssl("openssl_ok"), "example.com", 443, "example.com")
 
         # stdout_excerpt is derived from stdout ONLY — not the combined stream.

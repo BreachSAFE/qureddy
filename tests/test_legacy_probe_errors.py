@@ -18,10 +18,12 @@ from unittest.mock import patch
 
 import pytest
 
-from qureddy.core.errors import LocalOpenSSLMissing
+from qureddy.core.errors import LocalOpenSSLBroken, LocalOpenSSLMissing
 from qureddy.scanners.tls.legacy_probe import probe_legacy_protocol
 
-_RUN = "qureddy.scanners.tls.legacy_probe.subprocess.run"
+# #296: subprocess execution now lives only in the executor; legacy_probe
+# routes through it, so that is the seam to inject.
+_RUN = "qureddy.scanners.tls.openssl_probe.executor.subprocess.run"
 
 
 def _completed(returncode: int, stdout: str = "") -> subprocess.CompletedProcess[str]:
@@ -53,6 +55,17 @@ def test_missing_openssl_raises_local_openssl_missing() -> None:
     with (
         patch(_RUN, side_effect=FileNotFoundError("no such file")),
         pytest.raises(LocalOpenSSLMissing),
+    ):
+        _probe()
+
+
+def test_unlaunchable_openssl_raises_local_openssl_broken() -> None:
+    """#296/#374: an OSError launching openssl (non-executable / WinError 193)
+    was previously UNCAUGHT in legacy_probe and crashed the sweep. It must now
+    surface as the typed exit-3 local-dependency error."""
+    with (
+        patch(_RUN, side_effect=OSError(193, "not a valid application")),
+        pytest.raises(LocalOpenSSLBroken),
     ):
         _probe()
 

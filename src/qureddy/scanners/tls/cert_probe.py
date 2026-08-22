@@ -31,16 +31,16 @@ downstream treats an unverified cert as verified.
 from __future__ import annotations
 
 import re
-import subprocess
 import tempfile
 from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
 
-from qureddy.core.errors import LocalOpenSSLMissing
 from qureddy.core.logging import get_logger
 from qureddy.scanners.tls._net import build_connect_target
 from qureddy.scanners.tls.cert_sig import parse_certificate_signature
+from qureddy.scanners.tls.openssl_probe.executor import LaunchStatus, raise_for_launch
+from qureddy.scanners.tls.openssl_probe.executor import run_openssl as execute
 
 _log = get_logger(__name__)
 
@@ -91,32 +91,24 @@ def _run_openssl(
 
     Raises:
         LocalOpenSSLMissing: `args[0]` does not resolve to an executable.
+        LocalOpenSSLBroken: `args[0]` exists but cannot be launched (e.g. a
+            non-executable file / Windows WinError 193). Previously this
+            OSError was uncaught and crashed the scan.
 
     On timeout, returns "" rather than raising — a hung connection is not
     a local-dependency problem, it's a target-side condition the caller
     already has failure categories for.
     """
     _log.info(f"{event_prefix}.start", args=args, timeout_seconds=timeout_seconds)
-    try:
-        completed = subprocess.run(  # noqa: S603 -- list-form, shell=False
-            args,
-            input=input_text,
-            stdin=subprocess.DEVNULL if input_text is None else None,
-            capture_output=True,
-            text=True,
-            timeout=timeout_seconds,
-            check=False,
-            shell=False,
-        )
-    except subprocess.TimeoutExpired:
+    outcome = execute(args, timeout_seconds=timeout_seconds, stdin_input=input_text)
+    if outcome.timed_out:
         _log.warning(f"{event_prefix}.timeout", args=args, timeout_seconds=timeout_seconds)
         return ""
-    except FileNotFoundError as exc:
-        _log.error(f"{event_prefix}.openssl_missing", openssl_path=args[0])
-        raise LocalOpenSSLMissing(str(exc)) from exc
-
-    _log.info(f"{event_prefix}.complete", return_code=completed.returncode)
-    return completed.stdout
+    if outcome.launch is not LaunchStatus.OK:
+        _log.error(f"{event_prefix}.openssl_unlaunchable", openssl_path=args[0])
+    raise_for_launch(outcome, args[0])
+    _log.info(f"{event_prefix}.complete", return_code=outcome.returncode)
+    return outcome.stdout
 
 
 def fetch_certificate_pem(
@@ -185,9 +177,13 @@ def _is_self_signed(
     `-CAfile` and the cert-to-verify argument), not stdin, unlike `_x509`'s
     pattern — a securely-created temp file is written and removed in `finally`.
 
-    Any ambiguity (subprocess timeout, nonzero exit for any reason, missing
-    subject/issuer) resolves to `False`, never `True` — this field asserts a
-    positive cryptographic claim, so absence of proof must not read as proof.
+    A subprocess timeout or nonzero exit resolves to `False`, never `True` —
+    this field asserts a positive cryptographic claim, so absence of proof
+    must not read as proof. A launch failure (missing / unlaunchable openssl)
+    is different: it is a local-dependency problem, so it now propagates as the
+    typed exit-3 error instead of being silently swallowed as `False` — issue
+    #374, which is exactly the security bug the old blanket `except OSError`
+    masked (a broken local toolchain would make every cert look not-self-signed).
     A three-state true/false/undetermined model is the more complete answer
     but changes this project's public `CertificateInfo`/`Evidence` shape,
     which needs the same maintainer-authority schema decision as #226/#230 —
@@ -201,22 +197,15 @@ def _is_self_signed(
             f.write(pem)
             cert_path = f.name
         args = [openssl_path, "verify", "-check_ss_sig", "-CAfile", cert_path, cert_path]
-        completed = subprocess.run(  # noqa: S603 -- list-form, shell=False, validated args
-            args,
-            stdin=subprocess.DEVNULL,
-            capture_output=True,
-            text=True,
-            timeout=timeout_seconds,
-            check=False,
-            shell=False,
-        )
-    except (subprocess.TimeoutExpired, OSError):
-        return False
+        outcome = execute(args, timeout_seconds=timeout_seconds)
     finally:
         if cert_path is not None:
             with suppress(OSError):
                 Path(cert_path).unlink()
-    return completed.returncode == 0
+    raise_for_launch(outcome, openssl_path)
+    if outcome.timed_out:
+        return False
+    return outcome.returncode == 0
 
 
 def _x509_value(
