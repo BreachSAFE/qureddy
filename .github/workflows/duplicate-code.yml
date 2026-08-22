@@ -1,10 +1,12 @@
 # SPDX-License-Identifier: Apache-2.0
 #
-# Duplicate-code gate (#314) — fails a PR when copy-paste duplication in src/
-# exceeds the tuned threshold, so the code de-duplication milestone (#315) does
-# not silently regress. Token-level detection (jscpd) catches literal/near-literal
-# clones; semantic duplication (same logic, different names) is the reviewer's job.
-# Config + ignore globs live in .jscpd.json.
+# Duplicate-code gate (#314) — fails a PR when duplication in src/ grows, so the code
+# de-duplication milestone (#315) does not silently regress. Two complementary detectors:
+#   - jscpd (token-level): literal/near-literal copy-paste. Config in .jscpd.json.
+#   - pylint duplicate-code / R0801 (AST-level): structural clones jscpd misses (renamed
+#     vars still match). Config in pyproject.toml [tool.pylint].
+# Semantic duplication (same logic, different shape) that neither catches stays the
+# reviewer's + breachsafe-implement skill's job.
 
 name: duplicate-code
 
@@ -14,6 +16,7 @@ on:
     paths:
       - "src/**"
       - ".jscpd.json"
+      - "pyproject.toml"
       - ".github/workflows/duplicate-code.yml"
   workflow_dispatch:
 
@@ -29,7 +32,7 @@ defaults:
     shell: bash
 
 jobs:
-  jscpd:
+  detect:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -40,5 +43,21 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Detect duplicated code (jscpd)
-        run: npx --yes jscpd@4 src/ --config .jscpd.json
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Token-level clones (jscpd)
+        run: npx --yes jscpd@4 src/ --config .jscpd.json --reporters consoleFull,html
+
+      - name: Structural clones (pylint duplicate-code / R0801)
+        run: pipx run pylint src/qureddy/
+
+      - name: Upload jscpd HTML report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: jscpd-report
+          path: report/
+          if-no-files-found: ignore
+          retention-days: 30
