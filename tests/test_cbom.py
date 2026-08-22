@@ -517,6 +517,52 @@ def _command_hash_property(payload: dict) -> str:
     raise AssertionError(msg)
 
 
+def _parse_occurrence_context(context: str) -> dict[str, str]:
+    """Parse an occurrence ``additionalContext`` under the #307 key=value grammar.
+
+    Grammar (documented in docs/reference/cbom-occurrence-provenance.md): ``key=value``
+    pairs joined by ``"; "``; keys are lower_snake_case; a value never contains ``"; "``
+    or ``"="``, so split-on-``"; "`` then partition-on-first-``"="`` is a total parse.
+    """
+    fields: dict[str, str] = {}
+    for token in context.split("; "):
+        key, sep, value = token.partition("=")
+        assert sep == "=", f"occurrence context token is not key=value: {token!r}"
+        assert re.fullmatch(r"[a-z][a-z0-9_]*", key), f"non-grammar key: {key!r}"
+        fields[key] = value
+    return fields
+
+
+def _all_occurrences(payload: dict) -> list[dict]:
+    components = [payload["metadata"].get("component", {}), *payload.get("components", [])]
+    return [
+        occurrence
+        for component in components
+        for occurrence in component.get("evidence", {}).get("occurrences", [])
+    ]
+
+
+class TestOccurrenceProvenanceGrammar:
+    """Occurrence provenance is a queryable key=value grammar, not free-text prose (#307)."""
+
+    def test_every_occurrence_context_is_strict_kv(self) -> None:
+        occurrences = _all_occurrences(_render(_build_result_with_probe("/usr/bin/openssl")))
+        assert occurrences, "expected at least one evidence occurrence"
+        for occurrence in occurrences:
+            fields = _parse_occurrence_context(occurrence["additionalContext"])
+            assert "observation" in fields, fields
+            assert "evidence_type" in fields, fields
+
+    def test_probe_fields_are_individually_queryable(self) -> None:
+        occurrences = _all_occurrences(_render(_build_result_with_probe("/usr/bin/openssl")))
+        probe = next(o for o in occurrences if "command_sha256=" in o["additionalContext"])
+        fields = _parse_occurrence_context(probe["additionalContext"])
+        assert fields["observation"] == "negotiated"
+        assert fields["evidence_type"] == "tls.negotiation"
+        assert fields["return_code"] == "0"
+        assert len(fields["command_sha256"]) == 64
+
+
 class TestReproducibleHostPathCanonicalization:
     """Reproducible CBOM must not encode host-specific probe executable paths (#207)."""
 

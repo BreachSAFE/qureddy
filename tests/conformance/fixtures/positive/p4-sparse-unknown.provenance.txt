@@ -2,7 +2,7 @@ fixture: p4-sparse-unknown
 classification: minimized-from-captured
 command: qureddy scan tls 192.0.2.10 --format cbom --openssl tests/fixtures/openssl/fake/openssl_lacks_group.sh
 exit_code: 3
-captured_utc: 2026-08-22T07:11:04Z
-producer_commit: 6f212ce365409995a17a81c0000b0ad8971d2f5f
-installed_wheel_sha256: f2dd6568e966dbc0ffe969435de45c1c5b9ea9623e7a957128d8b9ac2920beb2
+captured_utc: 2026-08-22T07:38:01Z
+producer_commit: c512f2c03225bd326c4d7d8fefbaf7a57f385728
+installed_wheel_sha256: 5574a88a0f9be524f7fe4f9f38669bf48b5c92ec22961fd77a24e47733827e0b
 sha256: 01f442c85551bc937024f1fd9fe89ed53f6d6345ea338c35b51cb88695974379

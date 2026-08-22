@@ -126,10 +126,12 @@ def evidence_occurrences(
 
     Replaces the flat ``qureddy:evidence.NN.*`` metadata block: each observation is
     attached to the component it is about (``component.evidence.occurrences``), restoring
-    the evidence->asset linkage the flat form dropped. Probe provenance (role, expected
-    group, return code, command digest) rides in ``additionalContext``; the per-run
-    duration is omitted in reproducible mode (#162). Evidence with no algorithm/protocol
-    subject (e.g. a bare failure record) is skipped rather than fabricating a subject.
+    the evidence->asset linkage the flat form dropped. Probe provenance (observation,
+    role, expected group, return code, command digest) rides in ``additionalContext`` as a
+    strict ``key=value`` grammar (#307) — see docs/reference/cbom-occurrence-provenance.md;
+    the per-run duration is omitted in reproducible mode (#162). Evidence with no
+    algorithm/protocol subject (e.g. a bare failure record) is skipped rather than
+    fabricating a subject.
     """
     occurrences: dict[str, list[dict[str, str]]] = {}
     for evidence in result.evidence:
@@ -140,12 +142,18 @@ def evidence_occurrences(
             ref = f"crypto/protocol/{evidence.protocol}-{evidence.protocol_version.lower()}"
         else:
             continue
-        context = f"{evidence.observation_type.value} on {evidence.evidence_type}"
-        extra: list[str] = []
+        # #307: strict "key=value" pairs joined by "; " so a consumer reads each provenance
+        # field without scraping prose — the fragility the flat layer had, in miniature.
+        # Keys are lower_snake_case; no value contains "; " or "=", so split-then-partition
+        # is a total parse. Grammar contract: docs/reference/cbom-occurrence-provenance.md.
+        fields = [
+            f"observation={evidence.observation_type.value}",
+            f"evidence_type={evidence.evidence_type}",
+        ]
         if evidence.probe_role:
-            extra.append(f"role={evidence.probe_role.value}")
+            fields.append(f"role={evidence.probe_role.value}")
         if evidence.expected_group:
-            extra.append(f"expected={evidence.expected_group}")
+            fields.append(f"expected={evidence.expected_group}")
         probe = evidence.probe_result
         if probe is not None:
             executable = (
@@ -154,16 +162,14 @@ def evidence_occurrences(
                 else probe.command.executable
             )
             command = " ".join([executable, *probe.command.args])
-            extra.append(f"return_code={probe.return_code}")
+            fields.append(f"return_code={probe.return_code}")
             # Full digest (not truncated) so it keeps the reproducibility guarantee: the
             # command is attributed by basename, not host path, and bytes stay stable (#207).
-            extra.append(f"command_sha256={hashlib.sha256(command.encode()).hexdigest()}")
+            fields.append(f"command_sha256={hashlib.sha256(command.encode()).hexdigest()}")
             if not reproducible:
-                extra.append(f"duration_ms={probe.duration_ms}")
-        if extra:
-            context += " (" + ", ".join(extra) + ")"
+                fields.append(f"duration_ms={probe.duration_ms}")
         occurrences.setdefault(ref, []).append(
-            {"location": evidence.source, "additionalContext": context}
+            {"location": evidence.source, "additionalContext": "; ".join(fields)}
         )
     return occurrences
 
