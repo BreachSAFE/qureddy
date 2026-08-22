@@ -17,6 +17,8 @@ OPENSSL_LTS_LABEL = ".".join(str(part) for part in OPENSSL_LTS_SERIES)
 def is_supported_series(version: Version) -> bool:
     """Return whether ``version`` is a supported OpenSSL LTS release."""
     return (version.major, version.minor) == OPENSSL_LTS_SERIES
+
+
 HYBRID_GROUP = "X25519MLKEM768"
 # #337: the standardized PQ hybrid TLS groups (draft-ietf-tls-ecdhe-mlkem / RFC 9370 era),
 # all supported by the pinned OpenSSL 3.5.7. HYBRID_GROUP (first) stays the primary readiness
