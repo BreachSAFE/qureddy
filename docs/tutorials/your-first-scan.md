@@ -18,14 +18,24 @@ You will finish with one human report and one parseable JSON result.
 
 ## 1. Install QuReddy
 
-QuReddy requires Python `>=3.12`.
+This tutorial runs the `qureddy` command directly, so install it locally with
+`pipx`. QuReddy requires Python `>=3.12`. It is published to TestPyPI while the
+public PyPI release is finalized, so install from TestPyPI with PyPI as a fallback
+for runtime dependencies:
 
 ```bash
-pipx install breachsafe-qureddy
+pipx install --python 3.12 \
+  --index-url https://test.pypi.org/simple/ \
+  --pip-args '--extra-index-url https://pypi.org/simple/' \
+  breachsafe-qureddy
 ```
 
 If `pipx` or Python 3.12 is not available, follow the
 [installation guide](../how-to/install.md).
+
+To run QuReddy without a local install, use the container image and prefix each
+command below with `docker run --rm ghcr.io/breachsafe/qureddy:latest`, for example
+`docker run --rm ghcr.io/breachsafe/qureddy:latest scan ssh github.com`.
 
 ## 2. Check the command
 

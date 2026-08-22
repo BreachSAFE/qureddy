@@ -132,6 +132,8 @@ verdict that concern them, in native CycloneDX fields:
 
 - `evidence.occurrences` — one entry per probe observation of the asset, with the
   probe provenance in the occurrence `additionalContext` string.
+- `qureddy:observation` component `property` — the strongest observation type seen
+  for the asset (`negotiated`, `offered`, or `observed`).
 - `qureddy:readiness`, `qureddy:severity`, `qureddy:rule_id` component
   `properties` — the machine verdict for the finding whose subject is this asset.
 
@@ -182,8 +184,11 @@ CycloneDX structures rather than a flat `qureddy:` property namespace.
 
 Each observation is attached to the crypto asset it describes as a
 `component.evidence.occurrences` entry. The probe provenance — observation type,
-role, expected group, return code, the full `command_sha256`, and duration —
-rides in the occurrence `additionalContext` string.
+role, expected group, return code, the full `command_sha256`, duration, and the
+co-observed `confidence` and `cipher_suite` (#326) — rides in the occurrence
+`additionalContext` string as strict `key=value` pairs. The complete field grammar
+is enumerated in
+[occurrence provenance](cbom-occurrence-provenance.md).
 
 ### Findings as annotations
 
@@ -208,9 +213,45 @@ verdict as queryable fields rather than parsing the annotation prose.
 
 ### Run-level provenance
 
-Scan, target, and tool provenance (`qureddy:scan.*`, `qureddy:target.*`,
-`qureddy:openssl.*`) stay in `metadata.properties`, including the run-level
-`qureddy:scan.readiness` and `qureddy:scan.status` (see [scan status](#9-scan-status)).
+Scan and target provenance stay in `metadata.properties`. Every emitted key is
+concrete and named below; none is a wildcard a consumer has to guess. Keys marked
+per-run are omitted under `--reproducible` so the document is content-addressable.
+
+| `metadata.properties` key | Presence | Value |
+| --- | --- | --- |
+| `qureddy:scan.scanner_name` | always | `tls` or `ssh` |
+| `qureddy:scan.status` | always | `completed` or the top-level failure category (see [scan status](#9-scan-status)) |
+| `qureddy:scan.readiness` | always | run-level readiness verdict |
+| `qureddy:scan.finding_count` | always | number of findings in the scan (#309) |
+| `qureddy:scan.highest_severity` | when at least one finding has a severity | the highest finding severity in the scan (#309) |
+| `qureddy:scan.failure_category` | on typed failure | canonical failure category |
+| `qureddy:scan.id` | per-run | unique scan id |
+| `qureddy:scan.total_attempts` | per-run | probe attempts including transient retries |
+| `qureddy:scan.started_at` | per-run | ISO 8601 scan start time |
+| `qureddy:scan.completed_at` | per-run | ISO 8601 scan completion time |
+| `qureddy:target.original_input` | always | target exactly as given on the command line |
+| `qureddy:target.host` | always | resolved host |
+| `qureddy:target.port` | always | TCP port |
+| `qureddy:target.scheme` | always | target scheme (`tls` or `ssh`) |
+| `qureddy:target.locator` | always | normalized `host:port` locator |
+| `qureddy:target.sni` | when SNI is set | Server Name Indication used for the TLS probe |
+
+Local OpenSSL collector provenance rides on the `tool/openssl` tool component (see
+[tool provenance](#5-tool-provenance)), not on `metadata.properties`, and is
+absent from SSH CBOMs and from any scan where the OpenSSL capability check failed:
+
+| `tool/openssl` property | Presence | Value |
+| --- | --- | --- |
+| `qureddy:collector.role` | when the OpenSSL collector is present | always `local-probe-runtime` |
+| `qureddy:openssl.supports_tls13_groups` | when the OpenSSL collector is present | `true` or `false` |
+| `qureddy:openssl.supports_x25519mlkem768` | when the OpenSSL collector is present | `true` or `false` |
+| `qureddy:openssl.path` | when the collector is present, per-run | absolute path to the local OpenSSL binary |
+
+The three verdict properties on subject components
+(`qureddy:readiness`, `qureddy:severity`, `qureddy:rule_id`) and the
+`qureddy:observation` property on asset components are documented in
+[cryptographic assets](#6-cryptographic-assets) and
+[verdict as component properties](#verdict-as-component-properties).
 
 Releases through 0.2.22 instead carried findings and evidence as flat
 `qureddy:finding.NN.*` / `qureddy:evidence.NN.*` `metadata.properties`; a consumer

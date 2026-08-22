@@ -77,7 +77,7 @@ This is the **Tier 1 PR audit** from `docs/contributors/coding-rules.md` Quick R
 - [ ] `ruff check .` — PASS / FAIL / NOT RUN:
 - [ ] `ruff format --check .` — PASS / FAIL / NOT RUN:
 - [ ] `mypy src/qureddy --strict` — PASS / FAIL / NOT RUN:
-- [ ] `pytest --cov=qureddy --cov-fail-under=80` — PASS / FAIL / NOT RUN: (N tests, X% coverage)
+- [ ] `pytest --cov=qureddy --cov-fail-under=90` — PASS / FAIL / NOT RUN: (N tests, X% coverage)
 - [ ] `bandit -r src/qureddy` (MEDIUM threshold) — PASS / FAIL / NOT RUN:
 - [ ] Secret scan (`gitleaks` or `trufflehog`) — PASS / FAIL / NOT RUN:
 

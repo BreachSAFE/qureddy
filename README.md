@@ -1,7 +1,7 @@
 # BreachSAFE QuReddy
 
 [![Version](https://img.shields.io/badge/version-0.2.34-blue?style=flat-square)](https://github.com/breachsafe/qureddy/blob/main/CHANGELOG.md)
-[![Python](https://img.shields.io/badge/python-3.12-blue?style=flat-square&logo=python&logoColor=white)](https://www.python.org/downloads/)
+[![Python](https://img.shields.io/badge/python-3.12%2B-blue?style=flat-square&logo=python&logoColor=white)](https://www.python.org/downloads/)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue?style=flat-square)](LICENSE)
 [![Code Style: Ruff](https://img.shields.io/badge/code%20style-ruff-D7FF64?style=flat-square&logo=ruff&logoColor=black)](https://docs.astral.sh/ruff/)
 [![Type Checked: mypy strict](https://img.shields.io/badge/type%20check-mypy%20strict-blue?style=flat-square)](https://mypy-lang.org/)
@@ -16,8 +16,8 @@ cleartext KEXINIT offer directly and do not require OpenSSL.
 
 ## Contents
 
-1. [Install](#1-install)
-2. [Run with Docker](#2-run-with-docker)
+1. [Quickstart with Docker](#1-quickstart-with-docker)
+2. [Install locally with pipx](#2-install-locally-with-pipx)
 3. [Run the first SSH scan](#3-run-the-first-ssh-scan)
 4. [Prepare OpenSSL for TLS](#4-prepare-openssl-for-tls)
 5. [Run the first TLS scan](#5-run-the-first-tls-scan)
@@ -30,60 +30,32 @@ cleartext KEXINIT offer directly and do not require OpenSSL.
 12. [Contributing](#12-contributing)
 13. [License](#13-license)
 
-## 1. Install
+## 1. Quickstart with Docker
 
-> **Pre-release (TestPyPI):** QuReddy is available on **TestPyPI**
-> while the PyPI release is finalized. Install with (**Python 3.12+**):
->
-> ```bash
-> pipx install --python 3.12 \
->   --index-url https://test.pypi.org/simple/ \
->   --pip-args '--extra-index-url https://pypi.org/simple/' \
->   breachsafe-qureddy
-> ```
->
-> The `--extra-index-url` pulls runtime dependencies from PyPI (TestPyPI hosts only
-> QuReddy). Keep both indexes in this command: TestPyPI does not mirror every
-> dependency release. Once the PyPI release lands, this simplifies to
-> `pipx install breachsafe-qureddy`.
-
-Install the PyPI distribution with `pipx`:
+Docker is the primary supported way to run QuReddy and the fastest path to a
+result. The image bundles the verified OpenSSL 3.5.7 LTS runtime, so TLS scanning
+needs no local setup, and it runs as an unprivileged user. The image entrypoint is
+the `qureddy` command, so any argument you would pass to the CLI you pass to
+`docker run` unchanged:
 
 ```bash
-pipx install breachsafe-qureddy
-qureddy --version
+docker run --rm ghcr.io/breachsafe/qureddy:latest scan tls example.com
+docker run --rm ghcr.io/breachsafe/qureddy:latest scan ssh github.com
 ```
 
-> **Python 3.12 or newer.** QuReddy targets `>=3.12` (3.12, 3.13, …). The previous
-> `0.2.0` TestPyPI wheel had a `<3.13` cap; the `0.2.1` release removes that stale
-> upper bound.
+Each command needs outbound network access to the named target: TCP port 443 for
+the TLS example, TCP port 22 for the SSH example. Add `--format json` or
+`--format cbom` for machine output, as shown in
+[section 6](#6-write-json-or-cbom-output).
 
-The expected version line is:
-
-```text
-BreachSAFE QuReddy <version> -- https://www.breachsafe.ai
-```
-
-`pipx` creates an isolated environment and places `qureddy` on your command
-path. See the [installation and troubleshooting guide](docs/how-to/install.md)
-for macOS, Linux, Windows, virtual environment, upgrade, and uninstall
-instructions.
-
-## 2. Run with Docker
-
-The release image bundles the verified OpenSSL runtime and runs as an
-unprivileged user:
+For reproducible deployments, pin an immutable reference instead of `:latest`.
+Use an explicit version tag, or preferably a `@sha256:` digest:
 
 ```bash
 docker pull ghcr.io/breachsafe/qureddy:latest
-docker run --rm ghcr.io/breachsafe/qureddy:latest \
-  scan tls pq.cloudflareresearch.com --format cbom
-docker run --rm ghcr.io/breachsafe/qureddy:latest \
-  scan ssh github.com --format cbom
+docker inspect --format='{{index .RepoDigests 0}}' ghcr.io/breachsafe/qureddy:latest
+docker run --rm ghcr.io/breachsafe/qureddy@sha256:<digest> scan ssh github.com
 ```
-
-For reproducible deployments, pin an explicit version tag (for example
-`ghcr.io/breachsafe/qureddy:<version>`) or a `@sha256:` digest instead of `:latest`.
 
 To build the image from a fresh clone instead of pulling it, run `docker build`
 from the repository root. The image builds the wheel from source in an in-image
@@ -94,8 +66,49 @@ docker build --tag qureddy:local .
 docker run --rm qureddy:local --version
 ```
 
-See the [Docker and GHCR guide](docs/how-to/docker.md)
-for digest pinning, local builds, output redirection, and publication policy.
+See the [Docker and GHCR guide](docs/how-to/docker.md) for digest pinning, local
+builds, output redirection, and publication policy. To install QuReddy as a local
+Python application instead, see [section 2](#2-install-locally-with-pipx).
+
+## 2. Install locally with pipx
+
+> **Pre-release.** QuReddy is published to **TestPyPI** while the public PyPI
+> release is finalized, so `pipx install breachsafe-qureddy` does not resolve from
+> PyPI yet. Install from TestPyPI with PyPI as a fallback for runtime dependencies
+> (**Python 3.12+**):
+>
+> ```bash
+> pipx install --python 3.12 \
+>   --index-url https://test.pypi.org/simple/ \
+>   --pip-args '--extra-index-url https://pypi.org/simple/' \
+>   breachsafe-qureddy
+> ```
+>
+> The `--extra-index-url` pulls runtime dependencies from PyPI, because TestPyPI
+> hosts only QuReddy and does not mirror every dependency release. Keep both
+> indexes. Once the PyPI release lands, this simplifies to
+> `pipx install breachsafe-qureddy`.
+
+Confirm the installation:
+
+```bash
+qureddy --version
+```
+
+The expected version line is:
+
+```text
+BreachSAFE QuReddy <version> -- https://www.breachsafe.ai
+```
+
+QuReddy targets Python `>=3.12` and ships 3.12 and 3.13 classifiers. `pipx`
+creates an isolated environment and places `qureddy` on your command path. See the
+[installation and troubleshooting guide](docs/how-to/install.md) for macOS, Linux,
+Windows, virtual environment, upgrade, and uninstall instructions.
+
+A local install covers SSH scanning immediately. TLS scanning additionally needs a
+suitable OpenSSL, covered in [section 4](#4-prepare-openssl-for-tls). The container
+in [section 1](#1-quickstart-with-docker) avoids that step entirely.
 
 ## 3. Run the first SSH scan
 
@@ -237,14 +250,15 @@ operator's system unless the operator sends them elsewhere.
 
 ## 10. Requirements
 
-- Python `>=3.12`
-- macOS, Linux, or Windows
+- Python `>=3.12`, with 3.12 and 3.13 shipped as supported classifiers
 - Network reachability to the named target
 - OpenSSL 3.5.7 LTS for TLS scans only
 
-The clean artifact matrix installs the wheel, source distribution, and pipx
-application on Linux, macOS, and Windows. Platform support does not imply that
-every operating system package repository supplies a suitable OpenSSL build.
+The clean-install matrix installs the wheel, source distribution, and pipx
+application on Linux and macOS every release. Windows is not exercised in CI.
+Platform support does not imply that every operating system package repository
+supplies a suitable OpenSSL build; the container bundles a verified one and is
+Linux.
 
 ## 11. Documentation and support
 

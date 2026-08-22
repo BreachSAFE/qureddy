@@ -2,9 +2,9 @@
 
 # Review process
 
-How a bug fix lands in QuReddy. This is the operational form of the multi-tier reviewer/arbiter pattern; the policy and rationale live in the active `.agents/skills/` library.
+How a bug fix lands in QuReddy. This is the operational form of the multi-tier reviewer/arbiter pattern.
 
-For *why* the project uses three label tiers (Reviewer / Arbiter / Decision), see the reviewer skill. This document is just the diagram + the cookbook.
+For *why* the project uses three label tiers (Reviewer / Arbiter / Decision), see [§3, Why three tiers](#3-why-three-tiers). This document is the diagram and the cookbook.
 
 ## Contents
 

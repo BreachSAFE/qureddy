@@ -20,7 +20,7 @@ This is companion material to `docs/contributors/coding-rules.md`. The rules doc
 
 ## 1. Pydantic models
 
-The active implementation skill in `.agents/skills/` defines the canonical model shape. This is the pattern for any new model.
+The shipped models in [`src/qureddy/core/models.py`](../../src/qureddy/core/models.py) define the canonical model shape. This is the pattern for any new model.
 
 ### Good
 
