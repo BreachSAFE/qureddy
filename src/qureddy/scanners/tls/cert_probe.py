@@ -210,7 +210,7 @@ def _is_self_signed(
             check=False,
             shell=False,
         )
-    except (subprocess.TimeoutExpired, OSError):
+    except subprocess.TimeoutExpired, OSError:
         return False
     finally:
         if cert_path is not None:

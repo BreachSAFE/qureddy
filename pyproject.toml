@@ -58,7 +58,7 @@ dev = [
     "pytest-rerunfailures>=14.0",
     # MAX code-quality + architecture gates (#360). Mirrors the tools bundled by
     # breachsafe-common's reusable quality-gates-python.yml so this repo runs the
-    # same gate directly on 3.12 until it adopts `uses: ...@v1` (needs the v1 tag
+    # same gate directly on 3.14 until it adopts `uses: ...@v1` (needs the v1 tag
     # + the pinned 3.14 container). import-linter enforces the layered contract
     # below; xenon/refurb/vulture/interrogate/diff-cover mirror the reusable gate.
     "import-linter>=2.0",

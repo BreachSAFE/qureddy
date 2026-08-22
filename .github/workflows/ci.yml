@@ -482,7 +482,7 @@ jobs:
           uv tool run --from "pip-audit==2.10.1" pip-audit \
             --ignore-vuln PYSEC-2026-3721 \
             --ignore-vuln GHSA-58qw-9mgm-455v \
-            --path runtime/lib/python3.12/site-packages
+            --path runtime/lib/python3.14/site-packages
 
       - name: Upload exact candidate artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
