@@ -1,7 +1,7 @@
 # Changelog
 
 [![Status: Alpha](https://img.shields.io/badge/status-alpha-blue?style=flat-square)](https://github.com/breachsafe/qureddy)
-[![Version](https://img.shields.io/badge/version-0.2.34-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.35-blue?style=flat-square)](CHANGELOG.md)
 [![Keep a Changelog](https://img.shields.io/badge/keep%20a%20changelog-1.1.0-orange?style=flat-square)](https://keepachangelog.com/en/1.1.0/)
 [![SemVer](https://img.shields.io/badge/SemVer-2.0.0-blue?style=flat-square)](https://semver.org/spec/v2.0.0.html)
 
@@ -10,6 +10,38 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and version
 numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.2.35] - 2026-08-22
+
+### Changed
+
+- Cyclomatic complexity reduced across `cbom_semantics`, `core/targets`, `cbom_metadata`,
+  and console helpers; all blocks now rank <= B (`#341`). MAX-tier lint cleanups (refurb
+  idioms, jscpd 0 clones) with byte-identical scan output (`#342`).
+
+### Fixed
+
+- CLI stderr-merge detection fails **closed** in machine mode when fd introspection is
+  genuinely undetermined, while still failing open when no real fd exists (CliRunner/pytest
+  contract preserved) (`#344`).
+- Uniform DN-anchoring across the certificate public-key and signature probes, closing a
+  DN-injection path where a crafted subject/issuer value could win the first regex match
+  (`#344`).
+- `bump_version.py` now stamps the six version-bearing doc literals (README badge, Dockerfile
+  `QUREDDY_VERSION`, BADGE.md, cli.md, json-schema.md) that had drifted behind releases
+  (`#340`).
+
+### Documentation
+
+- Honest install path (TestPyPI, not a 404 PyPI page), Docker-first quickstart, full CBOM
+  property-key reference (all 14 `qureddy:` keys incl. `#309` rollup), milestones true-up,
+  and removal of public-doc deferrals to the gitignored `.agents/skills/`
+  (`#335`, `#348`, `#336`, `#339`, `#338`, `#297`, `#294`).
+
+### Internal
+
+- Three oversized test files split under the 400-line ceiling; shared CBOM builders extracted
+  to `tests/_cbom_fixtures.py` (`#298`).
 
 ## [0.2.34] - 2026-08-22
 
@@ -287,41 +319,42 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Contents
 
-1. [0.2.34](#0234---2026-08-22)
-2. [0.2.33](#0233---2026-08-22)
-3. [0.2.32](#0232---2026-08-22)
-4. [0.2.31](#0231---2026-08-22)
-5. [0.2.30](#0230---2026-08-22)
-6. [0.2.29](#0229---2026-08-22)
-7. [0.2.28](#0228---2026-08-22)
-8. [0.2.27](#0227---2026-08-22)
-9. [0.2.26](#0226---2026-08-22)
-10. [0.2.25](#0225---2026-08-22)
-11. [0.2.24](#0224---2026-08-22)
-12. [0.2.23](#0223---2026-08-22)
-13. [0.2.22](#0222---2026-08-22)
-14. [0.2.21](#0221---2026-08-22)
-15. [0.2.20](#0220---2026-08-22)
-16. [0.2.18](#0218---2026-08-22)
-17. [0.2.17](#0217---2026-08-21)
-18. [0.2.16](#0216---2026-08-21)
-19. [0.2.15](#0215---2026-08-21)
-20. [0.2.14](#0214---2026-08-19)
-21. [0.2.13](#0213---2026-08-04)
-22. [0.2.12](#0212---2026-07-28)
-23. [0.2.11](#0211---2026-07-28)
-24. [0.2.10](#0210---2026-07-28)
-25. [0.2.9](#029---2026-07-28)
-26. [0.2.8](#028---2026-07-28)
-27. [0.2.7](#027---2026-07-28)
-28. [0.2.6](#026---2026-07-28)
-29. [0.2.5](#025---2026-07-28)
-30. [0.2.4](#024---2026-07-28)
-31. [0.2.3](#023---2026-07-27)
-32. [0.2.2](#022---2026-07-27)
-33. [0.2.1](#021---2026-07-27)
-34. [0.2.0](#020---2026-07-27)
-35. [0.1.0](#010---2026-05-10)
+1. [0.2.35](#0235---2026-08-22)
+2. [0.2.34](#0234---2026-08-22)
+3. [0.2.33](#0233---2026-08-22)
+4. [0.2.32](#0232---2026-08-22)
+5. [0.2.31](#0231---2026-08-22)
+6. [0.2.30](#0230---2026-08-22)
+7. [0.2.29](#0229---2026-08-22)
+8. [0.2.28](#0228---2026-08-22)
+9. [0.2.27](#0227---2026-08-22)
+10. [0.2.26](#0226---2026-08-22)
+11. [0.2.25](#0225---2026-08-22)
+12. [0.2.24](#0224---2026-08-22)
+13. [0.2.23](#0223---2026-08-22)
+14. [0.2.22](#0222---2026-08-22)
+15. [0.2.21](#0221---2026-08-22)
+16. [0.2.20](#0220---2026-08-22)
+17. [0.2.18](#0218---2026-08-22)
+18. [0.2.17](#0217---2026-08-21)
+19. [0.2.16](#0216---2026-08-21)
+20. [0.2.15](#0215---2026-08-21)
+21. [0.2.14](#0214---2026-08-19)
+22. [0.2.13](#0213---2026-08-04)
+23. [0.2.12](#0212---2026-07-28)
+24. [0.2.11](#0211---2026-07-28)
+25. [0.2.10](#0210---2026-07-28)
+26. [0.2.9](#029---2026-07-28)
+27. [0.2.8](#028---2026-07-28)
+28. [0.2.7](#027---2026-07-28)
+29. [0.2.6](#026---2026-07-28)
+30. [0.2.5](#025---2026-07-28)
+31. [0.2.4](#024---2026-07-28)
+32. [0.2.3](#023---2026-07-27)
+33. [0.2.2](#022---2026-07-27)
+34. [0.2.1](#021---2026-07-27)
+35. [0.2.0](#020---2026-07-27)
+36. [0.1.0](#010---2026-05-10)
 
 ## [0.2.12] - 2026-07-28
 
