@@ -26,7 +26,7 @@ Findings
  Severity Rule                                   Protocol Crypto
  ─────────────────────────────────────────────────────────────────────────────
  low      tls.classical.negotiated_x25519        TLSv1.3  X25519
- info     tls.hybrid.negotiated_x25519mlkem768   TLSv1.3  X25519MLKEM768
+ info     tls.hybrid.negotiated_pq               TLSv1.3  X25519MLKEM768
 
 
 Run details

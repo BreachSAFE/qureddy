@@ -128,7 +128,7 @@
       "protocol": "tls",
       "protocol_version": "TLSv1.3",
       "readiness": "transitional_hybrid",
-      "rule_id": "tls.hybrid.negotiated_x25519mlkem768",
+      "rule_id": "tls.hybrid.negotiated_pq",
       "severity": "info",
       "title": "Hybrid"
     },
