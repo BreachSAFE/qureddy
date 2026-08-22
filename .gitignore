@@ -139,3 +139,9 @@ Scratch/
 !tests/fixtures/**/*.pem
 !tests/fixtures/**/*.key
 .claude/
+
+# breachsafe-common local convenience symlink (#360); CI fetches common@v1 remotely
+/.bqp-common
+
+# Allure results emitted every pytest run (#360)
+.allure-results/
