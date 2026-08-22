@@ -31,6 +31,7 @@ from qureddy.core.models import (
     Readiness,
     Severity,
 )
+from qureddy.scanners.tls.openssl_probe._constants import HYBRID_GROUPS
 
 DASH = "—"
 
@@ -41,9 +42,7 @@ DASH = "—"
 BRAND_CYAN = "#3ae7f4"
 BODY_TEXT = "#cbd5e1"
 
-PQ_GROUPS: frozenset[str] = frozenset(
-    {"X25519MLKEM768", "SecP256r1MLKEM768", "SecP384r1MLKEM1024"},
-)
+PQ_GROUPS: frozenset[str] = frozenset(HYBRID_GROUPS)
 CLASSICAL_GROUPS: frozenset[str] = frozenset(
     {"X25519", "secp256r1", "secp384r1", "secp521r1"},
 )

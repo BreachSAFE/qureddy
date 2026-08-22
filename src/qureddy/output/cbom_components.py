@@ -31,10 +31,10 @@ from cyclonedx.model.crypto import (
 )
 
 from qureddy.output.cbom_assets import (
-    ENDPOINT_REF,
     POSITIVE_OBSERVATIONS,
     add_algorithm_assets,
     add_algorithm_component,
+    add_provides_edge,
     algorithm_ref,
     protocol_ref,
 )
@@ -216,7 +216,7 @@ def add_protocol_components(
                 _protocol_cipher_suites(matching, algorithm_refs),
             )
         )
-        provides_edges.setdefault(ENDPOINT_REF, []).append(ref)
+        add_provides_edge(provides_edges, ref)
 
 
 def _positive_protocol_evidence(result: ScanResult) -> list[Evidence]:
@@ -421,4 +421,4 @@ def add_certificate_component(
             ],
         )
     )
-    provides_edges.setdefault(ENDPOINT_REF, []).append(ref)
+    add_provides_edge(provides_edges, ref)

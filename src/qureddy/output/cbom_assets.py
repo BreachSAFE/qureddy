@@ -29,6 +29,11 @@ if TYPE_CHECKING:
 ENDPOINT_REF = "endpoint"
 
 
+def add_provides_edge(provides_edges: dict[str, list[str]], ref: str) -> None:
+    """Record that the scanned endpoint provides one CBOM component reference."""
+    provides_edges.setdefault(ENDPOINT_REF, []).append(ref)
+
+
 def algorithm_ref(name: str) -> str:
     """Return the bom-ref for an algorithm crypto-asset.
 
@@ -172,5 +177,5 @@ def add_algorithm_component(
             properties=list(properties),
         )
     )
-    provides_edges.setdefault(ENDPOINT_REF, []).append(ref)
+    add_provides_edge(provides_edges, ref)
     return BomRef(value=ref)
