@@ -195,6 +195,14 @@
         "value": "2026-04-26T00:00:00+00:00"
       },
       {
+        "name": "qureddy:scan.finding_count",
+        "value": "2"
+      },
+      {
+        "name": "qureddy:scan.highest_severity",
+        "value": "low"
+      },
+      {
         "name": "qureddy:scan.id",
         "value": "scan-1"
       },
@@ -274,7 +282,7 @@
           "bom-ref": "tool/qureddy",
           "name": "qureddy",
           "type": "application",
-          "version": "0.2.27"
+          "version": "0.2.28"
         }
       ]
     }

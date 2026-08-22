@@ -77,6 +77,18 @@ def add_scan_status_properties(bom: Bom, result: ScanResult) -> None:
     bom.metadata.properties.add(
         Property(name="qureddy:scan.readiness", value=result.summary.readiness.value)
     )
+    # #309: the JSON summary rollup (finding_count + highest_severity) belongs in the CBOM too,
+    # so a consumer that keys on the CBOM alone (breachsafe-ux) never falls back to native JSON.
+    bom.metadata.properties.add(
+        Property(name="qureddy:scan.finding_count", value=str(result.summary.finding_count))
+    )
+    if result.summary.highest_severity is not None:
+        bom.metadata.properties.add(
+            Property(
+                name="qureddy:scan.highest_severity",
+                value=result.summary.highest_severity.value,
+            )
+        )
     if result.summary.failure_category is not None:
         bom.metadata.properties.add(
             Property(
