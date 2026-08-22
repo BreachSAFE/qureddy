@@ -1,0 +1,37 @@
+# SPDX-FileCopyrightText: 2026 BreachSAFE
+# SPDX-License-Identifier: Apache-2.0
+#
+# Consumer contract for QuReddy's CycloneDX CBOM.
+#
+# Each downstream consumer lists the CBOM surface it depends on. The drift test
+# (tests/test_cbom_consumer_contract.py) renders a real CBOM and fails if any of it is
+# missing, naming the consumer that would break. Dropping a requirement here means
+# updating that consumer in lockstep — deliberately, not by accident (this is what
+# would have caught a #287-style reshape breaking breachsafe-ux or mint-oscal).
+#
+# Verified sources (2026-08-22):
+#   breachsafe-ux:  breachsafe-wizard/tools/qureddy/qureddy.yaml  (readiness banner +
+#                   scan.status highlight + CBOM schema-validity badge)
+#   mint-oscal:     breachsafe-mint-oscal/src/mint_oscal/adapters/cbom.py  (derives the
+#                   OSCAL POA&M readiness from the native cryptoProperties layer; the
+#                   adapter raises if a crypto component has a null assetType)
+consumers:
+  - name: "breachsafe-ux (breachsafe-wizard tools/qureddy/qureddy.yaml)"
+    reads: "readiness posture banner (qureddy:scan.readiness), scan.status highlight, CBOM schema-validity badge"
+    metadata_properties:
+      - qureddy:scan.readiness
+      - qureddy:scan.status
+
+  - name: "breachsafe-mint-oscal / breachsafe-oscal (adapters/cbom.py -> OSCAL POA&M)"
+    reads: "derives readiness from the native cryptoProperties layer; requires assetType on every crypto component"
+    every_crypto_component_has:
+      - cryptoProperties.assetType
+    at_least_one_component_with: cryptoProperties.algorithmProperties
+
+  - name: "Qurum (quorum src/qurum/cbom.py CBOM bridge -> findings/OSCAL)"
+    reads: "checks bomFormat==CycloneDX; builds inventory from native cryptoProperties (assetType, algorithmProperties); re-derives verdicts from evidence, ignores producer verdict by design (#147)"
+    document_fields:
+      bomFormat: CycloneDX
+    every_crypto_component_has:
+      - cryptoProperties.assetType
+    at_least_one_component_with: cryptoProperties.algorithmProperties
