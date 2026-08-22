@@ -22,6 +22,7 @@ from qureddy.core.models import FailureCategory
 from qureddy.scanners.tls.openssl_probe.executor import (
     LaunchStatus,
     OpenSSLOutcome,
+    _coerce_stream,
     raise_for_launch,
     run_openssl,
 )
@@ -135,17 +136,14 @@ class TestCoerceStream:
     """_coerce_stream normalizes partial timeout output to str (#296)."""
 
     def test_none_becomes_empty_string(self) -> None:
-        from qureddy.scanners.tls.openssl_probe.executor import _coerce_stream
 
         assert _coerce_stream(None) == ""
 
     def test_bytes_are_utf8_decoded_replacing_errors(self) -> None:
-        from qureddy.scanners.tls.openssl_probe.executor import _coerce_stream
 
         assert _coerce_stream(b"ok\xff") == "ok�"
 
     def test_str_passes_through_unchanged(self) -> None:
         # The real text=True TimeoutExpired path: partial output is already str.
-        from qureddy.scanners.tls.openssl_probe.executor import _coerce_stream
 
         assert _coerce_stream("already text") == "already text"
