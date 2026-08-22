@@ -102,9 +102,16 @@ def build_ssh_failure_result(
     )
 
 
-def _hybrid_kex_observation(asset: Asset, pq: tuple[str, ...]) -> tuple[Evidence, Finding]:
-    """Build evidence and finding for an offered PQ-hybrid KEX."""
-    evidence = Evidence(
+def _kex_group_evidence(asset: Asset, group: str, *, is_pq: bool) -> Evidence:
+    """One OFFERED evidence record for a single offered KEX group.
+
+    Every offered KEX group becomes evidence (not only the PQ hybrid) so the CBOM
+    inventories the full offer the way the TLS path emits every observed group and
+    the SSH host-key path emits every host key (#242). ``negotiated_group`` carries
+    the group name so the shared CBOM emitter attaches it.
+    """
+    kind = "PQ hybrid KEX offered" if is_pq else "classical KEX offered"
+    return Evidence(
         id=_uid("ev"),
         asset_id=asset.id,
         evidence_type="ssh.kex",
@@ -112,13 +119,19 @@ def _hybrid_kex_observation(asset: Asset, pq: tuple[str, ...]) -> tuple[Evidence
         source="qureddy.scanners.ssh.probe",
         protocol="ssh",
         protocol_version="2.0",
-        negotiated_group=pq[0],
-        notes=(f"PQ hybrid KEX offered: {', '.join(pq)}",),
+        negotiated_group=group,
+        notes=(f"{kind}: {group}",),
     )
-    finding = Finding(
+
+
+def _hybrid_kex_finding(
+    asset: Asset, pq: tuple[str, ...], evidence_ids: tuple[str, ...]
+) -> Finding:
+    """Verdict finding when a PQ-hybrid KEX is offered."""
+    return Finding(
         id=_uid("finding"),
         asset_id=asset.id,
-        evidence_ids=(evidence.id,),
+        evidence_ids=evidence_ids,
         rule_id="ssh.kex.hybrid_offered",
         finding_type="ssh.kex.hybrid",
         title=f"SSH offers post-quantum hybrid key exchange ({pq[0]})",
@@ -130,25 +143,14 @@ def _hybrid_kex_observation(asset: Asset, pq: tuple[str, ...]) -> tuple[Evidence
         negotiated_group=pq[0],
         protocol="ssh",
     )
-    return evidence, finding
 
 
-def _classical_kex_observation(asset: Asset) -> tuple[Evidence, Finding]:
-    """Build evidence and finding when no PQ-hybrid KEX is offered."""
-    evidence = Evidence(
-        id=_uid("ev"),
-        asset_id=asset.id,
-        evidence_type="ssh.kex",
-        observation_type=ObservationType.OFFERED,
-        source="qureddy.scanners.ssh.probe",
-        protocol="ssh",
-        protocol_version="2.0",
-        notes=("no PQ hybrid KEX offered",),
-    )
-    finding = Finding(
+def _classical_kex_finding(asset: Asset, evidence_ids: tuple[str, ...]) -> Finding:
+    """Verdict finding when no PQ-hybrid KEX is offered."""
+    return Finding(
         id=_uid("finding"),
         asset_id=asset.id,
-        evidence_ids=(evidence.id,),
+        evidence_ids=evidence_ids,
         rule_id="ssh.kex.classical_only",
         finding_type="ssh.kex.classical",
         title="SSH offers classical key exchange only",
@@ -158,13 +160,45 @@ def _classical_kex_observation(asset: Asset) -> tuple[Evidence, Finding]:
         confidence=Confidence.HIGH,
         protocol="ssh",
     )
-    return evidence, finding
 
 
-def _kex_observation(asset: Asset, algorithms: tuple[str, ...]) -> tuple[Evidence, Finding]:
-    """Classify the offered KEX list and build its result pair."""
-    pq = classify.pq_hybrid_kex(algorithms)
-    return _hybrid_kex_observation(asset, pq) if pq else _classical_kex_observation(asset)
+def _no_kex_evidence(asset: Asset) -> Evidence:
+    """Anchor evidence for a server that offers no KEX name-list at all.
+
+    Carries no ``negotiated_group`` so it is not emitted as a component; it only
+    gives the classical-only verdict a valid evidence reference in the degenerate
+    empty-offer case (a Finding must cite at least one evidence id).
+    """
+    return Evidence(
+        id=_uid("ev"),
+        asset_id=asset.id,
+        evidence_type="ssh.kex",
+        observation_type=ObservationType.OFFERED,
+        source="qureddy.scanners.ssh.probe",
+        protocol="ssh",
+        protocol_version="2.0",
+        notes=("no KEX groups offered",),
+    )
+
+
+def _kex_observations(asset: Asset, algorithms: tuple[str, ...]) -> tuple[list[Evidence], Finding]:
+    """Emit one evidence per unique offered KEX group plus the readiness verdict.
+
+    The verdict is unchanged: a PQ hybrid anywhere in the offer wins (#247's widened
+    classifier decides membership); otherwise classical-only. The inventory is the
+    full offer, deduped with offer order preserved.
+    """
+    pq_names = frozenset(classify.pq_hybrid_kex(algorithms))
+    evidence_by_group: dict[str, Evidence] = {}
+    for group in algorithms:
+        if group not in evidence_by_group:
+            evidence_by_group[group] = _kex_group_evidence(asset, group, is_pq=group in pq_names)
+    if pq_names:
+        pq = tuple(g for g in evidence_by_group if g in pq_names)
+        finding = _hybrid_kex_finding(asset, pq, tuple(evidence_by_group[g].id for g in pq))
+        return list(evidence_by_group.values()), finding
+    evidence = list(evidence_by_group.values()) or [_no_kex_evidence(asset)]
+    return evidence, _classical_kex_finding(asset, tuple(e.id for e in evidence))
 
 
 def _host_key_evidence(asset: Asset, algorithm: str) -> tuple[Evidence, bool]:
@@ -303,8 +337,8 @@ def scan_ssh(target: ScanTarget, *, timeout_seconds: int = 8) -> ScanResult:
     started = datetime.now(UTC)
     offer = read_kexinit_offer(target.host, target.port, timeout_seconds=timeout_seconds)
     asset = _build_ssh_asset(target)
-    kex_evidence, kex_finding = _kex_observation(asset, offer.kex_algorithms)
-    evidence = [kex_evidence]
+    kex_evidence, kex_finding = _kex_observations(asset, offer.kex_algorithms)
+    evidence = list(kex_evidence)
     findings = [kex_finding]
     weak_kex_result = _weak_kex_observation(asset, offer.kex_algorithms)
     if weak_kex_result is not None:
