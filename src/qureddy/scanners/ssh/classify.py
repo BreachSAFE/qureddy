@@ -7,46 +7,10 @@ from __future__ import annotations
 from types import MappingProxyType
 from typing import NamedTuple
 
-# Post-quantum KEM tokens that mark a KEX name as a PQ (hybrid or standalone) key
-# exchange, regardless of the classical half it is paired with. Detection is
-# structural (any name containing one of these tokens), not an x25519-anchored
-# allowlist, so NIST-P-curve ML-KEM hybrids and Kyber/AWS/OQS hybrids are no longer
-# missed and reported as quantum_vulnerable (#247). Sources for the token set and
-# the real-world names it must catch (verified against primary text, not memory):
-#   - mlkem768x25519-sha256, mlkem768nistp256-sha256, mlkem1024nistp384-sha384:
-#     IETF draft-kampanakis-curdle-ssh-pq-ke §2.3 (ML-KEM SSH hybrids).
-#   - sntrup761x25519-sha512(@openssh.com): OpenSSH (default since 9.0);
-#     draft-josefsson-ntruprime-ssh.
-#   - x25519-kyber-512r3-sha256-d00@amazon.com, ecdh-nistp{256,384,521}-kyber-
-#     {512,768,1024}r3-...@openquantumsafe.org: open-quantum-safe/openssh kex.h.
-# Matched case-insensitively so the "ML-KEM"/"mlkem" and "Kyber"/"kyber" spellings
-# both hit.
-_PQ_KEM_TOKENS = ("mlkem", "ml-kem", "sntrup", "kyber")
+from qureddy.core import pqc
 
-# PQ KEM parameter set -> NIST post-quantum security category, keyed by the
-# lower-cased substring that identifies the KEM in a KEX name. ML-KEM categories
-# are from FIPS 203 (ML-KEM-512 = cat 1, -768 = cat 3, -1024 = cat 5); Kyber
-# round-3 shares those categories (Kyber512/768/1024 = NIST level 1/3/5). Longer,
-# more specific tokens must precede shorter ones so "kyber-1024" is not shadowed.
-# sntrup761: the NTRU Prime round-3 submission reports Core-SVP 2^153 pre-quantum
-# and deliberately does NOT assign a NIST category; 2 is a conservative mapping
-# (exceeds cat-1's AES-128 floor and meets cat-2's SHA-256-collision bar, below
-# cat-3's AES-192) -- a documented estimate, not a first-party NIST assignment.
-_PQ_KEM_PARAMETERS: tuple[tuple[str, str, int], ...] = (
-    ("mlkem1024", "ML-KEM-1024", 5),
-    ("ml-kem-1024", "ML-KEM-1024", 5),
-    ("mlkem768", "ML-KEM-768", 3),
-    ("ml-kem-768", "ML-KEM-768", 3),
-    ("mlkem512", "ML-KEM-512", 1),
-    ("ml-kem-512", "ML-KEM-512", 1),
-    ("kyber-1024", "Kyber-1024", 5),
-    ("kyber1024", "Kyber-1024", 5),
-    ("kyber-768", "Kyber-768", 3),
-    ("kyber768", "Kyber-768", 3),
-    ("kyber-512", "Kyber-512", 1),
-    ("kyber512", "Kyber-512", 1),
-    ("sntrup761", "sntrup761", 2),
-)
+# PQ KEM token/category tables live in the shared qureddy.core.pqc classifier (#330), so
+# TLS and SSH classify post-quantum groups through one structural source instead of copies.
 
 # Named-curve labels for the classical half of a KEX group, so a classical KEX
 # component carries the same shape (primitive + curve + level 0) the TLS X25519
@@ -164,9 +128,8 @@ class KexClass(NamedTuple):
 
 
 def is_pq_hybrid_kex(name: str) -> bool:
-    """True if a KEX name carries any post-quantum KEM (structural, not allowlist)."""
-    lowered = name.lower()
-    return any(token in lowered for token in _PQ_KEM_TOKENS)
+    """True if a KEX name carries any post-quantum KEM (structural; shared classifier, #330)."""
+    return pqc.is_pq_kem(name)
 
 
 def pq_hybrid_kex(offer_kex: tuple[str, ...]) -> tuple[str, ...]:
@@ -175,12 +138,8 @@ def pq_hybrid_kex(offer_kex: tuple[str, ...]) -> tuple[str, ...]:
 
 
 def _pq_kem_parameters(name: str) -> tuple[str, int] | None:
-    """Return (parameter_set, NIST level) for the PQ KEM in ``name``, or None."""
-    lowered = name.lower()
-    for token, parameter_set, level in _PQ_KEM_PARAMETERS:
-        if token in lowered:
-            return parameter_set, level
-    return None
+    """Return (parameter_set, NIST level) for the PQ KEM in ``name``, or None (shared, #330)."""
+    return pqc.pq_kem_category(name)
 
 
 def _classical_kex_curve(lowered: str) -> str | None:

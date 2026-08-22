@@ -1,13 +1,15 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
 # SPDX-License-Identifier: Apache-2.0
-"""Current hardcoded readiness policy. Seven rules, no YAML loading."""
+"""Current hardcoded readiness policy. Structural PQ classification, no YAML loading."""
 
 from __future__ import annotations
 
 from enum import Enum
+from typing import Literal
 
 from pydantic import BaseModel
 
+from qureddy.core import pqc
 from qureddy.core.ids import new_id
 from qureddy.core.models import (
     FROZEN,
@@ -44,6 +46,9 @@ class RuleCondition(BaseModel):
     observation_type: ObservationType | None = None
     failure_category_in: tuple[FailureCategory, ...] | None = None
     probe_role: ProbeRole | None = None
+    # #330: structural PQ classification of the negotiated group, replacing the single
+    # hardcoded X25519MLKEM768 literal so every standardized/future hybrid is recognized.
+    negotiated_group_kind: Literal["hybrid_pq", "pure_pq"] | None = None
 
 
 class PolicyRule(BaseModel):
@@ -73,17 +78,40 @@ _PROBE_FAILED = (
 
 MVP_POLICY: tuple[PolicyRule, ...] = (
     PolicyRule(
-        id="tls.hybrid.negotiated_x25519mlkem768",
+        id="tls.hybrid.negotiated_pq",
         finding_type="tls.kex.hybrid",
-        title="TLS 1.3 negotiated X25519MLKEM768",
+        title="TLS 1.3 negotiated a post-quantum hybrid group",
         description=(
-            "Server selected the hybrid post-quantum group X25519MLKEM768 for TLS 1.3 key exchange."
+            "Server selected a hybrid post-quantum group (an ML-KEM/Kyber KEM with a classical "
+            "half, e.g. X25519MLKEM768 or SecP256r1MLKEM768) for TLS 1.3 key exchange."
         ),
         severity=Severity.INFO,
         readiness=Readiness.TRANSITIONAL_HYBRID,
         confidence=Confidence.HIGH,
         conditions=(
-            RuleCondition(field=RuleField.NEGOTIATED_GROUP, equals="X25519MLKEM768"),
+            # #330: structural — any standardized/future PQ hybrid, not just X25519MLKEM768.
+            RuleCondition(field=RuleField.NEGOTIATED_GROUP, negotiated_group_kind="hybrid_pq"),
+            RuleCondition(
+                field=RuleField.OBSERVATION_TYPE,
+                observation_type=ObservationType.NEGOTIATED,
+            ),
+        ),
+    ),
+    PolicyRule(
+        # #330: a pure post-quantum group (KEM with no classical half) is quantum_safe, not
+        # transitional. No such TLS group is standardized yet; this is future-proofing.
+        id="tls.pq.negotiated_pure",
+        finding_type="tls.kex.pure_pq",
+        title="TLS 1.3 negotiated a pure post-quantum group",
+        description=(
+            "Server selected a pure post-quantum group (a KEM with no classical half) for "
+            "TLS 1.3 key exchange; this provides post-quantum confidentiality on its own."
+        ),
+        severity=Severity.INFO,
+        readiness=Readiness.QUANTUM_SAFE,
+        confidence=Confidence.HIGH,
+        conditions=(
+            RuleCondition(field=RuleField.NEGOTIATED_GROUP, negotiated_group_kind="pure_pq"),
             RuleCondition(
                 field=RuleField.OBSERVATION_TYPE,
                 observation_type=ObservationType.NEGOTIATED,
@@ -231,9 +259,18 @@ def _rule_matches(rule: PolicyRule, evidence: Evidence) -> bool:
     return all(_condition_matches(c, evidence) for c in rule.conditions)
 
 
+def _negotiated_group_matches(condition: RuleCondition, group: str | None) -> bool:
+    """Match the negotiated group: structural PQ kind (#330) or exact ``equals``."""
+    if condition.negotiated_group_kind == "hybrid_pq":
+        return group is not None and pqc.is_hybrid_pq(group)
+    if condition.negotiated_group_kind == "pure_pq":
+        return group is not None and pqc.is_pure_pq(group)
+    return group == condition.equals
+
+
 def _condition_matches(condition: RuleCondition, evidence: Evidence) -> bool:
     if condition.field is RuleField.NEGOTIATED_GROUP:
-        return evidence.negotiated_group == condition.equals
+        return _negotiated_group_matches(condition, evidence.negotiated_group)
     if condition.field is RuleField.OBSERVATION_TYPE:
         return evidence.observation_type is condition.observation_type
     if condition.field is RuleField.FAILURE_CATEGORY:

@@ -47,7 +47,8 @@ def build_summary(
 # describes eventually succeeded.
 _SUCCESS_RULE_IDS: frozenset[str] = frozenset(
     {
-        "tls.hybrid.negotiated_x25519mlkem768",
+        "tls.hybrid.negotiated_pq",  # #330: renamed from ...negotiated_x25519mlkem768 (structural)
+        "tls.pq.negotiated_pure",  # #330: a pure-PQ negotiation is also a reached-server success
         "tls.classical.negotiated_x25519",
     }
 )
