@@ -21,6 +21,7 @@ from qureddy.cli._errors import (
     EXIT_OK,
     EXIT_TARGET_FAILED,
     EXIT_USAGE,
+    _echo_operator_diagnostic,
     _fail,
 )
 from qureddy.cli._execute import _execute_scan
@@ -267,15 +268,23 @@ def _scan_and_render(
         result, exit_code = _execute_scan(
             scanner, scan_target, timeout, machine_format=machine_format
         )
-        _render(
-            result,
-            output_format,
-            verbose,
-            reproducible=reproducible,
-            compact=compact,
-            min_severity=min_severity,
-            stream=output_stream,
-        )
+        try:
+            _render(
+                result,
+                output_format,
+                verbose,
+                reproducible=reproducible,
+                compact=compact,
+                min_severity=min_severity,
+                stream=output_stream,
+            )
+        except ValueError as exc:
+            # #344: a render-boundary defect (e.g. a semantic-validator ValueError) must map to
+            # the exit-code contract, not escape as an internal traceback.
+            _echo_operator_diagnostic(
+                f"internal error rendering output: {exc}", machine_format=machine_format
+            )
+            return EXIT_INTERNAL_ERROR
         return exit_code
     finally:
         if output_stream is not None:

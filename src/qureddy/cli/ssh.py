@@ -11,6 +11,7 @@ import typer
 
 from qureddy._branding import PROJECT_URL
 from qureddy.cli._errors import (
+    EXIT_INTERNAL_ERROR,
     EXIT_OK,
     EXIT_TARGET_FAILED,
     EXIT_USAGE,
@@ -161,15 +162,22 @@ def scan_ssh_cmd(
     output_stream = _open_output_file(output)
     try:
         result, exit_code = _run_ssh_probe(scan_target, timeout, machine_format=machine_format)
-        _render(
-            result,
-            fmt,
-            verbose,
-            reproducible=reproducible,
-            compact=compact,
-            min_severity=min_severity,
-            stream=output_stream,
-        )
+        try:
+            _render(
+                result,
+                fmt,
+                verbose,
+                reproducible=reproducible,
+                compact=compact,
+                min_severity=min_severity,
+                stream=output_stream,
+            )
+        except ValueError as exc:
+            # #344: map a render-boundary defect to the exit-code contract, not a traceback.
+            _echo_operator_diagnostic(
+                f"internal error rendering output: {exc}", machine_format=machine_format
+            )
+            raise typer.Exit(code=EXIT_INTERNAL_ERROR) from None
         if exit_code != EXIT_OK:
             raise typer.Exit(code=exit_code)
     finally:
