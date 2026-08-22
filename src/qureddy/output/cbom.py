@@ -135,14 +135,19 @@ def render_cbom(
     )
 
 
-def _captured_certificate(result: ScanResult) -> CertificateObservation | None:
-    """Return the certificate already captured by the scan, never refetch it."""
-    observations = [
+def _observed_certificates(result: ScanResult) -> list[CertificateObservation]:
+    """Certificates captured by OBSERVED evidence, in evidence order."""
+    return [
         evidence.certificate
         for evidence in result.evidence
         if evidence.observation_type is ObservationType.OBSERVED
         and evidence.certificate is not None
     ]
+
+
+def _captured_certificate(result: ScanResult) -> CertificateObservation | None:
+    """Return the certificate already captured by the scan, never refetch it."""
+    observations = _observed_certificates(result)
     if len(observations) > 1:
         msg = f"expected at most one captured leaf certificate, got {len(observations)}"
         raise ValueError(msg)
@@ -173,6 +178,34 @@ def _add_tool_provenance(bom: Bom, result: ScanResult, *, reproducible: bool = F
     bom.metadata.tools = ToolRepository(components=tools)
 
 
+def _apply_native_to_component(
+    component: dict[str, Any],
+    occurrences: dict[str, list[dict[str, str]]],
+    verdicts: dict[str, list[dict[str, str]]],
+) -> None:
+    """Attach evidence occurrences and verdict properties to a single component dict."""
+    ref = component.get("bom-ref")
+    if ref in occurrences:
+        component["evidence"] = {"occurrences": occurrences[ref]}
+    if ref in verdicts:
+        component.setdefault("properties", []).extend(verdicts[ref])
+
+
+def _reanchor_annotations(payload: dict[str, Any], annotations: list[dict[str, Any]]) -> None:
+    """Re-anchor annotation subjects to the endpoint when their asset has no component.
+
+    A finding's subject asset only exists as a component when the scan also produced its
+    evidence; if it doesn't (e.g. a finding with no matching inventory), re-anchor the
+    annotation to the endpoint so no subject dangles.
+    """
+    real_refs = {ENDPOINT_REF} | {c.get("bom-ref") for c in payload.get("components", [])}
+    for annotation in annotations:
+        annotation["subjects"] = [
+            ref if ref in real_refs else ENDPOINT_REF for ref in annotation["subjects"]
+        ]
+    payload["annotations"] = annotations
+
+
 def _attach_native_findings(
     payload: dict[str, Any], result: ScanResult, *, reproducible: bool
 ) -> None:
@@ -186,28 +219,13 @@ def _attach_native_findings(
     occurrences = evidence_occurrences(result, reproducible=reproducible)
     annotations, verdicts = finding_annotations(result, reproducible=reproducible)
 
-    def apply(component: dict[str, Any]) -> None:
-        ref = component.get("bom-ref")
-        if ref in occurrences:
-            component["evidence"] = {"occurrences": occurrences[ref]}
-        if ref in verdicts:
-            component.setdefault("properties", []).extend(verdicts[ref])
-
     endpoint = payload.get("metadata", {}).get("component")
     if endpoint:
-        apply(endpoint)
+        _apply_native_to_component(endpoint, occurrences, verdicts)
     for component in payload.get("components", []):
-        apply(component)
+        _apply_native_to_component(component, occurrences, verdicts)
     if annotations:
-        # A finding's subject asset only exists as a component when the scan also produced
-        # its evidence; if it doesn't (e.g. a finding with no matching inventory), re-anchor
-        # the annotation to the endpoint so no subject dangles.
-        real_refs = {ENDPOINT_REF} | {c.get("bom-ref") for c in payload.get("components", [])}
-        for annotation in annotations:
-            annotation["subjects"] = [
-                ref if ref in real_refs else ENDPOINT_REF for ref in annotation["subjects"]
-            ]
-        payload["annotations"] = annotations
+        _reanchor_annotations(payload, annotations)
 
 
 def _write_with_library_gap_patches(
@@ -230,23 +248,40 @@ def _write_with_library_gap_patches(
         warnings.filterwarnings("ignore", message=".*no defined dependencies.*")
         serialized = JsonV1Dot7(bom).output_as_string(indent=2)
     payload = json.loads(serialized)
+    _patch_provides_edges(payload, provides_edges)
+    if certificate_serial:
+        _patch_certificate_serial(payload, certificate_serial)
+    _attach_native_findings(payload, result, reproducible=reproducible)
+    validate_cbom_semantics(payload)
+    _write_payload(stream, payload, compact=compact)
+
+
+def _patch_provides_edges(payload: dict[str, Any], provides_edges: dict[str, list[str]]) -> None:
+    """Fill in each dependency's 1.7 ``provides`` edge (library has no such parameter)."""
     for dependency in payload.get("dependencies", []):
         ref = dependency.get("ref")
         if ref in provides_edges:
             dependency["provides"] = sorted(set(provides_edges[ref]))
-    if certificate_serial:
-        certificate_component = next(
-            component
-            for component in payload["components"]
-            if component.get("bom-ref") == CERTIFICATE_REF
-        )
-        certificate_component["cryptoProperties"]["certificateProperties"]["serialNumber"] = (
-            certificate_serial
-        )
-    _attach_native_findings(payload, result, reproducible=reproducible)
-    validate_cbom_semantics(payload)
-    # Keep final machine bytes representable on locale-dependent Windows
-    # streams. JSON consumers recover the original Unicode from escapes.
+
+
+def _patch_certificate_serial(payload: dict[str, Any], certificate_serial: str) -> None:
+    """Fill in the certificate component's 1.7 native ``serialNumber`` field."""
+    certificate_component = next(
+        component
+        for component in payload["components"]
+        if component.get("bom-ref") == CERTIFICATE_REF
+    )
+    certificate_component["cryptoProperties"]["certificateProperties"]["serialNumber"] = (
+        certificate_serial
+    )
+
+
+def _write_payload(stream: IO[str], payload: dict[str, Any], *, compact: bool) -> None:
+    """Emit the final CBOM bytes plus a trailing newline.
+
+    Keep final machine bytes representable on locale-dependent Windows streams. JSON
+    consumers recover the original Unicode from escapes.
+    """
     if compact:
         stream.write(json.dumps(payload, separators=(",", ":"), ensure_ascii=True))
     else:

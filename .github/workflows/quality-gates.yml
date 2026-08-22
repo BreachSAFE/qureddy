@@ -65,10 +65,10 @@ jobs:
         run: uv run --locked lint-imports
 
       - name: xenon (cyclomatic-complexity ceiling)
-        # --max-absolute B + --max-average A pass today. The reusable gate also
-        # sets --max-modules A; 9 rank-B modules must drop to A first (#341
-        # scoped out) — tracked in a follow-up before this tightens to match.
-        run: uv run --locked xenon --max-absolute B --max-average A src/qureddy
+        # Full reusable-gate spec: no block worse than B, and every module +
+        # the average at rank A. The 9 rank-B modules were refactored to rank A
+        # in #364, so this now matches breachsafe-common exactly.
+        run: uv run --locked xenon --max-absolute B --max-modules A --max-average A src/qureddy
 
       - name: refurb (Python modernization, blocking)
         run: uv run --locked refurb src/qureddy

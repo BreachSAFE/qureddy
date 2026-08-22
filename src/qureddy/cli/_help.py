@@ -79,6 +79,44 @@ def _exit_code_color(code: str) -> str:
     return "yellow"
 
 
+def _style_help_value_line(line: str) -> str:
+    """Style exit-code and environment-variable lines; pass others through.
+
+    Leading exit-code numbers are colored by severity (see
+    `_exit_code_color`); environment variable names go bold magenta.
+    """
+    exit_code_match = _HELP_EXIT_CODE_RE.match(line)
+    if exit_code_match:
+        code, gap, rest = exit_code_match.groups()
+        return click.style(code, fg=_exit_code_color(code), bold=True) + gap + rest
+    env_var_match = _HELP_ENV_VAR_RE.match(line)
+    if env_var_match:
+        name, gap, rest = env_var_match.groups()
+        return click.style(name, fg="magenta", bold=True) + gap + rest
+    return line
+
+
+def _style_help_line(line: str) -> str:
+    r"""Style one epilog line by its shape.
+
+    Section headers go bold cyan, comment lines dim, command lines bold
+    green; exit-code and env-var lines are delegated to
+    `_style_help_value_line`. Lines that are exactly the literal `\\b`
+    Click marker pass through untouched so the no-wrap treatment survives.
+    """
+    if line == "\b":
+        return line
+    if _HELP_SECTION_RE.match(line):
+        return click.style(line, fg="cyan", bold=True)
+    comment_match = _HELP_COMMENT_RE.match(line)
+    if comment_match:
+        return comment_match.group(1) + click.style(comment_match.group(2), dim=True)
+    command_match = _HELP_COMMAND_RE.match(line)
+    if command_match:
+        return command_match.group(1) + click.style(command_match.group(2), fg="green", bold=True)
+    return _style_help_value_line(line)
+
+
 def _colorize_help_text(text: str) -> str:
     r"""Color a plain epilog string by line shape. Honors NO_COLOR.
 
@@ -95,33 +133,4 @@ def _colorize_help_text(text: str) -> str:
     """
     if "NO_COLOR" in os.environ:
         return text
-    styled_lines = []
-    for line in text.split("\n"):
-        if line == "\b":
-            styled_lines.append(line)
-            continue
-        comment_match = _HELP_COMMENT_RE.match(line)
-        command_match = _HELP_COMMAND_RE.match(line)
-        exit_code_match = _HELP_EXIT_CODE_RE.match(line)
-        env_var_match = _HELP_ENV_VAR_RE.match(line)
-        if _HELP_SECTION_RE.match(line):
-            styled_lines.append(click.style(line, fg="cyan", bold=True))
-        elif comment_match:
-            styled_lines.append(
-                comment_match.group(1) + click.style(comment_match.group(2), dim=True)
-            )
-        elif command_match:
-            styled_lines.append(
-                command_match.group(1) + click.style(command_match.group(2), fg="green", bold=True)
-            )
-        elif exit_code_match:
-            code, gap, rest = exit_code_match.groups()
-            styled_lines.append(
-                click.style(code, fg=_exit_code_color(code), bold=True) + gap + rest
-            )
-        elif env_var_match:
-            name, gap, rest = env_var_match.groups()
-            styled_lines.append(click.style(name, fg="magenta", bold=True) + gap + rest)
-        else:
-            styled_lines.append(line)
-    return "\n".join(styled_lines)
+    return "\n".join(_style_help_line(line) for line in text.split("\n"))

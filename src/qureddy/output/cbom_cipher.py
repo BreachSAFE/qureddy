@@ -15,6 +15,14 @@ from __future__ import annotations
 from cyclonedx.model.crypto import CryptoPrimitive
 
 
+def _aes_classical_bits(lowered: str) -> int | None:
+    """AES key strength (bits) for an already-lowercased cipher name, or None."""
+    for size in (256, 192, 128):
+        if f"aes{size}" in lowered or f"aes-{size}" in lowered or f"aes_{size}" in lowered:
+            return size
+    return None
+
+
 def cipher_classical_bits(name: str) -> int | None:
     """Classical key strength (bits) of a symmetric cipher name, or None if unknown/broken.
 
@@ -26,16 +34,18 @@ def cipher_classical_bits(name: str) -> int | None:
         return 256
     if "3des" in lowered or "des-cbc3" in lowered:
         return 112  # 3DES effective strength (NIST SP 800-57)
-    for size in (256, 192, 128):
-        if f"aes{size}" in lowered or f"aes-{size}" in lowered or f"aes_{size}" in lowered:
-            return size
-    return None
+    return _aes_classical_bits(lowered)
+
+
+def _is_aead(lowered: str) -> bool:
+    """True when an already-lowercased cipher name is authenticated encryption."""
+    return "gcm" in lowered or "chacha20-poly1305" in lowered or "ccm" in lowered
 
 
 def cipher_primitive(name: str) -> CryptoPrimitive:
     """CycloneDX primitive for a symmetric cipher name (all classical today)."""
     lowered = name.lower()
-    if "gcm" in lowered or "chacha20-poly1305" in lowered or "ccm" in lowered:
+    if _is_aead(lowered):
         return CryptoPrimitive.AE  # authenticated encryption
     if "rc4" in lowered or "arcfour" in lowered:
         return CryptoPrimitive("stream-cipher")
