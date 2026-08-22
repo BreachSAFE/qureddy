@@ -1,7 +1,7 @@
 # Changelog
 
 [![Status: Alpha](https://img.shields.io/badge/status-alpha-blue?style=flat-square)](https://github.com/breachsafe/qureddy)
-[![Version](https://img.shields.io/badge/version-0.2.17-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.18-blue?style=flat-square)](CHANGELOG.md)
 [![Keep a Changelog](https://img.shields.io/badge/keep%20a%20changelog-1.1.0-orange?style=flat-square)](https://keepachangelog.com/en/1.1.0/)
 [![SemVer](https://img.shields.io/badge/SemVer-2.0.0-blue?style=flat-square)](https://semver.org/spec/v2.0.0.html)
 
@@ -10,6 +10,34 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and version
 numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.2.18] - 2026-08-22
+
+### Added
+
+- SSH CBOM parity with TLS: an SSH scan now inventories every key-exchange group,
+  host key, cipher, and MAC as CycloneDX crypto assets, each with the correct
+  primitive and post-quantum security level. (#241, #242, #243)
+- Fuzzing: Atheris harnesses for the TLS and SSH parsers, with an advisory
+  ClusterFuzzLite job on pull requests. (#86, #239)
+
+### Fixed
+
+- SSH PQ-hybrid key exchange over non-x25519 curves (ML-KEM with P-256/P-384, and the
+  Kyber hybrids) is now classified post-quantum; such endpoints previously read as
+  `quantum_vulnerable`. (#247)
+- A peer-closed SSH connection now reports `target_connect_failed` rather than a parse
+  ambiguity. (#244)
+
+### Security
+
+- The release workflow fails if signing did not run and produce the `.sigstore` bundles,
+  so an unsigned release cannot ship silently. (#232)
+
+### Changed
+
+- `bump_version` single-sources the version across pyproject, the CHANGELOG, the
+  Dockerfile ARG, and the lockfile. (#206)
 
 ## [0.2.17] - 2026-08-21
 
