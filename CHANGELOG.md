@@ -1,7 +1,7 @@
 # Changelog
 
 [![Status: Alpha](https://img.shields.io/badge/status-alpha-blue?style=flat-square)](https://github.com/breachsafe/qureddy)
-[![Version](https://img.shields.io/badge/version-0.2.20-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.21-blue?style=flat-square)](CHANGELOG.md)
 [![Keep a Changelog](https://img.shields.io/badge/keep%20a%20changelog-1.1.0-orange?style=flat-square)](https://keepachangelog.com/en/1.1.0/)
 [![SemVer](https://img.shields.io/badge/SemVer-2.0.0-blue?style=flat-square)](https://semver.org/spec/v2.0.0.html)
 
@@ -10,6 +10,15 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and version
 numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.2.21] - 2026-08-22
+
+### Fixed
+
+- The Docker image builds its wheel from source in an in-image stage, so a fresh
+  clone `docker build .` succeeds with no separate wheel-build step. The build
+  previously failed after the OpenSSL compile because it copied a host-built
+  wheel that a fresh checkout does not have. (#253)
 
 ## [0.2.20] - 2026-08-22
 
@@ -126,27 +135,28 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Contents
 
-1. [0.2.20](#0220---2026-08-22)
-2. [0.2.18](#0218---2026-08-22)
-3. [0.2.17](#0217---2026-08-21)
-4. [0.2.16](#0216---2026-08-21)
-5. [0.2.15](#0215---2026-08-21)
-6. [0.2.14](#0214---2026-08-19)
-7. [0.2.13](#0213---2026-08-04)
-8. [0.2.12](#0212---2026-07-28)
-9. [0.2.11](#0211---2026-07-28)
-10. [0.2.10](#0210---2026-07-28)
-11. [0.2.9](#029---2026-07-28)
-12. [0.2.8](#028---2026-07-28)
-13. [0.2.7](#027---2026-07-28)
-14. [0.2.6](#026---2026-07-28)
-15. [0.2.5](#025---2026-07-28)
-16. [0.2.4](#024---2026-07-28)
-17. [0.2.3](#023---2026-07-27)
-18. [0.2.2](#022---2026-07-27)
-19. [0.2.1](#021---2026-07-27)
-20. [0.2.0](#020---2026-07-27)
-21. [0.1.0](#010---2026-05-10)
+1. [0.2.21](#0221---2026-08-22)
+2. [0.2.20](#0220---2026-08-22)
+3. [0.2.18](#0218---2026-08-22)
+4. [0.2.17](#0217---2026-08-21)
+5. [0.2.16](#0216---2026-08-21)
+6. [0.2.15](#0215---2026-08-21)
+7. [0.2.14](#0214---2026-08-19)
+8. [0.2.13](#0213---2026-08-04)
+9. [0.2.12](#0212---2026-07-28)
+10. [0.2.11](#0211---2026-07-28)
+11. [0.2.10](#0210---2026-07-28)
+12. [0.2.9](#029---2026-07-28)
+13. [0.2.8](#028---2026-07-28)
+14. [0.2.7](#027---2026-07-28)
+15. [0.2.6](#026---2026-07-28)
+16. [0.2.5](#025---2026-07-28)
+17. [0.2.4](#024---2026-07-28)
+18. [0.2.3](#023---2026-07-27)
+19. [0.2.2](#022---2026-07-27)
+20. [0.2.1](#021---2026-07-27)
+21. [0.2.0](#020---2026-07-27)
+22. [0.1.0](#010---2026-05-10)
 
 ## [0.2.12] - 2026-07-28
 

@@ -36,7 +36,7 @@ RUN python -m build --wheel --no-isolation --outdir /tmp/wheel
 
 FROM python:3.12.13-slim-bookworm@sha256:8a7e7cc04fd3e2bd787f7f24e22d5d119aa590d429b50c95dfe12b3abe52f48b
 
-ARG QUREDDY_VERSION=0.2.20
+ARG QUREDDY_VERSION=0.2.21
 LABEL org.opencontainers.image.title="QuReddy" \
       org.opencontainers.image.description="Post-quantum readiness scanner for TLS and SSH endpoints" \
       org.opencontainers.image.source="https://github.com/breachsafe/qureddy" \
