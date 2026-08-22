@@ -31,6 +31,8 @@ jobs:
   fuzzing:
     name: ClusterFuzzLite PR fuzzing
     runs-on: ubuntu-latest
+    # Advisory until the OSS-Fuzz harness build stabilizes (#86/#239); must not block PRs.
+    continue-on-error: true
     permissions:
       contents: read # build_fuzzers checks out the PR head
     steps:
