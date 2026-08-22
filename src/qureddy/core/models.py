@@ -23,16 +23,22 @@ FROZEN = ConfigDict(frozen=True, extra="forbid")
 MIN_PORT = 1
 MAX_PORT = 65535
 
-# Mirrors core/targets.py::HOSTNAME_PATTERN. Cannot import it directly:
-# targets.py imports ScanTarget from this module, so the reverse import
-# would be circular. Two copies of one small regex is the tolerated case
-# per docs/contributors/agent-antipatterns.md's "tolerate two copies,
-# extract on the third" rule — extract to a shared low-level module if
-# a third caller needs this pattern.
-_HOSTNAME_PATTERN = re.compile(
+# Canonical hostname grammar for the platform, kept here because models.py is
+# the lower module of the pair: targets.py imports ScanTarget from this module,
+# so the reverse import would be circular. targets.py imports HOSTNAME_PATTERN
+# from here instead of re-declaring it, so there is exactly one copy (#315).
+# Callers use `.fullmatch` (not `.match`): the trailing `$` also matches just
+# before a final "\n", so `.match` would accept "example.com\n" and let a
+# control char / newline reach OpenSSL argv; `.fullmatch` rejects it (#369).
+HOSTNAME_PATTERN = re.compile(
     r"^(?=.{1,253}$)(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)*"
     r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?$",
 )
+
+# The transport schemes a ScanTarget may carry — TLS scans and SSH scans.
+# Constrained so a caller (or deserialized JSON) cannot supply an arbitrary
+# scheme that would flow into the locator and downstream tooling (#369).
+SUPPORTED_SCHEMES = frozenset({"tls", "ssh"})
 
 
 def _is_ip_literal(value: str) -> bool:
@@ -211,7 +217,7 @@ class ScanTarget(BaseModel):
             # downstream in a different module.
             msg = f"host must not contain brackets, store IPv6 unbracketed: {value!r}"
             raise ValueError(msg)
-        if not _is_ip_literal(value) and not _HOSTNAME_PATTERN.match(value):
+        if not _is_ip_literal(value) and not HOSTNAME_PATTERN.fullmatch(value):
             msg = f"host is not a valid hostname or IP: {value!r}"
             raise ValueError(msg)
         return value
@@ -219,8 +225,24 @@ class ScanTarget(BaseModel):
     @field_validator("sni")
     @classmethod
     def _sni_must_be_valid(cls, value: str | None) -> str | None:
-        if value is not None and not value.strip():
+        if value is None:
+            return None
+        if not value.strip():
             msg = "sni cannot be empty or whitespace-only"
+            raise ValueError(msg)
+        if not HOSTNAME_PATTERN.fullmatch(value):
+            # SNI is passed verbatim as OpenSSL's `-servername`; a leading dash,
+            # newline, control char, ANSI escape, or space is argv injection or
+            # a non-hostname that has no business on the wire (RFC 6066, #369/#145).
+            msg = f"sni is not a valid hostname: {value!r}"
+            raise ValueError(msg)
+        return value
+
+    @field_validator("scheme")
+    @classmethod
+    def _scheme_must_be_supported(cls, value: str) -> str:
+        if value not in SUPPORTED_SCHEMES:
+            msg = f"scheme must be one of {sorted(SUPPORTED_SCHEMES)}: {value!r}"
             raise ValueError(msg)
         return value
 
