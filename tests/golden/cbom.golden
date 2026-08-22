@@ -89,7 +89,7 @@
       "evidence": {
         "occurrences": [
           {
-            "additionalContext": "negotiated on tls.negotiation (return_code=0, command_sha256=8cc515802eb656257c6ef03fde9bf7fb8c1732e8cdcd9f9c75e33bbf2e5ed206, duration_ms=110)",
+            "additionalContext": "observation=negotiated; evidence_type=tls.negotiation; return_code=0; command_sha256=8cc515802eb656257c6ef03fde9bf7fb8c1732e8cdcd9f9c75e33bbf2e5ed206; duration_ms=110",
             "location": "qureddy.scanners.tls.parse"
           }
         ]
@@ -133,7 +133,7 @@
       "evidence": {
         "occurrences": [
           {
-            "additionalContext": "negotiated on tls.negotiation (return_code=0, command_sha256=3f4a610b5eaa690523372a81f1afde9f1b98fc25648735580c5705519f987448, duration_ms=120)",
+            "additionalContext": "observation=negotiated; evidence_type=tls.negotiation; return_code=0; command_sha256=3f4a610b5eaa690523372a81f1afde9f1b98fc25648735580c5705519f987448; duration_ms=120",
             "location": "qureddy.scanners.tls.parse"
           }
         ]
@@ -274,7 +274,7 @@
           "bom-ref": "tool/qureddy",
           "name": "qureddy",
           "type": "application",
-          "version": "0.2.24"
+          "version": "0.2.25"
         }
       ]
     }
