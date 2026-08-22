@@ -81,6 +81,35 @@ def evidence_from_legacy_result(asset: Asset, result: LegacyProtocolResult) -> E
     )
 
 
+def cipher_evidence_from_legacy_result(
+    asset: Asset, result: LegacyProtocolResult
+) -> list[Evidence]:
+    """One Evidence per accepted legacy cipher (#303).
+
+    Lets the CBOM inventory the weak/legacy cipher surface as first-class components rather
+    than free text in a notes blob.
+    Only emitted for an offered protocol with accepted ciphers. Each carries the cipher name
+    in ``negotiated_group`` (the field the shared crypto-asset emitter reads) under a distinct
+    ``tls.legacy.cipher`` evidence type, so the legacy-cipher emitter classifies it (primitive,
+    strength, weak marker) rather than the generic algorithm emitter.
+    """
+    if not result.offered:
+        return []
+    return [
+        Evidence(
+            id=new_id("ev"),
+            asset_id=asset.id,
+            evidence_type="tls.legacy.cipher",
+            observation_type=ObservationType.OFFERED,
+            source="qureddy.scanners.tls.legacy_probe",
+            protocol_version=result.protocol_version,
+            negotiated_group=cipher,
+            notes=(f"accepted on {result.protocol_version}",),
+        )
+        for cipher in result.accepted_ciphers
+    ]
+
+
 _DEPRECATED_PROTOCOLS = frozenset({"TLSv1", "TLSv1.1"})
 
 

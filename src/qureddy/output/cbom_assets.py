@@ -50,6 +50,7 @@ def add_algorithm_assets(
     *,
     select: Callable[[Evidence], str | None],
     algorithm_properties: Callable[[str], AlgorithmProperties | None],
+    extra_properties: Callable[[str], list[Property]] | None = None,
 ) -> dict[str, str]:
     """Emit one ALGORITHM crypto-asset per uniquely named thing ``select`` returns.
 
@@ -75,6 +76,9 @@ def add_algorithm_assets(
     refs: dict[str, str] = {}
     for name in sorted(strongest):
         ref = f"crypto/algorithm/{name.lower()}"
+        properties = [Property(name="qureddy:observation", value=strongest[name].value)]
+        if extra_properties is not None:
+            properties.extend(extra_properties(name))
         bom.components.add(
             Component(
                 name=name,
@@ -84,7 +88,7 @@ def add_algorithm_assets(
                     asset_type=CryptoAssetType.ALGORITHM,
                     algorithm_properties=algorithm_properties(name),
                 ),
-                properties=[Property(name="qureddy:observation", value=strongest[name].value)],
+                properties=properties,
             )
         )
         refs[name] = ref
