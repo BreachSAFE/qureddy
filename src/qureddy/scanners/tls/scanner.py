@@ -58,7 +58,7 @@ from qureddy.scanners.tls.legacy_probe import probe_all_legacy_protocols
 from qureddy.scanners.tls.openssl_probe import (
     CLASSICAL_GROUP,
     DEFAULT_TIMEOUT_SECONDS,
-    HYBRID_GROUP,
+    HYBRID_GROUPS,
     probe_capability,
     raise_if_unusable,
     resolve_openssl_path,
@@ -248,14 +248,28 @@ class TLSScanner:
         timeout_seconds: int,
     ) -> tuple[list[Evidence], int]:
         log = get_logger(__name__)
-        log.info("probe.phase.start", phase="tls13_hybrid")
-        hybrid_results = self._probe_with_retries(
-            run_hybrid_probe,
-            target=target,
-            openssl_path=openssl_path,
-            timeout_seconds=timeout_seconds,
-        )
-        log.info("probe.phase.complete", phase="tls13_hybrid")
+        evidence: list[Evidence] = []
+        probe_count = 0
+        # #337: force each standardized PQ hybrid group. The first (X25519MLKEM768) is the
+        # primary readiness probe (drives the not-testable/rejected/failed rules); the rest are
+        # supplementary coverage — a negotiated hybrid still fires the positive rule, but a
+        # rejection does not spawn a spurious quantum_vulnerable finding.
+        for index, group in enumerate(HYBRID_GROUPS):
+            role = ProbeRole.HYBRID_READINESS if index == 0 else ProbeRole.HYBRID_COVERAGE
+            log.info("probe.phase.start", phase="tls13_hybrid", group=group)
+            results = self._probe_with_retries(
+                run_hybrid_probe,
+                target=target,
+                openssl_path=openssl_path,
+                timeout_seconds=timeout_seconds,
+                group=group,
+            )
+            log.info("probe.phase.complete", phase="tls13_hybrid", group=group)
+            probe_count += len(results)
+            evidence.extend(
+                evidence_from_probe(asset=asset, probe=r, expected_group=group, probe_role=role)
+                for r in results
+            )
         log.info("probe.phase.start", phase="tls13_classical")
         classical_results = self._probe_with_retries(
             run_classical_probe,
@@ -264,15 +278,7 @@ class TLSScanner:
             timeout_seconds=timeout_seconds,
         )
         log.info("probe.phase.complete", phase="tls13_classical")
-        evidence = [
-            evidence_from_probe(
-                asset=asset,
-                probe=r,
-                expected_group=HYBRID_GROUP,
-                probe_role=ProbeRole.HYBRID_READINESS,
-            )
-            for r in hybrid_results
-        ]
+        probe_count += len(classical_results)
         evidence.extend(
             evidence_from_probe(
                 asset=asset,
@@ -282,7 +288,7 @@ class TLSScanner:
             )
             for r in classical_results
         )
-        return evidence, len(hybrid_results) + len(classical_results)
+        return evidence, probe_count
 
     @staticmethod
     def _collect_legacy_evidence(
@@ -370,7 +376,9 @@ class TLSScanner:
         target: ScanTarget,
         openssl_path: str,
         timeout_seconds: int,
+        group: str | None = None,
     ) -> list[ProbeResult]:
+        extra = {"group": group} if group is not None else {}
         return run_with_retries(
             lambda n: probe_fn(
                 openssl_path,
@@ -379,6 +387,7 @@ class TLSScanner:
                 target.sni,
                 timeout_seconds=timeout_seconds,
                 attempt_number=n,
+                **extra,
             ),
             retries=self._retry.retries,
             retry_delay=self._retry.retry_delay,

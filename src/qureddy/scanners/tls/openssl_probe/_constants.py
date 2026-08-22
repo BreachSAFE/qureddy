@@ -11,6 +11,11 @@ PINNED_OPENSSL_VERSION = Version("3.5.7")
 # deliberate breaking release.
 MIN_OPENSSL_VERSION = PINNED_OPENSSL_VERSION
 HYBRID_GROUP = "X25519MLKEM768"
+# #337: the standardized PQ hybrid TLS groups (draft-ietf-tls-ecdhe-mlkem / RFC 9370 era),
+# all supported by the pinned OpenSSL 3.5.7. HYBRID_GROUP (first) stays the primary readiness
+# probe; the rest are supplementary coverage probes so a server that supports only a
+# non-default hybrid is still detected. Order = primary first.
+HYBRID_GROUPS = ("X25519MLKEM768", "SecP256r1MLKEM768", "SecP384r1MLKEM1024")
 CLASSICAL_GROUP = "X25519"
 ENV_OVERRIDE = "QUREDDY_OPENSSL"
 EXCERPT_LIMIT = 4096

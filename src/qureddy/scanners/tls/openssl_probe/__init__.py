@@ -8,6 +8,7 @@ from qureddy.scanners.tls.openssl_probe._constants import (
     DEFAULT_TIMEOUT_SECONDS,
     EXCERPT_LIMIT,
     HYBRID_GROUP,
+    HYBRID_GROUPS,
     MIN_OPENSSL_VERSION,
 )
 from qureddy.scanners.tls.openssl_probe.capability import (
@@ -25,6 +26,7 @@ __all__ = [
     "DEFAULT_TIMEOUT_SECONDS",
     "EXCERPT_LIMIT",
     "HYBRID_GROUP",
+    "HYBRID_GROUPS",
     "MIN_OPENSSL_VERSION",
     "_classify_failure",
     "probe_capability",
