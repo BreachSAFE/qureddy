@@ -9,7 +9,6 @@ summary rollup helpers live in `_summary.py`.
 
 from __future__ import annotations
 
-import uuid
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -17,6 +16,7 @@ from datetime import UTC, datetime
 import structlog
 
 from qureddy.core.errors import LocalOpenSSLMissing
+from qureddy.core.ids import new_id
 from qureddy.core.logging import get_logger
 from qureddy.core.models import (
     Asset,
@@ -226,7 +226,7 @@ class TLSScanner:
         # Bind scan_id and target into structlog contextvars so every log
         # call from any module reached during this scan carries the same
         # correlation tags. CLI tests verify these propagate.
-        scan_id = f"scan-{uuid.uuid4().hex[:12]}"
+        scan_id = new_id("scan")
         structlog.contextvars.clear_contextvars()
         structlog.contextvars.bind_contextvars(scan_id=scan_id, target=target.locator)
         get_logger(__name__).info("scan.start", host=target.host, port=target.port)

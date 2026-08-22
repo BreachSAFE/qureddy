@@ -14,33 +14,16 @@ from qureddy.core.models import (
     Evidence,
     FailureCategory,
     Finding,
-    Readiness,
     ScanSummary,
     ScanTarget,
-    Severity,
 )
 
-_SEVERITY_ORDER: dict[Severity, int] = {
-    Severity.INFO: 0,
-    Severity.LOW: 1,
-    Severity.MEDIUM: 2,
-    Severity.HIGH: 3,
-    Severity.CRITICAL: 4,
-}
+# Readiness/severity rollup now lives in the shared protocol-agnostic core (#248).
+# Re-exported here (listed in __all__) so existing TLS callers and tests keep importing
+# it from _summary, and mypy treats the re-export as intentional rather than incidental.
+from qureddy.scanners.common.rollup import highest_severity, scan_readiness
 
-# Readiness rollup precedence. CLASSICALLY_WEAK trumps everything because
-# broken classical crypto is exploitable today regardless of PQ posture.
-# TRANSITIONAL_HYBRID over QUANTUM_VULNERABLE because the hybrid rule
-# firing means PQ negotiation works; the classical control fires by
-# design on every scan and shouldn't downgrade the verdict.
-_READINESS_PRECEDENCE: tuple[Readiness, ...] = (
-    Readiness.CLASSICALLY_WEAK,
-    Readiness.TRANSITIONAL_HYBRID,
-    Readiness.QUANTUM_VULNERABLE,
-    Readiness.UNKNOWN,
-    Readiness.QUANTUM_SAFE,
-    Readiness.NOT_APPLICABLE,
-)
+__all__ = ["build_summary", "highest_severity", "scan_readiness", "summary_failure_category"]
 
 
 def build_summary(
@@ -56,29 +39,6 @@ def build_summary(
         readiness=scan_readiness(findings),
         failure_category=summary_failure_category(findings, evidence),
     )
-
-
-def highest_severity(findings: list[Finding]) -> Severity | None:
-    """Return the most-severe `Severity` across `findings`, or None when empty."""
-    if not findings:
-        return None
-    return max((f.severity for f in findings), key=lambda s: _SEVERITY_ORDER[s])
-
-
-def scan_readiness(findings: list[Finding]) -> Readiness:
-    """Roll up the per-finding readinesses to a single scan-level value.
-
-    Precedence (highest first):
-      CLASSICALLY_WEAK > TRANSITIONAL_HYBRID > QUANTUM_VULNERABLE >
-      UNKNOWN > QUANTUM_SAFE > NOT_APPLICABLE
-    """
-    if not findings:
-        return Readiness.UNKNOWN
-    readinesses = {f.readiness for f in findings}
-    for tier in _READINESS_PRECEDENCE:
-        if tier in readinesses:
-            return tier
-    return Readiness.UNKNOWN
 
 
 # Issue #241: retry attempts accumulate rather than replace, so an earlier

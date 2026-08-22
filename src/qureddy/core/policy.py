@@ -4,11 +4,11 @@
 
 from __future__ import annotations
 
-import uuid
 from enum import Enum
 
 from pydantic import BaseModel
 
+from qureddy.core.ids import new_id
 from qureddy.core.models import (
     FROZEN,
     LOCAL_CAPABILITY_CATEGORIES,
@@ -248,7 +248,7 @@ def _condition_matches(condition: RuleCondition, evidence: Evidence) -> bool:
 
 def _build_finding(asset: Asset, rule: PolicyRule, evidence: Evidence) -> Finding:
     return Finding(
-        id=f"finding-{uuid.uuid4().hex[:12]}",
+        id=new_id("finding"),
         asset_id=asset.id,
         evidence_ids=(evidence.id,),
         rule_id=rule.id,

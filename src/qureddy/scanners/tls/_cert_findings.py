@@ -20,10 +20,10 @@ the axis visible and honest, not blindly asserted.
 
 from __future__ import annotations
 
-import uuid
 from typing import TYPE_CHECKING
 
 from qureddy.core.certificate import CertificateObservation
+from qureddy.core.ids import new_id
 from qureddy.core.models import (
     Asset,
     Confidence,
@@ -56,7 +56,7 @@ def evidence_from_certificate(asset: Asset, certificate: CertificateInfo | None)
     """
     if certificate is None:
         return Evidence(
-            id=f"ev-{uuid.uuid4().hex[:12]}",
+            id=new_id("ev"),
             asset_id=asset.id,
             evidence_type="tls.cert.signature",
             observation_type=ObservationType.NOT_TESTABLE,
@@ -64,7 +64,7 @@ def evidence_from_certificate(asset: Asset, certificate: CertificateInfo | None)
             notes=("certificate not fetched or unparseable",),
         )
     return Evidence(
-        id=f"ev-{uuid.uuid4().hex[:12]}",
+        id=new_id("ev"),
         asset_id=asset.id,
         evidence_type="tls.cert.signature",
         observation_type=ObservationType.OBSERVED,
@@ -96,7 +96,7 @@ def finding_from_certificate(
         return None
     pq = certificate.is_post_quantum_signature
     return Finding(
-        id=f"finding-{uuid.uuid4().hex[:12]}",
+        id=new_id("finding"),
         asset_id=asset.id,
         evidence_ids=(evidence.id,),
         rule_id="tls.cert.signature_algorithm",

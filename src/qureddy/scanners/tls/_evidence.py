@@ -10,8 +10,7 @@ hard ceiling.
 
 from __future__ import annotations
 
-import uuid
-
+from qureddy.core.ids import new_id
 from qureddy.core.models import (
     Asset,
     Evidence,
@@ -21,17 +20,13 @@ from qureddy.core.models import (
     ProbeRole,
     ScanTarget,
 )
+from qureddy.scanners.common.assets import build_endpoint_asset
 from qureddy.scanners.tls.parse import ParsedNegotiation, parse_brief_output
 
 
 def build_asset(target: ScanTarget) -> Asset:
     """Construct the single `Asset` record for one TLS endpoint scan."""
-    return Asset(
-        id=f"asset-{uuid.uuid4().hex[:12]}",
-        asset_type="tls.endpoint",
-        locator=target.locator,
-        display_name=f"{target.host}:{target.port}",
-    )
+    return build_endpoint_asset(target, asset_type="tls.endpoint")
 
 
 def evidence_from_probe(
@@ -75,7 +70,7 @@ def _evidence_for_probe_failure(
     # middlebox_or_mtu_failure — the categories retry policy needs.
     category = probe.failure_category or FailureCategory.TLS_HANDSHAKE_FAILED
     return Evidence(
-        id=f"ev-{uuid.uuid4().hex[:12]}",
+        id=new_id("ev"),
         asset_id=asset.id,
         evidence_type="tls.probe.failure",
         observation_type=ObservationType.OBSERVED,
@@ -96,7 +91,7 @@ def _evidence_for_parse_failure(
     probe_role: ProbeRole,
 ) -> Evidence:
     return Evidence(
-        id=f"ev-{uuid.uuid4().hex[:12]}",
+        id=new_id("ev"),
         asset_id=asset.id,
         evidence_type="tls.probe.parse",
         observation_type=ObservationType.OBSERVED,
@@ -120,7 +115,7 @@ def _evidence_for_negotiation(
     probe_role: ProbeRole,
 ) -> Evidence:
     return Evidence(
-        id=f"ev-{uuid.uuid4().hex[:12]}",
+        id=new_id("ev"),
         asset_id=asset.id,
         evidence_type="tls.negotiation",
         observation_type=ObservationType.NEGOTIATED,
