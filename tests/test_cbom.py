@@ -461,6 +461,14 @@ class TestCycloneDx17Contract:
         assert "qureddy:scan.readiness" in property_names
         assert "qureddy:target.host" in property_names
 
+    def test_summary_rollup_in_metadata(self) -> None:
+        # #309: the JSON summary rollup (finding_count + highest_severity) must be in the CBOM
+        # too, so a consumer keying on the CBOM alone never needs the native JSON.
+        payload = _render(_build_result())
+        props = {p["name"]: p["value"] for p in payload["metadata"]["properties"]}
+        assert props["qureddy:scan.finding_count"] == "1"
+        assert props["qureddy:scan.highest_severity"] == "info"
+
     def test_inventory_comes_from_positive_evidence_not_findings(self) -> None:
         result = _build_result()
         finding_only = result.model_copy(update={"evidence": ()})
