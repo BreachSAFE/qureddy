@@ -1,7 +1,14 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
 # SPDX-License-Identifier: Apache-2.0
 
+# Keep the build context minimal: include only what the Dockerfile's
+# wheel-build stage needs to build the wheel from source (issue #253). The
+# wheel is built in-image, so no dist/ artifact is included.
 *
 !Dockerfile
-!dist/
-!dist/breachsafe_qureddy-*.whl
+!pyproject.toml
+!src
+!README.md
+!LICENSE
+!NOTICE
+!LICENSES

@@ -45,19 +45,17 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
-      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
       # Single source of truth: [project] version in pyproject.toml. The Dockerfile
-      # COPYs dist/breachsafe_qureddy-<version>-*.whl and its ARG QUREDDY_VERSION
-      # default is intentionally stale, so the build MUST be told the real version.
-      # Export via $GITHUB_ENV (not inline ${{ }}) so it can't break out of the shell.
+      # now builds the wheel from source in-image (issue #253), so no host wheel is
+      # needed. QUREDDY_VERSION is used only to label the image and to assert the
+      # version banner below. Export via $GITHUB_ENV (not inline ${{ }}) so it can't
+      # break out of the shell.
       - name: Resolve version from pyproject.toml
         run: |
           set -euo pipefail
           VERSION="$(grep -m1 -E '^version[[:space:]]*=' pyproject.toml | sed -E 's/.*"([^"]+)".*/\1/')"
           test -n "$VERSION" || { echo "ERROR: could not read version from pyproject.toml" >&2; exit 1; }
           echo "QUREDDY_VERSION=$VERSION" >> "$GITHUB_ENV"
-      - name: Build release wheel
-        run: uv tool run --from "build==1.3.0" python -m build --wheel
       - name: Build image
         run: |
           docker build \
@@ -142,12 +140,12 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      # setup-python provides python3 for the containerimage.digest parse below.
+      # The Dockerfile builds the wheel from source in-image (issue #253), so no
+      # host wheel pre-build is needed here.
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
-      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
-      - name: Build release wheel (pure-python; Dockerfile COPYs dist/*.whl)
-        run: uv tool run --from "build==1.3.0" python -m build --wheel
       - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
       - name: Log in to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io --username "${{ github.actor }}" --password-stdin

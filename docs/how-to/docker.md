@@ -74,8 +74,11 @@ Replace the tag with the returned `@sha256:...` reference in production jobs.
 
 ## 6. Build locally
 
+The Dockerfile is self-contained. It builds the QuReddy wheel from the
+checked-out source in a dedicated build stage, so a fresh clone builds with no
+pre-built wheel:
+
 ```bash
-python -m build --wheel
 docker build --tag qureddy:local .
 docker run --rm qureddy:local --version
 ```

@@ -71,8 +71,24 @@ instructions.
 
 ## 2. Run with Docker
 
-The release image bundles the verified OpenSSL runtime and runs as an
-unprivileged user:
+### Build from source
+
+The Dockerfile is self-contained: it compiles the pinned OpenSSL 3.5.7 runtime
+and builds the QuReddy wheel from the checked-out source, both inside the image.
+A fresh clone builds with no extra steps:
+
+```bash
+git clone https://github.com/breachsafe/qureddy
+cd qureddy
+docker build --tag qureddy:local .
+docker run --rm qureddy:local --version
+docker run --rm qureddy:local scan tls pq.cloudflareresearch.com --format cbom
+```
+
+The first build compiles OpenSSL from source and takes several minutes; later
+builds reuse the cached layer. The image runs as an unprivileged user.
+
+### Pull the release image
 
 ```bash
 docker pull ghcr.io/breachsafe/qureddy:latest

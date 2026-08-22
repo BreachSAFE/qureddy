@@ -14,8 +14,9 @@
 #         echo "$GHCR_TOKEN" | docker login ghcr.io -u <user> --password-stdin
 #     (token needs write:packages scope for ghcr.io/breachsafe/qureddy).
 #
-# It reads the version from pyproject.toml (the single source of truth), builds the
-# release wheel the Dockerfile COPYs, then builds + pushes the multi-arch image.
+# It reads the version from pyproject.toml (the single source of truth) to tag and
+# label the image, then builds + pushes the multi-arch image. The Dockerfile builds
+# the release wheel from source in-image (issue #253), so no host wheel is needed.
 
 set -euo pipefail
 
@@ -37,9 +38,6 @@ SHA_TAG="sha-$(echo "$REVISION" | cut -c1-12)"
 echo "Publishing ghcr.io/breachsafe/qureddy:$VERSION (revision $REVISION)"
 echo "NOTE: requires 'docker login ghcr.io' first. This is the MANUAL path used"
 echo "      when the container.yml GitHub Actions workflow is disabled."
-
-# Build the version-matching wheel the Dockerfile COPYs into the image.
-uv build --wheel
 
 docker buildx build \
   --platform linux/amd64,linux/arm64 \
