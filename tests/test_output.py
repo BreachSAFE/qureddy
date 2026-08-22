@@ -109,7 +109,7 @@ def _build_result(
             id="f-hybrid",
             asset_id=asset.id,
             evidence_ids=("ev-hybrid",),
-            rule_id="tls.hybrid.negotiated_x25519mlkem768",
+            rule_id="tls.hybrid.negotiated_pq",
             finding_type="tls.kex.hybrid",
             title="Hybrid",
             description="d",
@@ -293,7 +293,7 @@ class TestExistingContractStillHolds:
     ) -> None:
         monkeypatch.setenv("NO_COLOR", "1")
         out = _render_to_string(_build_result())
-        assert "tls.hybrid.negotiated_x25519mlkem768" in out
+        assert "tls.hybrid.negotiated_pq" in out
 
     def test_findings_are_sorted_by_severity(
         self,
@@ -303,7 +303,7 @@ class TestExistingContractStillHolds:
         result = _build_result()
         out = _render_to_string(result)
         assert out.index("tls.classical.negotiated_x25519") < out.index(
-            "tls.hybrid.negotiated_x25519mlkem768",
+            "tls.hybrid.negotiated_pq",
         )
 
     def test_schema_version_in_output(

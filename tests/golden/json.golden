@@ -128,7 +128,7 @@
       "protocol": "tls",
       "protocol_version": "TLSv1.3",
       "readiness": "transitional_hybrid",
-      "rule_id": "tls.hybrid.negotiated_x25519mlkem768",
+      "rule_id": "tls.hybrid.negotiated_pq",
       "severity": "info",
       "title": "Hybrid"
     },
@@ -161,7 +161,7 @@
     "completed_at": "2026-04-26T00:00:00Z",
     "scan_id": "scan-1",
     "scanner_name": "tls",
-    "scanner_version": "0.2.33",
+    "scanner_version": "0.2.34",
     "started_at": "2026-04-26T00:00:00Z",
     "status": "completed",
     "total_attempts": 2

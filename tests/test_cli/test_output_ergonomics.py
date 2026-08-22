@@ -25,7 +25,7 @@ from qureddy.output.json import render_json
 from tests._fake_openssl import fake_openssl
 from tests.test_output import _build_result
 
-_HYBRID_RULE = "tls.hybrid.negotiated_x25519mlkem768"  # severity INFO in _build_result
+_HYBRID_RULE = "tls.hybrid.negotiated_pq"  # severity INFO in _build_result
 _CLASSICAL_RULE = "tls.classical.negotiated_x25519"  # severity LOW in _build_result
 
 

@@ -51,7 +51,7 @@ def _build_result() -> ScanResult:
         id="finding-1",
         asset_id=asset.id,
         evidence_ids=("ev-1",),
-        rule_id="tls.hybrid.negotiated_x25519mlkem768",
+        rule_id="tls.hybrid.negotiated_pq",
         finding_type="tls.kex.hybrid",
         title="TLS 1.3 negotiated X25519MLKEM768",
         description="test",

@@ -87,6 +87,11 @@ def classify_public_key(algorithm: str | None, bits: int | None) -> PublicKeyAss
             nist_quantum_security_level=level,
         )
         return PublicKeyAsset(parameter_set.upper(), properties, "quantum_safe", "low")
+    return _classify_classical_public_key(algorithm, bits)
+
+
+def _classify_classical_public_key(algorithm: str, bits: int | None) -> PublicKeyAsset | None:
+    """Classify a classical asymmetric key (RSA / EC / EdDSA / DSA), or None if unrecognized."""
     family = _PUBLIC_KEY_FAMILY.get(algorithm.lower())
     if family is None:
         return None
