@@ -10,6 +10,7 @@ import pytest
 from typer.testing import CliRunner
 
 import qureddy.cli as cli_module
+import qureddy.cli.scan as scan_cli_module
 import qureddy.cli.ssh as ssh_cli_module
 from qureddy.cli import app, main
 from qureddy.core import retry as retry_module
@@ -368,3 +369,19 @@ def test_local_openssl_version_unreadable_exits_3() -> None:
     assert payload["scan"]["status"] == "local_openssl_version_unreadable"
     assert payload["dependencies"][0]["failure_category"] == "local_openssl_version_unreadable"
     assert payload["summary"]["failure_category"] == "local_openssl_version_unreadable"
+
+
+def test_render_failure_maps_to_exit_70_not_traceback(monkeypatch: pytest.MonkeyPatch) -> None:
+    """#344: a ValueError at the render boundary maps to the exit-code contract
+    (EXIT_INTERNAL_ERROR = 70) with an operator diagnostic, not an escaped traceback."""
+    monkeypatch.setattr(scan_cli_module, "_execute_scan", lambda *a, **k: (object(), 0))
+
+    def _boom(*_a: object, **_k: object) -> None:
+        msg = "duplicate bom-ref"
+        raise ValueError(msg)
+
+    monkeypatch.setattr(scan_cli_module, "_render", _boom)
+    result = CliRunner().invoke(app, ["scan", "tls", "example.com"])
+    assert result.exit_code == 70
+    assert "internal error rendering" in result.stderr.lower()
+    assert result.exception is None or isinstance(result.exception, SystemExit)
