@@ -12,9 +12,9 @@
     }
   },
   "producer": {
-    "commit": "bdaa5669bff7b46a8b6e6c48f1003a3acb26808a",
-    "installed_wheel_sha256": "ddb96f9e62e16805dba045483eaa55c2f7ac4bc4f63397a7dfd80207ab82dc38",
-    "version": "0.2.0"
+    "commit": "eccbcd5909aca0c80eeaee557d67f282f88505c7",
+    "installed_wheel_sha256": "7e83dc369a81d58f8ec9fefe11cea42255458e7781b57a3e6dcaabbfd935803a",
+    "version": "0.2.17"
   },
   "fixtures": {
     "p1-hybrid-tls": {
