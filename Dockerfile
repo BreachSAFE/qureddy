@@ -23,6 +23,17 @@ RUN curl --fail --location --proto '=https' --connect-timeout 30 --max-time 300 
     && make install_sw \
     && rm -rf /tmp/openssl.tar.gz /tmp/openssl-src
 
+# Build the wheel from source inside the image (#253) so a fresh `docker build .`
+# needs no host-built dist/ artifact. hatchling reads the static version from
+# pyproject.toml, so the wheel version is intrinsic to the source, not an ARG.
+FROM python:3.12.13-slim-bookworm@sha256:8a7e7cc04fd3e2bd787f7f24e22d5d119aa590d429b50c95dfe12b3abe52f48b AS wheel-build
+RUN pip install --no-cache-dir build==1.3.0 hatchling==1.31.0
+WORKDIR /src
+COPY pyproject.toml README.md LICENSE NOTICE ./
+COPY LICENSES/ ./LICENSES/
+COPY src/ ./src/
+RUN python -m build --wheel --no-isolation --outdir /tmp/wheel
+
 FROM python:3.12.13-slim-bookworm@sha256:8a7e7cc04fd3e2bd787f7f24e22d5d119aa590d429b50c95dfe12b3abe52f48b
 
 ARG QUREDDY_VERSION=0.2.20
@@ -43,29 +54,25 @@ RUN addgroup --gid 1000 qureddy \
     && mkdir -p /var/lib/qureddy \
     && chown qureddy:qureddy /var/lib/qureddy
 
-# Install only the wheel matching this build's version. The COPY uses a
-# version-scoped glob because a dev's dist/ may hold multiple versions; a bare
-# dist/*.whl would make pip see two versions of the same package ("conflicting
-# dependencies"). COPY is not read by Scorecard, so the ARG here is fine.
+# Install the wheel built in the wheel-build stage (#253). That stage emits
+# exactly one wheel, so /tmp/wheel/*.whl is unambiguous.
 #
 # Pinned-Dependencies (issue #221, #37): OpenSSF Scorecard treats a local
 # `pip install <wheel>.whl` as its pinned form, but only when the install
 # argument is a SINGLE literal ending in `.whl`. Scorecard's Dockerfile shell
-# parser (extractCommand) drops any word made of more than one part, so the
-# previous `pip install .../breachsafe_qureddy-${QUREDDY_VERSION}-*.whl` (literal
-# + ${ARG} expansion + glob = 3 parts) was discarded entirely, leaving a bare
-# `pip install` that scored Pinned-Dependencies 9/10 ("dependency not pinned by
-# hash"). Installing the wheel via a single-part literal glob (`/tmp/wheel/*.whl`,
-# no ARG expansion) keeps that word intact, so Scorecard recognizes the local
-# wheel and scores 10/10. The wheel is a local build artifact copied from the
-# build context, not a remote download.
+# parser (extractCommand) drops any word made of more than one part, so a
+# `pip install .../breachsafe_qureddy-${QUREDDY_VERSION}-*.whl` (literal
+# + ${ARG} expansion + glob = 3 parts) would be discarded entirely, leaving a
+# bare `pip install` that scores Pinned-Dependencies 9/10 ("dependency not
+# pinned by hash"). Installing via a single-part literal glob (`/tmp/wheel/*.whl`,
+# no ARG expansion) keeps that word intact, so Scorecard scores 10/10. The wheel
+# is a local build artifact from an earlier stage, not a remote download.
 #
 # QUREDDY_WHEEL_SHA256 (optional) additionally gates the install on the wheel's
-# sha256 for real artifact integrity. The release pipeline passes the digest of
-# the wheel it built; a plain `docker build` without it still builds and still
-# scores Pinned-Dependencies 10/10.
+# sha256 for artifact integrity; a plain `docker build` without it still builds
+# and still scores Pinned-Dependencies 10/10.
 ARG QUREDDY_WHEEL_SHA256=""
-COPY dist/breachsafe_qureddy-${QUREDDY_VERSION}-*.whl /tmp/wheel/
+COPY --from=wheel-build /tmp/wheel/*.whl /tmp/wheel/
 RUN set -eu; \
     wheel="$(ls /tmp/wheel/*.whl)"; \
     if [ -n "${QUREDDY_WHEEL_SHA256}" ]; then \
