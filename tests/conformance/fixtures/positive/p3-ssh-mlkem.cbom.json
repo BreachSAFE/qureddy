@@ -165,7 +165,7 @@
       "type": "cryptographic-asset"
     },
     {
-      "bom-ref": "crypto/algorithm/diffie-hellman-group-exchange-sha256",
+      "bom-ref": "crypto/algorithm/diffie-hellman-group14-sha1",
       "cryptoProperties": {
         "algorithmProperties": {
           "cryptoFunctions": [
@@ -176,7 +176,28 @@
         },
         "assetType": "algorithm"
       },
-      "name": "diffie-hellman-group-exchange-sha256",
+      "name": "diffie-hellman-group14-sha1",
+      "properties": [
+        {
+          "name": "qureddy:observation",
+          "value": "offered"
+        }
+      ],
+      "type": "cryptographic-asset"
+    },
+    {
+      "bom-ref": "crypto/algorithm/diffie-hellman-group14-sha256",
+      "cryptoProperties": {
+        "algorithmProperties": {
+          "cryptoFunctions": [
+            "keygen"
+          ],
+          "nistQuantumSecurityLevel": 0,
+          "primitive": "key-agree"
+        },
+        "assetType": "algorithm"
+      },
+      "name": "diffie-hellman-group14-sha256",
       "properties": [
         {
           "name": "qureddy:observation",
@@ -274,6 +295,42 @@
       "type": "cryptographic-asset"
     },
     {
+      "bom-ref": "crypto/algorithm/hmac-sha1",
+      "cryptoProperties": {
+        "algorithmProperties": {
+          "nistQuantumSecurityLevel": 0,
+          "primitive": "mac"
+        },
+        "assetType": "algorithm"
+      },
+      "name": "hmac-sha1",
+      "properties": [
+        {
+          "name": "qureddy:observation",
+          "value": "offered"
+        }
+      ],
+      "type": "cryptographic-asset"
+    },
+    {
+      "bom-ref": "crypto/algorithm/hmac-sha1-96",
+      "cryptoProperties": {
+        "algorithmProperties": {
+          "nistQuantumSecurityLevel": 0,
+          "primitive": "mac"
+        },
+        "assetType": "algorithm"
+      },
+      "name": "hmac-sha1-96",
+      "properties": [
+        {
+          "name": "qureddy:observation",
+          "value": "offered"
+        }
+      ],
+      "type": "cryptographic-asset"
+    },
+    {
       "bom-ref": "crypto/algorithm/hmac-sha2-256",
       "cryptoProperties": {
         "algorithmProperties": {
@@ -346,6 +403,30 @@
       "type": "cryptographic-asset"
     },
     {
+      "bom-ref": "crypto/algorithm/mlkem768x25519-sha256",
+      "cryptoProperties": {
+        "algorithmProperties": {
+          "cryptoFunctions": [
+            "decapsulate",
+            "encapsulate",
+            "keygen"
+          ],
+          "nistQuantumSecurityLevel": 3,
+          "parameterSetIdentifier": "ML-KEM-768",
+          "primitive": "kem"
+        },
+        "assetType": "algorithm"
+      },
+      "name": "mlkem768x25519-sha256",
+      "properties": [
+        {
+          "name": "qureddy:observation",
+          "value": "offered"
+        }
+      ],
+      "type": "cryptographic-asset"
+    },
+    {
       "bom-ref": "crypto/algorithm/rsa-sha2-256",
       "cryptoProperties": {
         "algorithmProperties": {
@@ -390,45 +471,19 @@
       "type": "cryptographic-asset"
     },
     {
-      "bom-ref": "crypto/algorithm/sntrup761x25519-sha512",
+      "bom-ref": "crypto/algorithm/ssh-dss",
       "cryptoProperties": {
         "algorithmProperties": {
           "cryptoFunctions": [
-            "decapsulate",
-            "encapsulate",
-            "keygen"
+            "sign",
+            "verify"
           ],
-          "nistQuantumSecurityLevel": 2,
-          "parameterSetIdentifier": "sntrup761",
-          "primitive": "kem"
+          "nistQuantumSecurityLevel": 0,
+          "primitive": "signature"
         },
         "assetType": "algorithm"
       },
-      "name": "sntrup761x25519-sha512",
-      "properties": [
-        {
-          "name": "qureddy:observation",
-          "value": "offered"
-        }
-      ],
-      "type": "cryptographic-asset"
-    },
-    {
-      "bom-ref": "crypto/algorithm/sntrup761x25519-sha512@openssh.com",
-      "cryptoProperties": {
-        "algorithmProperties": {
-          "cryptoFunctions": [
-            "decapsulate",
-            "encapsulate",
-            "keygen"
-          ],
-          "nistQuantumSecurityLevel": 2,
-          "parameterSetIdentifier": "sntrup761",
-          "primitive": "kem"
-        },
-        "assetType": "algorithm"
-      },
-      "name": "sntrup761x25519-sha512@openssh.com",
+      "name": "ssh-dss",
       "properties": [
         {
           "name": "qureddy:observation",
@@ -508,7 +563,10 @@
       "ref": "crypto/algorithm/curve25519-sha256@libssh.org"
     },
     {
-      "ref": "crypto/algorithm/diffie-hellman-group-exchange-sha256"
+      "ref": "crypto/algorithm/diffie-hellman-group14-sha1"
+    },
+    {
+      "ref": "crypto/algorithm/diffie-hellman-group14-sha256"
     },
     {
       "ref": "crypto/algorithm/ecdh-sha2-nistp256"
@@ -523,6 +581,12 @@
       "ref": "crypto/algorithm/ecdsa-sha2-nistp256"
     },
     {
+      "ref": "crypto/algorithm/hmac-sha1"
+    },
+    {
+      "ref": "crypto/algorithm/hmac-sha1-96"
+    },
+    {
       "ref": "crypto/algorithm/hmac-sha2-256"
     },
     {
@@ -535,16 +599,16 @@
       "ref": "crypto/algorithm/hmac-sha2-512-etm@openssh.com"
     },
     {
+      "ref": "crypto/algorithm/mlkem768x25519-sha256"
+    },
+    {
       "ref": "crypto/algorithm/rsa-sha2-256"
     },
     {
       "ref": "crypto/algorithm/rsa-sha2-512"
     },
     {
-      "ref": "crypto/algorithm/sntrup761x25519-sha512"
-    },
-    {
-      "ref": "crypto/algorithm/sntrup761x25519-sha512@openssh.com"
+      "ref": "crypto/algorithm/ssh-dss"
     },
     {
       "ref": "crypto/algorithm/ssh-ed25519"
@@ -566,19 +630,22 @@
         "crypto/algorithm/chacha20-poly1305@openssh.com",
         "crypto/algorithm/curve25519-sha256",
         "crypto/algorithm/curve25519-sha256@libssh.org",
-        "crypto/algorithm/diffie-hellman-group-exchange-sha256",
+        "crypto/algorithm/diffie-hellman-group14-sha1",
+        "crypto/algorithm/diffie-hellman-group14-sha256",
         "crypto/algorithm/ecdh-sha2-nistp256",
         "crypto/algorithm/ecdh-sha2-nistp384",
         "crypto/algorithm/ecdh-sha2-nistp521",
         "crypto/algorithm/ecdsa-sha2-nistp256",
+        "crypto/algorithm/hmac-sha1",
+        "crypto/algorithm/hmac-sha1-96",
         "crypto/algorithm/hmac-sha2-256",
         "crypto/algorithm/hmac-sha2-256-etm@openssh.com",
         "crypto/algorithm/hmac-sha2-512",
         "crypto/algorithm/hmac-sha2-512-etm@openssh.com",
+        "crypto/algorithm/mlkem768x25519-sha256",
         "crypto/algorithm/rsa-sha2-256",
         "crypto/algorithm/rsa-sha2-512",
-        "crypto/algorithm/sntrup761x25519-sha512",
-        "crypto/algorithm/sntrup761x25519-sha512@openssh.com",
+        "crypto/algorithm/ssh-dss",
         "crypto/algorithm/ssh-ed25519",
         "crypto/algorithm/ssh-rsa",
         "crypto/protocol/ssh-2.0"
@@ -588,13 +655,13 @@
   "metadata": {
     "component": {
       "bom-ref": "endpoint",
-      "name": "github.com:22",
+      "name": "gitlab.com:22",
       "type": "application"
     },
     "properties": [
       {
         "name": "qureddy:evidence.00.negotiated_group",
-        "value": "sntrup761x25519-sha512"
+        "value": "mlkem768x25519-sha256"
       },
       {
         "name": "qureddy:evidence.00.observation",
@@ -614,7 +681,7 @@
       },
       {
         "name": "qureddy:evidence.01.negotiated_group",
-        "value": "sntrup761x25519-sha512@openssh.com"
+        "value": "curve25519-sha256"
       },
       {
         "name": "qureddy:evidence.01.observation",
@@ -634,7 +701,7 @@
       },
       {
         "name": "qureddy:evidence.02.negotiated_group",
-        "value": "curve25519-sha256"
+        "value": "curve25519-sha256@libssh.org"
       },
       {
         "name": "qureddy:evidence.02.observation",
@@ -654,7 +721,7 @@
       },
       {
         "name": "qureddy:evidence.03.negotiated_group",
-        "value": "curve25519-sha256@libssh.org"
+        "value": "ecdh-sha2-nistp256"
       },
       {
         "name": "qureddy:evidence.03.observation",
@@ -674,7 +741,7 @@
       },
       {
         "name": "qureddy:evidence.04.negotiated_group",
-        "value": "ecdh-sha2-nistp256"
+        "value": "ecdh-sha2-nistp384"
       },
       {
         "name": "qureddy:evidence.04.observation",
@@ -694,7 +761,7 @@
       },
       {
         "name": "qureddy:evidence.05.negotiated_group",
-        "value": "ecdh-sha2-nistp384"
+        "value": "ecdh-sha2-nistp521"
       },
       {
         "name": "qureddy:evidence.05.observation",
@@ -714,7 +781,7 @@
       },
       {
         "name": "qureddy:evidence.06.negotiated_group",
-        "value": "ecdh-sha2-nistp521"
+        "value": "diffie-hellman-group14-sha256"
       },
       {
         "name": "qureddy:evidence.06.observation",
@@ -734,7 +801,7 @@
       },
       {
         "name": "qureddy:evidence.07.negotiated_group",
-        "value": "diffie-hellman-group-exchange-sha256"
+        "value": "diffie-hellman-group14-sha1"
       },
       {
         "name": "qureddy:evidence.07.observation",
@@ -753,10 +820,6 @@
         "value": "ssh.kex"
       },
       {
-        "name": "qureddy:evidence.08.negotiated_group",
-        "value": "ssh-ed25519"
-      },
-      {
         "name": "qureddy:evidence.08.observation",
         "value": "offered"
       },
@@ -770,11 +833,11 @@
       },
       {
         "name": "qureddy:evidence.08.type",
-        "value": "ssh.hostkey"
+        "value": "ssh.kex.weak"
       },
       {
         "name": "qureddy:evidence.09.negotiated_group",
-        "value": "ecdsa-sha2-nistp256"
+        "value": "ssh-dss"
       },
       {
         "name": "qureddy:evidence.09.observation",
@@ -794,7 +857,7 @@
       },
       {
         "name": "qureddy:evidence.10.negotiated_group",
-        "value": "rsa-sha2-512"
+        "value": "ecdsa-sha2-nistp256"
       },
       {
         "name": "qureddy:evidence.10.observation",
@@ -814,7 +877,7 @@
       },
       {
         "name": "qureddy:evidence.11.negotiated_group",
-        "value": "rsa-sha2-256"
+        "value": "ssh-ed25519"
       },
       {
         "name": "qureddy:evidence.11.observation",
@@ -834,7 +897,7 @@
       },
       {
         "name": "qureddy:evidence.12.negotiated_group",
-        "value": "ssh-rsa"
+        "value": "rsa-sha2-256"
       },
       {
         "name": "qureddy:evidence.12.observation",
@@ -854,7 +917,7 @@
       },
       {
         "name": "qureddy:evidence.13.negotiated_group",
-        "value": "chacha20-poly1305@openssh.com"
+        "value": "rsa-sha2-512"
       },
       {
         "name": "qureddy:evidence.13.observation",
@@ -870,11 +933,11 @@
       },
       {
         "name": "qureddy:evidence.13.type",
-        "value": "ssh.cipher"
+        "value": "ssh.hostkey"
       },
       {
         "name": "qureddy:evidence.14.negotiated_group",
-        "value": "aes256-gcm@openssh.com"
+        "value": "ssh-rsa"
       },
       {
         "name": "qureddy:evidence.14.observation",
@@ -890,7 +953,7 @@
       },
       {
         "name": "qureddy:evidence.14.type",
-        "value": "ssh.cipher"
+        "value": "ssh.hostkey"
       },
       {
         "name": "qureddy:evidence.15.negotiated_group",
@@ -914,7 +977,7 @@
       },
       {
         "name": "qureddy:evidence.16.negotiated_group",
-        "value": "aes256-ctr"
+        "value": "aes256-gcm@openssh.com"
       },
       {
         "name": "qureddy:evidence.16.observation",
@@ -934,7 +997,7 @@
       },
       {
         "name": "qureddy:evidence.17.negotiated_group",
-        "value": "aes192-ctr"
+        "value": "chacha20-poly1305@openssh.com"
       },
       {
         "name": "qureddy:evidence.17.observation",
@@ -974,7 +1037,7 @@
       },
       {
         "name": "qureddy:evidence.19.negotiated_group",
-        "value": "hmac-sha2-512-etm@openssh.com"
+        "value": "aes192-ctr"
       },
       {
         "name": "qureddy:evidence.19.observation",
@@ -990,11 +1053,11 @@
       },
       {
         "name": "qureddy:evidence.19.type",
-        "value": "ssh.mac"
+        "value": "ssh.cipher"
       },
       {
         "name": "qureddy:evidence.20.negotiated_group",
-        "value": "hmac-sha2-256-etm@openssh.com"
+        "value": "aes256-ctr"
       },
       {
         "name": "qureddy:evidence.20.observation",
@@ -1010,11 +1073,11 @@
       },
       {
         "name": "qureddy:evidence.20.type",
-        "value": "ssh.mac"
+        "value": "ssh.cipher"
       },
       {
         "name": "qureddy:evidence.21.negotiated_group",
-        "value": "hmac-sha2-512"
+        "value": "hmac-sha2-256-etm@openssh.com"
       },
       {
         "name": "qureddy:evidence.21.observation",
@@ -1034,7 +1097,7 @@
       },
       {
         "name": "qureddy:evidence.22.negotiated_group",
-        "value": "hmac-sha2-256"
+        "value": "hmac-sha2-512-etm@openssh.com"
       },
       {
         "name": "qureddy:evidence.22.observation",
@@ -1050,6 +1113,86 @@
       },
       {
         "name": "qureddy:evidence.22.type",
+        "value": "ssh.mac"
+      },
+      {
+        "name": "qureddy:evidence.23.negotiated_group",
+        "value": "hmac-sha2-256"
+      },
+      {
+        "name": "qureddy:evidence.23.observation",
+        "value": "offered"
+      },
+      {
+        "name": "qureddy:evidence.23.protocol_version",
+        "value": "2.0"
+      },
+      {
+        "name": "qureddy:evidence.23.source",
+        "value": "qureddy.scanners.ssh.probe"
+      },
+      {
+        "name": "qureddy:evidence.23.type",
+        "value": "ssh.mac"
+      },
+      {
+        "name": "qureddy:evidence.24.negotiated_group",
+        "value": "hmac-sha2-512"
+      },
+      {
+        "name": "qureddy:evidence.24.observation",
+        "value": "offered"
+      },
+      {
+        "name": "qureddy:evidence.24.protocol_version",
+        "value": "2.0"
+      },
+      {
+        "name": "qureddy:evidence.24.source",
+        "value": "qureddy.scanners.ssh.probe"
+      },
+      {
+        "name": "qureddy:evidence.24.type",
+        "value": "ssh.mac"
+      },
+      {
+        "name": "qureddy:evidence.25.negotiated_group",
+        "value": "hmac-sha1"
+      },
+      {
+        "name": "qureddy:evidence.25.observation",
+        "value": "offered"
+      },
+      {
+        "name": "qureddy:evidence.25.protocol_version",
+        "value": "2.0"
+      },
+      {
+        "name": "qureddy:evidence.25.source",
+        "value": "qureddy.scanners.ssh.probe"
+      },
+      {
+        "name": "qureddy:evidence.25.type",
+        "value": "ssh.mac"
+      },
+      {
+        "name": "qureddy:evidence.26.negotiated_group",
+        "value": "hmac-sha1-96"
+      },
+      {
+        "name": "qureddy:evidence.26.observation",
+        "value": "offered"
+      },
+      {
+        "name": "qureddy:evidence.26.protocol_version",
+        "value": "2.0"
+      },
+      {
+        "name": "qureddy:evidence.26.source",
+        "value": "qureddy.scanners.ssh.probe"
+      },
+      {
+        "name": "qureddy:evidence.26.type",
         "value": "ssh.mac"
       },
       {
@@ -1074,7 +1217,7 @@
       },
       {
         "name": "qureddy:finding.00.title",
-        "value": "SSH offers post-quantum hybrid key exchange (sntrup761x25519-sha512)"
+        "value": "SSH offers post-quantum hybrid key exchange (mlkem768x25519-sha256)"
       },
       {
         "name": "qureddy:finding.01.confidence",
@@ -1082,7 +1225,7 @@
       },
       {
         "name": "qureddy:finding.01.finding_type",
-        "value": "ssh.hostkey.weak"
+        "value": "ssh.kex.weak"
       },
       {
         "name": "qureddy:finding.01.readiness",
@@ -1090,7 +1233,7 @@
       },
       {
         "name": "qureddy:finding.01.rule_id",
-        "value": "ssh.hostkey.weak"
+        "value": "ssh.kex.weak"
       },
       {
         "name": "qureddy:finding.01.severity",
@@ -1098,15 +1241,63 @@
       },
       {
         "name": "qureddy:finding.01.title",
-        "value": "Weak SSH host-key algorithm offered (ssh-rsa)"
+        "value": "Weak SSH key-exchange algorithm offered (diffie-hellman-group14-sha1)"
+      },
+      {
+        "name": "qureddy:finding.02.confidence",
+        "value": "high"
+      },
+      {
+        "name": "qureddy:finding.02.finding_type",
+        "value": "ssh.hostkey.weak"
+      },
+      {
+        "name": "qureddy:finding.02.readiness",
+        "value": "classically_weak"
+      },
+      {
+        "name": "qureddy:finding.02.rule_id",
+        "value": "ssh.hostkey.weak"
+      },
+      {
+        "name": "qureddy:finding.02.severity",
+        "value": "medium"
+      },
+      {
+        "name": "qureddy:finding.02.title",
+        "value": "Weak SSH host-key algorithm offered (ssh-dss, ssh-rsa)"
+      },
+      {
+        "name": "qureddy:finding.03.confidence",
+        "value": "high"
+      },
+      {
+        "name": "qureddy:finding.03.finding_type",
+        "value": "ssh.transport.weak"
+      },
+      {
+        "name": "qureddy:finding.03.readiness",
+        "value": "classically_weak"
+      },
+      {
+        "name": "qureddy:finding.03.rule_id",
+        "value": "ssh.transport.weak"
+      },
+      {
+        "name": "qureddy:finding.03.severity",
+        "value": "medium"
+      },
+      {
+        "name": "qureddy:finding.03.title",
+        "value": "Weak SSH cipher or MAC offered (hmac-sha1, hmac-sha1-96)"
       },
       {
         "name": "qureddy:scan.completed_at",
-        "value": "2026-08-22T02:27:58.393818+00:00"
+        "value": "2026-08-22T02:30:31.838979+00:00"
       },
       {
         "name": "qureddy:scan.id",
-        "value": "scan-4596b8366f6a"
+        "value": "scan-4b43641ab4cb"
       },
       {
         "name": "qureddy:scan.readiness",
@@ -1118,7 +1309,7 @@
       },
       {
         "name": "qureddy:scan.started_at",
-        "value": "2026-08-22T02:27:58.202831+00:00"
+        "value": "2026-08-22T02:30:31.681602+00:00"
       },
       {
         "name": "qureddy:scan.status",
@@ -1130,15 +1321,15 @@
       },
       {
         "name": "qureddy:target.host",
-        "value": "github.com"
+        "value": "gitlab.com"
       },
       {
         "name": "qureddy:target.locator",
-        "value": "ssh://github.com:22"
+        "value": "ssh://gitlab.com:22"
       },
       {
         "name": "qureddy:target.original_input",
-        "value": "github.com"
+        "value": "gitlab.com"
       },
       {
         "name": "qureddy:target.port",
@@ -1149,7 +1340,7 @@
         "value": "ssh"
       }
     ],
-    "timestamp": "2026-08-22T02:27:58.393895+00:00",
+    "timestamp": "2026-08-22T02:30:31.839106+00:00",
     "tools": {
       "components": [
         {
@@ -1161,7 +1352,7 @@
       ]
     }
   },
-  "serialNumber": "urn:uuid:cbb46648-fa65-4009-8a55-eeb8171f1e06",
+  "serialNumber": "urn:uuid:51080cfa-d4fb-4a09-959c-18632fcf4ba1",
   "version": 1,
   "$schema": "http://cyclonedx.org/schema/bom-1.7.schema.json",
   "bomFormat": "CycloneDX",

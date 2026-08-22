@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import io
 import json
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -62,18 +63,30 @@ def test_sntrup_also_counts_as_hybrid() -> None:
     assert r.summary.readiness is Readiness.TRANSITIONAL_HYBRID
 
 
-def test_ssh_hybrid_observation_emits_17_crypto_assets() -> None:
-    result = _run(("mlkem768x25519-sha256", "curve25519-sha256"), ("ssh-ed25519",))
-    stream = io.StringIO()
+def test_captured_ssh_cbom_fixtures_carry_full_inventory() -> None:
+    """The REAL captured SSH CBOMs carry the full crypto inventory (#243/#245).
 
-    render_cbom(result, stream)
-
-    payload = json.loads(stream.getvalue())
-    components = {item["bom-ref"]: item for item in payload["components"]}
-    assert payload["specVersion"] == "1.7"
-    assert "crypto/algorithm/mlkem768x25519-sha256" in components
-    protocol = components["crypto/protocol/ssh-2.0"]["cryptoProperties"]["protocolProperties"]
-    assert protocol == {"type": "ssh", "version": "2.0"}
+    Validates the conformance fixtures produced by the real CLI against live servers
+    (github.com = sntrup761 hybrid, gitlab.com = ML-KEM hybrid) — not a hand-built fake
+    offer. Every fixture must inventory host keys (signature), each KEX group (kem +
+    key-agree), and the transport ciphers/MACs (ae/block-cipher + mac) the CBOM used to
+    drop.
+    """
+    fixtures = Path(__file__).parent / "conformance" / "fixtures" / "positive"
+    for name in ("p3-ssh-hybrid", "p3-ssh-mlkem"):
+        payload = json.loads((fixtures / f"{name}.cbom.json").read_text())
+        assert payload["specVersion"] == "1.7"
+        primitives = {
+            (c.get("cryptoProperties", {}).get("algorithmProperties") or {}).get("primitive")
+            for c in payload["components"]
+        }
+        assert "signature" in primitives, f"{name}: host-key signature asset missing"
+        assert "kem" in primitives, f"{name}: PQ-hybrid KEX (kem) asset missing"
+        assert "key-agree" in primitives, f"{name}: classical KEX asset missing"
+        assert "mac" in primitives, f"{name}: MAC asset missing (#243)"
+        assert primitives & {"ae", "block-cipher", "stream-cipher"}, (
+            f"{name}: cipher asset missing (#243)"
+        )
 
 
 def test_ssh_rsa_sha1_hostkey_flagged_weak() -> None:

@@ -1,0 +1,9 @@
+fixture: p3-ssh-mlkem
+classification: captured
+command: qureddy scan ssh gitlab.com --format cbom
+exit_code: 0
+captured_utc: 2026-08-22T02:30:31Z
+producer_commit: 67f18be8352645e02f19e8ee7b899ee762bd7a05
+installed_wheel_sha256: 3450ee6635932b26f351beb23019e7bfa367e0fd04c8273fb7630311ab8f0484
+target: live gitlab.com:22
+sha256: 98d35f25f6190e449fce346ac75005850e3b5901e3c363db82efcc6fee350956

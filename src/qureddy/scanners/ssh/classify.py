@@ -148,6 +148,7 @@ def cipher_primitive(name: str) -> str:
         return "stream-cipher"
     return "block-cipher"  # aes-ctr/-cbc, 3des-cbc, etc.
 
+
 # name -> human note, for reporting
 KEX_NOTES = MappingProxyType(
     {

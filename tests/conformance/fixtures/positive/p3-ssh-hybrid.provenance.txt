@@ -2,8 +2,8 @@ fixture: p3-ssh-hybrid
 classification: captured
 command: qureddy scan ssh github.com --format cbom
 exit_code: 0
-captured_utc: 2026-07-27T01:45:07Z
+captured_utc: 2026-08-22T02:28:34Z
+producer_commit: 67f18be8352645e02f19e8ee7b899ee762bd7a05
+installed_wheel_sha256: 3450ee6635932b26f351beb23019e7bfa367e0fd04c8273fb7630311ab8f0484
 target: live github.com:22
-producer_commit: bdaa5669bff7b46a8b6e6c48f1003a3acb26808a
-installed_wheel_sha256: ddb96f9e62e16805dba045483eaa55c2f7ac4bc4f63397a7dfd80207ab82dc38
-sha256: 0b01aef089380dfb49ff0f529a068aeb305ca8956ca088f79f3beb75f181159e
+sha256: 5b1687441c0539f3f72157f932602aed33308e2cd534be4f6fcec8fd1fd3c569

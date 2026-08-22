@@ -36,7 +36,7 @@
     "p3-ssh-hybrid": {
       "kind": "positive",
       "classification": "captured",
-      "sha256": "0b01aef089380dfb49ff0f529a068aeb305ca8956ca088f79f3beb75f181159e",
+      "sha256": "5b1687441c0539f3f72157f932602aed33308e2cd534be4f6fcec8fd1fd3c569",
       "official_rejects": false,
       "cli_rejects": false,
       "semantic_rejects": false
@@ -128,6 +128,14 @@
       "official_rejects": false,
       "cli_rejects": false,
       "semantic_rejects": true
+    },
+    "p3-ssh-mlkem": {
+      "kind": "positive",
+      "classification": "captured",
+      "sha256": "98d35f25f6190e449fce346ac75005850e3b5901e3c363db82efcc6fee350956",
+      "official_rejects": false,
+      "cli_rejects": false,
+      "semantic_rejects": false
     }
   }
 }
