@@ -258,6 +258,61 @@ def _host_key_observations(
     return evidence, finding
 
 
+def _cipher_mac_observations(
+    asset: Asset, ciphers: tuple[str, ...], macs: tuple[str, ...]
+) -> tuple[list[Evidence], Finding | None]:
+    """Evidence for every offered cipher and MAC, plus a weak finding if any are weak (#243).
+
+    Mirrors ``_host_key_observations``: each offered transport algorithm becomes OFFERED
+    evidence carrying its own name in ``negotiated_group`` so the CBOM emits the full
+    inventory (previously ciphers/MACs were never collected past the host-key name-list).
+    """
+    evidence: list[Evidence] = []
+    weak_ids: list[str] = []
+    weak_names: list[str] = []
+    items = (
+        *(("ssh.cipher", "cipher", name, classify.weak_cipher_note(name)) for name in ciphers),
+        *(("ssh.mac", "MAC", name, classify.weak_mac_note(name)) for name in macs),
+    )
+    for evidence_type, label, name, note in items:
+        notes = (f"{name}: {note}",) if note else (f"{label} offered: {name}",)
+        record = Evidence(
+            id=_uid("ev"),
+            asset_id=asset.id,
+            evidence_type=evidence_type,
+            observation_type=ObservationType.OFFERED,
+            source="qureddy.scanners.ssh.probe",
+            protocol="ssh",
+            protocol_version="2.0",
+            negotiated_group=name,
+            notes=notes,
+        )
+        evidence.append(record)
+        if note is not None:
+            weak_ids.append(record.id)
+            weak_names.append(name)
+    if not weak_ids:
+        return evidence, None
+    finding = Finding(
+        id=_uid("finding"),
+        asset_id=asset.id,
+        evidence_ids=tuple(weak_ids),
+        rule_id="ssh.transport.weak",
+        finding_type="ssh.transport.weak",
+        title=f"Weak SSH cipher or MAC offered ({', '.join(weak_names)})",
+        description=(
+            "Deprecated transport algorithms offered. RC4/arcfour and HMAC-MD5 are "
+            "broken; 3DES-CBC uses a 64-bit block (SWEET32); HMAC-SHA1 and CBC ciphers "
+            "are deprecated in modern OpenSSH."
+        ),
+        severity=Severity.MEDIUM,
+        readiness=Readiness.CLASSICALLY_WEAK,
+        confidence=Confidence.HIGH,
+        protocol="ssh",
+    )
+    return evidence, finding
+
+
 def _weak_kex_observation(
     asset: Asset, algorithms: tuple[str, ...]
 ) -> tuple[Evidence, Finding] | None:
@@ -351,4 +406,10 @@ def scan_ssh(target: ScanTarget, *, timeout_seconds: int = 8) -> ScanResult:
     evidence.extend(host_key_evidence)
     if weak_host_key_finding is not None:
         findings.append(weak_host_key_finding)
+    cipher_mac_evidence, weak_transport_finding = _cipher_mac_observations(
+        asset, offer.ciphers, offer.macs
+    )
+    evidence.extend(cipher_mac_evidence)
+    if weak_transport_finding is not None:
+        findings.append(weak_transport_finding)
     return _build_ssh_success_result(target, asset, evidence, findings, started)

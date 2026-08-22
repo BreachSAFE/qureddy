@@ -51,7 +51,11 @@ from qureddy.output.cbom_metadata import (
     openssl_tool_properties,
 )
 from qureddy.output.cbom_semantics import validate_cbom_semantics
-from qureddy.output.cbom_ssh import add_ssh_host_key_components, add_ssh_kex_components
+from qureddy.output.cbom_ssh import (
+    add_ssh_host_key_components,
+    add_ssh_kex_components,
+    add_ssh_transport_components,
+)
 
 if TYPE_CHECKING:
     from qureddy.core.certificate import CertificateObservation
@@ -112,6 +116,7 @@ def render_cbom(
     algorithm_refs = add_algorithm_components(bom, result, provides_edges)
     add_ssh_host_key_components(bom, result, provides_edges)
     add_ssh_kex_components(bom, result, provides_edges)
+    add_ssh_transport_components(bom, result, provides_edges)
     add_cipher_suite_components(bom, result, provides_edges)
     add_protocol_components(bom, result, algorithm_refs, provides_edges)
     certificate = _captured_certificate(result)
