@@ -44,6 +44,8 @@ present; the rest appear when the underlying evidence carries them.
 |---|---|---|
 | `observation` | yes | Observation type: `negotiated`, `offered`, `observed`, `not_offered`, `not_testable`. |
 | `evidence_type` | yes | Source signal, e.g. `tls.negotiation`, `tls.legacy.cipher`, `ssh.kex`. |
+| `confidence` | yes | Evidence confidence: `high`, `medium`, `low` (#326). |
+| `cipher_suite` | when co-observed | The negotiated TLS cipher suite, when it is not itself the occurrence subject (#326). |
 | `role` | when probed | Probe role, e.g. `hybrid_readiness`, `classical_control`. |
 | `expected` | when probed | Group the probe forced, e.g. `X25519MLKEM768`. |
 | `return_code` | when probed | Probe process exit code. |

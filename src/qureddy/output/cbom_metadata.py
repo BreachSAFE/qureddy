@@ -154,7 +154,9 @@ def evidence_occurrences(
         elif evidence.protocol_version:
             ref = protocol_ref(evidence.protocol, evidence.protocol_version)
         else:
-            continue
+            # #326: evidence with no crypto subject (a bare failure/probe record) attaches to
+            # the endpoint so every evidence item maps to an occurrence — no silent drop.
+            ref = ENDPOINT_REF
         # #307: strict "key=value" pairs joined by "; " so a consumer reads each provenance
         # field without scraping prose — the fragility the flat layer had, in miniature.
         # Keys are lower_snake_case; no value contains "; " or "=", so split-then-partition
@@ -162,7 +164,11 @@ def evidence_occurrences(
         fields = [
             f"observation={evidence.observation_type.value}",
             f"evidence_type={evidence.evidence_type}",
+            f"confidence={evidence.confidence.value}",  # #326: preserve confidence as a field
         ]
+        # #326: co-observed cipher suite as a field (when it isn't already the occurrence subject).
+        if evidence.cipher_suite and evidence.cipher_suite != name:
+            fields.append(f"cipher_suite={evidence.cipher_suite}")
         if evidence.probe_role:
             fields.append(f"role={evidence.probe_role.value}")
         if evidence.expected_group:
