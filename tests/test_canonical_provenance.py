@@ -23,3 +23,13 @@ def test_main_rejects_wrong_github_actions_repository(monkeypatch) -> None:
     monkeypatch.setenv("GITHUB_REPOSITORY", "example/incorrect")
 
     assert provenance.main() == 1
+
+
+def test_main_accepts_canonical_repository_case_insensitively(monkeypatch) -> None:
+    """GITHUB_REPOSITORY preserves the org's display casing (BreachSAFE/qureddy); the
+    guard must accept it, else every CI run and the release job fail on the canonical
+    repo (the case bug that broke the v0.2.18 release)."""
+    monkeypatch.setenv("GITHUB_REPOSITORY", "BreachSAFE/qureddy")
+    monkeypatch.setattr(provenance, "tracked_files", lambda _root: [])
+
+    assert provenance.main() == 0
