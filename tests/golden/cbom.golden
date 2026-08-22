@@ -135,12 +135,12 @@
         "value": "120"
       },
       {
-        "name": "qureddy:evidence.00.negotiated_group",
-        "value": "X25519MLKEM768"
-      },
-      {
         "name": "qureddy:evidence.00.observation",
         "value": "negotiated"
+      },
+      {
+        "name": "qureddy:evidence.00.observed_algorithm",
+        "value": "X25519MLKEM768"
       },
       {
         "name": "qureddy:evidence.00.protocol_version",
@@ -183,12 +183,12 @@
         "value": "110"
       },
       {
-        "name": "qureddy:evidence.01.negotiated_group",
-        "value": "X25519"
-      },
-      {
         "name": "qureddy:evidence.01.observation",
         "value": "negotiated"
+      },
+      {
+        "name": "qureddy:evidence.01.observed_algorithm",
+        "value": "X25519"
       },
       {
         "name": "qureddy:evidence.01.protocol_version",
@@ -346,7 +346,7 @@
           "bom-ref": "tool/qureddy",
           "name": "qureddy",
           "type": "application",
-          "version": "0.2.21"
+          "version": "0.2.22"
         }
       ]
     }

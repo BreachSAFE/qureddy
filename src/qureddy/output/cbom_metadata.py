@@ -21,6 +21,10 @@ if TYPE_CHECKING:
 
     from qureddy.core.models import OpenSSLDependency, ScanResult
 
+# SHA-256 of the empty string: a probe with no stdout hashes to this, which is
+# provenance filler conveying nothing, so it is omitted rather than emitted (#286).
+_EMPTY_SHA256 = hashlib.sha256(b"").hexdigest()
+
 
 def openssl_tool_properties(
     dependency: OpenSSLDependency, *, reproducible: bool = False
@@ -132,7 +136,9 @@ def add_evidence_provenance(bom: Bom, result: ScanResult, *, reproducible: bool)
             (f"{prefix}.source", evidence.source),
             (f"{prefix}.protocol_version", evidence.protocol_version),
             (f"{prefix}.cipher_suite", evidence.cipher_suite),
-            (f"{prefix}.negotiated_group", evidence.negotiated_group),
+            # observed_algorithm, not negotiated_group: SSH records offered host keys /
+            # ciphers / MACs here too, which are neither "groups" nor "negotiated" (#286).
+            (f"{prefix}.observed_algorithm", evidence.negotiated_group),
             (f"{prefix}.probe_role", evidence.probe_role.value if evidence.probe_role else None),
             (f"{prefix}.expected_group", evidence.expected_group),
         ]
@@ -156,7 +162,11 @@ def add_evidence_provenance(bom: Bom, result: ScanResult, *, reproducible: bool)
                 [
                     (f"{prefix}.command_sha256", hashlib.sha256(command.encode()).hexdigest()),
                     (f"{prefix}.return_code", str(probe.return_code)),
-                    (f"{prefix}.stdout_sha256", probe.stdout_sha256),
+                    # Omit the empty-string hash (no stdout) rather than emit filler (#286).
+                    (
+                        f"{prefix}.stdout_sha256",
+                        probe.stdout_sha256 if probe.stdout_sha256 != _EMPTY_SHA256 else None,
+                    ),
                     (f"{prefix}.stderr_sha256", probe.stderr_sha256),
                     (f"{prefix}.attempt_number", str(probe.attempt_number)),
                 ]
