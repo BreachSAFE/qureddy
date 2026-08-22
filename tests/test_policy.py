@@ -44,7 +44,7 @@ class TestHybridNegotiatedRule:
         ev = _evidence(negotiated_group="X25519MLKEM768")
         findings = classify_evidence(_asset(), [ev])
         assert len(findings) == 1
-        assert findings[0].rule_id == "tls.hybrid.negotiated_x25519mlkem768"
+        assert findings[0].rule_id == "tls.hybrid.negotiated_pq"  # #330: structural rule id
         assert findings[0].severity is Severity.INFO
         assert findings[0].readiness is Readiness.TRANSITIONAL_HYBRID
         assert findings[0].confidence is Confidence.HIGH

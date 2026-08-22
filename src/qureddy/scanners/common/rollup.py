@@ -20,18 +20,19 @@ SEVERITY_ORDER: dict[Severity, int] = {
     Severity.CRITICAL: 4,
 }
 
-# Readiness rollup precedence, highest first. CLASSICALLY_WEAK trumps everything
-# because broken classical crypto is exploitable today regardless of PQ posture;
-# TRANSITIONAL_HYBRID outranks QUANTUM_VULNERABLE because a firing hybrid rule means
-# PQ negotiation works (the classical control fires by design on every scan and must
-# not downgrade the verdict). The full tier set is listed so no verdict silently
-# degrades to UNKNOWN.
+# Readiness rollup precedence, highest first. CLASSICALLY_WEAK trumps everything because
+# broken classical crypto is exploitable today regardless of PQ posture. QUANTUM_SAFE (pure
+# PQ) and TRANSITIONAL_HYBRID both outrank QUANTUM_VULNERABLE because the classical control
+# probe fires quantum_vulnerable on every scan by design and must not downgrade a genuinely
+# safe/hybrid verdict; QUANTUM_SAFE is the strongest positive, above hybrid (#330 — before,
+# QUANTUM_SAFE sat below QUANTUM_VULNERABLE, so a pure-PQ endpoint rolled up to vulnerable).
+# The full tier set is listed so no verdict silently degrades to UNKNOWN.
 READINESS_PRECEDENCE: tuple[Readiness, ...] = (
     Readiness.CLASSICALLY_WEAK,
+    Readiness.QUANTUM_SAFE,
     Readiness.TRANSITIONAL_HYBRID,
     Readiness.QUANTUM_VULNERABLE,
     Readiness.UNKNOWN,
-    Readiness.QUANTUM_SAFE,
     Readiness.NOT_APPLICABLE,
 )
 
