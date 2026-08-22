@@ -97,23 +97,22 @@ def run_with_retries(
     first = probe(1)
     results.append(first)
 
-    triggering = first.failure_category
-    if triggering is None or triggering not in retry_on:
+    if not _should_retry(first.failure_category, retry_on):
         return results
 
     for attempt in range(2, retries + 2):
         sleep(retry_delay)
         result = probe(attempt)
         results.append(result)
-        if not _retry_again(result.failure_category, triggering):
+        if not _should_retry(result.failure_category, retry_on):
             return results
 
     return results
 
 
-def _retry_again(
+def _should_retry(
     category: FailureCategory | None,
-    triggering: FailureCategory,
+    retry_on: frozenset[FailureCategory],
 ) -> bool:
-    """True when an attempt's outcome still matches the triggering failure."""
-    return category is not None and category == triggering
+    """True when the failure category is inside the retry_on allowlist."""
+    return category is not None and category in retry_on
