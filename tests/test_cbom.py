@@ -22,7 +22,7 @@ from qureddy.core.models import (
     ObservationType,
     OpenSSLDependency,
 )
-from qureddy.output.cbom import render_cbom
+from qureddy.output.cbom import _assert_library_serialization_shape, render_cbom
 from qureddy.scanners.tls.scanner import build_capability_failure_result
 from tests._cbom_fixtures import _build_result, _forced_non_english_lc_time, _render
 
@@ -35,6 +35,63 @@ class TestCycloneDx17Contract:
 
         assert payload["specVersion"] == "1.7"
         assert payload["$schema"] == "http://cyclonedx.org/schema/bom-1.7.schema.json"
+
+    def test_library_intermediate_shape_guard_accepts_patch_surface(self) -> None:
+        _assert_library_serialization_shape(
+            {
+                "dependencies": [{"ref": "endpoint"}],
+                "components": [
+                    {
+                        "bom-ref": "crypto/certificate/leaf",
+                        "cryptoProperties": {"certificateProperties": {}},
+                    }
+                ],
+                "metadata": {"component": {"bom-ref": "endpoint"}},
+            },
+            has_certificate=True,
+        )
+
+    @pytest.mark.parametrize(
+        ("payload", "message"),
+        [
+            (
+                {"dependencies": {}, "components": [], "metadata": {"component": {}}},
+                "dependencies/components",
+            ),
+            ({"dependencies": [], "components": [], "metadata": {}}, "metadata.component"),
+            (
+                {"dependencies": [{"ref": 1}], "components": [], "metadata": {"component": {}}},
+                "dependency.ref",
+            ),
+            (
+                {"dependencies": [], "components": [{"bom-ref": 1}], "metadata": {"component": {}}},
+                "component.bom-ref",
+            ),
+        ],
+    )
+    def test_library_intermediate_shape_guard_fails_closed(
+        self, payload: dict[str, object], message: str
+    ) -> None:
+        with pytest.raises(RuntimeError, match=message):
+            _assert_library_serialization_shape(payload, has_certificate=False)
+
+    def test_library_intermediate_shape_guard_rejects_bad_certificate_properties(self) -> None:
+        payload = {
+            "dependencies": [],
+            "components": [{"bom-ref": "crypto/certificate/leaf", "cryptoProperties": {}}],
+            "metadata": {"component": {}},
+        }
+        with pytest.raises(RuntimeError, match="certificateProperties"):
+            _assert_library_serialization_shape(payload, has_certificate=True)
+
+    def test_library_intermediate_shape_guard_rejects_missing_certificate(self) -> None:
+        payload = {
+            "dependencies": [],
+            "components": [],
+            "metadata": {"component": {}},
+        }
+        with pytest.raises(RuntimeError, match="certificate component"):
+            _assert_library_serialization_shape(payload, has_certificate=True)
 
     def test_endpoint_is_metadata_only_with_stable_ref(self) -> None:
         first = _render(_build_result())
