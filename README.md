@@ -186,9 +186,12 @@ qureddy scan ssh github.com --format cbom > github-ssh.cdx.json
 
 The crypto assets use native CycloneDX `cryptoProperties`, so any CycloneDX 1.7
 crypto-aware tool understands the inventory and post-quantum posture. QuReddy's
-interpretation and provenance ride in `qureddy:`-namespaced `metadata.properties`,
-which unaware tools ignore without failing. Add `--reproducible` for a byte- and
-digest-identical document. See [the CBOM design doc](docs/explanation/cbom-design.md)
+interpretation and provenance are native CycloneDX too: evidence is
+`component.evidence.occurrences`, findings are top-level `annotations`, and each
+finding's verdict is `qureddy:`-namespaced `properties` on the subject component;
+scan/target/tool provenance stays in `qureddy:`-namespaced `metadata.properties`.
+Unaware tools ignore the `qureddy:` keys without failing. Add `--reproducible` for a
+byte- and digest-identical document. See [the CBOM design doc](docs/explanation/cbom-design.md)
 for the design and interoperability boundary.
 
 Machine modes write one parseable document to standard output. Without an

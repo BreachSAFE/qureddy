@@ -11,7 +11,8 @@ The same bytes must pass three independent layers:
 2. CycloneDX CLI 0.33.1, downloaded from its exact release asset and checked
    by SHA-256 before execution;
 3. BreachSAFE semantic checks for exact `specVersion`, duplicate and dangling
-   references, and secret-like prohibited material.
+   references (including annotation `bom-ref` uniqueness and every annotation
+   `subjects` entry resolving to a component), and secret-like prohibited material.
 
 `rfc3339-validator` is an explicit development dependency. The conformance check first
 proves that malformed `date-time` values are rejected; missing format support
