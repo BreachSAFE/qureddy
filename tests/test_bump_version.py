@@ -5,8 +5,9 @@
 Every version-bearing single-source that ``scripts/bump_version.py`` owns is
 exercised here against an isolated fixture repository, so the tool's coverage
 is locked by construction: pyproject, the README badge, the CHANGELOG badge,
-the ``Dockerfile`` ``ARG QUREDDY_VERSION`` default, the ``uv.lock`` entry, and
-the golden output contracts.
+the ``Dockerfile`` ``ARG QUREDDY_VERSION`` default, the ``uv.lock`` entry, the
+version-bearing docs (``cli.md``, ``BADGE.md``, ``json-schema.md`` — see
+breachsafe/qureddy#340), and the golden output contracts.
 """
 
 from __future__ import annotations
@@ -62,6 +63,23 @@ def _write_repo(root: Path, version: str) -> None:
         "[[package]]\n"
         f'name = "breachsafe-qureddy"\nversion = "{version}"\nsource = {{ editable = "." }}\n'
     )
+    reference = root / "docs" / "reference"
+    reference.mkdir(parents=True, exist_ok=True)
+    (reference / "cli.md").write_text(
+        "# CLI reference\n\n"
+        f"This page records the installed `qureddy {version}` command surface.\n\n"
+        "```text\n"
+        f"BreachSAFE QuReddy {version} -- https://www.breachsafe.ai\n"
+        "```\n"
+    )
+    (root / "docs" / "BADGE.md").write_text(
+        f'| `version_unique` | Met | `pyproject.toml` `version = "{version}"`; each release bumps it. |\n'
+        f"| `version_tags` | Met | Releases are tagged `vX.Y.Z` (e.g. `v{version}`). |\n"
+    )
+    (reference / "json-schema.md").write_text(
+        "| `scanner_version` | string | Installed QuReddy version |\n\n"
+        f'    "scanner_version": "{version}",\n'
+    )
     (golden / "rich.golden").write_text(f"QuReddy {version} by BreachSAFE\n version  {version}\n")
     (golden / "json.golden").write_text(f'{{"scanner_version": "{version}"}}\n')
     (golden / "cbom.golden").write_text(
@@ -79,6 +97,11 @@ def repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(bump_version, "DOCKERFILE", tmp_path / "Dockerfile")
     monkeypatch.setattr(bump_version, "UVLOCK", tmp_path / "uv.lock")
     monkeypatch.setattr(bump_version, "GOLDEN", tmp_path / "tests" / "golden")
+    monkeypatch.setattr(bump_version, "CLI_DOC", tmp_path / "docs" / "reference" / "cli.md")
+    monkeypatch.setattr(bump_version, "BADGE_DOC", tmp_path / "docs" / "BADGE.md")
+    monkeypatch.setattr(
+        bump_version, "JSON_SCHEMA_DOC", tmp_path / "docs" / "reference" / "json-schema.md"
+    )
     # ``_simple_targets()`` is rebuilt from the path globals above on each call,
     # so patching those alone retargets the tool at this fixture repository.
     return tmp_path
@@ -105,6 +128,35 @@ def test_bump_propagates_to_every_stampable_source(repo: Path) -> None:
     # No stale 0.0.1 left in any stampable file.
     for name in ("pyproject.toml", "README.md", "Dockerfile", "uv.lock"):
         assert "0.0.1" not in (repo / name).read_text()
+
+
+def test_bump_stamps_version_bearing_docs(repo: Path) -> None:
+    """The docs that quote a concrete release are stamped (breachsafe/qureddy#340)."""
+    cli = repo / "docs" / "reference" / "cli.md"
+    badge = repo / "docs" / "BADGE.md"
+    json_schema = repo / "docs" / "reference" / "json-schema.md"
+    assert "`qureddy 0.0.1`" in cli.read_text()
+
+    bump_version.bump("1.2.3")
+
+    cli_text = cli.read_text()
+    assert "`qureddy 1.2.3`" in cli_text  # intro sentence
+    assert "BreachSAFE QuReddy 1.2.3 --" in cli_text  # §1 version-line example
+    badge_text = badge.read_text()
+    assert '`version = "1.2.3"`' in badge_text  # version_unique evidence
+    assert "(e.g. `v1.2.3`)" in badge_text  # version_tags evidence
+    assert '"scanner_version": "1.2.3"' in json_schema.read_text()
+
+    # No stale literal survives in any of the newly-targeted docs.
+    for path in (cli, badge, json_schema):
+        assert "0.0.1" not in path.read_text()
+
+
+def test_check_detects_cli_doc_drift(repo: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    cli = repo / "docs" / "reference" / "cli.md"
+    cli.write_text(cli.read_text().replace("QuReddy 0.0.1 --", "QuReddy 0.1.9 --"))
+    assert bump_version.check() == 1
+    assert "cli.md" in capsys.readouterr().err
 
 
 def test_bump_stamps_dockerfile_arg(repo: Path) -> None:
