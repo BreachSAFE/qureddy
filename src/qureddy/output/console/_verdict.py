@@ -91,33 +91,52 @@ def _summary_headline_and_recommendation(result: ScanResult) -> tuple[Text, Text
     classical_evidence = _pick_evidence(result, group=_CLASSICAL_GROUP)
     classical_group = classical_evidence.negotiated_group if classical_evidence else None
 
+    headline = _compose_headline(
+        result, readiness, failure, hybrid_group=hybrid_group, classical_group=classical_group
+    )
+    return headline, _recommendation(result, readiness, hybrid_group, failure)
+
+
+def _compose_headline(
+    result: ScanResult,
+    readiness: Readiness,
+    failure: FailureCategory | None,
+    *,
+    hybrid_group: str | None,
+    classical_group: str | None,
+) -> Text:
+    """Build the plain-English at-a-glance headline for the given readiness verdict."""
     if readiness is Readiness.QUANTUM_SAFE:
-        headline = compose_status("READY", " — full PQ negotiated")
-    elif readiness is Readiness.TRANSITIONAL_HYBRID:
+        return compose_status("READY", " — full PQ negotiated")
+    if readiness is Readiness.TRANSITIONAL_HYBRID:
         headline = compose_status("READY", " — PQ hybrid ", group=hybrid_group)
         headline.append(" negotiated")
-    elif readiness is Readiness.QUANTUM_VULNERABLE:
+        return headline
+    if readiness is Readiness.QUANTUM_VULNERABLE:
         headline = compose_status("NOT READY", " — classical only (", group=classical_group)
         headline.append(")")
-    elif readiness is Readiness.CLASSICALLY_WEAK:
-        if hybrid_group is not None:
-            headline = Text("PQ posture: ", style="bold")
-            headline.append("ACCEPTABLE", style="bold green")
-            headline.append(" — ")
-            headline.append(hybrid_group, style="bold green")
-            headline.append(" negotiated\n")
-            headline.append("Protocol hygiene: ", style="bold")
-            headline.append("ACTION NEEDED", style="bold yellow")
-            headline.append(" — ")
-            headline.append(_legacy_protocols(result))
-        else:
-            headline = compose_status("FAIL", " — weak classical primitive")
-    elif readiness is Readiness.NOT_APPLICABLE:
-        headline = compose_status("UNKNOWN", " — scan not applicable")
-    else:
-        headline = unknown_headline(failure)
+        return headline
+    if readiness is Readiness.CLASSICALLY_WEAK:
+        return _classically_weak_headline(result, hybrid_group)
+    if readiness is Readiness.NOT_APPLICABLE:
+        return compose_status("UNKNOWN", " — scan not applicable")
+    return unknown_headline(failure)
 
-    return headline, _recommendation(result, readiness, hybrid_group, failure)
+
+def _classically_weak_headline(result: ScanResult, hybrid_group: str | None) -> Text:
+    """Headline for a classically-weak verdict: split axes when PQ hybrid is present."""
+    if hybrid_group is None:
+        return compose_status("FAIL", " — weak classical primitive")
+    headline = Text("PQ posture: ", style="bold")
+    headline.append("ACCEPTABLE", style="bold green")
+    headline.append(" — ")
+    headline.append(hybrid_group, style="bold green")
+    headline.append(" negotiated\n")
+    headline.append("Protocol hygiene: ", style="bold")
+    headline.append("ACTION NEEDED", style="bold yellow")
+    headline.append(" — ")
+    headline.append(_legacy_protocols(result))
+    return headline
 
 
 def _recommendation(

@@ -141,7 +141,7 @@ def fetch_certificate_pem(
     stdout = _run_openssl(args, event_prefix="cert_probe.fetch", timeout_seconds=timeout_seconds)
     pem_start = stdout.find("-----BEGIN CERTIFICATE-----")
     pem_end = stdout.find("-----END CERTIFICATE-----")
-    if pem_start == -1 or pem_end == -1:
+    if -1 in (pem_start, pem_end):
         return ""
     return stdout[pem_start : pem_end + len("-----END CERTIFICATE-----")]
 
@@ -157,10 +157,9 @@ def _x509(
     On timeout, returns "" — see `_run_openssl`.
     """
     full_args = [openssl_path, "x509", "-noout", *args]
-    stdout = _run_openssl(
+    return _run_openssl(
         full_args, event_prefix="cert_probe.x509", timeout_seconds=timeout_seconds, input_text=pem
-    )
-    return stdout.strip()
+    ).strip()
 
 
 def _is_self_signed(

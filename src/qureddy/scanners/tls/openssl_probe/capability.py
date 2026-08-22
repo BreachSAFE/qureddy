@@ -96,20 +96,14 @@ def _dependency_from_capability(
     version = extract_version(version_text)
     library_version = extract_library_version(version_text)
     libressl_version = extract_libressl_version(version_text)
-    failure_category: FailureCategory | None = None
     rendered_version = _render_version(version, library_version) or libressl_version
-    if libressl_version is not None:
-        failure_category = FailureCategory.LOCAL_OPENSSL_IS_LIBRESSL
-    elif version is None or ("(Library:" in version_text and library_version is None):
-        failure_category = FailureCategory.LOCAL_OPENSSL_VERSION_UNREADABLE
-    elif version < PINNED_OPENSSL_VERSION and version.base_version != str(PINNED_OPENSSL_VERSION):
-        failure_category = FailureCategory.LOCAL_OPENSSL_TOO_OLD
-    elif version != PINNED_OPENSSL_VERSION or (
-        library_version is not None and library_version != PINNED_OPENSSL_VERSION
-    ):
-        failure_category = FailureCategory.LOCAL_OPENSSL_VERSION_MISMATCH
-    elif not supports_hybrid:
-        failure_category = FailureCategory.LOCAL_OPENSSL_LACKS_GROUP
+    failure_category = _capability_failure_category(
+        version_text,
+        version,
+        library_version,
+        libressl_version,
+        supports_hybrid=supports_hybrid,
+    )
     return OpenSSLDependency(
         path=openssl_path,
         version=rendered_version,
@@ -117,6 +111,37 @@ def _dependency_from_capability(
         supports_x25519mlkem768=supports_hybrid,
         failure_category=failure_category,
     )
+
+
+def _capability_failure_category(
+    version_text: str,
+    version: Version | None,
+    library_version: Version | None,
+    libressl_version: str | None,
+    *,
+    supports_hybrid: bool,
+) -> FailureCategory | None:
+    """Classify why (if at all) the probed OpenSSL is unusable, in precedence order."""
+    if libressl_version is not None:
+        return FailureCategory.LOCAL_OPENSSL_IS_LIBRESSL
+    if version is None or ("(Library:" in version_text and library_version is None):
+        return FailureCategory.LOCAL_OPENSSL_VERSION_UNREADABLE
+    return _version_mismatch_category(version, library_version, supports_hybrid=supports_hybrid)
+
+
+def _version_mismatch_category(
+    version: Version, library_version: Version | None, *, supports_hybrid: bool
+) -> FailureCategory | None:
+    """Classify a readable version against the pinned OpenSSL release, then hybrid support."""
+    if version < PINNED_OPENSSL_VERSION and version.base_version != str(PINNED_OPENSSL_VERSION):
+        return FailureCategory.LOCAL_OPENSSL_TOO_OLD
+    if version != PINNED_OPENSSL_VERSION or (
+        library_version is not None and library_version != PINNED_OPENSSL_VERSION
+    ):
+        return FailureCategory.LOCAL_OPENSSL_VERSION_MISMATCH
+    if not supports_hybrid:
+        return FailureCategory.LOCAL_OPENSSL_LACKS_GROUP
+    return None
 
 
 def _render_version(version: Version | None, library_version: Version | None) -> str | None:
