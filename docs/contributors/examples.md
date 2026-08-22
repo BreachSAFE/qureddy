@@ -392,7 +392,7 @@ class LocalOpenSSLTooOld(QureddyError):
 
 
 class LocalOpenSSLVersionMismatch(QureddyError):
-    """OpenSSL or its linked library does not match exact 3.5.7 LTS.
+    """OpenSSL or its linked library is outside the supported 3.5.x LTS series.
 
     Raised by the capability check. Maps to
     FailureCategory.LOCAL_OPENSSL_VERSION_MISMATCH.

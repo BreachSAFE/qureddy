@@ -30,17 +30,19 @@ from qureddy.scanners.tls.openssl_probe._constants import (
     DEFAULT_TIMEOUT_SECONDS,
     ENV_OVERRIDE,
     HYBRID_GROUP,
+    OPENSSL_LTS_LABEL,
     PINNED_OPENSSL_VERSION,
+    is_supported_series,
 )
 
 _INSTALL_GUIDANCE = (
-    "pip installs QuReddy, not OpenSSL. Install a checksum-verified OpenSSL 3.5.7 LTS "
-    "build separately, then pass --openssl PATH or set QUREDDY_OPENSSL. macOS: the "
-    "Homebrew openssl@3.5 formula is a moving channel; select it only after `openssl "
-    "version` reports 3.5.7 for the executable and any explicitly reported linked "
-    "library. Linux: install exact OpenSSL 3.5.7 LTS from your distribution or trusted "
-    "vendor. Windows: install a maintained exact OpenSSL 3.5.7 LTS distribution and "
-    "pass its full path."
+    f"pip installs QuReddy, not OpenSSL. Install a checksum-verified OpenSSL {OPENSSL_LTS_LABEL} "  # noqa: S608  # nosec B608 -- operator guidance, not SQL
+    f"LTS build separately (validated baseline: {PINNED_OPENSSL_VERSION}), then pass "
+    "--openssl PATH or set QUREDDY_OPENSSL. macOS: the Homebrew openssl@3.5 formula is "
+    "a moving channel; select it only after `openssl version` reports a supported 3.5.x "
+    "release for the executable and any explicitly reported linked library. Linux: install "
+    "OpenSSL 3.5.x LTS from your distribution or trusted vendor. Windows: install a "
+    "maintained OpenSSL 3.5.x LTS distribution and pass its full path."
 )
 
 
@@ -132,12 +134,12 @@ def _capability_failure_category(
 def _version_mismatch_category(
     version: Version, library_version: Version | None, *, supports_hybrid: bool
 ) -> FailureCategory | None:
-    """Classify a readable version against the pinned OpenSSL release, then hybrid support."""
-    if version < PINNED_OPENSSL_VERSION and version.base_version != str(PINNED_OPENSSL_VERSION):
+    """Classify a readable version against the supported LTS series."""
+    if version < PINNED_OPENSSL_VERSION:
         return FailureCategory.LOCAL_OPENSSL_TOO_OLD
-    if version != PINNED_OPENSSL_VERSION or (
-        library_version is not None and library_version != PINNED_OPENSSL_VERSION
-    ):
+    if not is_supported_series(version):
+        return FailureCategory.LOCAL_OPENSSL_VERSION_MISMATCH
+    if library_version is not None and not is_supported_series(library_version):
         return FailureCategory.LOCAL_OPENSSL_VERSION_MISMATCH
     if not supports_hybrid:
         return FailureCategory.LOCAL_OPENSSL_LACKS_GROUP
@@ -161,20 +163,21 @@ def raise_if_unusable(dep: OpenSSLDependency) -> None:
     if category is FailureCategory.LOCAL_OPENSSL_VERSION_UNREADABLE:
         message = (
             f"OpenSSL at {dep.path} has unparseable version output "
-            f"(required: {PINNED_OPENSSL_VERSION})"
+            f"(required: OpenSSL {OPENSSL_LTS_LABEL}.x LTS; validated baseline: "
+            f"{PINNED_OPENSSL_VERSION})"
         )
         raise LocalOpenSSLVersionUnreadable(message, dependency=dep)
     if category is FailureCategory.LOCAL_OPENSSL_IS_LIBRESSL:
         raise LocalOpenSSLIsLibreSSL(_libressl_guidance(dep), dependency=dep)
     if category is FailureCategory.LOCAL_OPENSSL_TOO_OLD:
         raise LocalOpenSSLTooOld(
-            f"OpenSSL {dep.version} is below required {PINNED_OPENSSL_VERSION}. "
+            f"OpenSSL {dep.version} is below the required {OPENSSL_LTS_LABEL}.x LTS series. "
             f"{_INSTALL_GUIDANCE}",
             dependency=dep,
         )
     if category is FailureCategory.LOCAL_OPENSSL_VERSION_MISMATCH:
         raise LocalOpenSSLVersionMismatch(
-            f"OpenSSL {dep.version} does not match required {PINNED_OPENSSL_VERSION}. "
+            f"OpenSSL {dep.version} is outside the required {OPENSSL_LTS_LABEL}.x LTS series. "
             f"{_INSTALL_GUIDANCE}",
             dependency=dep,
         )
@@ -188,8 +191,8 @@ def raise_if_unusable(dep: OpenSSLDependency) -> None:
 def _libressl_guidance(dep: OpenSSLDependency) -> str:
     return (
         f"{dep.path} is LibreSSL {dep.version}, not OpenSSL — install a checksum-verified "
-        f"OpenSSL {PINNED_OPENSSL_VERSION} LTS build with {HYBRID_GROUP}, then pass "
+        f"OpenSSL {OPENSSL_LTS_LABEL}.x LTS build with {HYBRID_GROUP}, then pass "
         f"--openssl PATH or set {ENV_OVERRIDE}. On macOS, Homebrew openssl@3.5 is a "
-        "moving channel; select it only after `openssl version` reports 3.5.7 for the "
+        "moving channel; select it only after `openssl version` reports a supported 3.5.x for the "
         "executable and any explicitly reported linked library."
     )

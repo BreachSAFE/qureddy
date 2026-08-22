@@ -44,7 +44,7 @@
     "p4-sparse-unknown": {
       "kind": "positive",
       "classification": "minimized-from-captured",
-      "sha256": "01f442c85551bc937024f1fd9fe89ed53f6d6345ea338c35b51cb88695974379",
+      "sha256": "7879a52506f13cdedf21ce9b334395c8618c9558d1ae5868bead99bd85f4b69c",
       "official_rejects": false,
       "cli_rejects": false,
       "semantic_rejects": false
@@ -60,7 +60,7 @@
     "p6-missing-openssl": {
       "kind": "positive",
       "classification": "minimized-from-captured",
-      "sha256": "6f9b5124c3d54012874f8b007853929dedfde7a435252ca8da8ceaedc55a268c",
+      "sha256": "688fa7d9c8d4477f5c2c707ca955f442044f57cdd9db97f0557d0754fa0427f9",
       "official_rejects": false,
       "cli_rejects": false,
       "semantic_rejects": false

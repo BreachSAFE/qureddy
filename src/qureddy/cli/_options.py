@@ -55,7 +55,7 @@ SniOpt = Annotated[
     typer.Option("--sni", help="SNI override (recommended for name-based virtual hosts)."),
 ]
 OpenSSLOpt = Annotated[
-    str | None, typer.Option("--openssl", help="Path to exact OpenSSL 3.5.7 LTS binary.")
+    str | None, typer.Option("--openssl", help="Path to an OpenSSL 3.5.x LTS binary.")
 ]
 FormatOpt = Annotated[
     OutputFormat,

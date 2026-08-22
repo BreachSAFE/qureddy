@@ -132,7 +132,7 @@ openssl list -tls1_3 -tls-groups
 
 If the executable or any explicitly reported linked-library version is not
 exactly 3.5.7, or the group list does not contain `X25519MLKEM768`, install an
-exact 3.5.7 vendor build or use the repository's
+supported OpenSSL 3.5.x LTS vendor build or use the repository's
 [checksum-pinned 3.5.7 source-build recipe](../../.github/actions/setup-openssl/action.yml)
 against the [official OpenSSL source](https://openssl-library.org/source/).
 Do not substitute a current or moving release. Record the resulting path in
