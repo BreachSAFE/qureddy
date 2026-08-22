@@ -4,9 +4,9 @@
 
 from __future__ import annotations
 
-import uuid
 from datetime import UTC, datetime
 
+from qureddy.core.ids import new_id
 from qureddy.core.models import (
     Evidence,
     FailureCategory,
@@ -68,7 +68,7 @@ def _build_failure_result(
     started = datetime.now(UTC)
     asset = build_asset(target)
     evidence = Evidence(
-        id=f"ev-{uuid.uuid4().hex[:12]}",
+        id=new_id("ev"),
         asset_id=asset.id,
         evidence_type=evidence_type,
         observation_type=ObservationType.NOT_TESTABLE,
@@ -82,7 +82,7 @@ def _build_failure_result(
     )
     return ScanResult(
         scan=ScanMetadata(
-            scan_id=f"scan-{uuid.uuid4().hex[:12]}",
+            scan_id=new_id("scan"),
             started_at=started,
             completed_at=datetime.now(UTC),
             status=failure_category.value,

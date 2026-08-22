@@ -13,8 +13,7 @@ builder — kept separate on purpose (issue #192).
 
 from __future__ import annotations
 
-import uuid
-
+from qureddy.core.ids import new_id
 from qureddy.core.models import (
     Asset,
     Confidence,
@@ -52,7 +51,7 @@ def evidence_from_legacy_result(asset: Asset, result: LegacyProtocolResult) -> E
     """
     if result.probe_incomplete and not result.accepted_ciphers:
         return Evidence(
-            id=f"ev-{uuid.uuid4().hex[:12]}",
+            id=new_id("ev"),
             asset_id=asset.id,
             evidence_type="tls.legacy.protocol",
             observation_type=ObservationType.NOT_TESTABLE,
@@ -72,7 +71,7 @@ def evidence_from_legacy_result(asset: Asset, result: LegacyProtocolResult) -> E
     # claim the endpoint *provides* TLS 1.0/1.1 for essentially every modern target (#137).
     observation_type = ObservationType.OFFERED if result.offered else ObservationType.NOT_OFFERED
     return Evidence(
-        id=f"ev-{uuid.uuid4().hex[:12]}",
+        id=new_id("ev"),
         asset_id=asset.id,
         evidence_type="tls.legacy.protocol",
         observation_type=observation_type,
@@ -124,7 +123,7 @@ def finding_from_legacy_result(
     cipher_list = ", ".join(result.accepted_ciphers)
     if not deprecated_protocol and not weak:
         return Finding(
-            id=f"finding-{uuid.uuid4().hex[:12]}",
+            id=new_id("finding"),
             asset_id=asset.id,
             evidence_ids=(evidence.id,),
             rule_id="tls.classical.protocol_offered",
@@ -146,7 +145,7 @@ def finding_from_legacy_result(
         else f"{result.protocol_version} accepts a known-weak cipher"
     )
     return Finding(
-        id=f"finding-{uuid.uuid4().hex[:12]}",
+        id=new_id("finding"),
         asset_id=asset.id,
         evidence_ids=(evidence.id,),
         rule_id="tls.legacy.protocol_offered",
