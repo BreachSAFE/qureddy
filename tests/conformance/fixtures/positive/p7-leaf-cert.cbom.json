@@ -1,6 +1,210 @@
 {
   "components": [
     {
+      "bom-ref": "crypto/algorithm/aes128-gcm-sha256",
+      "cryptoProperties": {
+        "algorithmProperties": {
+          "classicalSecurityLevel": 128,
+          "primitive": "ae"
+        },
+        "assetType": "algorithm"
+      },
+      "name": "AES128-GCM-SHA256",
+      "properties": [
+        {
+          "name": "qureddy:observation",
+          "value": "offered"
+        },
+        {
+          "name": "qureddy:readiness",
+          "value": "quantum_vulnerable"
+        },
+        {
+          "name": "qureddy:severity",
+          "value": "low"
+        }
+      ],
+      "type": "cryptographic-asset",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "qureddy.scanners.tls.legacy_probe",
+            "additionalContext": "offered on tls.legacy.cipher"
+          }
+        ]
+      }
+    },
+    {
+      "bom-ref": "crypto/algorithm/aes128-sha",
+      "cryptoProperties": {
+        "algorithmProperties": {
+          "classicalSecurityLevel": 128,
+          "primitive": "block-cipher"
+        },
+        "assetType": "algorithm"
+      },
+      "name": "AES128-SHA",
+      "properties": [
+        {
+          "name": "qureddy:observation",
+          "value": "offered"
+        },
+        {
+          "name": "qureddy:readiness",
+          "value": "quantum_vulnerable"
+        },
+        {
+          "name": "qureddy:severity",
+          "value": "low"
+        }
+      ],
+      "type": "cryptographic-asset",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "qureddy.scanners.tls.legacy_probe",
+            "additionalContext": "offered on tls.legacy.cipher"
+          }
+        ]
+      }
+    },
+    {
+      "bom-ref": "crypto/algorithm/aes128-sha256",
+      "cryptoProperties": {
+        "algorithmProperties": {
+          "classicalSecurityLevel": 128,
+          "primitive": "block-cipher"
+        },
+        "assetType": "algorithm"
+      },
+      "name": "AES128-SHA256",
+      "properties": [
+        {
+          "name": "qureddy:observation",
+          "value": "offered"
+        },
+        {
+          "name": "qureddy:readiness",
+          "value": "quantum_vulnerable"
+        },
+        {
+          "name": "qureddy:severity",
+          "value": "low"
+        }
+      ],
+      "type": "cryptographic-asset",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "qureddy.scanners.tls.legacy_probe",
+            "additionalContext": "offered on tls.legacy.cipher"
+          }
+        ]
+      }
+    },
+    {
+      "bom-ref": "crypto/algorithm/aes256-gcm-sha384",
+      "cryptoProperties": {
+        "algorithmProperties": {
+          "classicalSecurityLevel": 256,
+          "primitive": "ae"
+        },
+        "assetType": "algorithm"
+      },
+      "name": "AES256-GCM-SHA384",
+      "properties": [
+        {
+          "name": "qureddy:observation",
+          "value": "offered"
+        },
+        {
+          "name": "qureddy:readiness",
+          "value": "quantum_vulnerable"
+        },
+        {
+          "name": "qureddy:severity",
+          "value": "low"
+        }
+      ],
+      "type": "cryptographic-asset",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "qureddy.scanners.tls.legacy_probe",
+            "additionalContext": "offered on tls.legacy.cipher"
+          }
+        ]
+      }
+    },
+    {
+      "bom-ref": "crypto/algorithm/aes256-sha",
+      "cryptoProperties": {
+        "algorithmProperties": {
+          "classicalSecurityLevel": 256,
+          "primitive": "block-cipher"
+        },
+        "assetType": "algorithm"
+      },
+      "name": "AES256-SHA",
+      "properties": [
+        {
+          "name": "qureddy:observation",
+          "value": "offered"
+        },
+        {
+          "name": "qureddy:readiness",
+          "value": "quantum_vulnerable"
+        },
+        {
+          "name": "qureddy:severity",
+          "value": "low"
+        }
+      ],
+      "type": "cryptographic-asset",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "qureddy.scanners.tls.legacy_probe",
+            "additionalContext": "offered on tls.legacy.cipher"
+          }
+        ]
+      }
+    },
+    {
+      "bom-ref": "crypto/algorithm/aes256-sha256",
+      "cryptoProperties": {
+        "algorithmProperties": {
+          "classicalSecurityLevel": 256,
+          "primitive": "block-cipher"
+        },
+        "assetType": "algorithm"
+      },
+      "name": "AES256-SHA256",
+      "properties": [
+        {
+          "name": "qureddy:observation",
+          "value": "offered"
+        },
+        {
+          "name": "qureddy:readiness",
+          "value": "quantum_vulnerable"
+        },
+        {
+          "name": "qureddy:severity",
+          "value": "low"
+        }
+      ],
+      "type": "cryptographic-asset",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "qureddy.scanners.tls.legacy_probe",
+            "additionalContext": "offered on tls.legacy.cipher"
+          }
+        ]
+      }
+    },
+    {
       "bom-ref": "crypto/certificate/leaf",
       "cryptoProperties": {
         "assetType": "certificate",
@@ -16,6 +220,414 @@
       },
       "name": "CN=github.com",
       "type": "cryptographic-asset"
+    },
+    {
+      "bom-ref": "crypto/algorithm/ecdhe-ecdsa-aes128-gcm-sha256",
+      "cryptoProperties": {
+        "algorithmProperties": {
+          "classicalSecurityLevel": 128,
+          "primitive": "ae"
+        },
+        "assetType": "algorithm"
+      },
+      "name": "ECDHE-ECDSA-AES128-GCM-SHA256",
+      "properties": [
+        {
+          "name": "qureddy:observation",
+          "value": "offered"
+        },
+        {
+          "name": "qureddy:readiness",
+          "value": "quantum_vulnerable"
+        },
+        {
+          "name": "qureddy:severity",
+          "value": "low"
+        }
+      ],
+      "type": "cryptographic-asset",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "qureddy.scanners.tls.legacy_probe",
+            "additionalContext": "offered on tls.legacy.cipher"
+          }
+        ]
+      }
+    },
+    {
+      "bom-ref": "crypto/algorithm/ecdhe-ecdsa-aes128-sha256",
+      "cryptoProperties": {
+        "algorithmProperties": {
+          "classicalSecurityLevel": 128,
+          "primitive": "block-cipher"
+        },
+        "assetType": "algorithm"
+      },
+      "name": "ECDHE-ECDSA-AES128-SHA256",
+      "properties": [
+        {
+          "name": "qureddy:observation",
+          "value": "offered"
+        },
+        {
+          "name": "qureddy:readiness",
+          "value": "quantum_vulnerable"
+        },
+        {
+          "name": "qureddy:severity",
+          "value": "low"
+        }
+      ],
+      "type": "cryptographic-asset",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "qureddy.scanners.tls.legacy_probe",
+            "additionalContext": "offered on tls.legacy.cipher"
+          }
+        ]
+      }
+    },
+    {
+      "bom-ref": "crypto/algorithm/ecdhe-ecdsa-aes256-gcm-sha384",
+      "cryptoProperties": {
+        "algorithmProperties": {
+          "classicalSecurityLevel": 256,
+          "primitive": "ae"
+        },
+        "assetType": "algorithm"
+      },
+      "name": "ECDHE-ECDSA-AES256-GCM-SHA384",
+      "properties": [
+        {
+          "name": "qureddy:observation",
+          "value": "offered"
+        },
+        {
+          "name": "qureddy:readiness",
+          "value": "quantum_vulnerable"
+        },
+        {
+          "name": "qureddy:severity",
+          "value": "low"
+        }
+      ],
+      "type": "cryptographic-asset",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "qureddy.scanners.tls.legacy_probe",
+            "additionalContext": "offered on tls.legacy.cipher"
+          }
+        ]
+      }
+    },
+    {
+      "bom-ref": "crypto/algorithm/ecdhe-ecdsa-aes256-sha",
+      "cryptoProperties": {
+        "algorithmProperties": {
+          "classicalSecurityLevel": 256,
+          "primitive": "block-cipher"
+        },
+        "assetType": "algorithm"
+      },
+      "name": "ECDHE-ECDSA-AES256-SHA",
+      "properties": [
+        {
+          "name": "qureddy:observation",
+          "value": "offered"
+        },
+        {
+          "name": "qureddy:readiness",
+          "value": "quantum_vulnerable"
+        },
+        {
+          "name": "qureddy:severity",
+          "value": "low"
+        }
+      ],
+      "type": "cryptographic-asset",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "qureddy.scanners.tls.legacy_probe",
+            "additionalContext": "offered on tls.legacy.cipher"
+          }
+        ]
+      }
+    },
+    {
+      "bom-ref": "crypto/algorithm/ecdhe-ecdsa-aes256-sha384",
+      "cryptoProperties": {
+        "algorithmProperties": {
+          "classicalSecurityLevel": 256,
+          "primitive": "block-cipher"
+        },
+        "assetType": "algorithm"
+      },
+      "name": "ECDHE-ECDSA-AES256-SHA384",
+      "properties": [
+        {
+          "name": "qureddy:observation",
+          "value": "offered"
+        },
+        {
+          "name": "qureddy:readiness",
+          "value": "quantum_vulnerable"
+        },
+        {
+          "name": "qureddy:severity",
+          "value": "low"
+        }
+      ],
+      "type": "cryptographic-asset",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "qureddy.scanners.tls.legacy_probe",
+            "additionalContext": "offered on tls.legacy.cipher"
+          }
+        ]
+      }
+    },
+    {
+      "bom-ref": "crypto/algorithm/ecdhe-ecdsa-chacha20-poly1305",
+      "cryptoProperties": {
+        "algorithmProperties": {
+          "classicalSecurityLevel": 256,
+          "primitive": "ae"
+        },
+        "assetType": "algorithm"
+      },
+      "name": "ECDHE-ECDSA-CHACHA20-POLY1305",
+      "properties": [
+        {
+          "name": "qureddy:observation",
+          "value": "offered"
+        },
+        {
+          "name": "qureddy:readiness",
+          "value": "quantum_vulnerable"
+        },
+        {
+          "name": "qureddy:severity",
+          "value": "low"
+        }
+      ],
+      "type": "cryptographic-asset",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "qureddy.scanners.tls.legacy_probe",
+            "additionalContext": "offered on tls.legacy.cipher"
+          }
+        ]
+      }
+    },
+    {
+      "bom-ref": "crypto/algorithm/ecdhe-rsa-aes128-gcm-sha256",
+      "cryptoProperties": {
+        "algorithmProperties": {
+          "classicalSecurityLevel": 128,
+          "primitive": "ae"
+        },
+        "assetType": "algorithm"
+      },
+      "name": "ECDHE-RSA-AES128-GCM-SHA256",
+      "properties": [
+        {
+          "name": "qureddy:observation",
+          "value": "offered"
+        },
+        {
+          "name": "qureddy:readiness",
+          "value": "quantum_vulnerable"
+        },
+        {
+          "name": "qureddy:severity",
+          "value": "low"
+        }
+      ],
+      "type": "cryptographic-asset",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "qureddy.scanners.tls.legacy_probe",
+            "additionalContext": "offered on tls.legacy.cipher"
+          }
+        ]
+      }
+    },
+    {
+      "bom-ref": "crypto/algorithm/ecdhe-rsa-aes128-sha256",
+      "cryptoProperties": {
+        "algorithmProperties": {
+          "classicalSecurityLevel": 128,
+          "primitive": "block-cipher"
+        },
+        "assetType": "algorithm"
+      },
+      "name": "ECDHE-RSA-AES128-SHA256",
+      "properties": [
+        {
+          "name": "qureddy:observation",
+          "value": "offered"
+        },
+        {
+          "name": "qureddy:readiness",
+          "value": "quantum_vulnerable"
+        },
+        {
+          "name": "qureddy:severity",
+          "value": "low"
+        }
+      ],
+      "type": "cryptographic-asset",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "qureddy.scanners.tls.legacy_probe",
+            "additionalContext": "offered on tls.legacy.cipher"
+          }
+        ]
+      }
+    },
+    {
+      "bom-ref": "crypto/algorithm/ecdhe-rsa-aes256-gcm-sha384",
+      "cryptoProperties": {
+        "algorithmProperties": {
+          "classicalSecurityLevel": 256,
+          "primitive": "ae"
+        },
+        "assetType": "algorithm"
+      },
+      "name": "ECDHE-RSA-AES256-GCM-SHA384",
+      "properties": [
+        {
+          "name": "qureddy:observation",
+          "value": "offered"
+        },
+        {
+          "name": "qureddy:readiness",
+          "value": "quantum_vulnerable"
+        },
+        {
+          "name": "qureddy:severity",
+          "value": "low"
+        }
+      ],
+      "type": "cryptographic-asset",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "qureddy.scanners.tls.legacy_probe",
+            "additionalContext": "offered on tls.legacy.cipher"
+          }
+        ]
+      }
+    },
+    {
+      "bom-ref": "crypto/algorithm/ecdhe-rsa-aes256-sha",
+      "cryptoProperties": {
+        "algorithmProperties": {
+          "classicalSecurityLevel": 256,
+          "primitive": "block-cipher"
+        },
+        "assetType": "algorithm"
+      },
+      "name": "ECDHE-RSA-AES256-SHA",
+      "properties": [
+        {
+          "name": "qureddy:observation",
+          "value": "offered"
+        },
+        {
+          "name": "qureddy:readiness",
+          "value": "quantum_vulnerable"
+        },
+        {
+          "name": "qureddy:severity",
+          "value": "low"
+        }
+      ],
+      "type": "cryptographic-asset",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "qureddy.scanners.tls.legacy_probe",
+            "additionalContext": "offered on tls.legacy.cipher"
+          }
+        ]
+      }
+    },
+    {
+      "bom-ref": "crypto/algorithm/ecdhe-rsa-aes256-sha384",
+      "cryptoProperties": {
+        "algorithmProperties": {
+          "classicalSecurityLevel": 256,
+          "primitive": "block-cipher"
+        },
+        "assetType": "algorithm"
+      },
+      "name": "ECDHE-RSA-AES256-SHA384",
+      "properties": [
+        {
+          "name": "qureddy:observation",
+          "value": "offered"
+        },
+        {
+          "name": "qureddy:readiness",
+          "value": "quantum_vulnerable"
+        },
+        {
+          "name": "qureddy:severity",
+          "value": "low"
+        }
+      ],
+      "type": "cryptographic-asset",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "qureddy.scanners.tls.legacy_probe",
+            "additionalContext": "offered on tls.legacy.cipher"
+          }
+        ]
+      }
+    },
+    {
+      "bom-ref": "crypto/algorithm/ecdhe-rsa-chacha20-poly1305",
+      "cryptoProperties": {
+        "algorithmProperties": {
+          "classicalSecurityLevel": 256,
+          "primitive": "ae"
+        },
+        "assetType": "algorithm"
+      },
+      "name": "ECDHE-RSA-CHACHA20-POLY1305",
+      "properties": [
+        {
+          "name": "qureddy:observation",
+          "value": "offered"
+        },
+        {
+          "name": "qureddy:readiness",
+          "value": "quantum_vulnerable"
+        },
+        {
+          "name": "qureddy:severity",
+          "value": "low"
+        }
+      ],
+      "type": "cryptographic-asset",
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "qureddy.scanners.tls.legacy_probe",
+            "additionalContext": "offered on tls.legacy.cipher"
+          }
+        ]
+      }
     },
     {
       "bom-ref": "crypto/algorithm/tls_aes_128_gcm_sha256",
@@ -164,6 +776,60 @@
   ],
   "dependencies": [
     {
+      "ref": "crypto/algorithm/aes128-gcm-sha256"
+    },
+    {
+      "ref": "crypto/algorithm/aes128-sha"
+    },
+    {
+      "ref": "crypto/algorithm/aes128-sha256"
+    },
+    {
+      "ref": "crypto/algorithm/aes256-gcm-sha384"
+    },
+    {
+      "ref": "crypto/algorithm/aes256-sha"
+    },
+    {
+      "ref": "crypto/algorithm/aes256-sha256"
+    },
+    {
+      "ref": "crypto/algorithm/ecdhe-ecdsa-aes128-gcm-sha256"
+    },
+    {
+      "ref": "crypto/algorithm/ecdhe-ecdsa-aes128-sha256"
+    },
+    {
+      "ref": "crypto/algorithm/ecdhe-ecdsa-aes256-gcm-sha384"
+    },
+    {
+      "ref": "crypto/algorithm/ecdhe-ecdsa-aes256-sha"
+    },
+    {
+      "ref": "crypto/algorithm/ecdhe-ecdsa-aes256-sha384"
+    },
+    {
+      "ref": "crypto/algorithm/ecdhe-ecdsa-chacha20-poly1305"
+    },
+    {
+      "ref": "crypto/algorithm/ecdhe-rsa-aes128-gcm-sha256"
+    },
+    {
+      "ref": "crypto/algorithm/ecdhe-rsa-aes128-sha256"
+    },
+    {
+      "ref": "crypto/algorithm/ecdhe-rsa-aes256-gcm-sha384"
+    },
+    {
+      "ref": "crypto/algorithm/ecdhe-rsa-aes256-sha"
+    },
+    {
+      "ref": "crypto/algorithm/ecdhe-rsa-aes256-sha384"
+    },
+    {
+      "ref": "crypto/algorithm/ecdhe-rsa-chacha20-poly1305"
+    },
+    {
       "ref": "crypto/algorithm/ecdsa-with-sha256"
     },
     {
@@ -184,6 +850,24 @@
     {
       "ref": "endpoint",
       "provides": [
+        "crypto/algorithm/aes128-gcm-sha256",
+        "crypto/algorithm/aes128-sha",
+        "crypto/algorithm/aes128-sha256",
+        "crypto/algorithm/aes256-gcm-sha384",
+        "crypto/algorithm/aes256-sha",
+        "crypto/algorithm/aes256-sha256",
+        "crypto/algorithm/ecdhe-ecdsa-aes128-gcm-sha256",
+        "crypto/algorithm/ecdhe-ecdsa-aes128-sha256",
+        "crypto/algorithm/ecdhe-ecdsa-aes256-gcm-sha384",
+        "crypto/algorithm/ecdhe-ecdsa-aes256-sha",
+        "crypto/algorithm/ecdhe-ecdsa-aes256-sha384",
+        "crypto/algorithm/ecdhe-ecdsa-chacha20-poly1305",
+        "crypto/algorithm/ecdhe-rsa-aes128-gcm-sha256",
+        "crypto/algorithm/ecdhe-rsa-aes128-sha256",
+        "crypto/algorithm/ecdhe-rsa-aes256-gcm-sha384",
+        "crypto/algorithm/ecdhe-rsa-aes256-sha",
+        "crypto/algorithm/ecdhe-rsa-aes256-sha384",
+        "crypto/algorithm/ecdhe-rsa-chacha20-poly1305",
         "crypto/algorithm/ecdsa-with-sha256",
         "crypto/algorithm/tls_aes_128_gcm_sha256",
         "crypto/algorithm/x25519",
@@ -277,7 +961,7 @@
           "bom-ref": "tool/qureddy",
           "name": "qureddy",
           "type": "application",
-          "version": "0.2.22"
+          "version": "0.2.24"
         }
       ]
     }
