@@ -85,11 +85,17 @@ and copies only the installed runtime into the final image.
 
 ## 7. Publish a release image
 
-The repository workflow at `.github/workflows/container.yml` publishes only
-through an explicit manual dispatch with `publish=true`. It authenticates to
-GHCR with the repository token, builds `linux/amd64` and `linux/arm64`, and
-emits the version tag plus a commit tag. Pull requests run the smoke gate but
-never publish.
+The repository workflow at `.github/workflows/container.yml` publishes when a
+GitHub Release is published, and on demand through a manual dispatch with
+`publish=true`. It authenticates to GHCR with the repository token, builds
+`linux/amd64` and `linux/arm64` on native runners, and emits the version tag,
+`latest`, and a commit (`sha-`) tag. Pull requests run the smoke gate but never
+publish.
+
+Publishing requires the GHCR package to grant this repository write access under
+the package's "Manage Actions access" settings. Without it the push fails with
+`denied: permission_denied: write_package` even though the workflow already holds
+`packages: write`.
 
 See [installation and troubleshooting](install.md), [CBOM reference](../reference/cbom.md),
 and [exit codes](../reference/exit-codes.md) for the surrounding contracts.
