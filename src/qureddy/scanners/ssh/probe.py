@@ -34,6 +34,8 @@ class SSHOffer:
     server_banner: str
     kex_algorithms: tuple[str, ...]
     host_key_algorithms: tuple[str, ...]
+    ciphers: tuple[str, ...] = ()
+    macs: tuple[str, ...] = ()
 
 
 def read_kexinit_offer(host: str, port: int, *, timeout_seconds: int) -> SSHOffer:
@@ -55,7 +57,7 @@ def read_kexinit_offer(host: str, port: int, *, timeout_seconds: int) -> SSHOffe
             _log.debug("ssh_probe.banner", banner=banner)
             sock.sendall(_CLIENT_BANNER)
             payload = _read_packet_payload(sock)
-            kex, host_keys = _parse_kexinit(payload)
+            kex, host_keys, ciphers, macs = _parse_kexinit(payload)
     except (OSError, TimeoutError) as exc:
         _log.debug("ssh_probe.failed", host=host, port=port, error=str(exc))
         msg = f"ssh probe of {host}:{port} failed: {exc}"
@@ -69,7 +71,11 @@ def read_kexinit_offer(host: str, port: int, *, timeout_seconds: int) -> SSHOffe
         host_key_algorithms=tuple(host_keys),
     )
     return SSHOffer(
-        server_banner=banner, kex_algorithms=real_kex, host_key_algorithms=tuple(host_keys)
+        server_banner=banner,
+        kex_algorithms=real_kex,
+        host_key_algorithms=tuple(host_keys),
+        ciphers=tuple(ciphers),
+        macs=tuple(macs),
     )
 
 
@@ -135,11 +141,21 @@ def _read_namelist(payload: bytes, off: int) -> tuple[list[str], int]:
     return (raw.split(",") if raw else []), off + n
 
 
-def _parse_kexinit(payload: bytes) -> tuple[list[str], list[str]]:
+def _parse_kexinit(payload: bytes) -> tuple[list[str], list[str], list[str], list[str]]:
     if not payload or payload[0] != _SSH_MSG_KEXINIT:
         msg = "response is not an SSH_MSG_KEXINIT"
         raise SSHProbeError(msg)
     off = 1 + 16  # msg byte + 16-byte cookie
+    # KEXINIT name-lists in RFC 4253 §7.1 order: kex, host-key, then encryption and
+    # MAC lists for each direction. #243: ciphers/MACs were never read past host-key.
     kex, off = _read_namelist(payload, off)
     host_keys, off = _read_namelist(payload, off)
-    return kex, host_keys
+    enc_c2s, off = _read_namelist(payload, off)
+    enc_s2c, off = _read_namelist(payload, off)
+    mac_c2s, off = _read_namelist(payload, off)
+    mac_s2c, off = _read_namelist(payload, off)
+    # Servers almost always offer the same set both directions; an order-preserving
+    # union captures the full offered capability without duplicates.
+    ciphers = list(dict.fromkeys(enc_c2s + enc_s2c))
+    macs = list(dict.fromkeys(mac_c2s + mac_s2c))
+    return kex, host_keys, ciphers, macs

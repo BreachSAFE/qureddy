@@ -99,6 +99,55 @@ _WEAK_KEX_NOTES = MappingProxyType(
 )
 _WEAK_KEX = frozenset(_WEAK_KEX_NOTES)
 
+# Weak/deprecated SSH transport ciphers, keyed to a justification note. Names are the
+# SSH cipher identifiers (RFC 4253/4344, OpenSSH). Matched by exact name.
+_WEAK_CIPHER_NOTES = MappingProxyType(
+    {
+        "3des-cbc": "3DES: 64-bit block (SWEET32, RFC 7465-class); deprecated",
+        "arcfour": "RC4 stream cipher (broken; removed from OpenSSH 7.6)",
+        "arcfour128": "RC4 stream cipher (broken)",
+        "arcfour256": "RC4 stream cipher (broken)",
+        "blowfish-cbc": "Blowfish 64-bit block (deprecated)",
+        "cast128-cbc": "CAST-128 64-bit block (deprecated)",
+        "aes128-cbc": "CBC mode (RFC 4344 prefers CTR/GCM; plaintext-recovery risk)",
+        "aes192-cbc": "CBC mode (RFC 4344 prefers CTR/GCM)",
+        "aes256-cbc": "CBC mode (RFC 4344 prefers CTR/GCM)",
+    }
+)
+# Weak/deprecated SSH MACs. HMAC-MD5 and HMAC-SHA1 (and their -96 truncations) rely on
+# broken/deprecated hashes; Encrypt-then-MAC variants share the same underlying weakness.
+_WEAK_MAC_NOTES = MappingProxyType(
+    {
+        "hmac-md5": "HMAC-MD5 (broken hash)",
+        "hmac-md5-96": "HMAC-MD5, 96-bit tag (broken hash)",
+        "hmac-md5-etm@openssh.com": "HMAC-MD5 (broken hash)",
+        "hmac-sha1": "HMAC-SHA1 (deprecated; SHA-1 collisions)",
+        "hmac-sha1-96": "HMAC-SHA1, 96-bit tag (deprecated)",
+        "hmac-sha1-etm@openssh.com": "HMAC-SHA1 (deprecated)",
+        "umac-64@openssh.com": "64-bit UMAC tag (short; 128-bit preferred)",
+    }
+)
+
+
+def weak_cipher_note(name: str) -> str | None:
+    """Justification note if the SSH cipher is weak/deprecated, else None."""
+    return _WEAK_CIPHER_NOTES.get(name)
+
+
+def weak_mac_note(name: str) -> str | None:
+    """Justification note if the SSH MAC is weak/deprecated, else None."""
+    return _WEAK_MAC_NOTES.get(name)
+
+
+def cipher_primitive(name: str) -> str:
+    """CycloneDX cryptoProperties primitive for an SSH cipher (all classical today)."""
+    lowered = name.lower()
+    if "gcm" in lowered or "chacha20-poly1305" in lowered:
+        return "ae"  # authenticated encryption (AES-GCM, ChaCha20-Poly1305)
+    if "arcfour" in lowered or "rc4" in lowered:
+        return "stream-cipher"
+    return "block-cipher"  # aes-ctr/-cbc, 3des-cbc, etc.
+
 # name -> human note, for reporting
 KEX_NOTES = MappingProxyType(
     {

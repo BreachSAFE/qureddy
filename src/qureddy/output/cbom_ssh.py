@@ -145,3 +145,63 @@ def add_ssh_host_key_components(
             )
         )
         provides_edges.setdefault(ENDPOINT_REF, []).append(ref)
+
+
+def _add_transport_component(
+    bom: Bom,
+    provides_edges: dict[str, list[str]],
+    name: str,
+    observation: ObservationType,
+    primitive: CryptoPrimitive,
+) -> None:
+    """Add one SSH cipher/MAC as a classical crypto asset (level 0), mirroring host keys."""
+    ref = f"crypto/algorithm/{name.lower()}"
+    bom.components.add(
+        Component(
+            name=name,
+            type=ComponentType.CRYPTOGRAPHIC_ASSET,
+            bom_ref=ref,
+            crypto_properties=CryptoProperties(
+                asset_type=CryptoAssetType.ALGORITHM,
+                algorithm_properties=AlgorithmProperties(
+                    primitive=primitive,
+                    nist_quantum_security_level=0,
+                ),
+            ),
+            properties=[Property(name="qureddy:observation", value=observation.value)],
+        )
+    )
+    provides_edges.setdefault(ENDPOINT_REF, []).append(ref)
+
+
+def add_ssh_transport_components(
+    bom: Bom, result: ScanResult, provides_edges: dict[str, list[str]]
+) -> None:
+    """Emit each offered SSH cipher and MAC as a crypto asset (#243).
+
+    The SSH KEXINIT carries encryption (cipher) and MAC name-lists the scanner now
+    records as ``ssh.cipher`` / ``ssh.mac`` evidence; ``add_algorithm_components``
+    skips those SSH evidence types, so they were absent from the CBOM while the TLS
+    path emits its AEAD cipher-suite asset. Every current SSH cipher/MAC is classical
+    (nistQuantumSecurityLevel 0); the CBOM primitive comes from the shared classifier.
+    """
+    ciphers: dict[str, ObservationType] = {}
+    macs: dict[str, ObservationType] = {}
+    for evidence in result.evidence:
+        if evidence.observation_type not in POSITIVE_OBSERVATIONS or not evidence.negotiated_group:
+            continue
+        if evidence.evidence_type == "ssh.cipher":
+            bucket = ciphers
+        elif evidence.evidence_type == "ssh.mac":
+            bucket = macs
+        else:
+            continue
+        name = evidence.negotiated_group
+        seen = bucket.get(name)
+        if seen is None or OBSERVATION_RANK[evidence.observation_type] > OBSERVATION_RANK[seen]:
+            bucket[name] = evidence.observation_type
+    for name in sorted(ciphers):
+        primitive = CryptoPrimitive(classify.cipher_primitive(name))
+        _add_transport_component(bom, provides_edges, name, ciphers[name], primitive)
+    for name in sorted(macs):
+        _add_transport_component(bom, provides_edges, name, macs[name], CryptoPrimitive.MAC)

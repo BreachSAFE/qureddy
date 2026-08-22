@@ -44,7 +44,9 @@ CERTIFICATE_REF = "crypto/certificate/leaf"
 # SSH evidence types handled by the SSH-specific emitters in cbom_ssh (host keys as
 # signatures, KEX groups with SSH KEX-name classification), skipped by the shared
 # TLS-oriented algorithm emitter so no bom-ref is emitted twice.
-_SSH_EVIDENCE_TYPES = frozenset({"ssh.hostkey", "ssh.kex", "ssh.kex.weak"})
+_SSH_EVIDENCE_TYPES = frozenset(
+    {"ssh.hostkey", "ssh.kex", "ssh.kex.weak", "ssh.cipher", "ssh.mac"}
+)
 POSITIVE_OBSERVATIONS = frozenset(
     {ObservationType.NEGOTIATED, ObservationType.OFFERED, ObservationType.OBSERVED}
 )
