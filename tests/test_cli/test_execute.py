@@ -385,3 +385,42 @@ def test_render_failure_maps_to_exit_70_not_traceback(monkeypatch: pytest.Monkey
     assert result.exit_code == 70
     assert "internal error rendering" in result.stderr.lower()
     assert result.exception is None or isinstance(result.exception, SystemExit)
+
+
+# --- _execute helper branches (#364 coverage) ---
+
+import typer  # noqa: E402
+
+from qureddy.cli._execute import _execute_scan, _handle_scan_failure  # noqa: E402
+from qureddy.core.errors import QureddyError  # noqa: E402
+from qureddy.core.models import ScanTarget  # noqa: E402
+
+
+def _target() -> ScanTarget:
+    return ScanTarget(
+        original_input="x.example",
+        host="x.example",
+        port=443,
+        sni="x.example",
+        locator="tls://x.example:443",
+    )
+
+
+def test_handle_scan_failure_machine_folds_into_result() -> None:
+    result = _handle_scan_failure(QureddyError("boom"), _target(), machine_format=True)
+    assert result.target.locator == "tls://x.example:443"
+
+
+def test_handle_scan_failure_human_raises_exit_2() -> None:
+    with pytest.raises(typer.Exit) as exc:
+        _handle_scan_failure(QureddyError("boom"), _target(), machine_format=False)
+    assert exc.value.exit_code == 2
+
+
+def test_execute_scan_maps_qureddy_error_to_target_failed() -> None:
+    class _FakeScanner:
+        def scan(self, _target: ScanTarget, timeout_seconds: int) -> object:
+            raise QureddyError("boom")
+
+    _result, code = _execute_scan(_FakeScanner(), _target(), 5, machine_format=True)
+    assert code == 2
