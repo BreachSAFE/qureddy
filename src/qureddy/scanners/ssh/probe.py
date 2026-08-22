@@ -79,7 +79,10 @@ def _recvn(sock: socket.socket, n: int) -> bytes:
         chunk = sock.recv(n - len(buf))
         if not chunk:
             msg = "connection closed mid-packet"
-            raise SSHProbeError(msg)
+            # Peer closed the connection (clean EOF): a connectivity failure, not an
+            # ambiguous parse. Chain a ConnectionError so build_ssh_failure_result maps
+            # it to TARGET_CONNECT_FAILED rather than PARSE_AMBIGUOUS (#244).
+            raise SSHProbeError(msg) from ConnectionError(msg)
         buf += chunk
     return bytes(buf)
 
@@ -94,7 +97,8 @@ def _read_banner(sock: socket.socket) -> str:
             chunk = sock.recv(1)
             if not chunk:
                 msg = "connection closed before banner"
-                raise SSHProbeError(msg)
+                # Peer closed before the banner: connectivity failure -> connect-failed (#244).
+                raise SSHProbeError(msg) from ConnectionError(msg)
             line += chunk
             total += 1
             if total > _MAX_BANNER:
