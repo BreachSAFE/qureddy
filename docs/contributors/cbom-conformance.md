@@ -42,3 +42,21 @@ Schema or validator upgrades must be isolated in one pull request:
 Do not update a schema file, checksum, fixture, and expected outcome merely to
 make a failing gate green. Each changed byte needs an upstream or captured
 provenance explanation in the pull request.
+
+## 2. Downstream consumer contract (drift gate)
+
+QuReddy's CBOM has live downstream consumers that read a specific, stable surface:
+
+- **breachsafe-ux** (the wizard's `tools/qureddy/qureddy.yaml`) renders the readiness
+  posture banner from `qureddy:scan.readiness`, the `qureddy:scan.status` highlight, and a
+  CBOM schema-validity badge.
+- **breachsafe-mint-oscal** (`adapters/cbom.py`) derives the OSCAL POA&M readiness from the
+  native `cryptoProperties` layer and raises if a crypto component has a null `assetType`.
+
+A CBOM reshape (for example the 0.2.23 move to native annotations/occurrences, #287) is
+only safe because those consumers read that stable surface, not the layer being reshaped.
+To keep it that way, `tests/fixtures/cbom_consumer_contract.yaml` records what each
+consumer depends on and `tests/test_cbom_consumer_contract.py` fails — naming the consumer
+— if a rendered CBOM ever stops providing it. Removing a requirement means updating that
+consumer in lockstep and editing the fixture deliberately; the gate exists so it can never
+happen by accident.
