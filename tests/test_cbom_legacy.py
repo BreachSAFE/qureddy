@@ -16,6 +16,7 @@ import pytest
 from qureddy.core.models import Asset, Evidence, ObservationType
 from qureddy.output import cbom_legacy
 from qureddy.output.cbom import render_cbom
+from qureddy.output.cbom_cipher import cipher_classical_bits, cipher_primitive
 from qureddy.scanners.tls._legacy_findings import cipher_evidence_from_legacy_result
 from qureddy.scanners.tls.legacy_probe import LegacyProtocolResult
 from tests.test_output import _build_result
@@ -34,7 +35,7 @@ from tests.test_output import _build_result
     ],
 )
 def test_legacy_cipher_bits(name: str, bits: int | None) -> None:
-    assert cbom_legacy._legacy_cipher_bits(name) == bits  # noqa: SLF001
+    assert cipher_classical_bits(name) == bits
 
 
 @pytest.mark.parametrize(
@@ -48,7 +49,7 @@ def test_legacy_cipher_bits(name: str, bits: int | None) -> None:
     ],
 )
 def test_legacy_cipher_primitive(name: str, primitive: str) -> None:
-    assert cbom_legacy._legacy_cipher_primitive(name).value == primitive  # noqa: SLF001
+    assert cipher_primitive(name).value == primitive
 
 
 def test_legacy_cipher_properties_carries_classical_level_never_quantum() -> None:

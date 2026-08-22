@@ -28,6 +28,21 @@ if TYPE_CHECKING:
 
 ENDPOINT_REF = "endpoint"
 
+
+def algorithm_ref(name: str) -> str:
+    """Return the bom-ref for an algorithm crypto-asset.
+
+    One grammar shared by every emitter and the metadata/annotation layer (#315), so a ref
+    and the component it points at cannot disagree on casing or prefix.
+    """
+    return f"crypto/algorithm/{name.lower()}"
+
+
+def protocol_ref(protocol: str, version: str) -> str:
+    """The bom-ref for a protocol crypto-asset, e.g. ``crypto/protocol/tls-1.3`` (#315)."""
+    return f"crypto/protocol/{protocol}-{version.lower()}"
+
+
 POSITIVE_OBSERVATIONS = frozenset(
     {ObservationType.NEGOTIATED, ObservationType.OFFERED, ObservationType.OBSERVED}
 )
@@ -76,7 +91,7 @@ def add_algorithm_assets(
             strongest[name] = evidence.observation_type
     refs: dict[str, str] = {}
     for name in sorted(strongest):
-        ref = f"crypto/algorithm/{name.lower()}"
+        ref = algorithm_ref(name)
         properties = [Property(name="qureddy:observation", value=strongest[name].value)]
         if extra_properties is not None:
             properties.extend(extra_properties(name))

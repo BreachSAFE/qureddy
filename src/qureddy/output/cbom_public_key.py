@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, NamedTuple
 from cyclonedx.model import Property
 from cyclonedx.model.crypto import AlgorithmProperties, CryptoPrimitive
 
-from qureddy.output.cbom_assets import add_algorithm_component
+from qureddy.output.cbom_assets import add_algorithm_component, algorithm_ref
 from qureddy.scanners.tls.cert_sig import classify_pqc_signature
 
 if TYPE_CHECKING:
@@ -126,7 +126,7 @@ def add_public_key_component(
     return add_algorithm_component(
         bom,
         name=asset.name,
-        ref=f"crypto/algorithm/{asset.name.lower()}",
+        ref=algorithm_ref(asset.name),
         algorithm_properties=asset.properties,
         provides_edges=provides_edges,
         properties=[

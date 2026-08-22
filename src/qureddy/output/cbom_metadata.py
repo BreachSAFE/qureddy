@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Any
 
 from cyclonedx.model import Property
 
-from qureddy.output.cbom_assets import ENDPOINT_REF
+from qureddy.output.cbom_assets import ENDPOINT_REF, algorithm_ref, protocol_ref
 
 if TYPE_CHECKING:
     from cyclonedx.model.bom import Bom
@@ -115,10 +115,6 @@ def add_scan_target_metadata(bom: Bom, result: ScanResult, *, reproducible: bool
         bom.metadata.properties.add(Property(name=name, value=value))
 
 
-def _algorithm_ref(name: str) -> str:
-    return f"crypto/algorithm/{name.lower()}"
-
-
 def evidence_occurrences(
     result: ScanResult, *, reproducible: bool
 ) -> dict[str, list[dict[str, str]]]:
@@ -137,9 +133,9 @@ def evidence_occurrences(
     for evidence in result.evidence:
         name = evidence.negotiated_group or evidence.cipher_suite
         if name:
-            ref = _algorithm_ref(name)
+            ref = algorithm_ref(name)
         elif evidence.protocol_version:
-            ref = f"crypto/protocol/{evidence.protocol}-{evidence.protocol_version.lower()}"
+            ref = protocol_ref(evidence.protocol, evidence.protocol_version)
         else:
             continue
         # #307: strict "key=value" pairs joined by "; " so a consumer reads each provenance
@@ -197,11 +193,11 @@ def finding_annotations(
     verdicts: dict[str, list[dict[str, str]]] = {}
     for index, finding in enumerate(result.findings):
         if finding.negotiated_group:
-            subject = _algorithm_ref(finding.negotiated_group)
+            subject = algorithm_ref(finding.negotiated_group)
         elif finding.algorithm:
-            subject = _algorithm_ref(finding.algorithm)
+            subject = algorithm_ref(finding.algorithm)
         elif finding.protocol_version:
-            subject = f"crypto/protocol/{finding.protocol}-{finding.protocol_version.lower()}"
+            subject = protocol_ref(finding.protocol, finding.protocol_version)
         else:
             subject = ENDPOINT_REF
         # Index-prefixed bom-ref: rule_id is not unique (e.g. two legacy protocols fire

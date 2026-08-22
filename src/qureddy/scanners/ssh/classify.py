@@ -139,16 +139,6 @@ def weak_mac_note(name: str) -> str | None:
     return _WEAK_MAC_NOTES.get(name)
 
 
-def cipher_primitive(name: str) -> str:
-    """CycloneDX cryptoProperties primitive for an SSH cipher (all classical today)."""
-    lowered = name.lower()
-    if "gcm" in lowered or "chacha20-poly1305" in lowered:
-        return "ae"  # authenticated encryption (AES-GCM, ChaCha20-Poly1305)
-    if "arcfour" in lowered or "rc4" in lowered:
-        return "stream-cipher"
-    return "block-cipher"  # aes-ctr/-cbc, 3des-cbc, etc.
-
-
 # name -> human note, for reporting
 KEX_NOTES = MappingProxyType(
     {

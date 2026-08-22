@@ -14,9 +14,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from cyclonedx.model import Property
-from cyclonedx.model.crypto import AlgorithmProperties, CryptoPrimitive
+from cyclonedx.model.crypto import AlgorithmProperties
 
 from qureddy.output.cbom_assets import add_algorithm_assets
+from qureddy.output.cbom_cipher import cipher_classical_bits, cipher_primitive
 from qureddy.scanners.tls.legacy_probe import has_weak_cipher
 
 if TYPE_CHECKING:
@@ -27,35 +28,14 @@ if TYPE_CHECKING:
 LEGACY_CIPHER_EVIDENCE_TYPE = "tls.legacy.cipher"
 
 
-def _legacy_cipher_bits(name: str) -> int | None:
-    """Classical key strength (bits) for a TLS cipher-suite name, or None if unknown/broken."""
-    upper = name.upper()
-    if "CHACHA20" in upper:
-        return 256
-    if "3DES" in upper or "DES-CBC3" in upper:
-        return 112  # 3DES effective strength (NIST SP 800-57)
-    for size in (256, 192, 128):
-        if f"AES{size}" in upper or f"AES-{size}" in upper or f"AES_{size}" in upper:
-            return size
-    # RC4 / single-DES / NULL / EXPORT: no honest positive strength to claim.
-    return None
-
-
-def _legacy_cipher_primitive(name: str) -> CryptoPrimitive:
-    """CycloneDX primitive for a TLS cipher (all classical today)."""
-    upper = name.upper()
-    if "GCM" in upper or "CHACHA20-POLY1305" in upper or "CCM" in upper:
-        return CryptoPrimitive("ae")  # authenticated encryption
-    if "RC4" in upper:
-        return CryptoPrimitive("stream-cipher")
-    return CryptoPrimitive("block-cipher")  # CBC, 3DES, etc.
-
-
 def _legacy_cipher_properties(name: str) -> AlgorithmProperties:
-    """AlgorithmProperties for a legacy TLS cipher: classical strength, never a quantum level."""
+    """AlgorithmProperties for a legacy TLS cipher: classical strength, never a quantum level.
+
+    Classification is shared with the TLS 1.3 and SSH cipher emitters (#315).
+    """
     return AlgorithmProperties(
-        primitive=_legacy_cipher_primitive(name),
-        classical_security_level=_legacy_cipher_bits(name),
+        primitive=cipher_primitive(name),
+        classical_security_level=cipher_classical_bits(name),
     )
 
 

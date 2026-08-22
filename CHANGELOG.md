@@ -1,7 +1,7 @@
 # Changelog
 
 [![Status: Alpha](https://img.shields.io/badge/status-alpha-blue?style=flat-square)](https://github.com/breachsafe/qureddy)
-[![Version](https://img.shields.io/badge/version-0.2.26-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.27-blue?style=flat-square)](CHANGELOG.md)
 [![Keep a Changelog](https://img.shields.io/badge/keep%20a%20changelog-1.1.0-orange?style=flat-square)](https://keepachangelog.com/en/1.1.0/)
 [![SemVer](https://img.shields.io/badge/SemVer-2.0.0-blue?style=flat-square)](https://semver.org/spec/v2.0.0.html)
 
@@ -10,6 +10,17 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and version
 numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.2.27] - 2026-08-22
+
+### Changed
+
+- Internal de-duplication of the CBOM and SSH layers (no behavior change; CBOM output is
+  byte-identical). Symmetric-cipher classification (strength + primitive) is now one shared
+  `cbom_cipher` helper instead of four drifting copies across the TLS, legacy-TLS, and SSH
+  emitters; bom-ref grammar is one shared `algorithm_ref`/`protocol_ref`; the SSH scanner's
+  offered-evidence and weak-finding builders are each one helper instead of five and three
+  copies. (#315)
 
 ## [0.2.26] - 2026-08-22
 
@@ -207,33 +218,34 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Contents
 
-1. [0.2.26](#0226---2026-08-22)
-2. [0.2.25](#0225---2026-08-22)
-3. [0.2.24](#0224---2026-08-22)
-4. [0.2.23](#0223---2026-08-22)
-5. [0.2.22](#0222---2026-08-22)
-6. [0.2.21](#0221---2026-08-22)
-7. [0.2.20](#0220---2026-08-22)
-8. [0.2.18](#0218---2026-08-22)
-9. [0.2.17](#0217---2026-08-21)
-10. [0.2.16](#0216---2026-08-21)
-11. [0.2.15](#0215---2026-08-21)
-12. [0.2.14](#0214---2026-08-19)
-13. [0.2.13](#0213---2026-08-04)
-14. [0.2.12](#0212---2026-07-28)
-15. [0.2.11](#0211---2026-07-28)
-16. [0.2.10](#0210---2026-07-28)
-17. [0.2.9](#029---2026-07-28)
-18. [0.2.8](#028---2026-07-28)
-19. [0.2.7](#027---2026-07-28)
-20. [0.2.6](#026---2026-07-28)
-21. [0.2.5](#025---2026-07-28)
-22. [0.2.4](#024---2026-07-28)
-23. [0.2.3](#023---2026-07-27)
-24. [0.2.2](#022---2026-07-27)
-25. [0.2.1](#021---2026-07-27)
-26. [0.2.0](#020---2026-07-27)
-27. [0.1.0](#010---2026-05-10)
+1. [0.2.27](#0227---2026-08-22)
+2. [0.2.26](#0226---2026-08-22)
+3. [0.2.25](#0225---2026-08-22)
+4. [0.2.24](#0224---2026-08-22)
+5. [0.2.23](#0223---2026-08-22)
+6. [0.2.22](#0222---2026-08-22)
+7. [0.2.21](#0221---2026-08-22)
+8. [0.2.20](#0220---2026-08-22)
+9. [0.2.18](#0218---2026-08-22)
+10. [0.2.17](#0217---2026-08-21)
+11. [0.2.16](#0216---2026-08-21)
+12. [0.2.15](#0215---2026-08-21)
+13. [0.2.14](#0214---2026-08-19)
+14. [0.2.13](#0213---2026-08-04)
+15. [0.2.12](#0212---2026-07-28)
+16. [0.2.11](#0211---2026-07-28)
+17. [0.2.10](#0210---2026-07-28)
+18. [0.2.9](#029---2026-07-28)
+19. [0.2.8](#028---2026-07-28)
+20. [0.2.7](#027---2026-07-28)
+21. [0.2.6](#026---2026-07-28)
+22. [0.2.5](#025---2026-07-28)
+23. [0.2.4](#024---2026-07-28)
+24. [0.2.3](#023---2026-07-27)
+25. [0.2.2](#022---2026-07-27)
+26. [0.2.1](#021---2026-07-27)
+27. [0.2.0](#020---2026-07-27)
+28. [0.1.0](#010---2026-05-10)
 
 ## [0.2.12] - 2026-07-28
 
