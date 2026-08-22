@@ -12,15 +12,15 @@
     }
   },
   "producer": {
-    "commit": "f600081282f31eff8718314085c4b1f3c5ce4913",
-    "installed_wheel_sha256": "667316dfad4bc6d39282ba45fe7da0fc5f8ae19bdfa132eb2d07ae40c54c76cb",
+    "commit": "b91ea4fea6ce32a11cba7edec66834e14e98c92f",
+    "installed_wheel_sha256": "39b49159d0aa256003ee02840406579687e727d037b3a04fdc921a200b89cebe",
     "version": "0.2.22"
   },
   "fixtures": {
     "p1-hybrid-tls": {
       "kind": "positive",
       "classification": "captured",
-      "sha256": "e783f100d09413deb9b62f8a2ed3a0a088bc53d8c64308b006239808f74babb1",
+      "sha256": "d2d28abaabb832b25170ad7a8d8d1e3a8fc0a6e2416a7e5e83609a74a7ada97f",
       "official_rejects": false,
       "cli_rejects": false,
       "semantic_rejects": false
@@ -28,7 +28,7 @@
     "p2-classical-tls": {
       "kind": "positive",
       "classification": "minimized-from-captured",
-      "sha256": "78612bb2c6f16b530c53ab88aad984b694aba210cf7db286b0c4ff97d988a2f3",
+      "sha256": "3a004a37f2575da3894992a71ba5f8e90ff8c97ac9172f38608590b7cd4c8705",
       "official_rejects": false,
       "cli_rejects": false,
       "semantic_rejects": false
@@ -36,7 +36,7 @@
     "p3-ssh-hybrid": {
       "kind": "positive",
       "classification": "captured",
-      "sha256": "e9dde40282d60a250e87a950eab7c54db4887c8216b16cd601a8ceda449044bd",
+      "sha256": "19b91e78a0160a48b1d3310a6fd6b56da0ddbcaa7d43e85bededf03c88164a05",
       "official_rejects": false,
       "cli_rejects": false,
       "semantic_rejects": false
@@ -44,7 +44,7 @@
     "p4-sparse-unknown": {
       "kind": "positive",
       "classification": "minimized-from-captured",
-      "sha256": "8862597e5c78f988d8f64bcfb5e7824f01b751f1ac0a8e80a2c07596cb8903fe",
+      "sha256": "1b55b24b1a757bacf2466efb0ab734d872f7dc914874f4944eb623b15410f516",
       "official_rejects": false,
       "cli_rejects": false,
       "semantic_rejects": false
@@ -52,7 +52,7 @@
     "p5-failed-target": {
       "kind": "positive",
       "classification": "minimized-from-captured",
-      "sha256": "9ea75733932b2ac2cc876706a96265de5112ea5afd74949c63fa12a586013a9e",
+      "sha256": "8416f306171d3bd7367e65b4da727b69c1591bb641b3d3e4bc45ab41a5ec325d",
       "official_rejects": false,
       "cli_rejects": false,
       "semantic_rejects": false
@@ -60,7 +60,7 @@
     "p6-missing-openssl": {
       "kind": "positive",
       "classification": "minimized-from-captured",
-      "sha256": "002a491478abb97a3559333c3c7c217de57e6fe4e8af97d2572b58bb58d298bd",
+      "sha256": "e69f3e08fb8e538bc8731e41cc075e4227550dc20c76acceb811eddf640c406e",
       "official_rejects": false,
       "cli_rejects": false,
       "semantic_rejects": false
@@ -68,7 +68,7 @@
     "p7-leaf-cert": {
       "kind": "positive",
       "classification": "captured",
-      "sha256": "0605abf416f7f77d499b77cfb08ff188bc82bd4775c77bf671eff648c83001c9",
+      "sha256": "6dc43271ef98ffebd85cecab31b99635f762e1728a96b927a26f65975c834a82",
       "official_rejects": false,
       "cli_rejects": false,
       "semantic_rejects": false
@@ -76,7 +76,7 @@
     "n1-wrong-specversion": {
       "kind": "negative",
       "classification": "synthetic-negative",
-      "sha256": "14dc81267a562bda50ad95ad15c1f11940a3a876abfda45597e3123819c5d248",
+      "sha256": "2f5cfd02ac0beb1d1e15f456d1af7c653466681d0f5876e9dc01231b3bd7901e",
       "official_rejects": false,
       "cli_rejects": true,
       "semantic_rejects": true
@@ -84,7 +84,7 @@
     "n2-duplicate-bomref": {
       "kind": "negative",
       "classification": "synthetic-negative",
-      "sha256": "0b072a3d8a43d8a438458ece7708d835354d3c73cc6ce1994f948d7df4e8cb7c",
+      "sha256": "1f88a028dd7bc01ec39337f34f6a1f1e6590610422bb4baa92e6d0e9b0251a5d",
       "official_rejects": true,
       "cli_rejects": true,
       "semantic_rejects": true
@@ -92,7 +92,7 @@
     "n3-dangling-ref": {
       "kind": "negative",
       "classification": "synthetic-negative",
-      "sha256": "7bc99643810b7079bf43f7ec53ee891fbeff7826189b85d64f17ed091267aaa1",
+      "sha256": "09dba6ce49f84d6c2ec5ce32711548a07e92d9bc6bbe702c831b2b9bb3f2cbe8",
       "official_rejects": false,
       "cli_rejects": false,
       "semantic_rejects": true
@@ -100,7 +100,7 @@
     "n4-invalid-asset-type": {
       "kind": "negative",
       "classification": "synthetic-negative",
-      "sha256": "e356f0293428edf494e6edb2633167d24902dca9198b3b0890efc67405ecb0ec",
+      "sha256": "5d33966951d5b60358c967bf1aaaa2792202ec348a88fcf6dcede566b7542d39",
       "official_rejects": true,
       "cli_rejects": true,
       "semantic_rejects": false
@@ -108,7 +108,7 @@
     "n5-malformed-date": {
       "kind": "negative",
       "classification": "synthetic-negative",
-      "sha256": "2c8d22de3087ba0f31cfda1385a125be8a688d52a89a98ff69498422269e365e",
+      "sha256": "303bb727f0f3c78e7ea0b6766a5d190ec814a0b303762d7138447012a6ea81e9",
       "official_rejects": true,
       "cli_rejects": true,
       "semantic_rejects": false
@@ -116,7 +116,7 @@
     "n6-undeclared-top-level": {
       "kind": "negative",
       "classification": "synthetic-negative",
-      "sha256": "d7e846e7919c17778f231a88201596ca5a5abe107ff8b6a272c433180ab1aa56",
+      "sha256": "1bb656d856dda645f51df4b997d176ab62ec415afd3fcad422c8979532cbef11",
       "official_rejects": true,
       "cli_rejects": true,
       "semantic_rejects": false
@@ -124,7 +124,7 @@
     "n7-secret-material": {
       "kind": "negative",
       "classification": "synthetic-negative",
-      "sha256": "7edc361b556d661708af8d294f120a166af65bdf3cad12e8e52c83437ce31950",
+      "sha256": "f30703843c40530ef27315f05a1381839c9f09fa375f7c8adc78edacfa0c29dc",
       "official_rejects": false,
       "cli_rejects": false,
       "semantic_rejects": true
@@ -132,7 +132,7 @@
     "p3-ssh-mlkem": {
       "kind": "positive",
       "classification": "captured",
-      "sha256": "9697bac77d4640db69d18710d7dff3055bbb55a9f33bb269a0d0d95884be1879",
+      "sha256": "f1ccc949ac319ca7a483736d912ae26bf6328e0563f6aa9b1096cd72c1b22532",
       "official_rejects": false,
       "cli_rejects": false,
       "semantic_rejects": false

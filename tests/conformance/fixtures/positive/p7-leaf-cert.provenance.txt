@@ -2,8 +2,8 @@ fixture: p7-leaf-cert
 classification: captured
 command: qureddy scan tls github.com --format cbom --openssl /opt/homebrew/opt/openssl@3.5/bin/openssl
 exit_code: 0
-captured_utc: 2026-08-22T05:21:46Z
-producer_commit: f600081282f31eff8718314085c4b1f3c5ce4913
-installed_wheel_sha256: 667316dfad4bc6d39282ba45fe7da0fc5f8ae19bdfa132eb2d07ae40c54c76cb
+captured_utc: 2026-08-22T05:58:31Z
+producer_commit: b91ea4fea6ce32a11cba7edec66834e14e98c92f
+installed_wheel_sha256: 39b49159d0aa256003ee02840406579687e727d037b3a04fdc921a200b89cebe
 target: live github.com:443
-sha256: 0605abf416f7f77d499b77cfb08ff188bc82bd4775c77bf671eff648c83001c9
+sha256: 6dc43271ef98ffebd85cecab31b99635f762e1728a96b927a26f65975c834a82

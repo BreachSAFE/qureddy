@@ -206,11 +206,14 @@ def test_min_severity_never_filters_machine_documents(output_format: OutputForma
         assert len(payload["findings"]) == 2
         assert payload["summary"]["finding_count"] == 2
     else:
-        # Every observed finding still contributes its verdict property to the CBOM.
+        # Findings survive as native annotations + per-component verdict properties (#287),
+        # never filtered out of the machine document by --min-severity.
+        assert payload.get("annotations"), "CBOM findings (annotations) must survive the filter"
         verdict_names = {
             prop["name"]
-            for prop in payload["metadata"].get("properties", [])
-            if prop["name"].startswith("qureddy:finding.")
+            for component in payload.get("components", [])
+            for prop in component.get("properties", [])
+            if prop["name"] in {"qureddy:readiness", "qureddy:severity"}
         }
         assert verdict_names, "CBOM finding verdicts must survive the severity filter"
 

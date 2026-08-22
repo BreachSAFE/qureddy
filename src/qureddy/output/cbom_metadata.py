@@ -12,18 +12,16 @@ from __future__ import annotations
 
 import hashlib
 from pathlib import PurePosixPath
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from cyclonedx.model import Property
+
+from qureddy.output.cbom_assets import ENDPOINT_REF
 
 if TYPE_CHECKING:
     from cyclonedx.model.bom import Bom
 
     from qureddy.core.models import OpenSSLDependency, ScanResult
-
-# SHA-256 of the empty string: a probe with no stdout hashes to this, which is
-# provenance filler conveying nothing, so it is omitted rather than emitted (#286).
-_EMPTY_SHA256 = hashlib.sha256(b"").hexdigest()
 
 
 def openssl_tool_properties(
@@ -117,81 +115,112 @@ def add_scan_target_metadata(bom: Bom, result: ScanResult, *, reproducible: bool
         bom.metadata.properties.add(Property(name=name, value=value))
 
 
-def add_evidence_provenance(bom: Bom, result: ScanResult, *, reproducible: bool) -> None:
-    """Attach the scan's evidence/provenance trail as namespaced metadata properties (#149).
+def _algorithm_ref(name: str) -> str:
+    return f"crypto/algorithm/{name.lower()}"
 
-    JSON carries `evidence[]` (source, observation_type, probe_role, and the probe_result
-    command/return_code/hashes), but the CBOM dropped all of it and so could not answer
-    "how do you know?". Emit one indexed block per evidence record, in deterministic scan
-    order, so a CBOM consumer can audit/reproduce each observation without also parsing the
-    JSON. The per-run probe duration is omitted in reproducible mode (#162).
+
+def evidence_occurrences(
+    result: ScanResult, *, reproducible: bool
+) -> dict[str, list[dict[str, str]]]:
+    """Map each crypto asset's bom-ref to its CycloneDX evidence occurrences (#287).
+
+    Replaces the flat ``qureddy:evidence.NN.*`` metadata block: each observation is
+    attached to the component it is about (``component.evidence.occurrences``), restoring
+    the evidence->asset linkage the flat form dropped. Probe provenance (role, expected
+    group, return code, command digest) rides in ``additionalContext``; the per-run
+    duration is omitted in reproducible mode (#162). Evidence with no algorithm/protocol
+    subject (e.g. a bare failure record) is skipped rather than fabricating a subject.
     """
-    for index, evidence in enumerate(result.evidence):
-        # Zero-padded so the property names sort lexicographically in scan order
-        # (evidence.02 before evidence.10), matching how CycloneDX serializes them (#147).
-        prefix = f"qureddy:evidence.{index:02d}"
-        pairs: list[tuple[str, str | None]] = [
-            (f"{prefix}.type", evidence.evidence_type),
-            (f"{prefix}.observation", evidence.observation_type.value),
-            (f"{prefix}.source", evidence.source),
-            (f"{prefix}.protocol_version", evidence.protocol_version),
-            (f"{prefix}.cipher_suite", evidence.cipher_suite),
-            # observed_algorithm, not negotiated_group: SSH records offered host keys /
-            # ciphers / MACs here too, which are neither "groups" nor "negotiated" (#286).
-            (f"{prefix}.observed_algorithm", evidence.negotiated_group),
-            (f"{prefix}.probe_role", evidence.probe_role.value if evidence.probe_role else None),
-            (f"{prefix}.expected_group", evidence.expected_group),
-        ]
+    occurrences: dict[str, list[dict[str, str]]] = {}
+    for evidence in result.evidence:
+        name = evidence.negotiated_group or evidence.cipher_suite
+        if name:
+            ref = _algorithm_ref(name)
+        elif evidence.protocol_version:
+            ref = f"crypto/protocol/{evidence.protocol}-{evidence.protocol_version.lower()}"
+        else:
+            continue
+        context = f"{evidence.observation_type.value} on {evidence.evidence_type}"
+        extra: list[str] = []
+        if evidence.probe_role:
+            extra.append(f"role={evidence.probe_role.value}")
+        if evidence.expected_group:
+            extra.append(f"expected={evidence.expected_group}")
         probe = evidence.probe_result
         if probe is not None:
-            # The probe executable is an absolute, host-specific path (e.g.
-            # /opt/homebrew/opt/openssl@3.5/bin/openssl vs /usr/bin/openssl). In
-            # reproducible mode canonicalize it to its basename before joining and
-            # hashing, so two hosts that ran the same openssl subcommand from
-            # different install locations produce a byte-identical command digest
-            # (#207). The subcommand args are semantic (target host:port, forced
-            # group), not host paths, so they are preserved verbatim. Non-
-            # reproducible output keeps the exact local path for operator diagnostics.
             executable = (
                 PurePosixPath(probe.command.executable).name
                 if reproducible
                 else probe.command.executable
             )
             command = " ".join([executable, *probe.command.args])
-            # Omit the empty-string hash (no stdout) rather than emit filler (#286).
-            stdout_hash = None if probe.stdout_sha256 == _EMPTY_SHA256 else probe.stdout_sha256
-            pairs.extend(
-                [
-                    (f"{prefix}.command_sha256", hashlib.sha256(command.encode()).hexdigest()),
-                    (f"{prefix}.return_code", str(probe.return_code)),
-                    (f"{prefix}.stdout_sha256", stdout_hash),
-                    (f"{prefix}.stderr_sha256", probe.stderr_sha256),
-                    (f"{prefix}.attempt_number", str(probe.attempt_number)),
-                ]
-            )
+            extra.append(f"return_code={probe.return_code}")
+            # Full digest (not truncated) so it keeps the reproducibility guarantee: the
+            # command is attributed by basename, not host path, and bytes stay stable (#207).
+            extra.append(f"command_sha256={hashlib.sha256(command.encode()).hexdigest()}")
             if not reproducible:
-                pairs.append((f"{prefix}.duration_ms", str(probe.duration_ms)))
-        for name, value in pairs:
-            if value is not None:
-                bom.metadata.properties.add(Property(name=name, value=value))
+                extra.append(f"duration_ms={probe.duration_ms}")
+        if extra:
+            context += " (" + ", ".join(extra) + ")"
+        occurrences.setdefault(ref, []).append(
+            {"location": evidence.source, "additionalContext": context}
+        )
+    return occurrences
 
 
-def add_finding_verdicts(bom: Bom, result: ScanResult) -> None:
-    """Carry each finding's verdict (severity/readiness/rule) as metadata properties (#147).
+# CycloneDX requires annotation.timestamp; reproducible mode pins it to the Unix epoch so
+# two hosts scanning the same target produce byte-identical, content-addressable output
+# (the same reason serialNumber/metadata.timestamp/scan times are dropped in that mode, #162).
+_REPRODUCIBLE_TIMESTAMP = "1970-01-01T00:00:00+00:00"
 
-    JSON's findings[] drive the posture; the CBOM previously carried only the top-level
-    readiness (#132), so a consumer could not see per-finding severity or which rule fired.
-    Emit one indexed block per finding; every field is deterministic (reproducible-safe).
+
+def finding_annotations(
+    result: ScanResult, *, reproducible: bool
+) -> tuple[list[dict[str, Any]], dict[str, list[dict[str, str]]]]:
+    """Build native finding annotations plus per-component verdict properties (#287).
+
+    Replaces the flat ``qureddy:finding.NN.*`` metadata block. Each finding becomes a
+    CycloneDX ``annotation`` whose ``subjects`` point at the crypto asset it is about,
+    carrying the title + full description (with standards citations — subsumes #285). The
+    machine verdict (readiness/severity/rule_id) is returned per subject ref so the caller
+    attaches it as queryable ``properties`` on that component; the first finding per subject
+    sets the verdict so a component carries one, not several, verdict blocks.
     """
+    timestamp = _REPRODUCIBLE_TIMESTAMP if reproducible else result.scan.completed_at.isoformat()
+    annotations: list[dict[str, Any]] = []
+    verdicts: dict[str, list[dict[str, str]]] = {}
     for index, finding in enumerate(result.findings):
-        prefix = f"qureddy:finding.{index:02d}"
-        pairs = [
-            (f"{prefix}.rule_id", finding.rule_id),
-            (f"{prefix}.finding_type", finding.finding_type),
-            (f"{prefix}.severity", finding.severity.value),
-            (f"{prefix}.readiness", finding.readiness.value),
-            (f"{prefix}.title", finding.title),
-            (f"{prefix}.confidence", finding.confidence.value),
-        ]
-        for name, value in pairs:
-            bom.metadata.properties.add(Property(name=name, value=value))
+        if finding.negotiated_group:
+            subject = _algorithm_ref(finding.negotiated_group)
+        elif finding.algorithm:
+            subject = _algorithm_ref(finding.algorithm)
+        elif finding.protocol_version:
+            subject = f"crypto/protocol/{finding.protocol}-{finding.protocol_version.lower()}"
+        else:
+            subject = ENDPOINT_REF
+        # Index-prefixed bom-ref: rule_id is not unique (e.g. two legacy protocols fire
+        # tls.legacy.protocol_offered), and every bom-ref in the document must be unique.
+        annotations.append(
+            {
+                "bom-ref": f"annotation/{index:02d}-{finding.rule_id}",
+                "subjects": [subject],
+                "annotator": {
+                    "component": {
+                        "bom-ref": "tool/qureddy",
+                        "name": "qureddy",
+                        "type": "application",
+                    }
+                },
+                "timestamp": timestamp,
+                "text": f"{finding.title}\n{finding.description}",
+            }
+        )
+        verdicts.setdefault(
+            subject,
+            [
+                {"name": "qureddy:readiness", "value": finding.readiness.value},
+                {"name": "qureddy:severity", "value": finding.severity.value},
+                {"name": "qureddy:rule_id", "value": finding.rule_id},
+            ],
+        )
+    return annotations, verdicts

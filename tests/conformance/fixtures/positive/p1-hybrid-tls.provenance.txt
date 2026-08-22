@@ -2,8 +2,8 @@ fixture: p1-hybrid-tls
 classification: captured
 command: qureddy scan tls www.google.com --format cbom --openssl /opt/homebrew/opt/openssl@3.5/bin/openssl
 exit_code: 0
-captured_utc: 2026-08-22T05:21:46Z
-producer_commit: f600081282f31eff8718314085c4b1f3c5ce4913
-installed_wheel_sha256: 667316dfad4bc6d39282ba45fe7da0fc5f8ae19bdfa132eb2d07ae40c54c76cb
+captured_utc: 2026-08-22T05:58:31Z
+producer_commit: b91ea4fea6ce32a11cba7edec66834e14e98c92f
+installed_wheel_sha256: 39b49159d0aa256003ee02840406579687e727d037b3a04fdc921a200b89cebe
 target: live www.google.com:443
-sha256: e783f100d09413deb9b62f8a2ed3a0a088bc53d8c64308b006239808f74babb1
+sha256: d2d28abaabb832b25170ad7a8d8d1e3a8fc0a6e2416a7e5e83609a74a7ada97f

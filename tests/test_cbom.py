@@ -10,6 +10,7 @@ import io
 import json
 import locale
 import os
+import re
 import subprocess
 import sys
 from datetime import UTC, datetime
@@ -212,8 +213,9 @@ class TestCycloneDx17Contract:
         assert "version" not in first["metadata"]["component"]
         component_refs = {c["bom-ref"] for c in first["components"]}
         assert "endpoint" not in component_refs
-        # serialNumber, the emission timestamp, and the per-run scan timing are
-        # run-identity fields, not deterministic content (#152).
+        # serialNumber, the emission timestamp, the per-run scan timing, and the
+        # per-run annotation timestamps are run-identity fields, not deterministic
+        # content (#152, #287).
         _run_identity = {"qureddy:scan.started_at", "qureddy:scan.completed_at"}
         for payload in (first, second):
             payload.pop("serialNumber")
@@ -223,6 +225,8 @@ class TestCycloneDx17Contract:
                 for prop in payload["metadata"]["properties"]
                 if prop["name"] not in _run_identity
             ]
+            for annotation in payload.get("annotations", []):
+                annotation.pop("timestamp", None)
         assert first == second
 
     def test_local_tools_are_provenance_not_endpoint_dependencies(self) -> None:
@@ -495,11 +499,21 @@ class TestCbomSemanticGuard:
             validate_cbom_semantics(payload)
 
 
-def _command_hash_property(payload: dict, prefix: str = "qureddy:evidence.00") -> str:
-    for prop in payload["metadata"]["properties"]:
-        if prop["name"] == f"{prefix}.command_sha256":
-            return prop["value"]
-    msg = f"no {prefix}.command_sha256 property in CBOM"
+def _command_hash_property(payload: dict) -> str:
+    """Extract the probe command digest from a component's evidence occurrences (#287).
+
+    The command hash rides in the occurrence ``additionalContext`` (``command_sha256=<hex>``)
+    now that evidence is attached to the asset it describes, not a flat metadata block.
+    """
+    components = [payload["metadata"].get("component", {}), *payload.get("components", [])]
+    for component in components:
+        for occurrence in component.get("evidence", {}).get("occurrences", []):
+            match = re.search(
+                r"command_sha256=([0-9a-f]{64})", occurrence.get("additionalContext", "")
+            )
+            if match:
+                return match.group(1)
+    msg = "no command_sha256 in any component's evidence occurrences"
     raise AssertionError(msg)
 
 

@@ -2,6 +2,6 @@ fixture: n4-invalid-asset-type
 classification: synthetic-negative
 not_network_evidence: true
 derived_from: fixtures/positive/p2-classical-tls.cbom.json
-base_sha256: 78612bb2c6f16b530c53ab88aad984b694aba210cf7db286b0c4ff97d988a2f3
+base_sha256: 3a004a37f2575da3894992a71ba5f8e90ff8c97ac9172f38608590b7cd4c8705
 mutation: assetType changed to quantum-magic
-sha256: e356f0293428edf494e6edb2633167d24902dca9198b3b0890efc67405ecb0ec
+sha256: 5d33966951d5b60358c967bf1aaaa2792202ec348a88fcf6dcede566b7542d39
