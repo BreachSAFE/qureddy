@@ -22,6 +22,24 @@ _SECRET_FIELD = re.compile(
     r"password|credential|secret)$",
     re.IGNORECASE,
 )
+# cyclonedx's BomRefDiscriminator names a de-duplicated ref ``BomRef.<float>.<float>`` (#343).
+_AUTO_BOM_REF = re.compile(r"^BomRef\.\d")
+
+
+def _check_bom_ref_integrity(declared_refs: list[str]) -> None:
+    """Reject duplicate or non-deterministic auto-generated bom-refs (#343)."""
+    duplicates = sorted({ref for ref in declared_refs if declared_refs.count(ref) > 1})
+    if duplicates:
+        msg = f"duplicate bom-ref values: {', '.join(duplicates)}"
+        raise ValueError(msg)
+    # A literal duplicate bom-ref is silently renamed to a random ``BomRef.<n>.<n>`` by
+    # cyclonedx's BomRefDiscriminator at serialization, which erases the duplicate above and
+    # makes output non-deterministic (breaks --reproducible). A surviving auto-generated ref is
+    # the fingerprint of that class of bug — reject it so it cannot slip past.
+    auto_generated = sorted(ref for ref in declared_refs if _AUTO_BOM_REF.match(ref))
+    if auto_generated:
+        msg = f"non-deterministic auto-generated bom-ref (unresolved duplicate): {auto_generated}"
+        raise ValueError(msg)
 
 
 def validate_cbom_semantics(payload: dict[str, Any]) -> None:
@@ -41,10 +59,7 @@ def validate_cbom_semantics(payload: dict[str, Any]) -> None:
     declared_refs = [
         ref for ref in (*graph_refs, *tool_refs, *annotation_refs) if isinstance(ref, str)
     ]
-    duplicates = sorted({ref for ref in declared_refs if declared_refs.count(ref) > 1})
-    if duplicates:
-        msg = f"duplicate bom-ref values: {', '.join(duplicates)}"
-        raise ValueError(msg)
+    _check_bom_ref_integrity(declared_refs)
 
     known_refs = {ref for ref in graph_refs if isinstance(ref, str)}
     dangling: set[str] = set()

@@ -309,18 +309,19 @@ class TestCycloneDx17Contract:
         )
 
     def _cert_result(self, **overrides: object) -> object:
-        certificate = CertificateObservation(
-            subject="CN=example.com",
-            issuer="CN=Example CA",
-            not_before="Jul 17 07:18:11 2026 GMT",
-            not_after="Jul 17 07:18:11 2027 GMT",
-            serial="0123456789ABCDEF",
-            signature_algorithm="ecdsa-with-SHA256",
-            public_key_summary="Public-Key: (2048 bit)",
-            is_self_signed=False,
-            is_post_quantum_signature=False,
-            **overrides,
-        )
+        fields: dict[str, object] = {
+            "subject": "CN=example.com",
+            "issuer": "CN=Example CA",
+            "not_before": "Jul 17 07:18:11 2026 GMT",
+            "not_after": "Jul 17 07:18:11 2027 GMT",
+            "serial": "0123456789ABCDEF",
+            "signature_algorithm": "ecdsa-with-SHA256",
+            "public_key_summary": "Public-Key: (2048 bit)",
+            "is_self_signed": False,
+            "is_post_quantum_signature": False,
+        }
+        fields.update(overrides)
+        certificate = CertificateObservation(**fields)  # type: ignore[arg-type]
         certificate_evidence = Evidence(
             id="ev-cert",
             asset_id="asset-1",
@@ -339,6 +340,32 @@ class TestCycloneDx17Contract:
         )
         ref = certificate["cryptoProperties"]["certificateProperties"]["subjectPublicKeyRef"]
         return next(item for item in payload["components"] if item["bom-ref"] == ref)
+
+    def test_fully_pq_cert_same_alg_dedupes_to_one_deterministic_ref(self) -> None:
+        # #343: a fully-PQ cert whose signature and subject key are the same parameter set
+        # (ML-DSA-87 sig + ML-DSA-87 key) must resolve both refs to ONE shared asset — not two
+        # Components with the same bom-ref that cyclonedx renames to a random ref (which
+        # orphaned a component and broke --reproducible).
+        result = self._cert_result(
+            signature_algorithm="ML-DSA-87",
+            public_key_algorithm="ML-DSA-87",
+            public_key_bits=None,
+            is_post_quantum_signature=True,
+        )
+        first, second = io.StringIO(), io.StringIO()
+        render_cbom(result, first, reproducible=True)
+        render_cbom(result, second, reproducible=True)
+        assert first.getvalue() == second.getvalue()  # deterministic
+        payload = json.loads(first.getvalue())
+        ml_dsa = [c for c in payload["components"] if c["bom-ref"] == "crypto/algorithm/ml-dsa-87"]
+        assert len(ml_dsa) == 1
+        assert not any(c["bom-ref"].startswith("BomRef.") for c in payload["components"])
+        cp = next(c for c in payload["components"] if c["bom-ref"] == "crypto/certificate/leaf")[
+            "cryptoProperties"
+        ]["certificateProperties"]
+        assert (
+            cp["signatureAlgorithmRef"] == cp["subjectPublicKeyRef"] == "crypto/algorithm/ml-dsa-87"
+        )
 
     def test_rsa_subject_public_key_emits_depth_and_ref(self) -> None:
         # #313: the certificate's own RSA-2048 subject key becomes a linked crypto-asset with
