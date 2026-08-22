@@ -66,12 +66,10 @@ def _without_document_identity(output: str) -> str:
         output,
     )
     # Per-probe duration_ms is wall-clock timing — non-deterministic run to run
-    # (the flaky field behind #176/#208). Normalize it like the other run-identity.
-    return re.sub(
-        r'("name": "qureddy:evidence\.\d+\.duration_ms",\s*"value": )"[^"]*"',
-        r'\1"<duration>"',
-        output,
-    )
+    # (the flaky field behind #176/#208). Since #307 it rides in the occurrence
+    # additionalContext k=v grammar as "duration_ms=<n>" (previously a flat
+    # qureddy:evidence.NN.duration_ms property); normalize it in that location.
+    return re.sub(r"duration_ms=\d+", "duration_ms=<duration>", output)
 
 
 def _run_qureddy(
