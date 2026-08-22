@@ -256,9 +256,7 @@ def _write_with_library_gap_patches(
     _write_payload(stream, payload, compact=compact)
 
 
-def _patch_provides_edges(
-    payload: dict[str, Any], provides_edges: dict[str, list[str]]
-) -> None:
+def _patch_provides_edges(payload: dict[str, Any], provides_edges: dict[str, list[str]]) -> None:
     """Fill in each dependency's 1.7 ``provides`` edge (library has no such parameter)."""
     for dependency in payload.get("dependencies", []):
         ref = dependency.get("ref")
