@@ -44,6 +44,7 @@ def _build_scan_target(
         detail = exc.errors()[0].get("msg", "invalid target") if exc.errors() else "invalid target"
         raise TargetParseError(f"invalid target: {detail}") from exc
 
+
 DEFAULT_PORT = 443
 HOSTNAME_PATTERN = re.compile(
     r"^(?=.{1,253}$)(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)*"
