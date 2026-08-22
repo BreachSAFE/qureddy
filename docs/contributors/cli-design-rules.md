@@ -6,7 +6,7 @@ These are the conventions every QuReddy CLI surface follows: root command, every
 
 Where a rule below carries no citation, it is a **QuReddy-specific decision** with the rationale stated inline.
 
-This document covers *how the CLI behaves*. It does not cover *what the CLI scans* (that is the scanner code under `src/qureddy/scanners/`) or *what the help text says* (that is per-PR copywriting). Rule changes here go through ADR + reviewer pass per [`review-process.md`](review-process.md).
+This document covers *how the CLI behaves*. It does not cover *what the CLI scans* (that is the scanner code under `src/qureddy/scanners/`) or *what the help text says* (that is per-PR copywriting). Propose a rule change by opening a public issue and taking the reviewer pass in [`review-process.md`](review-process.md); the maintainer records the accepted decision (the decision-record ledger is maintainer-local, see [milestones §6](../reference/milestones.md#6-decision-records)).
 
 QuReddy's CLI is **Typer + Rich + structlog** running on top of **Click 8**. Rules below cite the Typer/Click idioms they translate to. When in doubt, the rule wins; the implementation follows it.
 
@@ -123,7 +123,7 @@ Decisions that diverge from defaults or shared conventions, with rationale.
 `sysexits.h` defines codes 64–78 with semantics like `EX_USAGE=64`, `EX_DATAERR=65`. QuReddy uses **0 (success), 2 (target scan failed), 3 (local dependency missing/broken), 4 (usage error), 70 (internal qureddy bug)**. Decision rationale: CI scripts in the wild assume `0 = good, !0 = bad` and frequently `if $? -eq 2; then alert`. Surfacing five codes from the small end of the integer space makes the contract memorable; surfacing five codes from `sysexits.h`'s middle range (64, 65, 70, 78) loses the distinction between "target failed" and "dataerr." Code 70 reuses the BSD `EX_SOFTWARE` value because internal bugs *are* software errors and CI scripts that already know `sysexits.h` will recognize it.
 
 **Rule 3.2 — Adding a new exit code is a contract change.**
-The exit-code surface is a public contract. New codes need (a) a documented use case where existing codes are wrong, (b) an ADR, (c) reference doc update, (d) PR-template checkbox. Reviewers should treat any new code addition the same way.
+The exit-code surface is a public contract. New codes need (a) a documented use case where existing codes are wrong, (b) a public issue proposing the change so the maintainer can record the accepted decision, (c) reference doc update, (d) PR-template checkbox. Reviewers should treat any new code addition the same way.
 
 **Rule 3.3 — The stdout/stderr contract is the most important rule.**
 Rule 1.9 is universal; this is the QuReddy-specific reinforcement: **every PR that touches the output path must include a test that asserts which stream the output went to.** `CliRunner(mix_stderr=True)` can mask stdout/stderr drift; new CLI tests must capture both streams explicitly.
@@ -142,7 +142,7 @@ Click's default for `qureddy scan tls --version` is "no such option: --version."
 ## 4. What This Document Does NOT Cover
 
 - **Help text wording.** Per-PR copywriting; not a rule.
-- **Specific scanner behavior.** Owned by the active implementation skill in `.agents/skills/`.
+- **Specific scanner behavior.** Owned by the scanner code under `src/qureddy/scanners/`.
 - **Exit-code propagation bugs.** Tracked in issues, not rules.
 - **Input validation gaps.** Tracked in issues, not rules.
 - **`--help` snapshot tests.** Tracked in the public issue tracker.
