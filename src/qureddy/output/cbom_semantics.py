@@ -28,7 +28,7 @@ _AUTO_BOM_REF = re.compile(r"^BomRef\.\d")
 
 def _check_bom_ref_integrity(declared_refs: list[str]) -> None:
     """Reject duplicate or non-deterministic auto-generated bom-refs (#343)."""
-    duplicates = sorted({ref for ref in declared_refs if declared_refs.count(ref) > 1})
+    duplicates = _duplicate_refs(declared_refs)
     if duplicates:
         msg = f"duplicate bom-ref values: {', '.join(duplicates)}"
         raise ValueError(msg)
@@ -36,10 +36,20 @@ def _check_bom_ref_integrity(declared_refs: list[str]) -> None:
     # cyclonedx's BomRefDiscriminator at serialization, which erases the duplicate above and
     # makes output non-deterministic (breaks --reproducible). A surviving auto-generated ref is
     # the fingerprint of that class of bug — reject it so it cannot slip past.
-    auto_generated = sorted(ref for ref in declared_refs if _AUTO_BOM_REF.match(ref))
+    auto_generated = _auto_generated_refs(declared_refs)
     if auto_generated:
         msg = f"non-deterministic auto-generated bom-ref (unresolved duplicate): {auto_generated}"
         raise ValueError(msg)
+
+
+def _duplicate_refs(declared_refs: list[str]) -> list[str]:
+    """Return the sorted set of bom-refs that appear more than once."""
+    return sorted({ref for ref in declared_refs if declared_refs.count(ref) > 1})
+
+
+def _auto_generated_refs(declared_refs: list[str]) -> list[str]:
+    """Return the sorted auto-generated ``BomRef.<n>`` refs (unresolved duplicates, #343)."""
+    return sorted(ref for ref in declared_refs if _AUTO_BOM_REF.match(ref))
 
 
 def validate_cbom_semantics(payload: dict[str, Any]) -> None:
@@ -51,7 +61,7 @@ def validate_cbom_semantics(payload: dict[str, Any]) -> None:
     graph_refs = _graph_refs(payload)
     _check_bom_ref_integrity(_declared_refs(payload, graph_refs))
 
-    known_refs = {ref for ref in graph_refs if isinstance(ref, str)}
+    known_refs = _known_refs(graph_refs)
     dangling = _dangling_refs(payload, known_refs)
     if dangling:
         msg = f"dangling references: {', '.join(sorted(dangling))}"
@@ -60,6 +70,18 @@ def validate_cbom_semantics(payload: dict[str, Any]) -> None:
     if _contains_secret_like_material(payload):
         msg = "CBOM contains secret-like material"
         raise ValueError(msg)
+
+
+def _known_refs(graph_refs: list[Any]) -> set[str]:
+    """Return the graph-node bom-refs that are strings (the resolvable reference targets)."""
+    return {ref for ref in graph_refs if isinstance(ref, str)}
+
+
+def _str_values(items: Any) -> Iterator[str]:
+    """Yield only the string members of ``items`` (a heterogeneous JSON array)."""
+    for item in items:
+        if isinstance(item, str):
+            yield item
 
 
 def _graph_refs(payload: dict[str, Any]) -> list[Any]:
@@ -94,18 +116,19 @@ def _referenced_refs(payload: dict[str, Any]) -> Iterator[str]:
     component/endpoint, #287).
     """
     for dependency in payload.get("dependencies", []):
-        dependency_ref = dependency.get("ref")
-        if isinstance(dependency_ref, str):
-            yield dependency_ref
-        for edge_name in ("dependsOn", "provides"):
-            for ref in dependency.get(edge_name, []):
-                if isinstance(ref, str):
-                    yield ref
+        yield from _dependency_refs(dependency)
     yield from _intra_component_crypto_refs(payload)
     for annotation in payload.get("annotations", []):
-        for ref in annotation.get("subjects", []):
-            if isinstance(ref, str):
-                yield ref
+        yield from _str_values(annotation.get("subjects", []))
+
+
+def _dependency_refs(dependency: dict[str, Any]) -> Iterator[str]:
+    """Yield a dependency node's own ``ref`` and its ``dependsOn``/``provides`` edge refs."""
+    dependency_ref = dependency.get("ref")
+    if isinstance(dependency_ref, str):
+        yield dependency_ref
+    for edge_name in ("dependsOn", "provides"):
+        yield from _str_values(dependency.get(edge_name, []))
 
 
 def _intra_component_crypto_refs(payload: dict[str, Any]) -> Iterator[str]:
@@ -115,16 +138,19 @@ def _intra_component_crypto_refs(payload: dict[str, Any]) -> Iterator[str]:
     protocol's cipherSuites[].algorithms, point at algorithm components.
     """
     for component in payload.get("components", []):
-        crypto_properties = component.get("cryptoProperties", {})
-        certificate_properties = crypto_properties.get("certificateProperties", {})
-        for ref_field in ("signatureAlgorithmRef", "subjectPublicKeyRef"):
-            reference = certificate_properties.get(ref_field)
-            if isinstance(reference, str):
-                yield reference
-        for suite in crypto_properties.get("protocolProperties", {}).get("cipherSuites", []):
-            for ref in suite.get("algorithms", []):
-                if isinstance(ref, str):
-                    yield ref
+        yield from _component_crypto_refs(component)
+
+
+def _component_crypto_refs(component: dict[str, Any]) -> Iterator[str]:
+    """Yield one component's certificate and cipher-suite algorithm references."""
+    crypto_properties = component.get("cryptoProperties", {})
+    certificate_properties = crypto_properties.get("certificateProperties", {})
+    for ref_field in ("signatureAlgorithmRef", "subjectPublicKeyRef"):
+        reference = certificate_properties.get(ref_field)
+        if isinstance(reference, str):
+            yield reference
+    for suite in crypto_properties.get("protocolProperties", {}).get("cipherSuites", []):
+        yield from _str_values(suite.get("algorithms", []))
 
 
 def _contains_secret_like_material(value: object) -> bool:
@@ -134,24 +160,42 @@ def _contains_secret_like_material(value: object) -> bool:
     if isinstance(value, list):
         return any(_contains_secret_like_material(item) for item in value)
     if isinstance(value, str):
-        return any(pattern.search(value) for pattern in _SECRET_PATTERNS)
+        return _str_contains_secret(value)
     return False
+
+
+def _str_contains_secret(value: str) -> bool:
+    """Detect a private-key block or token shape inside a string value."""
+    return any(pattern.search(value) for pattern in _SECRET_PATTERNS)
 
 
 def _dict_contains_secret_like_material(value: dict[Any, Any]) -> bool:
     """Detect a populated secret-named field, a secret-named property, or a nested secret."""
-    populated_secret_field = any(
+    return (
+        _has_populated_secret_field(value)
+        or _is_populated_secret_property(value)
+        or _has_nested_secret(value)
+    )
+
+
+def _has_populated_secret_field(value: dict[Any, Any]) -> bool:
+    """Return whether any secret-named key maps to a non-empty value."""
+    return any(
         _SECRET_FIELD.fullmatch(str(key)) and nested not in (None, "", [], {})
         for key, nested in value.items()
     )
+
+
+def _is_populated_secret_property(value: dict[Any, Any]) -> bool:
+    """Return whether this is a ``{name, value}`` property whose secret-named name is populated."""
     property_name = value.get("name")
-    populated_secret_property = (
+    return (
         isinstance(property_name, str)
         and _SECRET_FIELD.fullmatch(property_name) is not None
         and value.get("value") not in (None, "", [], {})
     )
-    return (
-        populated_secret_field
-        or populated_secret_property
-        or any(_contains_secret_like_material(nested) for nested in value.values())
-    )
+
+
+def _has_nested_secret(value: dict[Any, Any]) -> bool:
+    """Return whether any nested value within the dict contains secret-like material."""
+    return any(_contains_secret_like_material(nested) for nested in value.values())
