@@ -6,8 +6,15 @@ from __future__ import annotations
 
 from types import MappingProxyType
 
-# PQ hybrid KEX (substring match -- covers @openssh.com suffixes).
-_PQ_HYBRID_KEX = ("mlkem768x25519", "sntrup761x25519")
+# PQ-hybrid KEX, matched by substring so every classical partner + vendor suffix is
+# caught. In SSH, ML-KEM / Kyber / NTRU-Prime key exchange is ALWAYS hybrid, so these
+# substrings identify PQ-hybrids with no false positives. Names per the IETF
+# draft-ietf-sshm-mlkem-hybrid-kex (mlkem768nistp256-sha256, mlkem1024nistp384-sha384,
+# mlkem768x25519-sha256), OpenSSH (sntrup761x25519-sha512[@openssh.com]), and the legacy
+# OQS/AWS round-3 Kyber hybrids (x25519-kyber-512r3-...@amazon.com,
+# ecdh-nistp256-kyber-512r3-...@openssh.com). #247: the old x25519-only list misread
+# non-x25519 ML-KEM hybrids (nistp256/nistp384) as quantum_vulnerable.
+_PQ_HYBRID_KEX = ("mlkem", "kyber", "sntrup761")
 # Weak/deprecated host-key algorithms, keyed to a justification note. Matched
 # by exact name (not prefix) so the SHA-2 families rsa-sha2-256 / rsa-sha2-512
 # and their cert variants stay OUT of this set -- only bare ssh-rsa signs with
@@ -54,6 +61,8 @@ _WEAK_KEX = frozenset(_WEAK_KEX_NOTES)
 KEX_NOTES = MappingProxyType(
     {
         "mlkem768x25519-sha256": "ML-KEM-768 + X25519 hybrid (FIPS 203)",
+        "mlkem768nistp256-sha256": "ML-KEM-768 + ECDH P-256 hybrid (FIPS 203)",
+        "mlkem1024nistp384-sha384": "ML-KEM-1024 + ECDH P-384 hybrid (FIPS 203)",
         "sntrup761x25519-sha512": "Streamlined NTRU Prime + X25519 hybrid",
     }
 )
