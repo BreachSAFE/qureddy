@@ -36,7 +36,7 @@ from qureddy.scanners.tls.openssl_probe._constants import (
 )
 
 _INSTALL_GUIDANCE = (
-    f"pip installs QuReddy, not OpenSSL. Install a checksum-verified OpenSSL {OPENSSL_LTS_LABEL} "  # noqa: S608 -- operator guidance, not SQL
+    f"pip installs QuReddy, not OpenSSL. Install a checksum-verified OpenSSL {OPENSSL_LTS_LABEL} "  # noqa: S608  # nosec B608 -- operator guidance, not SQL
     f"LTS build separately (validated baseline: {PINNED_OPENSSL_VERSION}), then pass "
     "--openssl PATH or set QUREDDY_OPENSSL. macOS: the Homebrew openssl@3.5 formula is "
     "a moving channel; select it only after `openssl version` reports a supported 3.5.x "
