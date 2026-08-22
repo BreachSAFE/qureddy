@@ -23,6 +23,13 @@ _SSH_MSG_KEXINIT = 20
 _CLIENT_BANNER = b"SSH-2.0-qureddy\r\n"
 _MAX_BANNER = 8192
 _MAX_PACKET = 65536
+# RFC 4253 §6 binary-packet framing constants. Padding is 4..255 bytes, and
+# (packet_length + 4) -- the packet_length field plus the framed body -- must be
+# a multiple of the cipher block size (8 for the unencrypted KEXINIT we read).
+_MIN_PADDING = 4
+_MAX_PADDING = 255
+_SSH_BLOCK_SIZE = 8
+_LENGTH_FIELD_SIZE = 4  # width of the leading packet_length field
 # Negotiation markers that appear in a KEXINIT kex list but aren't real KEX algs.
 _PSEUDO_KEX = frozenset({"ext-info-s", "ext-info-c", "kex-strict-s-v00@openssh.com"})
 
@@ -115,6 +122,27 @@ def _read_banner(sock: socket.socket) -> str:
             return text.decode("ascii", errors="replace")
 
 
+def _validate_packet_framing(pkt_len: int, pad_len: int) -> None:
+    """Enforce RFC 4253 §6 framing on the unencrypted KEXINIT packet.
+
+    ``packet_length`` counts ``padding_length(1) + payload + padding``. Padding
+    MUST be 4..255 bytes; ``(packet_length + 4)`` MUST be a multiple of the
+    cipher block size (8, unencrypted); and the payload length
+    (``packet_length - padding_length - 1``) MUST be non-negative. A server that
+    violates any of these sent a malformed packet, so raise the module's typed
+    error rather than slice a bogus payload.
+    """
+    if (pkt_len + _LENGTH_FIELD_SIZE) % _SSH_BLOCK_SIZE != 0:
+        msg = f"misaligned SSH packet length: {pkt_len}"
+        raise SSHProbeError(msg)
+    if pad_len < _MIN_PADDING or pad_len > _MAX_PADDING:
+        msg = f"invalid SSH padding length: {pad_len}"
+        raise SSHProbeError(msg)
+    if pkt_len - pad_len - 1 < 0:
+        msg = "invalid SSH padding length"
+        raise SSHProbeError(msg)
+
+
 def _read_packet_payload(sock: socket.socket) -> bytes:
     (pkt_len,) = struct.unpack(">I", _recvn(sock, 4))
     if not 1 <= pkt_len <= _MAX_PACKET:
@@ -122,9 +150,7 @@ def _read_packet_payload(sock: socket.socket) -> bytes:
         raise SSHProbeError(msg)
     body = _recvn(sock, pkt_len)
     pad_len = body[0]
-    if pad_len >= pkt_len:
-        msg = "invalid SSH padding length"
-        raise SSHProbeError(msg)
+    _validate_packet_framing(pkt_len, pad_len)
     return body[1 : len(body) - pad_len]
 
 
