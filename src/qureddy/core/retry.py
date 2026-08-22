@@ -22,6 +22,20 @@ MAX_RETRIES = 3
 MAX_RETRY_DELAY_SECONDS = 10.0
 
 
+def _parse_retry_category(token: str) -> FailureCategory:
+    """Resolve one --retry-on token to a retryable category or raise."""
+    try:
+        category = FailureCategory(token)
+    except ValueError as exc:
+        msg = f"unknown failure category: {token!r}"
+        raise RetryConfigError(msg) from exc
+    if category not in RETRYABLE_CATEGORIES:
+        allowed = ", ".join(sorted(c.value for c in RETRYABLE_CATEGORIES))
+        msg = f"failure category {category.value!r} is not retryable; allowed: {allowed}"
+        raise RetryConfigError(msg)
+    return category
+
+
 def parse_retry_on(value: str | None) -> frozenset[FailureCategory]:
     """Parse a comma-separated --retry-on argument into a category set.
 
@@ -36,16 +50,7 @@ def parse_retry_on(value: str | None) -> frozenset[FailureCategory]:
         token = raw.strip()
         if not token:
             continue
-        try:
-            category = FailureCategory(token)
-        except ValueError as exc:
-            msg = f"unknown failure category: {token!r}"
-            raise RetryConfigError(msg) from exc
-        if category not in RETRYABLE_CATEGORIES:
-            allowed = ", ".join(sorted(c.value for c in RETRYABLE_CATEGORIES))
-            msg = f"failure category {category.value!r} is not retryable; allowed: {allowed}"
-            raise RetryConfigError(msg)
-        parsed.add(category)
+        parsed.add(_parse_retry_category(token))
     return frozenset(parsed)
 
 
@@ -100,10 +105,15 @@ def run_with_retries(
         sleep(retry_delay)
         result = probe(attempt)
         results.append(result)
-        category = result.failure_category
-        if category is None:
-            return results
-        if category != triggering:
+        if not _retry_again(result.failure_category, triggering):
             return results
 
     return results
+
+
+def _retry_again(
+    category: FailureCategory | None,
+    triggering: FailureCategory,
+) -> bool:
+    """True when an attempt's outcome still matches the triggering failure."""
+    return category is not None and category == triggering
