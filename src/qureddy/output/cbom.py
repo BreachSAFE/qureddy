@@ -248,12 +248,62 @@ def _write_with_library_gap_patches(
         warnings.filterwarnings("ignore", message=".*no defined dependencies.*")
         serialized = JsonV1Dot7(bom).output_as_string(indent=2)
     payload = json.loads(serialized)
+    _assert_library_serialization_shape(payload, certificate_serial is not None)
     _patch_provides_edges(payload, provides_edges)
     if certificate_serial:
         _patch_certificate_serial(payload, certificate_serial)
     _attach_native_findings(payload, result, reproducible=reproducible)
     validate_cbom_semantics(payload)
     _write_payload(stream, payload, compact=compact)
+
+
+def _assert_library_serialization_shape(payload: dict[str, Any], has_certificate: bool) -> None:
+    """Fail closed if the library's intermediate JSON shape changes (#306).
+
+    The four CycloneDX 1.7 fields patched below are intentionally outside the
+    installed library model. This guard turns a library upgrade from silent
+    data loss into an actionable test/runtime failure.
+    """
+    dependencies = payload.get("dependencies", [])
+    components = payload.get("components", [])
+    _assert_library_collections(dependencies, components)
+    metadata = payload.get("metadata")
+    if not isinstance(metadata, dict) or not isinstance(metadata.get("component"), dict):
+        raise RuntimeError("cyclonedx-python-lib JSON shape changed: metadata.component")
+    if has_certificate:
+        _assert_certificate_shape(components)
+
+
+def _assert_library_collections(dependencies: Any, components: Any) -> None:
+    """Validate the collection and reference shapes consumed by gap patches."""
+    if not isinstance(dependencies, list) or not isinstance(components, list):
+        raise RuntimeError("cyclonedx-python-lib JSON shape changed: dependencies/components")
+    if any(
+        not isinstance(item, dict) or not isinstance(item.get("ref"), str) for item in dependencies
+    ):
+        raise RuntimeError("cyclonedx-python-lib JSON shape changed: dependency.ref")
+    if any(
+        not isinstance(item, dict) or not isinstance(item.get("bom-ref"), str)
+        for item in components
+    ):
+        raise RuntimeError("cyclonedx-python-lib JSON shape changed: component.bom-ref")
+
+
+def _assert_certificate_shape(components: list[Any]) -> None:
+    """Validate the nested certificate path used for serialNumber patching."""
+    certificate = next(
+        (item for item in components if item.get("bom-ref") == CERTIFICATE_REF), None
+    )
+    if not isinstance(certificate, dict):
+        raise RuntimeError("cyclonedx-python-lib JSON shape changed: certificate component")
+    crypto_properties = certificate.get("cryptoProperties")
+    certificate_properties = (
+        crypto_properties.get("certificateProperties")
+        if isinstance(crypto_properties, dict)
+        else None
+    )
+    if not isinstance(certificate_properties, dict):
+        raise RuntimeError("cyclonedx-python-lib JSON shape changed: certificateProperties")
 
 
 def _patch_provides_edges(payload: dict[str, Any], provides_edges: dict[str, list[str]]) -> None:
