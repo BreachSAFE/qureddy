@@ -209,9 +209,9 @@ def unknown_recommendation(failure: FailureCategory | None) -> str:
         return (
             "The openssl on this machine is LibreSSL, not OpenSSL — macOS ships "
             "LibreSSL as /usr/bin/openssl by default. Install a checksum-verified "
-            "OpenSSL 3.5.7 LTS build and select it with --openssl PATH or "
+            "OpenSSL 3.5.x LTS build and select it with --openssl PATH or "
             "QUREDDY_OPENSSL. Homebrew openssl@3.5 is a moving channel; use it only "
-            "after `openssl version` reports 3.5.7 for the executable and any explicitly "
+            "after `openssl version` reports a supported 3.5.x for the executable and any explicitly "
             "reported linked library."
         )
     if failure is FailureCategory.LOCAL_OPENSSL_BROKEN:
@@ -229,7 +229,7 @@ def unknown_recommendation(failure: FailureCategory | None) -> str:
         )
     if failure in LOCAL_CAPABILITY_CATEGORIES:
         return (
-            "Install exact OpenSSL 3.5.7 LTS with PQ group support and re-run. "
+            "Install OpenSSL 3.5.x LTS with PQ group support and re-run. "
             "The target's PQ posture is genuinely unknown until then."
         )
     return "Re-run the scan. Check connectivity, SNI, and that the target accepts TLS 1.3."

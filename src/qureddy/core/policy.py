@@ -123,7 +123,7 @@ MVP_POLICY: tuple[PolicyRule, ...] = (
         finding_type="tls.kex.not_testable",
         title="Local OpenSSL cannot test X25519MLKEM768",
         description=(
-            "Local OpenSSL is missing, does not match exact 3.5.7 LTS, or lacks "
+            "Local OpenSSL is missing, is outside the supported 3.5.x LTS series, or lacks "
             "the X25519MLKEM768 group; the scanner cannot determine the target's "
             "hybrid posture."
         ),

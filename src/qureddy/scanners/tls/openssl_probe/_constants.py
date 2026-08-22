@@ -6,10 +6,17 @@ from packaging.version import Version
 
 DEFAULT_TIMEOUT_SECONDS = 30
 PINNED_OPENSSL_VERSION = Version("3.5.7")
-# Public compatibility alias for the 0.2 API. The runtime contract is an
-# exact pin, not a minimum-version range; remove this alias only in a
-# deliberate breaking release.
+# Public compatibility alias for the 0.2 API. The validated baseline remains
+# 3.5.7, while the runtime contract accepts patched releases on the 3.5 LTS
+# series (issue #358).
 MIN_OPENSSL_VERSION = PINNED_OPENSSL_VERSION
+OPENSSL_LTS_SERIES = (3, 5)
+OPENSSL_LTS_LABEL = ".".join(str(part) for part in OPENSSL_LTS_SERIES)
+
+
+def is_supported_series(version: Version) -> bool:
+    """Return whether ``version`` is a supported OpenSSL LTS release."""
+    return (version.major, version.minor) == OPENSSL_LTS_SERIES
 HYBRID_GROUP = "X25519MLKEM768"
 # #337: the standardized PQ hybrid TLS groups (draft-ietf-tls-ecdhe-mlkem / RFC 9370 era),
 # all supported by the pinned OpenSSL 3.5.7. HYBRID_GROUP (first) stays the primary readiness

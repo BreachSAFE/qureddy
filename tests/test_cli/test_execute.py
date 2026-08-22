@@ -221,10 +221,10 @@ def test_local_openssl_too_old_exits_3() -> None:
     assert payload["summary"]["readiness"] == "unknown"
 
 
-def test_local_openssl_version_mismatch_exits_3(
+def test_local_openssl_supported_lts_patch_scans_successfully(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """A parseable release above the exact pin stays on the typed exit-3 surface."""
+    """A patched release on the supported 3.5.x LTS series is accepted."""
 
     def synthetic_capability_output(
         args: list[str],
@@ -254,18 +254,16 @@ def test_local_openssl_version_mismatch_exits_3(
         ],
     )
 
-    assert result.exit_code == 3
+    # The fixture intentionally cannot perform s_client; this test only proves
+    # the local capability gate accepts the patched 3.5.x dependency.
+    assert result.exit_code == 2
     payload = json.loads(result.stdout)
     dependency = payload["dependencies"][0]
-    assert payload["scan"]["status"] == "local_openssl_version_mismatch"
-    assert payload["summary"]["failure_category"] == "local_openssl_version_mismatch"
+    assert payload["scan"]["status"] == "tls_handshake_failed"
+    assert payload["summary"]["failure_category"] == "tls_handshake_failed"
     assert payload["summary"]["readiness"] == "unknown"
-    assert dependency["failure_category"] == "local_openssl_version_mismatch"
+    assert dependency["failure_category"] is None
     assert dependency["version"] == "3.5.8"
-    assert "OpenSSL 3.5.8" in result.stderr
-    assert "required 3.5.7" in result.stderr
-    assert "3.5.7+" not in result.stderr
-    assert "or newer" not in result.stderr.lower()
 
 
 def test_local_openssl_lacks_group_exits_3() -> None:

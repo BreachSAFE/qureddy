@@ -75,5 +75,5 @@ class TestUnknownRecommendationLibreSSL:
             FailureCategory.LOCAL_OPENSSL_VERSION_MISMATCH,
         ):
             recommendation = unknown_recommendation(category)
-            assert "Install exact OpenSSL 3.5.7 LTS" in recommendation
+            assert "Install OpenSSL 3.5.x LTS" in recommendation
             assert "3.5.7+" not in recommendation

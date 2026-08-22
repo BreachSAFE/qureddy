@@ -2,7 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 """Parse OpenSSL `s_client -brief` output into structured negotiation data.
 
-Normalized for the pinned OpenSSL 3.5.7 LTS baseline from live
+Normalized for the supported OpenSSL 3.5.x LTS series (with 3.5.7 as the
+validated baseline) from live
 ``s_client -brief`` captures:
 
   - Hybrid PQ negotiation announces via ``Negotiated TLS1.3 group: <name>``.

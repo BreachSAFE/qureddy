@@ -95,7 +95,7 @@ class TestResolveOpenSSLPath:
         assert "Linux:" in message
         assert "Windows:" in message
         assert "--openssl PATH" in message
-        assert "checksum-verified OpenSSL 3.5.7" in message
+        assert "checksum-verified OpenSSL 3.5" in message
         assert "moving channel" in message
 
     def test_non_executable_raises(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -183,7 +183,7 @@ class TestProbeCapability:
         assert dep.version == "3.3.6"
 
 
-class TestExactOpenSSLVersionContract:
+class TestOpenSSLLtsSeriesContract:
     def test_exact_baseline_is_accepted(self) -> None:
         dep = _probe_synthetic_version("OpenSSL 3.5.7 7 Apr 2026")
 
@@ -201,8 +201,8 @@ class TestExactOpenSSLVersionContract:
             ),
             pytest.param(
                 "OpenSSL 3.5.8 1 Jun 2026",
-                "local_openssl_version_mismatch",
-                id="higher-patch",
+                None,
+                id="higher-patch-accepted",
             ),
             pytest.param(
                 "OpenSSL 3.4.99 1 Jan 2026",
@@ -216,24 +216,26 @@ class TestExactOpenSSLVersionContract:
             ),
         ],
     )
-    def test_every_parseable_nonbaseline_release_is_rejected(
+    def test_lts_series_or_outside_series_is_classified(
         self,
         version_banner: str,
-        expected_category: str,
+        expected_category: str | None,
     ) -> None:
         dep = _probe_synthetic_version(version_banner)
 
-        assert dep.failure_category is not None
-        assert dep.failure_category.value == expected_category
+        if expected_category is None:
+            assert dep.failure_category is None
+        else:
+            assert dep.failure_category is not None
+            assert dep.failure_category.value == expected_category
 
-    def test_moving_alias_cannot_bypass_exact_release_gate(self) -> None:
+    def test_moving_alias_accepts_supported_lts_patch(self) -> None:
         dep = _probe_synthetic_version(
             "OpenSSL 3.5.8 1 Jun 2026",
             openssl_path="/opt/homebrew/opt/openssl@3/bin/openssl",
         )
 
-        assert dep.failure_category is not None
-        assert dep.failure_category.value == "local_openssl_version_mismatch"
+        assert dep.failure_category is None
 
     @pytest.mark.parametrize(
         "version_banner",
@@ -246,22 +248,14 @@ class TestExactOpenSSLVersionContract:
         dep = _probe_synthetic_version(version_banner)
 
         assert dep.failure_category is not None
-        assert dep.failure_category.value == "local_openssl_version_mismatch"
+        assert dep.failure_category.value == "local_openssl_too_old"
 
-    def test_linked_library_must_match_cli_version_and_exact_baseline(self) -> None:
+    def test_linked_library_must_remain_on_supported_lts_series(self) -> None:
         dep = _probe_synthetic_version(
             "OpenSSL 3.5.7 9 Jun 2026 (Library: OpenSSL 3.5.8 1 Jun 2026)",
         )
 
-        assert dep.failure_category is not None
-        assert dep.failure_category.value == "local_openssl_version_mismatch"
-        with pytest.raises(LocalOpenSSLVersionMismatch) as exc_info:
-            raise_if_unusable(dep)
-
-        message = str(exc_info.value)
-        assert "Library" in message
-        assert "3.5.8" in message
-        assert "required 3.5.7" in message
+        assert dep.failure_category is None
 
     def test_matching_cli_and_linked_library_versions_are_accepted(self) -> None:
         dep = _probe_synthetic_version(
@@ -314,18 +308,13 @@ class TestExactOpenSSLVersionContract:
                 id="lower-patch",
             ),
             pytest.param(
-                "OpenSSL 3.5.8 1 Jun 2026",
-                LocalOpenSSLVersionMismatch,
-                id="higher-patch",
-            ),
-            pytest.param(
                 "OpenSSL 4.0.0 1 Jan 2027",
                 LocalOpenSSLVersionMismatch,
                 id="different-major",
             ),
         ],
     )
-    def test_parseable_nonbaseline_error_names_detected_and_required_versions(
+    def test_parseable_outside_series_error_names_detected_and_required_versions(
         self,
         version_banner: str,
         expected_error: type[QureddyError],
@@ -338,7 +327,7 @@ class TestExactOpenSSLVersionContract:
         message = str(exc_info.value)
         assert dep.version is not None
         assert dep.version in message
-        assert "3.5.7" in message
+        assert "3.5.x" in message
         assert "3.5.7+" not in message
         assert "or newer" not in message.lower()
 
@@ -350,7 +339,7 @@ class TestExactOpenSSLVersionContract:
 
         message = str(exc_info.value)
         assert "LibreSSL rolling" in message
-        assert "3.5.7" in message
+        assert "3.5.x" in message
         assert "3.5.7+" not in message
         assert "--openssl" in message
         assert "QUREDDY_OPENSSL" in message
@@ -364,7 +353,7 @@ class TestRaiseIfUnusable:
         with pytest.raises(LocalOpenSSLTooOld) as exc_info:
             raise_if_unusable(dep)
         message = str(exc_info.value)
-        assert "OpenSSL 3.4.0 is below required 3.5.7" in message
+        assert "OpenSSL 3.4.0 is below the required 3.5.x LTS series" in message
         assert "pip installs QuReddy, not OpenSSL" in message
         assert "QUREDDY_OPENSSL" in message
 
