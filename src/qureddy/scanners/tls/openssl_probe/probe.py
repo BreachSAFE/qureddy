@@ -39,9 +39,14 @@ def run_hybrid_probe(
     *,
     timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS,
     attempt_number: int = 1,
+    group: str = HYBRID_GROUP,
 ) -> ProbeResult:
-    """Probe the endpoint with the preferred hybrid key-exchange group."""
-    args = _build_probe_args(openssl_path, host, port, sni, group=HYBRID_GROUP)
+    """Probe the endpoint forcing one hybrid key-exchange group.
+
+    #337: defaults to X25519MLKEM768, or a supplementary standardized group for per-group
+    coverage.
+    """
+    args = _build_probe_args(openssl_path, host, port, sni, group=group)
     return _run_probe(args, timeout_seconds=timeout_seconds, attempt_number=attempt_number)
 
 

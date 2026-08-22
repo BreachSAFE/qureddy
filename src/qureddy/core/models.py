@@ -117,6 +117,11 @@ class ProbeRole(str, Enum):
 
     HYBRID_READINESS = "hybrid_readiness"
     CLASSICAL_CONTROL = "classical_control"
+    # #337: a supplementary per-group coverage probe (SecP256r1MLKEM768, SecP384r1MLKEM1024).
+    # A negotiated hybrid still fires the positive readiness rule (structural, role-agnostic),
+    # but a rejection/failure does NOT fire the primary probe's rejected/failed rules — so
+    # forcing extra groups adds coverage without spurious quantum_vulnerable findings.
+    HYBRID_COVERAGE = "hybrid_coverage"
 
 
 class FailureCategory(str, Enum):

@@ -62,6 +62,7 @@ def test_public_api_exports_exact_adr_symbols_by_identity() -> None:
         "DEFAULT_TIMEOUT_SECONDS",
         "EXCERPT_LIMIT",
         "HYBRID_GROUP",
+        "HYBRID_GROUPS",
         "MIN_OPENSSL_VERSION",
         "_classify_failure",
         "probe_capability",
@@ -77,6 +78,7 @@ def test_public_api_exports_exact_adr_symbols_by_identity() -> None:
     assert openssl_probe_api.DEFAULT_TIMEOUT_SECONDS is constants_module.DEFAULT_TIMEOUT_SECONDS
     assert openssl_probe_api.CLASSICAL_GROUP is constants_module.CLASSICAL_GROUP
     assert openssl_probe_api.HYBRID_GROUP is constants_module.HYBRID_GROUP
+    assert openssl_probe_api.HYBRID_GROUPS is constants_module.HYBRID_GROUPS
     assert openssl_probe_api.run_classical_probe is probe_module.run_classical_probe
     assert openssl_probe_api.run_hybrid_probe is probe_module.run_hybrid_probe
     assert openssl_probe_api.probe_capability is capability_module.probe_capability

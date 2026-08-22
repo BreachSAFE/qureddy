@@ -39,6 +39,28 @@ def _evidence(**overrides: object) -> Evidence:
     return Evidence(**base)  # type: ignore[arg-type]
 
 
+class TestCoverageProbeRole:
+    """#337: supplementary coverage probes record support without spurious findings."""
+
+    def test_coverage_negotiated_secondary_hybrid_is_transitional(self) -> None:
+        # a coverage probe that negotiates SecP256r1MLKEM768 still fires the positive
+        # (role-agnostic) hybrid rule.
+        ev = _evidence(negotiated_group="SecP256r1MLKEM768", probe_role=ProbeRole.HYBRID_COVERAGE)
+        findings = classify_evidence(_asset(), [ev])
+        assert [f.readiness for f in findings] == [Readiness.TRANSITIONAL_HYBRID]
+
+    def test_coverage_failed_probe_produces_no_finding(self) -> None:
+        # a coverage probe for an unsupported group fails (no negotiated group); unlike the
+        # primary readiness probe, it must NOT fire a rejected/failed quantum_vulnerable rule.
+        ev = _evidence(
+            negotiated_group=None,
+            observation_type=ObservationType.NOT_TESTABLE,
+            probe_role=ProbeRole.HYBRID_COVERAGE,
+            failure_category=FailureCategory.TLS_HANDSHAKE_FAILED,
+        )
+        assert classify_evidence(_asset(), [ev]) == []
+
+
 class TestHybridNegotiatedRule:
     def test_negotiated_x25519mlkem768_produces_transitional_hybrid(self) -> None:
         ev = _evidence(negotiated_group="X25519MLKEM768")
