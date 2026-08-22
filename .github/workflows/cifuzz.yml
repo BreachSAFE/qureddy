@@ -1,55 +1,69 @@
 # SPDX-License-Identifier: Apache-2.0
 #
-# ClusterFuzzLite short fuzz run on pull requests (issue #86).
+# Short Atheris fuzz run on pull requests (issues #86, #325, #327).
 #
-# Builds the Atheris harnesses under tests/fuzz/ in the OSS-Fuzz Python base
-# image (see .clusterfuzzlite/) and fuzzes only the parsers touched by the PR
-# for a short, bounded time. This is the self-hosted, no-acceptance-process
-# alternative to Google OSS-Fuzz and provides the Scorecard "Fuzzing" signal.
+# Runs the tests/fuzz/ harnesses directly under Atheris on Python 3.14 — the
+# same interpreter the rest of the project targets after the 3.14 migration
+# (#327). Previously this used ClusterFuzzLite's OSS-Fuzz base-builder-python
+# image, which is pinned to Python 3.11 upstream and therefore could not fuzz
+# on 3.14. Atheris 3.1 is the first release with a cp314 wheel (#325); it ships
+# manylinux_x86_64 wheels only, so this job pins to ubuntu-latest (amd64).
 #
-# Reference: https://google.github.io/clusterfuzzlite/
+# Scorecard's Fuzzing check detects the `import atheris` harnesses under
+# tests/fuzz/, so the fuzzing signal is preserved without the OSS-Fuzz image.
+#
+# Advisory (continue-on-error): a crash surfaces here but never blocks a PR; the
+# parsers are total-by-contract and the harnesses assert that invariant.
 
 name: CIFuzz
 
 on:
   pull_request:
-    # Only run when parser code, the harnesses, or the fuzzing setup change.
     paths:
       - "src/qureddy/**"
       - "tests/fuzz/**"
-      - ".clusterfuzzlite/**"
       - ".github/workflows/cifuzz.yml"
 
-# Deny all scopes by default; each job grants only what it needs.
 permissions: {}
 
 concurrency:
   group: cifuzz-${{ github.ref }}
   cancel-in-progress: true
 
-jobs:
-  fuzzing:
-    name: ClusterFuzzLite PR fuzzing
-    runs-on: ubuntu-latest
-    # Advisory until the OSS-Fuzz harness build stabilizes (#86/#239); must not block PRs.
-    continue-on-error: true
-    permissions:
-      contents: read # build_fuzzers checks out the PR head
-    steps:
-      - name: Build fuzzers
-        id: build
-        # Pinned to a full commit SHA (ClusterFuzzLite publishes no tags).
-        uses: google/clusterfuzzlite/actions/build_fuzzers@52ecc61cb587ee99c26825a112a21abf19c7448c
-        with:
-          language: python
-          sanitizer: address
+defaults:
+  run:
+    shell: bash
 
-      - name: Run fuzzers
-        uses: google/clusterfuzzlite/actions/run_fuzzers@52ecc61cb587ee99c26825a112a21abf19c7448c
+jobs:
+  fuzz:
+    name: Atheris fuzz (py3.14, amd64)
+    runs-on: ubuntu-latest # amd64 — atheris ships manylinux_x86_64 wheels only (#325)
+    continue-on-error: true # advisory until the harness run stabilizes (#86/#239)
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          # Short, bounded run so the PR gate stays fast.
-          fuzz-seconds: 120
-          mode: "code-change"
-          sanitizer: "address"
-          output-sarif: false
+          persist-credentials: false
+
+      - name: Set up Python 3.14
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+
+      - name: Install project + fuzz extra (atheris 3.1, cp314)
+        run: uv sync --locked --extra fuzz
+
+      - name: Fuzz each harness (bounded)
+        # 45s per harness keeps the PR gate to a couple of minutes. A crash makes
+        # atheris exit non-zero and fails this (advisory) job with the repro.
+        run: |
+          for harness in tests/fuzz/fuzz_*.py; do
+            echo "::group::$harness"
+            uv run --locked --extra fuzz python "$harness" \
+              -max_total_time=45 -rss_limit_mb=4096
+            echo "::endgroup::"
+          done

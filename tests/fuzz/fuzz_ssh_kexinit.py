@@ -8,7 +8,7 @@ packet framing (:func:`_read_packet_payload`, length/padding bounds) and
 name-list decoding (:func:`_parse_kexinit`) -- by replaying fuzzed bytes
 through an in-memory socket. No network I/O is performed.
 
-The parser must either return two name lists or raise only its declared
+The parser must return name lists (kex, host-keys, ciphers, macs) or raise only its declared
 ``SSHProbeError``; any other exception is left to propagate as a finding.
 
 Run with the ``fuzz`` optional dependency group; see ``tests/fuzz/README.md``.
@@ -54,11 +54,13 @@ def TestOneInput(data: bytes) -> None:  # noqa: N802 - atheris entrypoint naming
     sock = _ReplaySocket(data)
     try:
         payload = read_packet_payload(sock)
-        kex, host_keys = parse_kexinit(payload)
+        kex, host_keys, ciphers, macs = parse_kexinit(payload)
     except SSHProbeError:
         return
     assert isinstance(kex, list), "kex algorithms must be a list"
     assert isinstance(host_keys, list), "host-key algorithms must be a list"
+    assert isinstance(ciphers, list), "cipher algorithms must be a list"
+    assert isinstance(macs, list), "MAC algorithms must be a list"
 
 
 def main() -> None:

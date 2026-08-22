@@ -5,10 +5,10 @@
 
 [project]
 name = "breachsafe-qureddy"
-version = "0.2.36"
+version = "0.2.37"
 description = "Open-source post-quantum readiness scanner for TLS and SSH endpoints."
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.14"
 license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE", "LICENSES/*"]
 authors = [{name = "BreachSAFE QuReddy contributors"}]
@@ -21,8 +21,7 @@ classifiers = [
     "Operating System :: POSIX :: Linux",
     "Operating System :: Microsoft :: Windows",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Security :: Cryptography",
 ]
 
@@ -59,7 +58,7 @@ dev = [
     "pytest-rerunfailures>=14.0",
     # MAX code-quality + architecture gates (#360). Mirrors the tools bundled by
     # breachsafe-common's reusable quality-gates-python.yml so this repo runs the
-    # same gate directly on 3.12 until it adopts `uses: ...@v1` (needs the v1 tag
+    # same gate directly on 3.14 until it adopts `uses: ...@v1` (needs the v1 tag
     # + the pinned 3.14 container). import-linter enforces the layered contract
     # below; xenon/refurb/vulture/interrogate/diff-cover mirror the reusable gate.
     "import-linter>=2.0",
@@ -109,11 +108,14 @@ dev = [
 # Coverage-guided fuzzing of the untrusted-input parsers (issue #86, #37).
 # Fuzz-only and optional: atheris is NOT installed by the normal dev extra
 # or the release gate, and the harnesses under tests/fuzz/ (named fuzz_*.py,
-# so pytest never collects them) import it behind a guard. atheris builds
-# against libFuzzer/Clang and is exercised in the ClusterFuzzLite container
-# (see .clusterfuzzlite/ and .github/workflows/cifuzz.yml), not in unit CI.
+# so pytest never collects them) import it behind a guard. atheris 3.1 is the
+# first release with a cp314 wheel (#325); it ships manylinux_x86_64 only, so
+# the fuzz gate runs on ubuntu-latest (amd64) at Python 3.14 in cifuzz.yml.
 fuzz = [
-    "atheris>=2.3",
+    # atheris 3.1 ships manylinux_x86_64 wheels only (no sdist, no macOS/arm64),
+    # so scope the requirement to where it can actually install; the fuzz gate
+    # runs on ubuntu-latest (amd64).
+    "atheris>=3.1; sys_platform == 'linux' and platform_machine == 'x86_64'",
 ]
 
 [project.scripts]
@@ -164,7 +166,12 @@ include = [
 # ============================================================================
 [tool.ruff]
 line-length = 100
-target-version = "py312"
+# Runtime + requires-python are 3.14, but the ruff FORMATTER target is held at
+# py313 on purpose: py314 makes ruff rewrite `except (A, B):` to the PEP 758
+# unparenthesized `except A, B:`, which pylint/astroid cannot yet parse and
+# which is a SyntaxError on any pre-3.14 tool (e.g. an ambient-3.12 CI step).
+# Raise to py314 once astroid ships PEP 758 support (#327 follow-up).
+target-version = "py313"
 src = ["src", "tests"]
 
 [tool.ruff.format]
@@ -292,7 +299,7 @@ ignore-signatures = true
 # mypy
 # ============================================================================
 [tool.mypy]
-python_version = "3.12"
+python_version = "3.14"
 strict = true
 warn_return_any = true
 warn_unused_configs = true

@@ -2,8 +2,14 @@
 # SPDX-License-Identifier: Apache-2.0
 """Structured logging for OpenSSL subprocess boundaries."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from qureddy.core.logging import get_logger
-from qureddy.core.models import FailureCategory
+
+if TYPE_CHECKING:
+    from qureddy.core.models import FailureCategory
 
 _log = get_logger(__name__)
 

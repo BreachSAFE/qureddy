@@ -26,7 +26,7 @@ RUN curl --fail --location --proto '=https' --connect-timeout 30 --max-time 300 
 # Build the wheel from source inside the image (#253) so a fresh `docker build .`
 # needs no host-built dist/ artifact. hatchling reads the static version from
 # pyproject.toml, so the wheel version is intrinsic to the source, not an ARG.
-FROM python:3.12.13-slim-bookworm@sha256:8a7e7cc04fd3e2bd787f7f24e22d5d119aa590d429b50c95dfe12b3abe52f48b AS wheel-build
+FROM python:3.14-slim-bookworm@sha256:23c59390fc717bf09f9336908199a0ae75d9c4264bf296123f94ad772fea3b52 AS wheel-build
 RUN pip install --no-cache-dir build==1.3.0 hatchling==1.31.0
 WORKDIR /src
 COPY pyproject.toml README.md LICENSE NOTICE ./
@@ -34,9 +34,9 @@ COPY LICENSES/ ./LICENSES/
 COPY src/ ./src/
 RUN python -m build --wheel --no-isolation --outdir /tmp/wheel
 
-FROM python:3.12.13-slim-bookworm@sha256:8a7e7cc04fd3e2bd787f7f24e22d5d119aa590d429b50c95dfe12b3abe52f48b
+FROM python:3.14-slim-bookworm@sha256:23c59390fc717bf09f9336908199a0ae75d9c4264bf296123f94ad772fea3b52
 
-ARG QUREDDY_VERSION=0.2.36
+ARG QUREDDY_VERSION=0.2.37
 LABEL org.opencontainers.image.title="QuReddy" \
       org.opencontainers.image.description="Post-quantum readiness scanner for TLS and SSH endpoints" \
       org.opencontainers.image.source="https://github.com/breachsafe/qureddy" \
