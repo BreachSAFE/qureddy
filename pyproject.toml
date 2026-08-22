@@ -57,6 +57,20 @@ dev = [
     "pytest>=8.0",
     "pytest-cov>=5.0",
     "pytest-rerunfailures>=14.0",
+    # MAX code-quality + architecture gates (#360). Mirrors the tools bundled by
+    # breachsafe-common's reusable quality-gates-python.yml so this repo runs the
+    # same gate directly on 3.12 until it adopts `uses: ...@v1` (needs the v1 tag
+    # + the pinned 3.14 container). import-linter enforces the layered contract
+    # below; xenon/refurb/vulture/interrogate/diff-cover mirror the reusable gate.
+    "import-linter>=2.0",
+    "xenon>=0.9",
+    "refurb>=2.0",
+    "vulture>=2.11",
+    "diff-cover>=9.0",
+    "interrogate>=1.7",
+    # Allure results emitted every run (--alluredir addopts below); the reusable
+    # gate uploads .allure-results as an artifact.
+    "allure-pytest>=2.13",
     # Property-based testing (issue #131): fuzz the untrusted-input parsers
     # (parse_target / parse_ssh_target) whose example-test blind spots shipped
     # #116/#128/#130. Deterministic in CI via a derandomized profile.
@@ -312,11 +326,33 @@ addopts = [
     "--strict-config",
     "--reruns=3",
     "--reruns-delay=1",
+    # Allure results on every run (#360), consumed by the quality-gates workflow.
+    "--alluredir=.allure-results",
 ]
 # Per docs/contributors/coding-rules.md Rule 9.3: every test runs every time.
 # No marker-gated suites at the pytest layer. CI may organize tests
 # into multiple JOBS for fail-fast, but pytest itself runs everything.
 markers = []
+
+# ============================================================================
+# import-linter — architecture contract (#360)
+# ============================================================================
+# Enforces the layered dependency direction verified from the import graph:
+# cli -> output -> scanners -> core, and core imports nothing above it. A lower
+# layer importing a higher one (e.g. core importing scanners) fails the gate.
+# Run with `lint-imports`.
+[tool.importlinter]
+root_package = "qureddy"
+
+[[tool.importlinter.contracts]]
+name = "Layered architecture: cli > output > scanners > core"
+type = "layers"
+layers = [
+    "qureddy.cli",
+    "qureddy.output",
+    "qureddy.scanners",
+    "qureddy.core",
+]
 
 # ============================================================================
 # coverage
@@ -439,4 +475,14 @@ DEP002 = [
     "types-rfc3339-validator",
     "hypothesis",
     "atheris",
+    # MAX-gate CLI tools (#360): invoked as commands by quality-gates.yml, not
+    # imported. allure-pytest is a pytest plugin loaded via the --alluredir
+    # addopt, so it is never imported by name either.
+    "import-linter",
+    "xenon",
+    "refurb",
+    "vulture",
+    "diff-cover",
+    "interrogate",
+    "allure-pytest",
 ]

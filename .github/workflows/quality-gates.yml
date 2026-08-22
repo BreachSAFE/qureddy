@@ -1,0 +1,129 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# MAX code-quality + architecture gates (#360).
+#
+# INTERIM WIRING. This runs the same tools bundled by breachsafe-common's
+# reusable `quality-gates-python.yml` directly on Python 3.12, so the gate is
+# live now without waiting on its prerequisites. Once breachsafe-common is
+# tagged `v1` and `ghcr.io/paul007ex/breachsafe-container:3.14-openssl3.5.7` is
+# published, this whole file collapses to a 4-line caller job that invokes the
+# reusable workflow at:
+#   paul007ex/breachsafe-common/.github/workflows/quality-gates-python.yml (tag v1)
+#   with: module: qureddy, coverage_min: 90, container_tag: 3.14-openssl3.5.7
+# (reusable workflows are pinned by release tag, not commit SHA.)
+#
+# Scope note: jscpd + pylint duplicate-code (R0801) already run in
+# duplicate-code.yml, and ruff/mypy/bandit/pip-audit/reuse/size run in ci.yml +
+# release-gate.yml — this file adds only the gates not already wired:
+# import-linter, xenon, refurb, vulture, interrogate (advisory), and diff-cover.
+#
+# xenon runs at --max-absolute B today (green). Raising it to the reusable gate's
+# --max-modules A is tracked separately (9 rank-B modules, #341 scoped out).
+
+name: Quality Gates (MAX)
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-gates-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  # ===========================================================================
+  # Architecture + code-quality (no test execution).
+  # ===========================================================================
+  max-code-quality:
+    name: MAX code-quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+
+      - name: Install project (locked dev extras)
+        run: uv sync --locked --extra dev
+
+      - name: import-linter (layered architecture contract)
+        run: uv run --locked lint-imports
+
+      - name: xenon (cyclomatic-complexity ceiling)
+        # --max-absolute B + --max-average A pass today. The reusable gate also
+        # sets --max-modules A; 9 rank-B modules must drop to A first (#341
+        # scoped out) — tracked in a follow-up before this tightens to match.
+        run: uv run --locked xenon --max-absolute B --max-average A src/qureddy
+
+      - name: refurb (Python modernization, blocking)
+        run: uv run --locked refurb src/qureddy
+
+      - name: vulture (dead code, min-confidence 80)
+        run: uv run --locked vulture src/qureddy .vulture-allowlist.py --min-confidence 80
+
+      - name: interrogate (docstring coverage, advisory)
+        continue-on-error: true
+        run: uv run --locked interrogate -v src/qureddy
+
+  # ===========================================================================
+  # Changed-line coverage: every line a PR touches must be covered.
+  # ===========================================================================
+  changed-line-coverage:
+    name: Changed-line coverage (100%)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0  # diff-cover compares against the base branch
+          persist-credentials: false
+
+      - name: Install OpenSSL 3.5 LTS (probes need it)
+        run: sudo apt-get update && sudo apt-get install -y openssl
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+
+      - name: Install project (locked dev extras)
+        run: uv sync --locked --extra dev
+
+      - name: pytest (coverage.xml + Allure results)
+        run: |
+          uv run --locked pytest --ignore=tests/live \
+            --cov=qureddy --cov-report=xml:coverage.xml
+
+      - name: diff-cover (100% coverage on changed lines)
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          uv run --locked diff-cover coverage.xml \
+            --compare-branch "origin/${{ github.event.pull_request.base.ref }}" \
+            --fail-under=100
+
+      - name: Upload Allure results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: allure-results
+          path: .allure-results
+          if-no-files-found: warn
+          retention-days: 14
