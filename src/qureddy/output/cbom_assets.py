@@ -10,11 +10,12 @@ and SSH emit assets through identical machinery. Protocol-specific classificatio
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from types import MappingProxyType
 from typing import TYPE_CHECKING
 
 from cyclonedx.model import Property
+from cyclonedx.model.bom_ref import BomRef
 from cyclonedx.model.component import Component, ComponentType
 from cyclonedx.model.crypto import AlgorithmProperties, CryptoAssetType, CryptoProperties
 
@@ -79,18 +80,45 @@ def add_algorithm_assets(
         properties = [Property(name="qureddy:observation", value=strongest[name].value)]
         if extra_properties is not None:
             properties.extend(extra_properties(name))
-        bom.components.add(
-            Component(
-                name=name,
-                type=ComponentType.CRYPTOGRAPHIC_ASSET,
-                bom_ref=ref,
-                crypto_properties=CryptoProperties(
-                    asset_type=CryptoAssetType.ALGORITHM,
-                    algorithm_properties=algorithm_properties(name),
-                ),
-                properties=properties,
-            )
+        add_algorithm_component(
+            bom,
+            name=name,
+            ref=ref,
+            algorithm_properties=algorithm_properties(name),
+            provides_edges=provides_edges,
+            properties=properties,
         )
         refs[name] = ref
-        provides_edges.setdefault(ENDPOINT_REF, []).append(ref)
     return refs
+
+
+def add_algorithm_component(
+    bom: Bom,
+    *,
+    name: str,
+    ref: str,
+    algorithm_properties: AlgorithmProperties | None,
+    provides_edges: dict[str, list[str]],
+    properties: Sequence[Property] = (),
+) -> BomRef:
+    """Emit one ALGORITHM cryptographic-asset component plus its endpoint provides edge.
+
+    The single place that constructs an algorithm crypto-asset, shared by the evidence-driven
+    asset loop above and the certificate-derived single-shot emitters (CA signature algorithm,
+    subject public key) so none of them reimplement the component shape (#313). Returns the
+    component's BomRef for callers that reference it (e.g. certificateProperties refs).
+    """
+    bom.components.add(
+        Component(
+            name=name,
+            type=ComponentType.CRYPTOGRAPHIC_ASSET,
+            bom_ref=ref,
+            crypto_properties=CryptoProperties(
+                asset_type=CryptoAssetType.ALGORITHM,
+                algorithm_properties=algorithm_properties,
+            ),
+            properties=list(properties),
+        )
+    )
+    provides_edges.setdefault(ENDPOINT_REF, []).append(ref)
+    return BomRef(value=ref)

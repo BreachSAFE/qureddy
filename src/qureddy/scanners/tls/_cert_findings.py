@@ -78,6 +78,8 @@ def evidence_from_certificate(asset: Asset, certificate: CertificateInfo | None)
             serial=certificate.serial,
             signature_algorithm=certificate.signature_algorithm,
             public_key_summary=certificate.public_key_summary,
+            public_key_algorithm=certificate.public_key_algorithm,
+            public_key_bits=certificate.public_key_bits,
             is_self_signed=certificate.is_self_signed,
             is_post_quantum_signature=certificate.is_post_quantum_signature,
         ),

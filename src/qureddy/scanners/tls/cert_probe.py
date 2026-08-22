@@ -30,6 +30,7 @@ downstream treats an unverified cert as verified.
 
 from __future__ import annotations
 
+import re
 import subprocess
 import tempfile
 from contextlib import suppress
@@ -59,6 +60,10 @@ class CertificateInfo:
     public_key_summary: str
     is_self_signed: bool
     is_post_quantum_signature: bool
+    # #313: structured subject public key (algorithm name + size in bits) parsed from the
+    # x509 text, alongside the free-text public_key_summary the console still prints.
+    public_key_algorithm: str | None = None
+    public_key_bits: int | None = None
     """True iff `signature_algorithm` is a recognized ML-DSA (PQC) algorithm.
 
     Issue #183: cert_sig.py's classification existed but nothing called
@@ -241,17 +246,32 @@ def _certificate_dates(openssl_path: str, pem: str, timeout_seconds: int) -> tup
     return values["before"], values["after"]
 
 
+_PUBLIC_KEY_ALGORITHM = re.compile(r"Public Key Algorithm:\s*(?P<alg>[A-Za-z0-9._-]+)")
+# "Public-Key: (2048 bit)" — the size is the same line the summary already keeps.
+_PUBLIC_KEY_BITS = re.compile(r"Public-Key:\s*\((?P<bits>\d+)\s*bit\)")
+
+
 def _certificate_text_details(
     openssl_path: str, pem: str, timeout_seconds: int
-) -> tuple[str, str, bool]:
-    """Read signature and public-key details from the x509 text output."""
+) -> tuple[str, str, bool, str | None, int | None]:
+    """Read signature and public-key details from the x509 text output.
+
+    Returns the CA/issuer signature algorithm, the free-text public-key summary line, the
+    PQ-signature flag, and (#313) the structured subject public key algorithm + size in bits.
+    Algorithm/bits stay None when the ``-text`` output has no matching line rather than
+    guessing.
+    """
     text = _x509(openssl_path, pem, "-text", timeout_seconds=timeout_seconds)
     cert_sig = parse_certificate_signature(text)
     public_key_line = next((line for line in text.splitlines() if "Public-Key:" in line), "")
+    algorithm_match = _PUBLIC_KEY_ALGORITHM.search(text)
+    bits_match = _PUBLIC_KEY_BITS.search(text)
     return (
         cert_sig.raw_algorithm or "UNKNOWN",
         public_key_line.strip() or "UNKNOWN",
         cert_sig.is_post_quantum,
+        algorithm_match.group("alg") if algorithm_match else None,
+        int(bits_match.group("bits")) if bits_match else None,
     )
 
 
@@ -282,8 +302,8 @@ def parse_certificate(
     issuer = _x509_value(openssl_path, pem, "-issuer", "issuer=", timeout_seconds)
     not_before, not_after = _certificate_dates(openssl_path, pem, timeout_seconds)
     serial = _x509_value(openssl_path, pem, "-serial", "serial=", timeout_seconds)
-    sig_alg, pubkey_summary, is_post_quantum = _certificate_text_details(
-        openssl_path, pem, timeout_seconds
+    sig_alg, pubkey_summary, is_post_quantum, pubkey_algorithm, pubkey_bits = (
+        _certificate_text_details(openssl_path, pem, timeout_seconds)
     )
     return CertificateInfo(
         subject=subject,
@@ -293,6 +313,8 @@ def parse_certificate(
         serial=serial,
         signature_algorithm=sig_alg,
         public_key_summary=pubkey_summary,
+        public_key_algorithm=pubkey_algorithm,
+        public_key_bits=pubkey_bits,
         is_post_quantum_signature=is_post_quantum,
         # Issue #224: subject==issuer proves only "self-issued" — a real
         # cryptographic signature check (_is_self_signed) is required to
