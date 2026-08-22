@@ -130,3 +130,34 @@ def test_slh_dsa_lookup_is_case_insensitive():
 def test_pqc_signature_standard_maps_family_to_fips_document():
     assert pqc_signature_standard("ML-DSA-87") == "FIPS 204"
     assert pqc_signature_standard("SLH-DSA-SHA2-128s") == "FIPS 205"
+
+
+# --- #344 item 3: DN-injection resistance via line anchoring ------------------
+# The readiness-driving signature axis must be safe by *design* (line-anchored
+# regex), not by the accident that the genuine "Signature Algorithm:" line
+# happens to be scanned first. A subject/issuer DN is attacker-controlled and is
+# printed by `openssl x509 -text` on the Issuer:/Subject: line, which precedes
+# the real signature block — so an unanchored `.search` would return an injected
+# value first.
+
+DN_INJECTED_SIG_TEXT = """\
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Issuer: CN = Signature Algorithm: ML-DSA-87
+        Subject: CN = Signature Algorithm: ML-DSA-87
+        Subject Public Key Info:
+        Signature Algorithm: sha256WithRSAEncryption
+"""
+
+
+def test_dn_injected_signature_algorithm_is_rejected_by_anchoring():
+    # The injected "Signature Algorithm: ML-DSA-87" strings live inside the
+    # Issuer/Subject DN lines and appear *before* the genuine signature line.
+    # The line-anchored regex ignores them and reports the real classical
+    # signature; an unanchored parser would report ML-DSA-87 (a false PQ pass).
+    r = parse_certificate_signature(DN_INJECTED_SIG_TEXT)
+    assert r.raw_algorithm == "sha256WithRSAEncryption"
+    assert r.is_post_quantum is False
+    assert r.canonical_name is None
+    assert r.nist_level is None
