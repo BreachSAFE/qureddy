@@ -33,6 +33,10 @@ def _static_commands(uv: Path, gitleaks: Path, gate: Gate) -> None:
         ("ruff-lint", [*run, "ruff", "check", "."]),
         ("ruff-format", [*run, "ruff", "format", "--check", "."]),
         ("mypy", [*run, "mypy", "src/qureddy", "--strict"]),
+        # duplicate-code (R0801) only; config in pyproject [tool.pylint] (#314). Mirrors the
+        # CI duplicate-code gate's structural check so a clone fails before push, not only in
+        # CI. The token-level jscpd half of that gate runs in CI (needs Node).
+        ("pylint-dupcode", [*run, "pylint", "src/qureddy"]),
         ("tests", [*run, "pytest", "--ignore=tests/live", "--cov=qureddy", "--cov-fail-under=90"]),
         ("file-size", [*run, "python", "scripts/check_size_policy.py"]),
         ("bandit", [*run, "bandit", "-r", "-ll", "src/qureddy", "scripts"]),

@@ -70,6 +70,9 @@ dev = [
     # policy; bound is <0.17.
     "ruff>=0.15,<0.17",
     "mypy>=1.10",
+    # duplicate-code (R0801): AST-level structural clone detection the token-based
+    # jscpd gate misses; run disable-all/enable-duplicate-code only (#314).
+    "pylint>=3.0",
     "bandit>=1.7",
     "pip-audit>=2.7",
     "deptry>=0.20",
@@ -255,6 +258,23 @@ max-statements = 50
 ]
 
 # ============================================================================
+# pylint — duplicate-code (R0801) gate ONLY (#314)
+# ============================================================================
+# Every other lint is ruff's / mypy's job; pylint runs solely for AST-level clone
+# detection that the token-based jscpd gate cannot see. min-similarity-lines is set
+# to pass the current tree and is ratcheted DOWN as #315 de-duplication lands.
+[tool.pylint."messages control"]
+disable = ["all"]
+enable = ["duplicate-code"]
+
+[tool.pylint.similarities]
+min-similarity-lines = 12
+ignore-comments = true
+ignore-docstrings = true
+ignore-imports = true
+ignore-signatures = true
+
+# ============================================================================
 # mypy
 # ============================================================================
 [tool.mypy]
@@ -408,6 +428,7 @@ DEP002 = [
     "reuse",
     "ruff",
     "mypy",
+    "pylint",
     "pytest",
     "pytest-cov",
     "pytest-rerunfailures",
