@@ -33,6 +33,18 @@ FINDING_TYPE_LEGACY_PROTOCOL_OFFERED = "tls.legacy.protocol_offered"
 FINDING_TYPE_CLASSICAL_PROTOCOL = "tls.kex.classical_protocol"
 
 
+def _legacy_protocol_notes(result: LegacyProtocolResult) -> tuple[str, ...]:
+    """Notes for a completed legacy-protocol sweep (offered or not)."""
+    notes: tuple[str, ...] = (
+        (f"accepted ciphers: {', '.join(result.accepted_ciphers)}",)
+        if result.accepted_ciphers
+        else ("not offered",)
+    )
+    if result.probe_incomplete:
+        notes = (*notes, "sweep incomplete — timed out before checking remaining candidates")
+    return notes
+
+
 def evidence_from_legacy_result(asset: Asset, result: LegacyProtocolResult) -> Evidence:
     """One Evidence record per legacy-protocol sweep, offered or not.
 
@@ -59,13 +71,7 @@ def evidence_from_legacy_result(asset: Asset, result: LegacyProtocolResult) -> E
             protocol_version=result.protocol_version,
             notes=("probe did not complete (timeout) — protocol support undetermined",),
         )
-    notes: tuple[str, ...] = (
-        (f"accepted ciphers: {', '.join(result.accepted_ciphers)}",)
-        if result.accepted_ciphers
-        else ("not offered",)
-    )
-    if result.probe_incomplete:
-        notes = (*notes, "sweep incomplete — timed out before checking remaining candidates")
+    notes = _legacy_protocol_notes(result)
     # A completed sweep with zero accepted ciphers is a confirmed "not offered", not an
     # OFFERED observation; tagging it OFFERED made the CBOM's positive-observation filter
     # claim the endpoint *provides* TLS 1.0/1.1 for essentially every modern target (#137).
@@ -151,22 +157,49 @@ def finding_from_legacy_result(
     deprecated_protocol = result.protocol_version in _DEPRECATED_PROTOCOLS
     cipher_list = ", ".join(result.accepted_ciphers)
     if not deprecated_protocol and not weak:
-        return Finding(
-            id=new_id("finding"),
-            asset_id=asset.id,
-            evidence_ids=(evidence.id,),
-            rule_id="tls.classical.protocol_offered",
-            finding_type=FINDING_TYPE_CLASSICAL_PROTOCOL,
-            title=f"{result.protocol_version} offers classical key establishment",
-            description=(
-                f"{result.protocol_version} negotiated classical cipher suites "
-                f"({cipher_list}); this provides no post-quantum confidentiality."
-            ),
-            severity=Severity.LOW,
-            readiness=Readiness.QUANTUM_VULNERABLE,
-            confidence=Confidence.HIGH,
-            protocol_version=result.protocol_version,
-        )
+        return _classical_protocol_finding(asset, evidence, result, cipher_list)
+    return _deprecated_or_weak_finding(
+        asset,
+        evidence,
+        result,
+        cipher_list,
+        weak=weak,
+        deprecated_protocol=deprecated_protocol,
+    )
+
+
+def _classical_protocol_finding(
+    asset: Asset, evidence: Evidence, result: LegacyProtocolResult, cipher_list: str
+) -> Finding:
+    """Finding for a non-deprecated, non-weak but purely classical protocol."""
+    return Finding(
+        id=new_id("finding"),
+        asset_id=asset.id,
+        evidence_ids=(evidence.id,),
+        rule_id="tls.classical.protocol_offered",
+        finding_type=FINDING_TYPE_CLASSICAL_PROTOCOL,
+        title=f"{result.protocol_version} offers classical key establishment",
+        description=(
+            f"{result.protocol_version} negotiated classical cipher suites "
+            f"({cipher_list}); this provides no post-quantum confidentiality."
+        ),
+        severity=Severity.LOW,
+        readiness=Readiness.QUANTUM_VULNERABLE,
+        confidence=Confidence.HIGH,
+        protocol_version=result.protocol_version,
+    )
+
+
+def _deprecated_or_weak_finding(
+    asset: Asset,
+    evidence: Evidence,
+    result: LegacyProtocolResult,
+    cipher_list: str,
+    *,
+    weak: bool,
+    deprecated_protocol: bool,
+) -> Finding:
+    """Finding for a deprecated protocol or one accepting a known-weak cipher."""
     severity = Severity.HIGH if weak else Severity.MEDIUM
     reason = (
         f"{result.protocol_version} is deprecated per PCI-DSS/NIST SP 800-52"
