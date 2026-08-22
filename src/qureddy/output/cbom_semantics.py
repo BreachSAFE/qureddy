@@ -76,16 +76,16 @@ def validate_cbom_semantics(payload: dict[str, Any]) -> None:
 def _intra_component_crypto_refs(payload: dict[str, Any]) -> Iterator[str]:
     """Yield the crypto references components make.
 
-    A certificate's signatureAlgorithmRef and each protocol's
-    cipherSuites[].algorithms point at algorithm components.
+    A certificate's signatureAlgorithmRef and subjectPublicKeyRef (#313), and each
+    protocol's cipherSuites[].algorithms, point at algorithm components.
     """
     for component in payload.get("components", []):
         crypto_properties = component.get("cryptoProperties", {})
-        signature_ref = crypto_properties.get("certificateProperties", {}).get(
-            "signatureAlgorithmRef"
-        )
-        if isinstance(signature_ref, str):
-            yield signature_ref
+        certificate_properties = crypto_properties.get("certificateProperties", {})
+        for ref_field in ("signatureAlgorithmRef", "subjectPublicKeyRef"):
+            reference = certificate_properties.get(ref_field)
+            if isinstance(reference, str):
+                yield reference
         for suite in crypto_properties.get("protocolProperties", {}).get("cipherSuites", []):
             for ref in suite.get("algorithms", []):
                 if isinstance(ref, str):

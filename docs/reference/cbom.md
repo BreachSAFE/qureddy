@@ -284,15 +284,18 @@ The leaf certificate component may contain:
 - X.509 format;
 - validity start and end times when the OpenSSL date text parses;
 - certificate serial number;
-- a reference to the observed signature algorithm.
+- a reference to the observed CA/issuer signature algorithm (`signatureAlgorithmRef`);
+- a reference to the certificate's own subject public key (`subjectPublicKeyRef`), a
+  cryptographic-asset component naming the key algorithm and size (for example `RSA-2048`
+  or `EC-256`) with its classical security strength and readiness verdict. The reference is
+  omitted when the subject key algorithm cannot be classified.
 
 The component does not establish:
 
 - certificate path or trust;
 - hostname validation;
 - revocation status;
-- private key possession;
-- subject public key algorithm or size when not independently derived.
+- private key possession.
 
 Self-signed classification in QuReddy evidence requires signature verification;
 subject and issuer string equality alone is not accepted as proof.

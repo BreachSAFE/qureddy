@@ -33,7 +33,9 @@ from qureddy.output.cbom_assets import (
     ENDPOINT_REF,
     POSITIVE_OBSERVATIONS,
     add_algorithm_assets,
+    add_algorithm_component,
 )
+from qureddy.output.cbom_public_key import add_public_key_component
 from qureddy.scanners.tls.cert_sig import classify_pqc_signature
 
 if TYPE_CHECKING:
@@ -360,20 +362,13 @@ def _add_signature_algorithm_component(
     """
     if signature_algorithm == "UNKNOWN":
         return None
-    ref = f"crypto/algorithm/{signature_algorithm.lower()}"
-    bom.components.add(
-        Component(
-            name=signature_algorithm,
-            type=ComponentType.CRYPTOGRAPHIC_ASSET,
-            bom_ref=ref,
-            crypto_properties=CryptoProperties(
-                asset_type=CryptoAssetType.ALGORITHM,
-                algorithm_properties=signature_algorithm_properties(signature_algorithm),
-            ),
-        )
+    return add_algorithm_component(
+        bom,
+        name=signature_algorithm,
+        ref=f"crypto/algorithm/{signature_algorithm.lower()}",
+        algorithm_properties=signature_algorithm_properties(signature_algorithm),
+        provides_edges=provides_edges,
     )
-    provides_edges.setdefault(ENDPOINT_REF, []).append(ref)
-    return BomRef(value=ref)
 
 
 def add_certificate_component(
@@ -381,15 +376,21 @@ def add_certificate_component(
 ) -> None:
     """One certificate component from a real fetched+parsed cert (cert_probe.py).
 
-    `subject_public_key_ref` (pubkey) stays unset pending an OID/key-type
-    lookup table (larger, separate work — issue #190) rather than a fake
-    reference. The installed library model does not expose CycloneDX 1.7's
-    native ``certificateProperties.serialNumber`` field, so the final-byte
-    patch adds it after typed serialization.
+    Emits two linked algorithm assets: the CA/issuer signature *over* the cert
+    (``signatureAlgorithmRef``) and the cert's own subject public key
+    (``subjectPublicKeyRef``, #313) — the quantum-relevant leaf key, classified via the
+    shared protocol-agnostic ``add_public_key_component`` (which SSH host keys reuse in
+    #291). Either ref stays unset when its algorithm is unclassifiable rather than pointing
+    at a fabricated component. The installed library model does not expose CycloneDX 1.7's
+    native ``certificateProperties.serialNumber`` field, so the final-byte patch adds it
+    after typed serialization.
     """
     ref = CERTIFICATE_REF
     sig_alg_ref = _add_signature_algorithm_component(
         bom, certificate.signature_algorithm, provides_edges
+    )
+    subject_key_ref = add_public_key_component(
+        bom, certificate.public_key_algorithm, certificate.public_key_bits, provides_edges
     )
     bom.components.add(
         Component(
@@ -405,6 +406,7 @@ def add_certificate_component(
                     not_valid_before=_parse_openssl_date(certificate.not_before),
                     not_valid_after=_parse_openssl_date(certificate.not_after),
                     signature_algorithm_ref=sig_alg_ref,
+                    subject_public_key_ref=subject_key_ref,
                 ),
             ),
         )

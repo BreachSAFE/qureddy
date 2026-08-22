@@ -308,6 +308,70 @@ class TestCycloneDx17Contract:
             prop["name"] != "qureddy:certificate.serial" for prop in component.get("properties", [])
         )
 
+    def _cert_result(self, **overrides: object) -> object:
+        certificate = CertificateObservation(
+            subject="CN=example.com",
+            issuer="CN=Example CA",
+            not_before="Jul 17 07:18:11 2026 GMT",
+            not_after="Jul 17 07:18:11 2027 GMT",
+            serial="0123456789ABCDEF",
+            signature_algorithm="ecdsa-with-SHA256",
+            public_key_summary="Public-Key: (2048 bit)",
+            is_self_signed=False,
+            is_post_quantum_signature=False,
+            **overrides,
+        )
+        certificate_evidence = Evidence(
+            id="ev-cert",
+            asset_id="asset-1",
+            evidence_type="tls.cert.signature",
+            observation_type=ObservationType.OBSERVED,
+            source="qureddy.scanners.tls.cert_sig",
+            certificate=certificate,
+        )
+        return _build_result().model_copy(
+            update={"evidence": (*_build_result().evidence, certificate_evidence)}
+        )
+
+    def _subject_key_component(self, payload: dict) -> dict:
+        certificate = next(
+            item for item in payload["components"] if item["bom-ref"] == "crypto/certificate/leaf"
+        )
+        ref = certificate["cryptoProperties"]["certificateProperties"]["subjectPublicKeyRef"]
+        return next(item for item in payload["components"] if item["bom-ref"] == ref)
+
+    def test_rsa_subject_public_key_emits_depth_and_ref(self) -> None:
+        # #313: the certificate's own RSA-2048 subject key becomes a linked crypto-asset with
+        # its classical strength (NIST SP 800-57: 112-bit) and a quantum_vulnerable verdict.
+        payload = _render(
+            self._cert_result(public_key_algorithm="rsaEncryption", public_key_bits=2048)
+        )
+        component = self._subject_key_component(payload)
+        assert component["name"] == "RSA-2048"
+        properties = component["cryptoProperties"]["algorithmProperties"]
+        assert properties["classicalSecurityLevel"] == 112
+        assert properties["nistQuantumSecurityLevel"] == 0
+        verdict = {p["name"]: p["value"] for p in component["properties"]}
+        assert verdict["qureddy:readiness"] == "quantum_vulnerable"
+
+    def test_undersized_rsa_subject_key_is_classically_weak(self) -> None:
+        payload = _render(
+            self._cert_result(public_key_algorithm="rsaEncryption", public_key_bits=1024)
+        )
+        verdict = {
+            p["name"]: p["value"] for p in self._subject_key_component(payload)["properties"]
+        }
+        assert verdict["qureddy:readiness"] == "classically_weak"
+        assert verdict["qureddy:severity"] == "high"
+
+    def test_ec_subject_public_key_depth(self) -> None:
+        payload = _render(
+            self._cert_result(public_key_algorithm="id-ecPublicKey", public_key_bits=256)
+        )
+        component = self._subject_key_component(payload)
+        assert component["name"] == "EC-256"
+        assert component["cryptoProperties"]["algorithmProperties"]["classicalSecurityLevel"] == 128
+
     def test_slh_dsa_cert_signature_emits_post_quantum_level(self) -> None:
         # #201: an SLH-DSA (FIPS 205) cert must emit a non-zero
         # nistQuantumSecurityLevel in the CBOM, not fall through to level 0 as a

@@ -215,10 +215,34 @@
           "notValidBefore": "2026-07-03T00:00:00+00:00",
           "signatureAlgorithmRef": "crypto/algorithm/ecdsa-with-sha256",
           "subjectName": "CN=github.com",
+          "subjectPublicKeyRef": "crypto/algorithm/ec-256",
           "serialNumber": "72010E03F4A067FE4E796266430718F6"
         }
       },
       "name": "CN=github.com",
+      "type": "cryptographic-asset"
+    },
+    {
+      "bom-ref": "crypto/algorithm/ec-256",
+      "cryptoProperties": {
+        "algorithmProperties": {
+          "classicalSecurityLevel": 128,
+          "nistQuantumSecurityLevel": 0,
+          "primitive": "signature"
+        },
+        "assetType": "algorithm"
+      },
+      "name": "EC-256",
+      "properties": [
+        {
+          "name": "qureddy:readiness",
+          "value": "quantum_vulnerable"
+        },
+        {
+          "name": "qureddy:severity",
+          "value": "low"
+        }
+      ],
       "type": "cryptographic-asset"
     },
     {
@@ -738,7 +762,7 @@
         "occurrences": [
           {
             "location": "qureddy.scanners.tls.parse",
-            "additionalContext": "observation=negotiated; evidence_type=tls.negotiation; role=classical_control; expected=X25519; return_code=0; command_sha256=8a535ae3ff3dfd038dcbe99874457d1d145d29b37dd8e15be50c41099025a845"
+            "additionalContext": "observation=negotiated; evidence_type=tls.negotiation; role=classical_control; expected=X25519; return_code=0; command_sha256=d43e3f58c53e6f2e19155bc0873a7f700220a3f006cf9d832c9d849e51a96e06; duration_ms=128"
           }
         ]
       }
@@ -792,6 +816,9 @@
     },
     {
       "ref": "crypto/algorithm/aes256-sha256"
+    },
+    {
+      "ref": "crypto/algorithm/ec-256"
     },
     {
       "ref": "crypto/algorithm/ecdhe-ecdsa-aes128-gcm-sha256"
@@ -856,6 +883,7 @@
         "crypto/algorithm/aes256-gcm-sha384",
         "crypto/algorithm/aes256-sha",
         "crypto/algorithm/aes256-sha256",
+        "crypto/algorithm/ec-256",
         "crypto/algorithm/ecdhe-ecdsa-aes128-gcm-sha256",
         "crypto/algorithm/ecdhe-ecdsa-aes128-sha256",
         "crypto/algorithm/ecdhe-ecdsa-aes256-gcm-sha384",
@@ -899,6 +927,14 @@
     },
     "properties": [
       {
+        "name": "qureddy:scan.completed_at",
+        "value": "2026-08-22T12:58:56.130758+00:00"
+      },
+      {
+        "name": "qureddy:scan.id",
+        "value": "scan-ba1fb7599ccc"
+      },
+      {
         "name": "qureddy:scan.readiness",
         "value": "quantum_vulnerable"
       },
@@ -907,8 +943,16 @@
         "value": "tls"
       },
       {
+        "name": "qureddy:scan.started_at",
+        "value": "2026-08-22T12:58:52.024855+00:00"
+      },
+      {
         "name": "qureddy:scan.status",
         "value": "completed"
+      },
+      {
+        "name": "qureddy:scan.total_attempts",
+        "value": "24"
       },
       {
         "name": "qureddy:target.host",
@@ -935,6 +979,7 @@
         "value": "github.com"
       }
     ],
+    "timestamp": "2026-08-22T12:58:56.130899+00:00",
     "tools": {
       "components": [
         {
@@ -944,6 +989,10 @@
             {
               "name": "qureddy:collector.role",
               "value": "local-probe-runtime"
+            },
+            {
+              "name": "qureddy:openssl.path",
+              "value": "/opt/homebrew/opt/openssl@3.5/bin/openssl"
             },
             {
               "name": "qureddy:openssl.supports_tls13_groups",
@@ -961,11 +1010,12 @@
           "bom-ref": "tool/qureddy",
           "name": "qureddy",
           "type": "application",
-          "version": "0.2.24"
+          "version": "0.2.26"
         }
       ]
     }
   },
+  "serialNumber": "urn:uuid:98d6ae7b-9b6e-49a8-aeea-6605d70e07b9",
   "version": 1,
   "$schema": "http://cyclonedx.org/schema/bom-1.7.schema.json",
   "bomFormat": "CycloneDX",
@@ -983,7 +1033,7 @@
           "type": "application"
         }
       },
-      "timestamp": "1970-01-01T00:00:00+00:00",
+      "timestamp": "2026-08-22T12:58:56.130758+00:00",
       "text": "TLS probe failed\nThe TLS probe did not produce parseable evidence of the negotiated group."
     },
     {
@@ -998,7 +1048,7 @@
           "type": "application"
         }
       },
-      "timestamp": "1970-01-01T00:00:00+00:00",
+      "timestamp": "2026-08-22T12:58:56.130758+00:00",
       "text": "Classical X25519 available on TLS 1.3 control probe\nThe forced classical control probe negotiated X25519. This demonstrates the server still accepts pure classical key exchange when offered, which provides no protection against harvest-now-decrypt-later. A separate hybrid finding may also be present if the server prefers X25519MLKEM768 when both groups are offered."
     },
     {
@@ -1013,7 +1063,7 @@
           "type": "application"
         }
       },
-      "timestamp": "1970-01-01T00:00:00+00:00",
+      "timestamp": "2026-08-22T12:58:56.130758+00:00",
       "text": "TLSv1.2 offers classical key establishment\nTLSv1.2 negotiated classical cipher suites (ECDHE-ECDSA-AES128-GCM-SHA256, ECDHE-ECDSA-CHACHA20-POLY1305, ECDHE-ECDSA-AES256-GCM-SHA384, ECDHE-ECDSA-AES128-SHA256, ECDHE-ECDSA-AES256-SHA384, ECDHE-ECDSA-AES256-SHA, ECDHE-RSA-AES128-GCM-SHA256, ECDHE-RSA-CHACHA20-POLY1305, ECDHE-RSA-AES256-GCM-SHA384, ECDHE-RSA-AES128-SHA256, ECDHE-RSA-AES256-SHA384, ECDHE-RSA-AES256-SHA, AES128-GCM-SHA256, AES256-GCM-SHA384, AES128-SHA256, AES256-SHA256, AES128-SHA, AES256-SHA); this provides no post-quantum confidentiality."
     },
     {
@@ -1028,7 +1078,7 @@
           "type": "application"
         }
       },
-      "timestamp": "1970-01-01T00:00:00+00:00",
+      "timestamp": "2026-08-22T12:58:56.130758+00:00",
       "text": "Certificate issuer signature: ecdsa-with-SHA256 (classical)\nLeaf certificate subject='CN=github.com' was issued using ecdsa-with-SHA256 as the CA/issuer signature over the certificate. This is a classical (non-post-quantum) signature algorithm. This describes the certificate's chain-of-trust signature only \u2014 it is NOT the live TLS handshake's authentication signature (CertificateVerify), which uses the leaf's own key and can use a different algorithm (issue #226)."
     }
   ]
