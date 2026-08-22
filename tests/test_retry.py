@@ -168,6 +168,41 @@ class TestRunWithRetries:
         assert len(results) == 2
         assert results[1].failure_category is FailureCategory.TLS_HANDSHAKE_FAILED
 
+    def test_different_retryable_categories_continue_retries(self) -> None:
+        sleeps: list[float] = []
+
+        def probe(n: int) -> ProbeResult:
+            if n == 1:
+                return _result(
+                    failure_category=FailureCategory.TARGET_CONNECT_FAILED,
+                    attempt=n,
+                )
+            if n == 2:
+                return _result(
+                    failure_category=FailureCategory.TLS_HANDSHAKE_FAILED,
+                    attempt=n,
+                )
+            return _result(
+                failure_category=FailureCategory.TARGET_CONNECT_FAILED,
+                attempt=n,
+            )
+
+        results = run_with_retries(
+            probe,
+            retries=3,
+            retry_delay=0.5,
+            retry_on=frozenset(
+                {
+                    FailureCategory.TARGET_CONNECT_FAILED,
+                    FailureCategory.TLS_HANDSHAKE_FAILED,
+                },
+            ),
+            sleep=sleeps.append,
+        )
+        assert len(results) == 4
+        assert [r.attempt_number for r in results] == [1, 2, 3, 4]
+        assert sleeps == [0.5, 0.5, 0.5]
+
     def test_recovery_to_success_stops_retries(self) -> None:
         attempts: list[int] = []
 

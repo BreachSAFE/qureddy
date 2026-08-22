@@ -47,6 +47,20 @@ def _serve(behavior, *, banner: bytes = b"SSH-2.0-test\r\n", coalesce: bytes = b
     return port
 
 
+def _frame(payload: bytes) -> bytes:
+    """Wrap a raw payload in valid RFC 4253 §6 framing (4..255-byte aligned padding).
+
+    Keeps a deliberately malformed *payload* (non-KEXINIT, truncated name-list)
+    inside a well-formed *packet*, so the test exercises the payload-level check
+    rather than the packet-framing guard.
+    """
+    pad_len = -(len(payload) + 5) % 8
+    if pad_len < 4:
+        pad_len += 8
+    body = bytes([pad_len]) + payload + b"\x00" * pad_len
+    return struct.pack(">I", len(body)) + body
+
+
 def _kexinit(kex: bytes, host_keys: bytes) -> bytes:
     payload = bytes([20]) + b"\x00" * 16
     for nl in (kex, host_keys, b"", b"", b"", b"", b"", b"", b"", b""):
@@ -66,14 +80,16 @@ def test_oversized_packet_length_rejected_fast() -> None:
 
 
 def test_non_kexinit_payload_rejected() -> None:
-    port = _serve(lambda c: c.sendall(struct.pack(">I", 8) + b"\x00" + b"NOTKEX!!"))
+    # Well-framed packet whose payload's first byte is not SSH_MSG_KEXINIT (20).
+    port = _serve(lambda c: c.sendall(_frame(b"NOTKEX!!")))
     with pytest.raises(SSHProbeError, match="KEXINIT"):
         read_kexinit_offer("127.0.0.1", port, timeout_seconds=5)
 
 
 def test_truncated_namelist_rejected() -> None:
-    bad = struct.pack(">I", 22) + b"\x00" + bytes([20]) + b"\x00" * 16 + struct.pack(">I", 9999)
-    port = _serve(lambda c: c.sendall(bad))
+    # KEXINIT msg + cookie then a name-list length that overruns the payload.
+    payload = bytes([20]) + b"\x00" * 16 + struct.pack(">I", 9999)
+    port = _serve(lambda c: c.sendall(_frame(payload)))
     with pytest.raises(SSHProbeError, match="truncated"):
         read_kexinit_offer("127.0.0.1", port, timeout_seconds=5)
 

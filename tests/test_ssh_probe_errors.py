@@ -24,9 +24,31 @@ from contextlib import suppress
 import pytest
 
 from qureddy.core.errors import SSHProbeError
-from qureddy.scanners.ssh.probe import read_kexinit_offer
+from qureddy.scanners.ssh.probe import (
+    _read_packet_payload,
+    _validate_packet_framing,
+    read_kexinit_offer,
+)
 
 _BANNER = b"SSH-2.0-test\r\n"
+
+
+class _ReplaySocket:
+    """A minimal read-only socket that serves a fixed byte buffer to ``recv``.
+
+    Mirrors the in-memory socket used by the SSH fuzz harness
+    (``tests/fuzz/fuzz_ssh_kexinit.py``) so the pure packet-framing path can be
+    exercised without any network I/O.
+    """
+
+    def __init__(self, payload: bytes) -> None:
+        self._buffer = memoryview(payload)
+        self._offset = 0
+
+    def recv(self, size: int) -> bytes:
+        chunk = self._buffer[self._offset : self._offset + size]
+        self._offset += len(chunk)
+        return bytes(chunk)
 
 
 def _serve_bytes(data: bytes, *, close_delay: float = 0.3) -> int:
@@ -62,8 +84,16 @@ def _serve_bytes(data: bytes, *, close_delay: float = 0.3) -> int:
     return port
 
 
-def _frame(payload: bytes, *, pad_len: int = 6) -> bytes:
-    """Wrap a KEXINIT payload in a valid SSH binary-packet framing."""
+def _frame(payload: bytes) -> bytes:
+    """Wrap a KEXINIT payload in valid RFC 4253 §6 binary-packet framing.
+
+    Picks a padding length of 4..255 bytes such that ``(packet_length + 4)`` is a
+    multiple of the 8-byte block size, so the frame reaches the name-list parser
+    rather than tripping the packet-framing guard.
+    """
+    pad_len = -(len(payload) + 5) % 8
+    if pad_len < 4:
+        pad_len += 8
     body = bytes([pad_len]) + payload + b"\x00" * pad_len
     return struct.pack(">I", len(body)) + body
 
@@ -110,3 +140,52 @@ def test_truncated_namelist_length_field_rejected() -> None:
     port = _serve_bytes(_BANNER + _frame(payload))
     with pytest.raises(SSHProbeError, match="truncated KEXINIT"):
         read_kexinit_offer("127.0.0.1", port, timeout_seconds=5)
+
+
+def _raw_packet(pkt_len: int, body: bytes) -> bytes:
+    """A packet with an explicit length header and raw body (may be malformed)."""
+    return struct.pack(">I", pkt_len) + body
+
+
+def test_zero_padding_length_rejected() -> None:
+    """RFC 4253 §6 requires at least 4 bytes of padding; pad_len=0 on an
+    otherwise well-aligned packet is malformed and must be rejected."""
+    # pkt_len=4 -> (4+4)%8==0 (aligned); body[0]=0 -> pad_len below the 4-byte floor.
+    sock = _ReplaySocket(_raw_packet(4, bytes([0, 1, 2, 3])))
+    with pytest.raises(SSHProbeError, match="invalid SSH padding length"):
+        _read_packet_payload(sock)
+
+
+def test_oversized_padding_length_rejected() -> None:
+    """Padding above the 255-byte ceiling is malformed. A single length byte can
+    never exceed 255 on the wire, so the framing validator is exercised directly
+    to prove the upper bound is enforced (RFC 4253 §6)."""
+    # pkt_len=260 -> (260+4)%8==0 (aligned) so the padding-range check is reached.
+    with pytest.raises(SSHProbeError, match="invalid SSH padding length"):
+        _validate_packet_framing(pkt_len=260, pad_len=256)
+
+
+def test_misaligned_packet_length_rejected() -> None:
+    """(packet_length + 4) must be a multiple of the 8-byte block size; a
+    misaligned packet is malformed even if its padding byte looks sane."""
+    # pkt_len=5 -> (5+4)%8==1 (misaligned); pad_len byte (4) is otherwise valid.
+    sock = _ReplaySocket(_raw_packet(5, bytes([4, 0, 0, 0, 0])))
+    with pytest.raises(SSHProbeError, match="misaligned SSH packet length"):
+        _read_packet_payload(sock)
+
+
+def test_negative_payload_length_rejected() -> None:
+    """payload = packet_length - pad_len - 1 must be >= 0; padding that consumes
+    more than the packet body yields a negative payload and must be rejected."""
+    # pkt_len=12 (aligned), pad_len=200 in the 4..255 range -> payload 12-200-1 < 0.
+    sock = _ReplaySocket(_raw_packet(12, bytes([200]) + b"\x00" * 11))
+    with pytest.raises(SSHProbeError, match="invalid SSH padding length"):
+        _read_packet_payload(sock)
+
+
+def test_wellformed_packet_parses() -> None:
+    """A well-formed, aligned packet with valid padding still returns exactly its
+    payload bytes -- the fix must not change the contract for good input."""
+    payload = b"payload-content"  # 15 bytes
+    sock = _ReplaySocket(_frame(payload))
+    assert _read_packet_payload(sock) == payload
