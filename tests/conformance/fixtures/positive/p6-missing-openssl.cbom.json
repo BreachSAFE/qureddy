@@ -8,45 +8,23 @@
     "component": {
       "bom-ref": "endpoint",
       "name": "192.0.2.10:443",
-      "type": "application"
+      "type": "application",
+      "properties": [
+        {
+          "name": "qureddy:readiness",
+          "value": "unknown"
+        },
+        {
+          "name": "qureddy:severity",
+          "value": "info"
+        },
+        {
+          "name": "qureddy:rule_id",
+          "value": "tls.hybrid.not_testable"
+        }
+      ]
     },
     "properties": [
-      {
-        "name": "qureddy:evidence.00.observation",
-        "value": "not_testable"
-      },
-      {
-        "name": "qureddy:evidence.00.source",
-        "value": "qureddy.openssl_probe"
-      },
-      {
-        "name": "qureddy:evidence.00.type",
-        "value": "tls.capability"
-      },
-      {
-        "name": "qureddy:finding.00.confidence",
-        "value": "high"
-      },
-      {
-        "name": "qureddy:finding.00.finding_type",
-        "value": "tls.kex.not_testable"
-      },
-      {
-        "name": "qureddy:finding.00.readiness",
-        "value": "unknown"
-      },
-      {
-        "name": "qureddy:finding.00.rule_id",
-        "value": "tls.hybrid.not_testable"
-      },
-      {
-        "name": "qureddy:finding.00.severity",
-        "value": "info"
-      },
-      {
-        "name": "qureddy:finding.00.title",
-        "value": "Local OpenSSL cannot test X25519MLKEM768"
-      },
       {
         "name": "qureddy:scan.failure_category",
         "value": "local_openssl_missing"
@@ -98,5 +76,22 @@
   "version": 1,
   "$schema": "http://cyclonedx.org/schema/bom-1.7.schema.json",
   "bomFormat": "CycloneDX",
-  "specVersion": "1.7"
+  "specVersion": "1.7",
+  "annotations": [
+    {
+      "bom-ref": "annotation/00-tls.hybrid.not_testable",
+      "subjects": [
+        "endpoint"
+      ],
+      "annotator": {
+        "component": {
+          "bom-ref": "tool/qureddy",
+          "name": "qureddy",
+          "type": "application"
+        }
+      },
+      "timestamp": "1970-01-01T00:00:00+00:00",
+      "text": "Local OpenSSL cannot test X25519MLKEM768\nLocal OpenSSL is missing, does not match exact 3.5.7 LTS, or lacks the X25519MLKEM768 group; the scanner cannot determine the target's hybrid posture."
+    }
+  ]
 }

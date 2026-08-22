@@ -27,7 +27,7 @@ from __future__ import annotations
 import json
 import sys
 import warnings
-from typing import IO, TYPE_CHECKING
+from typing import IO, TYPE_CHECKING, Any
 
 from cyclonedx.model.bom import Bom
 from cyclonedx.model.component import Component, ComponentType
@@ -44,10 +44,10 @@ from qureddy.output.cbom_components import (
     add_protocol_components,
 )
 from qureddy.output.cbom_metadata import (
-    add_evidence_provenance,
-    add_finding_verdicts,
     add_scan_status_properties,
     add_scan_target_metadata,
+    evidence_occurrences,
+    finding_annotations,
     openssl_tool_properties,
 )
 from qureddy.output.cbom_semantics import validate_cbom_semantics
@@ -110,8 +110,6 @@ def render_cbom(
     _add_tool_provenance(bom, result, reproducible=reproducible)
     add_scan_status_properties(bom, result)
     add_scan_target_metadata(bom, result, reproducible=reproducible)
-    add_evidence_provenance(bom, result, reproducible=reproducible)
-    add_finding_verdicts(bom, result)
 
     algorithm_refs = add_algorithm_components(bom, result, provides_edges)
     add_ssh_host_key_components(bom, result, provides_edges)
@@ -129,6 +127,8 @@ def render_cbom(
         provides_edges,
         certificate.serial if certificate is not None else None,
         target_stream,
+        result=result,
+        reproducible=reproducible,
         compact=compact,
     )
 
@@ -171,15 +171,54 @@ def _add_tool_provenance(bom: Bom, result: ScanResult, *, reproducible: bool = F
     bom.metadata.tools = ToolRepository(components=tools)
 
 
+def _attach_native_findings(
+    payload: dict[str, Any], result: ScanResult, *, reproducible: bool
+) -> None:
+    """Attach evidence occurrences + verdict properties to components and add annotations.
+
+    The library model does not expose 1.7's ``component.evidence.occurrences`` or top-level
+    ``annotations``, so — like the ``provides``/``serialNumber`` gaps — they are patched into
+    the serialized dict (#287). Evidence lives on the asset it describes; findings become
+    subject-linked annotations; the machine verdict rides as queryable component properties.
+    """
+    occurrences = evidence_occurrences(result, reproducible=reproducible)
+    annotations, verdicts = finding_annotations(result, reproducible=reproducible)
+
+    def apply(component: dict[str, Any]) -> None:
+        ref = component.get("bom-ref")
+        if ref in occurrences:
+            component["evidence"] = {"occurrences": occurrences[ref]}
+        if ref in verdicts:
+            component.setdefault("properties", []).extend(verdicts[ref])
+
+    endpoint = payload.get("metadata", {}).get("component")
+    if endpoint:
+        apply(endpoint)
+    for component in payload.get("components", []):
+        apply(component)
+    if annotations:
+        # A finding's subject asset only exists as a component when the scan also produced
+        # its evidence; if it doesn't (e.g. a finding with no matching inventory), re-anchor
+        # the annotation to the endpoint so no subject dangles.
+        real_refs = {ENDPOINT_REF} | {c.get("bom-ref") for c in payload.get("components", [])}
+        for annotation in annotations:
+            annotation["subjects"] = [
+                ref if ref in real_refs else ENDPOINT_REF for ref in annotation["subjects"]
+            ]
+        payload["annotations"] = annotations
+
+
 def _write_with_library_gap_patches(
     bom: Bom,
     provides_edges: dict[str, list[str]],
     certificate_serial: str | None,
     stream: IO[str],
     *,
+    result: ScanResult,
+    reproducible: bool = False,
     compact: bool = False,
 ) -> None:
-    """Serialize with the library, then fill its two missing 1.7 fields.
+    """Serialize with the library, then fill the 1.7 fields it does not expose.
 
     The library serialization is only an intermediate parsed back into a dict,
     so its indentation is irrelevant; the final ``json.dumps`` controls the
@@ -202,6 +241,7 @@ def _write_with_library_gap_patches(
         certificate_component["cryptoProperties"]["certificateProperties"]["serialNumber"] = (
             certificate_serial
         )
+    _attach_native_findings(payload, result, reproducible=reproducible)
     validate_cbom_semantics(payload)
     # Keep final machine bytes representable on locale-dependent Windows
     # streams. JSON consumers recover the original Unicode from escapes.

@@ -37,7 +37,10 @@ def validate_cbom_semantics(payload: dict[str, Any]) -> None:
         tool.get("bom-ref")
         for tool in payload.get("metadata", {}).get("tools", {}).get("components", [])
     ]
-    declared_refs = [ref for ref in (*graph_refs, *tool_refs) if isinstance(ref, str)]
+    annotation_refs = [annotation.get("bom-ref") for annotation in payload.get("annotations", [])]
+    declared_refs = [
+        ref for ref in (*graph_refs, *tool_refs, *annotation_refs) if isinstance(ref, str)
+    ]
     duplicates = sorted({ref for ref in declared_refs if declared_refs.count(ref) > 1})
     if duplicates:
         msg = f"duplicate bom-ref values: {', '.join(duplicates)}"
@@ -56,6 +59,11 @@ def validate_cbom_semantics(payload: dict[str, Any]) -> None:
     # Also walk the intra-component crypto references the CI conformance harness checks,
     # so a dangling ref fails at runtime, not only in CI (#144).
     dangling.update(ref for ref in _intra_component_crypto_refs(payload) if ref not in known_refs)
+    # Every annotation subject must resolve to a real component/endpoint (#287).
+    for annotation in payload.get("annotations", []):
+        for ref in annotation.get("subjects", []):
+            if isinstance(ref, str) and ref not in known_refs:
+                dangling.add(ref)
     if dangling:
         msg = f"dangling references: {', '.join(sorted(dangling))}"
         raise ValueError(msg)

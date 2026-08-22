@@ -1,5 +1,37 @@
 {
   "$schema": "http://cyclonedx.org/schema/bom-1.7.schema.json",
+  "annotations": [
+    {
+      "annotator": {
+        "component": {
+          "bom-ref": "tool/qureddy",
+          "name": "qureddy",
+          "type": "application"
+        }
+      },
+      "bom-ref": "annotation/00-tls.hybrid.negotiated_x25519mlkem768",
+      "subjects": [
+        "crypto/algorithm/x25519mlkem768"
+      ],
+      "text": "Hybrid\nd",
+      "timestamp": "<normalized-timestamp>"
+    },
+    {
+      "annotator": {
+        "component": {
+          "bom-ref": "tool/qureddy",
+          "name": "qureddy",
+          "type": "application"
+        }
+      },
+      "bom-ref": "annotation/01-tls.classical.negotiated_x25519",
+      "subjects": [
+        "crypto/algorithm/x25519"
+      ],
+      "text": "Classical control\nd",
+      "timestamp": "<normalized-timestamp>"
+    }
+  ],
   "bomFormat": "CycloneDX",
   "components": [
     {
@@ -54,11 +86,31 @@
         },
         "assetType": "algorithm"
       },
+      "evidence": {
+        "occurrences": [
+          {
+            "additionalContext": "negotiated on tls.negotiation (return_code=0, command_sha256=8cc515802eb656257c6ef03fde9bf7fb8c1732e8cdcd9f9c75e33bbf2e5ed206, duration_ms=110)",
+            "location": "qureddy.scanners.tls.parse"
+          }
+        ]
+      },
       "name": "X25519",
       "properties": [
         {
           "name": "qureddy:observation",
           "value": "negotiated"
+        },
+        {
+          "name": "qureddy:readiness",
+          "value": "quantum_vulnerable"
+        },
+        {
+          "name": "qureddy:severity",
+          "value": "low"
+        },
+        {
+          "name": "qureddy:rule_id",
+          "value": "tls.classical.negotiated_x25519"
         }
       ],
       "type": "cryptographic-asset"
@@ -78,11 +130,31 @@
         },
         "assetType": "algorithm"
       },
+      "evidence": {
+        "occurrences": [
+          {
+            "additionalContext": "negotiated on tls.negotiation (return_code=0, command_sha256=3f4a610b5eaa690523372a81f1afde9f1b98fc25648735580c5705519f987448, duration_ms=120)",
+            "location": "qureddy.scanners.tls.parse"
+          }
+        ]
+      },
       "name": "X25519MLKEM768",
       "properties": [
         {
           "name": "qureddy:observation",
           "value": "negotiated"
+        },
+        {
+          "name": "qureddy:readiness",
+          "value": "transitional_hybrid"
+        },
+        {
+          "name": "qureddy:severity",
+          "value": "info"
+        },
+        {
+          "name": "qureddy:rule_id",
+          "value": "tls.hybrid.negotiated_x25519mlkem768"
         }
       ],
       "type": "cryptographic-asset"
@@ -118,150 +190,6 @@
       "type": "application"
     },
     "properties": [
-      {
-        "name": "qureddy:evidence.00.attempt_number",
-        "value": "1"
-      },
-      {
-        "name": "qureddy:evidence.00.cipher_suite",
-        "value": "TLS_AES_256_GCM_SHA384"
-      },
-      {
-        "name": "qureddy:evidence.00.command_sha256",
-        "value": "3f4a610b5eaa690523372a81f1afde9f1b98fc25648735580c5705519f987448"
-      },
-      {
-        "name": "qureddy:evidence.00.duration_ms",
-        "value": "120"
-      },
-      {
-        "name": "qureddy:evidence.00.observation",
-        "value": "negotiated"
-      },
-      {
-        "name": "qureddy:evidence.00.observed_algorithm",
-        "value": "X25519MLKEM768"
-      },
-      {
-        "name": "qureddy:evidence.00.protocol_version",
-        "value": "TLSv1.3"
-      },
-      {
-        "name": "qureddy:evidence.00.return_code",
-        "value": "0"
-      },
-      {
-        "name": "qureddy:evidence.00.source",
-        "value": "qureddy.scanners.tls.parse"
-      },
-      {
-        "name": "qureddy:evidence.00.stderr_sha256",
-        "value": "0000000000000000000000000000000000000000000000000000000000000000"
-      },
-      {
-        "name": "qureddy:evidence.00.stdout_sha256",
-        "value": "0000000000000000000000000000000000000000000000000000000000000000"
-      },
-      {
-        "name": "qureddy:evidence.00.type",
-        "value": "tls.negotiation"
-      },
-      {
-        "name": "qureddy:evidence.01.attempt_number",
-        "value": "1"
-      },
-      {
-        "name": "qureddy:evidence.01.cipher_suite",
-        "value": "TLS_AES_256_GCM_SHA384"
-      },
-      {
-        "name": "qureddy:evidence.01.command_sha256",
-        "value": "8cc515802eb656257c6ef03fde9bf7fb8c1732e8cdcd9f9c75e33bbf2e5ed206"
-      },
-      {
-        "name": "qureddy:evidence.01.duration_ms",
-        "value": "110"
-      },
-      {
-        "name": "qureddy:evidence.01.observation",
-        "value": "negotiated"
-      },
-      {
-        "name": "qureddy:evidence.01.observed_algorithm",
-        "value": "X25519"
-      },
-      {
-        "name": "qureddy:evidence.01.protocol_version",
-        "value": "TLSv1.3"
-      },
-      {
-        "name": "qureddy:evidence.01.return_code",
-        "value": "0"
-      },
-      {
-        "name": "qureddy:evidence.01.source",
-        "value": "qureddy.scanners.tls.parse"
-      },
-      {
-        "name": "qureddy:evidence.01.stderr_sha256",
-        "value": "0000000000000000000000000000000000000000000000000000000000000000"
-      },
-      {
-        "name": "qureddy:evidence.01.stdout_sha256",
-        "value": "0000000000000000000000000000000000000000000000000000000000000000"
-      },
-      {
-        "name": "qureddy:evidence.01.type",
-        "value": "tls.negotiation"
-      },
-      {
-        "name": "qureddy:finding.00.confidence",
-        "value": "high"
-      },
-      {
-        "name": "qureddy:finding.00.finding_type",
-        "value": "tls.kex.hybrid"
-      },
-      {
-        "name": "qureddy:finding.00.readiness",
-        "value": "transitional_hybrid"
-      },
-      {
-        "name": "qureddy:finding.00.rule_id",
-        "value": "tls.hybrid.negotiated_x25519mlkem768"
-      },
-      {
-        "name": "qureddy:finding.00.severity",
-        "value": "info"
-      },
-      {
-        "name": "qureddy:finding.00.title",
-        "value": "Hybrid"
-      },
-      {
-        "name": "qureddy:finding.01.confidence",
-        "value": "high"
-      },
-      {
-        "name": "qureddy:finding.01.finding_type",
-        "value": "tls.kex.classical"
-      },
-      {
-        "name": "qureddy:finding.01.readiness",
-        "value": "quantum_vulnerable"
-      },
-      {
-        "name": "qureddy:finding.01.rule_id",
-        "value": "tls.classical.negotiated_x25519"
-      },
-      {
-        "name": "qureddy:finding.01.severity",
-        "value": "low"
-      },
-      {
-        "name": "qureddy:finding.01.title",
-        "value": "Classical control"
-      },
       {
         "name": "qureddy:scan.completed_at",
         "value": "2026-04-26T00:00:00+00:00"
