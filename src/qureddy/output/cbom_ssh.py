@@ -14,7 +14,13 @@ from typing import TYPE_CHECKING
 
 from cyclonedx.model import Property
 from cyclonedx.model.component import Component, ComponentType
-from cyclonedx.model.crypto import CryptoAssetType, CryptoProperties
+from cyclonedx.model.crypto import (
+    AlgorithmProperties,
+    CryptoAssetType,
+    CryptoFunction,
+    CryptoPrimitive,
+    CryptoProperties,
+)
 
 from qureddy.output.cbom_components import (
     ENDPOINT_REF,
@@ -22,11 +28,83 @@ from qureddy.output.cbom_components import (
     POSITIVE_OBSERVATIONS,
     signature_algorithm_properties,
 )
+from qureddy.scanners.ssh import classify
 
 if TYPE_CHECKING:
     from cyclonedx.model.bom import Bom
 
     from qureddy.core.models import ObservationType, ScanResult
+
+# CycloneDX cryptoFunctions per KEX primitive: a KEM does keygen/encapsulate/
+# decapsulate; a Diffie-Hellman/ECDH key-agreement does keygen; RSA key transport
+# (PKE) encapsulates/decapsulates a transported key.
+_CRYPTO_FUNCTIONS: dict[str, list[CryptoFunction]] = {
+    "kem": [CryptoFunction.KEYGEN, CryptoFunction.ENCAPSULATE, CryptoFunction.DECAPSULATE],
+    "key-agree": [CryptoFunction.KEYGEN],
+    "pke": [CryptoFunction.ENCAPSULATE, CryptoFunction.DECAPSULATE],
+}
+
+
+def ssh_kex_algorithm_properties(name: str) -> AlgorithmProperties | None:
+    """Structured algorithmProperties for one SSH KEX group (#241).
+
+    A PQ hybrid/standalone KEX (``mlkem768x25519-sha256``, ``mlkem768nistp256-sha256``,
+    ``sntrup761x25519-sha512``, the kyber/AWS/OQS variants) becomes the KEM primitive
+    carrying its ``nistQuantumSecurityLevel`` so the one PQ-relevant asset is no longer a
+    bare component; a classical group is honest key-agreement/key-transport at level 0.
+    An unclassifiable name keeps a minimal (empty) algorithmProperties rather than a
+    fabricated primitive/level. Classification (name -> primitive/level) lives in the SSH
+    ``classify`` module; this only maps it onto the CycloneDX model.
+    """
+    spec = classify.classify_kex(name)
+    if spec is None:
+        return None
+    return AlgorithmProperties(
+        primitive=CryptoPrimitive(spec.primitive),
+        parameter_set_identifier=spec.parameter_set_identifier,
+        curve=spec.curve,
+        crypto_functions=_CRYPTO_FUNCTIONS[spec.primitive],
+        nist_quantum_security_level=spec.nist_quantum_security_level,
+    )
+
+
+def add_ssh_kex_components(
+    bom: Bom, result: ScanResult, provides_edges: dict[str, list[str]]
+) -> None:
+    """Emit one crypto-asset component per offered SSH KEX group (#241/#242).
+
+    The SSH scanner records every offered KEX group as ``ssh.kex`` evidence with the
+    group name in ``negotiated_group``. The shared TLS-oriented emitter skips SSH KEX
+    so this classifies each with the SSH KEX-name classifier: a classical-only endpoint
+    now inventories its classical groups (previously zero KEX components) and a hybrid
+    endpoint keeps its classical groups alongside the PQ one. Each carries the strongest
+    observation seen, mirroring the KEX/cipher/host-key assets.
+    """
+    groups: dict[str, ObservationType] = {}
+    for evidence in result.evidence:
+        if (
+            evidence.evidence_type == "ssh.kex"
+            and evidence.observation_type in POSITIVE_OBSERVATIONS
+            and evidence.negotiated_group
+        ):
+            seen = groups.get(evidence.negotiated_group)
+            if seen is None or OBSERVATION_RANK[evidence.observation_type] > OBSERVATION_RANK[seen]:
+                groups[evidence.negotiated_group] = evidence.observation_type
+    for group in sorted(groups):
+        ref = f"crypto/algorithm/{group.lower()}"
+        bom.components.add(
+            Component(
+                name=group,
+                type=ComponentType.CRYPTOGRAPHIC_ASSET,
+                bom_ref=ref,
+                crypto_properties=CryptoProperties(
+                    asset_type=CryptoAssetType.ALGORITHM,
+                    algorithm_properties=ssh_kex_algorithm_properties(group),
+                ),
+                properties=[Property(name="qureddy:observation", value=groups[group].value)],
+            )
+        )
+        provides_edges.setdefault(ENDPOINT_REF, []).append(ref)
 
 
 def add_ssh_host_key_components(

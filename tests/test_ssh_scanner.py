@@ -8,10 +8,13 @@ import io
 import json
 from unittest.mock import patch
 
+import pytest
+
 from qureddy.core.models import Readiness
 from qureddy.core.targets import parse_ssh_target
 from qureddy.output.cbom import render_cbom
 from qureddy.output.console import render_rich
+from qureddy.scanners.ssh import classify
 from qureddy.scanners.ssh.probe import SSHOffer
 from qureddy.scanners.ssh.scanner import scan_ssh
 
@@ -131,6 +134,148 @@ def test_weak_dss_hostkey_present_in_cbom_inventory() -> None:
     assert "crypto/algorithm/ssh-ed25519" in refs
     # The PQ hybrid KEX asset stays a KEM group, not a signature.
     assert "crypto/algorithm/mlkem768x25519-sha256" in refs
+
+
+def _cbom_components(result) -> dict:
+    stream = io.StringIO()
+    render_cbom(result, stream)
+    payload = json.loads(stream.getvalue())
+    return {item["bom-ref"]: item for item in payload["components"]}
+
+
+# --- #247: PQ-hybrid classifier must recognize non-x25519 families ---------------
+
+
+@pytest.mark.parametrize(
+    "kex_name",
+    [
+        "mlkem768nistp256-sha256",  # draft-kampanakis-curdle-ssh-pq-ke §2.3 (ML-KEM-768 + P-256)
+        "mlkem1024nistp384-sha384",  # same draft (ML-KEM-1024 + P-384; CNSA 2.0)
+        "x25519-kyber-512r3-sha256-d00@amazon.com",  # OQS-OpenSSH kex.h (AWS)
+        "ecdh-nistp521-kyber-1024r3-sha512-d00@openquantumsafe.org",  # OQS-OpenSSH kex.h
+        "sntrup761x25519-sha512",  # OpenSSH default (x25519 path, still must match)
+    ],
+)
+def test_non_x25519_pq_hybrid_not_flagged_vulnerable(kex_name: str) -> None:
+    # #247: these were all misread as quantum_vulnerable by the x25519-only allowlist.
+    r = _run((kex_name, "ecdh-sha2-nistp256"), ("ssh-ed25519",))
+    assert r.summary.readiness is Readiness.TRANSITIONAL_HYBRID
+    assert any(f.rule_id == "ssh.kex.hybrid_offered" for f in r.findings)
+
+
+def test_unknown_and_classical_kex_never_false_flagged() -> None:
+    # #247 must not over-match: a novel vendor name and classical groups stay classical.
+    r = _run(("some-future-kex@vendor", "curve25519-sha256"), ("ssh-ed25519",))
+    assert r.summary.readiness is Readiness.QUANTUM_VULNERABLE
+
+
+def test_empty_kex_offer_is_classical_only_no_crash() -> None:
+    # Degenerate: a server offering no KEX name-list must not crash and stays classical.
+    r = _run((), ("ssh-ed25519",))
+    assert r.summary.readiness is Readiness.QUANTUM_VULNERABLE
+    assert any(f.rule_id == "ssh.kex.classical_only" for f in r.findings)
+
+
+# --- #241: PQ-hybrid KEX component carries algorithmProperties + level -----------
+
+
+def test_mlkem_hybrid_kex_component_has_nist_level_3() -> None:
+    # #241: ML-KEM-768 hybrid must be a KEM primitive carrying its FIPS 203 category (3).
+    components = _cbom_components(_run(("mlkem768x25519-sha256",), ("ssh-ed25519",)))
+    props = components["crypto/algorithm/mlkem768x25519-sha256"]["cryptoProperties"][
+        "algorithmProperties"
+    ]
+    assert props["primitive"] == "kem"
+    assert props["nistQuantumSecurityLevel"] == 3
+    assert props["parameterSetIdentifier"] == "ML-KEM-768"
+    assert set(props["cryptoFunctions"]) == {"keygen", "encapsulate", "decapsulate"}
+
+
+def test_sntrup_hybrid_kex_component_has_nist_level() -> None:
+    # #241: sntrup761 hybrid must carry a non-zero, populated level (not omitted).
+    components = _cbom_components(_run(("sntrup761x25519-sha512",), ("ssh-ed25519",)))
+    props = components["crypto/algorithm/sntrup761x25519-sha512"]["cryptoProperties"][
+        "algorithmProperties"
+    ]
+    assert props["primitive"] == "kem"
+    assert props["nistQuantumSecurityLevel"] == 2
+
+
+def test_nistp_mlkem_hybrid_component_level_5() -> None:
+    # #241 + #247: a non-x25519 ML-KEM-1024 hybrid emits with its category (5).
+    components = _cbom_components(_run(("mlkem1024nistp384-sha384",), ("ssh-ed25519",)))
+    props = components["crypto/algorithm/mlkem1024nistp384-sha384"]["cryptoProperties"][
+        "algorithmProperties"
+    ]
+    assert props["primitive"] == "kem"
+    assert props["nistQuantumSecurityLevel"] == 5
+
+
+# --- #242: full KEX inventory (classical + weak groups) as components ------------
+
+
+def test_classical_only_endpoint_emits_all_kex_components() -> None:
+    # #242: previously a classical-only endpoint emitted ZERO key-exchange components.
+    components = _cbom_components(
+        _run(
+            ("curve25519-sha256", "ecdh-sha2-nistp256", "diffie-hellman-group14-sha256"),
+            ("ssh-ed25519",),
+        )
+    )
+    for ref in (
+        "crypto/algorithm/curve25519-sha256",
+        "crypto/algorithm/ecdh-sha2-nistp256",
+        "crypto/algorithm/diffie-hellman-group14-sha256",
+    ):
+        assert ref in components, ref
+        props = components[ref]["cryptoProperties"]["algorithmProperties"]
+        assert props["primitive"] == "key-agree"
+        assert props["nistQuantumSecurityLevel"] == 0
+
+
+def test_hybrid_endpoint_keeps_classical_kex_groups() -> None:
+    # #242: a hybrid endpoint previously dropped every classical KEX group it offered.
+    components = _cbom_components(
+        _run(("mlkem768x25519-sha256", "curve25519-sha256", "ecdh-sha2-nistp256"), ("ssh-ed25519",))
+    )
+    assert "crypto/algorithm/mlkem768x25519-sha256" in components
+    assert "crypto/algorithm/curve25519-sha256" in components
+    assert "crypto/algorithm/ecdh-sha2-nistp256" in components
+
+
+def test_weak_kex_group_appears_as_component() -> None:
+    # #242: weak KEX groups flagged by ssh.kex.weak must also appear in the inventory.
+    components = _cbom_components(
+        _run(("curve25519-sha256", "diffie-hellman-group1-sha1"), ("ssh-ed25519",))
+    )
+    assert "crypto/algorithm/diffie-hellman-group1-sha1" in components
+
+
+def test_classify_kex_covers_families_and_unknown() -> None:
+    # RSA key transport (RFC 4432) is PKE, level 0.
+    rsa = classify.classify_kex("rsa2048-sha256")
+    assert rsa is not None
+    assert rsa.primitive == "pke"
+    assert rsa.nist_quantum_security_level == 0
+    # Finite-field DH is key-agreement with no named curve.
+    dh = classify.classify_kex("diffie-hellman-group14-sha256")
+    assert dh is not None
+    assert dh.primitive == "key-agree"
+    assert dh.curve is None
+    # A PQ name whose specific parameter set is unrecognized: still KEM, level honestly None.
+    novel = classify.classify_kex("mlkem999x25519-sha256")
+    assert novel is not None
+    assert novel.primitive == "kem"
+    assert novel.nist_quantum_security_level is None
+    # A fully unrecognized name is not classified (no fabricated primitive/level).
+    assert classify.classify_kex("some-future-kex@vendor") is None
+
+
+def test_unknown_kex_name_emitted_with_minimal_properties() -> None:
+    # An unclassifiable KEX group is still inventoried, with no fabricated algorithmProperties.
+    components = _cbom_components(_run(("some-future-kex@vendor",), ("ssh-ed25519",)))
+    component = components["crypto/algorithm/some-future-kex@vendor"]
+    assert "algorithmProperties" not in component["cryptoProperties"]
 
 
 def test_ssh_rich_output_has_no_tls_cert_recommendation() -> None:

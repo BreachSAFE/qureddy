@@ -5,9 +5,58 @@
 from __future__ import annotations
 
 from types import MappingProxyType
+from typing import NamedTuple
 
-# PQ hybrid KEX (substring match -- covers @openssh.com suffixes).
-_PQ_HYBRID_KEX = ("mlkem768x25519", "sntrup761x25519")
+# Post-quantum KEM tokens that mark a KEX name as a PQ (hybrid or standalone) key
+# exchange, regardless of the classical half it is paired with. Detection is
+# structural (any name containing one of these tokens), not an x25519-anchored
+# allowlist, so NIST-P-curve ML-KEM hybrids and Kyber/AWS/OQS hybrids are no longer
+# missed and reported as quantum_vulnerable (#247). Sources for the token set and
+# the real-world names it must catch (verified against primary text, not memory):
+#   - mlkem768x25519-sha256, mlkem768nistp256-sha256, mlkem1024nistp384-sha384:
+#     IETF draft-kampanakis-curdle-ssh-pq-ke §2.3 (ML-KEM SSH hybrids).
+#   - sntrup761x25519-sha512(@openssh.com): OpenSSH (default since 9.0);
+#     draft-josefsson-ntruprime-ssh.
+#   - x25519-kyber-512r3-sha256-d00@amazon.com, ecdh-nistp{256,384,521}-kyber-
+#     {512,768,1024}r3-...@openquantumsafe.org: open-quantum-safe/openssh kex.h.
+# Matched case-insensitively so the "ML-KEM"/"mlkem" and "Kyber"/"kyber" spellings
+# both hit.
+_PQ_KEM_TOKENS = ("mlkem", "ml-kem", "sntrup", "kyber")
+
+# PQ KEM parameter set -> NIST post-quantum security category, keyed by the
+# lower-cased substring that identifies the KEM in a KEX name. ML-KEM categories
+# are from FIPS 203 (ML-KEM-512 = cat 1, -768 = cat 3, -1024 = cat 5); Kyber
+# round-3 shares those categories (Kyber512/768/1024 = NIST level 1/3/5). Longer,
+# more specific tokens must precede shorter ones so "kyber-1024" is not shadowed.
+# sntrup761: the NTRU Prime round-3 submission reports Core-SVP 2^153 pre-quantum
+# and deliberately does NOT assign a NIST category; 2 is a conservative mapping
+# (exceeds cat-1's AES-128 floor and meets cat-2's SHA-256-collision bar, below
+# cat-3's AES-192) -- a documented estimate, not a first-party NIST assignment.
+_PQ_KEM_PARAMETERS: tuple[tuple[str, str, int], ...] = (
+    ("mlkem1024", "ML-KEM-1024", 5),
+    ("ml-kem-1024", "ML-KEM-1024", 5),
+    ("mlkem768", "ML-KEM-768", 3),
+    ("ml-kem-768", "ML-KEM-768", 3),
+    ("mlkem512", "ML-KEM-512", 1),
+    ("ml-kem-512", "ML-KEM-512", 1),
+    ("kyber-1024", "Kyber-1024", 5),
+    ("kyber1024", "Kyber-1024", 5),
+    ("kyber-768", "Kyber-768", 3),
+    ("kyber768", "Kyber-768", 3),
+    ("kyber-512", "Kyber-512", 1),
+    ("kyber512", "Kyber-512", 1),
+    ("sntrup761", "sntrup761", 2),
+)
+
+# Named-curve labels for the classical half of a KEX group, so a classical KEX
+# component carries the same shape (primitive + curve + level 0) the TLS X25519
+# control group already emits. Finite-field Diffie-Hellman has no curve.
+_CLASSICAL_KEX_CURVES: tuple[tuple[str, str], ...] = (
+    ("curve25519", "curve25519"),
+    ("nistp256", "P-256"),
+    ("nistp384", "P-384"),
+    ("nistp521", "P-521"),
+)
 # Weak/deprecated host-key algorithms, keyed to a justification note. Matched
 # by exact name (not prefix) so the SHA-2 families rsa-sha2-256 / rsa-sha2-512
 # and their cert variants stay OUT of this set -- only bare ssh-rsa signs with
@@ -59,9 +108,71 @@ KEX_NOTES = MappingProxyType(
 )
 
 
+class KexClass(NamedTuple):
+    """Structured classification of one SSH KEX group for the CBOM (#241).
+
+    ``primitive`` uses the CycloneDX ``cryptoProperties`` primitive vocabulary
+    verbatim (``kem`` / ``key-agree`` / ``pke``) so the output layer maps it with
+    no translation table. ``nist_quantum_security_level`` is the NIST PQC category
+    (0 for a classical algorithm, ``None`` when unknown -- never fabricated).
+    """
+
+    primitive: str
+    nist_quantum_security_level: int | None
+    parameter_set_identifier: str | None = None
+    curve: str | None = None
+
+
+def is_pq_hybrid_kex(name: str) -> bool:
+    """True if a KEX name carries any post-quantum KEM (structural, not allowlist)."""
+    lowered = name.lower()
+    return any(token in lowered for token in _PQ_KEM_TOKENS)
+
+
 def pq_hybrid_kex(offer_kex: tuple[str, ...]) -> tuple[str, ...]:
     """The PQ-hybrid KEX algorithms the server offers (may be empty)."""
-    return tuple(a for a in offer_kex if any(p in a for p in _PQ_HYBRID_KEX))
+    return tuple(a for a in offer_kex if is_pq_hybrid_kex(a))
+
+
+def _pq_kem_parameters(name: str) -> tuple[str, int] | None:
+    """Return (parameter_set, NIST level) for the PQ KEM in ``name``, or None."""
+    lowered = name.lower()
+    for token, parameter_set, level in _PQ_KEM_PARAMETERS:
+        if token in lowered:
+            return parameter_set, level
+    return None
+
+
+def _classical_kex_curve(lowered: str) -> str | None:
+    """Return the named curve for an ECDH/x25519 KEX name, or None."""
+    for token, curve in _CLASSICAL_KEX_CURVES:
+        if token in lowered:
+            return curve
+    return None
+
+
+def classify_kex(name: str) -> KexClass | None:
+    """Classify one SSH KEX group into a CBOM algorithm profile, or None if unknown.
+
+    PQ (hybrid or standalone) groups are the KEM primitive and carry the KEM's
+    NIST category (``None`` if the specific parameter set is unrecognized rather
+    than fabricated). Classical groups are honest key-agreement (ECDH/DH) or key
+    transport (RSA) at NIST level 0. An unrecognized name returns None so the
+    component keeps a minimal ``algorithmProperties`` instead of a made-up one.
+    """
+    lowered = name.lower()
+    if is_pq_hybrid_kex(name):
+        params = _pq_kem_parameters(name)
+        parameter_set, level = params if params is not None else (None, None)
+        return KexClass("kem", level, parameter_set_identifier=parameter_set)
+    curve = _classical_kex_curve(lowered)
+    if curve is not None:
+        return KexClass("key-agree", 0, curve=curve)
+    if lowered.startswith("diffie-hellman"):
+        return KexClass("key-agree", 0)
+    if lowered.startswith("rsa"):
+        return KexClass("pke", 0)
+    return None
 
 
 def weak_host_keys(offer_host_keys: tuple[str, ...]) -> tuple[str, ...]:

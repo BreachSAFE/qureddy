@@ -41,6 +41,10 @@ if TYPE_CHECKING:
 
 ENDPOINT_REF = "endpoint"
 CERTIFICATE_REF = "crypto/certificate/leaf"
+# SSH evidence types handled by the SSH-specific emitters in cbom_ssh (host keys as
+# signatures, KEX groups with SSH KEX-name classification), skipped by the shared
+# TLS-oriented algorithm emitter so no bom-ref is emitted twice.
+_SSH_EVIDENCE_TYPES = frozenset({"ssh.hostkey", "ssh.kex", "ssh.kex.weak"})
 POSITIVE_OBSERVATIONS = frozenset(
     {ObservationType.NEGOTIATED, ObservationType.OFFERED, ObservationType.OBSERVED}
 )
@@ -69,12 +73,15 @@ def add_algorithm_components(
     algorithm_refs: dict[str, str] = {}
     groups: dict[str, ObservationType] = {}
     for evidence in result.evidence:
-        # SSH host-key algorithms are signature primitives, not KEX groups; they get
-        # their own signature-classified components in add_ssh_host_key_components (#143).
+        # SSH evidence gets its own SSH-specific classified components: host keys are
+        # signature primitives (add_ssh_host_key_components, #143) and KEX groups need
+        # SSH KEX-name classification for algorithmProperties (add_ssh_kex_components,
+        # #241/#242). This shared TLS-oriented emitter skips both so nothing is emitted
+        # twice under the same bom-ref.
         if (
             evidence.observation_type in POSITIVE_OBSERVATIONS
             and evidence.negotiated_group
-            and evidence.evidence_type != "ssh.hostkey"
+            and evidence.evidence_type not in _SSH_EVIDENCE_TYPES
         ):
             seen = groups.get(evidence.negotiated_group)
             if seen is None or OBSERVATION_RANK[evidence.observation_type] > OBSERVATION_RANK[seen]:
