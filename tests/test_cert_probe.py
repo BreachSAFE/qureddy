@@ -19,6 +19,7 @@ import pytest
 from qureddy.core.errors import LocalOpenSSLMissing
 from qureddy.scanners.tls._net import build_connect_target
 from qureddy.scanners.tls.cert_probe import (
+    _certificate_text_details,
     fetch_certificate_pem,
     parse_certificate,
 )
@@ -102,6 +103,30 @@ class TestParseCertificate:
         loud, not compute a silently-wrong answer (trap #11 shape)."""
         with pytest.raises(ValueError, match="empty"):
             parse_certificate("/fixture/openssl", "")
+
+    def test_public_key_fields_ignore_dn_injected_values(self) -> None:
+        """#344 item 3: the public-key algorithm/bits regexes are line-anchored,
+        so an attacker-controlled DN value that embeds `Public Key Algorithm:`
+        / `Public-Key:` (printed on the Subject line, before the real Subject
+        Public Key Info block) cannot be mistaken for the genuine field. An
+        unanchored `.search` would return the injected value first."""
+        injected_text = (
+            "        Subject: CN = Public Key Algorithm: ML-DSA-87, O = Public-Key: (9999 bit)\n"
+            "        Subject Public Key Info:\n"
+            "            Public Key Algorithm: rsaEncryption\n"
+            "                Public-Key: (2048 bit)\n"
+            "    Signature Algorithm: sha256WithRSAEncryption\n"
+        )
+        with patch(
+            "qureddy.scanners.tls.cert_probe._x509",
+            return_value=injected_text,
+        ):
+            _sig, summary, _is_pq, pubkey_algorithm, pubkey_bits = _certificate_text_details(
+                "/fixture/openssl", FIXTURE_PEM, timeout_seconds=5
+            )
+        assert pubkey_algorithm == "rsaEncryption"
+        assert pubkey_bits == 2048
+        assert summary == "Public-Key: (2048 bit)"
 
 
 class TestBuildConnectTarget:
