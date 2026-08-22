@@ -16,7 +16,7 @@ from unittest.mock import patch
 
 import pytest
 
-from qureddy.core.errors import LocalOpenSSLMissing
+from qureddy.core.errors import LocalOpenSSLBroken, LocalOpenSSLMissing
 from qureddy.scanners.tls._net import build_connect_target
 from qureddy.scanners.tls.cert_probe import (
     _certificate_text_details,
@@ -57,7 +57,10 @@ class TestFetchCertificatePem:
         exception openssl_probe.py raises for a missing binary — not an
         unhandled traceback."""
         with (
-            patch("subprocess.run", side_effect=FileNotFoundError("no such file")),
+            patch(
+                "qureddy.scanners.tls.openssl_probe.executor.subprocess.run",
+                side_effect=FileNotFoundError("no such file"),
+            ),
             pytest.raises(LocalOpenSSLMissing),
         ):
             fetch_certificate_pem("/nonexistent/openssl", "example.invalid", 443, None)
@@ -67,11 +70,24 @@ class TestFetchCertificatePem:
         (empty string, same as the not-found case already handled), not
         crash the whole scan with an unhandled TimeoutExpired."""
         with patch(
-            "subprocess.run",
+            "qureddy.scanners.tls.openssl_probe.executor.subprocess.run",
             side_effect=subprocess.TimeoutExpired(cmd=["openssl"], timeout=30),
         ):
             result = fetch_certificate_pem("/usr/bin/openssl", "example.invalid", 443, None)
         assert result == ""
+
+    def test_unlaunchable_binary_raises_local_openssl_broken(self) -> None:
+        """#296/#374: an OSError launching openssl (a non-executable file /
+        Windows WinError 193) was previously UNCAUGHT here and crashed the
+        scan. It must now surface as the typed exit-3 local-dependency error."""
+        with (
+            patch(
+                "qureddy.scanners.tls.openssl_probe.executor.subprocess.run",
+                side_effect=OSError(193, "not a valid application"),
+            ),
+            pytest.raises(LocalOpenSSLBroken),
+        ):
+            fetch_certificate_pem("/usr/bin/openssl", "example.invalid", 443, None)
 
 
 class TestParseCertificate:
@@ -149,7 +165,7 @@ class TestEmptySniGuard:
     def test_empty_sni_not_passed_as_servername(self) -> None:
         """`-servername \"\"` is rejected by many servers (trap #17) — an
         empty or whitespace SNI must be treated the same as sni=None."""
-        with patch("subprocess.run") as mock_run:
+        with patch("qureddy.scanners.tls.openssl_probe.executor.subprocess.run") as mock_run:
             mock_run.return_value.stdout = ""
             mock_run.return_value.returncode = 0
             fetch_certificate_pem("/usr/bin/openssl", "example.invalid", 443, "   ")

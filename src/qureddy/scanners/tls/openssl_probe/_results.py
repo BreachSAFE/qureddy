@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 import hashlib
-import subprocess
 from datetime import UTC, datetime
 
 from qureddy.core.models import FailureCategory, ProbeCommand, ProbeResult
@@ -14,15 +13,22 @@ from qureddy.scanners.tls.openssl_probe._constants import EXCERPT_LIMIT
 
 def result_from_timeout(
     args: list[str],
-    exc: subprocess.TimeoutExpired,
+    stdout: bytes | str | None,
+    stderr: bytes | str | None,
     started: datetime,
     timeout_seconds: int,
     attempt_number: int,
 ) -> ProbeResult:
-    """Preserve partial bytes from a timed-out handshake."""
+    """Preserve partial output from a timed-out handshake.
+
+    ``stdout`` / ``stderr`` are the partial streams captured before the kill
+    (already decoded ``str`` when they come from ``OpenSSLOutcome``, or the raw
+    ``bytes`` / ``None`` a ``TimeoutExpired`` carries) — ``decode_partial``
+    normalizes either shape.
+    """
     duration_ms = int((datetime.now(UTC) - started).total_seconds() * 1000)
-    stdout = decode_partial(exc.stdout)
-    stderr = decode_partial(exc.stderr)
+    stdout = decode_partial(stdout)
+    stderr = decode_partial(stderr)
     marker = f"\n[qureddy] timeout after {timeout_seconds}s"
     annotated_stderr = stderr + marker if stderr else marker.lstrip("\n")
     parser_input = combined_probe_output(stdout, stderr)

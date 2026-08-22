@@ -4,12 +4,9 @@
 
 from __future__ import annotations
 
-import subprocess
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
-from qureddy.core.errors import LocalOpenSSLBroken, LocalOpenSSLMissing
-from qureddy.core.models import FailureCategory, OpenSSLDependency
 from qureddy.scanners.tls._classify import classify_failure
 from qureddy.scanners.tls._net import build_connect_target
 from qureddy.scanners.tls.openssl_probe._constants import (
@@ -26,6 +23,8 @@ from qureddy.scanners.tls.openssl_probe._results import (
     combined_probe_output,
     result_from_timeout,
 )
+from qureddy.scanners.tls.openssl_probe.executor import raise_for_launch
+from qureddy.scanners.tls.openssl_probe.executor import run_openssl as execute
 
 if TYPE_CHECKING:
     from qureddy.core.models import ProbeResult
@@ -95,38 +94,24 @@ def _run_probe(
 ) -> ProbeResult:
     started = datetime.now(UTC)
     log_subprocess_start(args, timeout_seconds, attempt_number)
-    try:
-        completed = subprocess.run(  # noqa: S603 -- validated list-form command
-            args,
-            stdin=subprocess.DEVNULL,
-            capture_output=True,
-            text=True,
-            timeout=timeout_seconds,
-            check=False,
-            shell=False,
+    outcome = execute(args, timeout_seconds=timeout_seconds)
+    if outcome.timed_out:
+        return result_from_timeout(
+            args, outcome.stdout, outcome.stderr, started, timeout_seconds, attempt_number
         )
-    except subprocess.TimeoutExpired as exc:
-        return result_from_timeout(args, exc, started, timeout_seconds, attempt_number)
-    except FileNotFoundError as exc:
-        raise LocalOpenSSLMissing(str(exc)) from exc
-    except OSError as exc:
-        raise LocalOpenSSLBroken(
-            f"openssl became unlaunchable after capability detection: {exc}",
-            dependency=OpenSSLDependency(
-                path=args[0],
-                failure_category=FailureCategory.LOCAL_OPENSSL_BROKEN,
-            ),
-        ) from exc
+    raise_for_launch(outcome, args[0])
+    return_code = outcome.returncode
+    assert return_code is not None  # noqa: S101 -- OK launch guarantees an exit code
     duration_ms = int((datetime.now(UTC) - started).total_seconds() * 1000)
-    failure = classify_failure(completed.stderr) if completed.returncode else None
-    log_subprocess_complete(args, completed.returncode, duration_ms, attempt_number, failure)
-    parser_input = combined_probe_output(completed.stdout, completed.stderr)
+    failure = classify_failure(outcome.stderr) if return_code else None
+    log_subprocess_complete(args, return_code, duration_ms, attempt_number, failure)
+    parser_input = combined_probe_output(outcome.stdout, outcome.stderr)
     return build_probe_result(
         args=args,
-        stdout=completed.stdout,
-        stderr=completed.stderr,
+        stdout=outcome.stdout,
+        stderr=outcome.stderr,
         parser_input=parser_input,
-        return_code=completed.returncode,
+        return_code=return_code,
         duration_ms=duration_ms,
         attempt_number=attempt_number,
         timeout_seconds=timeout_seconds,

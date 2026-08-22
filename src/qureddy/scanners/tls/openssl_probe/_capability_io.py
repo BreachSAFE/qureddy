@@ -5,12 +5,13 @@
 from __future__ import annotations
 
 import re
-import subprocess
 
 from packaging.version import InvalidVersion, Version
 
-from qureddy.core.errors import LocalOpenSSLBroken, LocalOpenSSLMissing
+from qureddy.core.errors import LocalOpenSSLBroken
 from qureddy.core.models import FailureCategory, OpenSSLDependency
+from qureddy.scanners.tls.openssl_probe.executor import raise_for_launch
+from qureddy.scanners.tls.openssl_probe.executor import run_openssl as execute
 
 _OPENSSL_RELEASE_FRAGMENT = r"\d+\.\d+\.\d+(?:[-+][0-9A-Za-z][0-9A-Za-z._-]*)?"
 _OPENSSL_VERSION_PATTERN = re.compile(
@@ -23,43 +24,29 @@ _LIBRESSL_VERSION_PATTERN = re.compile(r"LibreSSL\s+(?P<version>\S+)")
 
 
 def run_openssl(args: list[str], *, timeout_seconds: int) -> str:
-    try:
-        completed = subprocess.run(  # noqa: S603 -- validated list-form command
-            args,
-            stdin=subprocess.DEVNULL,
-            capture_output=True,
-            text=True,
-            timeout=timeout_seconds,
-            check=False,
-            shell=False,
-        )
-    except FileNotFoundError as exc:
-        raise LocalOpenSSLMissing(str(exc)) from exc
-    except OSError as exc:
-        # Windows reports a non-launchable file (for example WinError 193)
-        # as OSError even when the path exists. Keep that local prerequisite
-        # failure on the typed exit-3 surface instead of leaking a traceback.
-        raise LocalOpenSSLBroken(
-            f"openssl could not be launched: {exc}",
-            dependency=_broken_dependency(args[0]),
-        ) from exc
-    except subprocess.TimeoutExpired as exc:
+    """Return stdout from a capability-check invocation, or raise exit-3 typed.
+
+    A missing or unlaunchable binary (Windows WinError 193 surfaces as OSError
+    even when the path exists), an unresponsive hang, or any nonzero exit during
+    capability detection is a local-prerequisite failure, kept on the typed
+    exit-3 surface instead of leaking a traceback.
+    """
+    outcome = execute(args, timeout_seconds=timeout_seconds)
+    raise_for_launch(outcome, args[0])
+    if outcome.timed_out:
         message = (
             f"openssl did not respond within {timeout_seconds}s during capability "
             f"check ({args}); the binary exists but appears unresponsive — check "
             f"for entropy exhaustion or a hung process, or increase --timeout"
         )
+        raise LocalOpenSSLBroken(message, dependency=_broken_dependency(args[0]))
+    if outcome.returncode != 0:
+        snippet = (outcome.stderr.strip() or "(no stderr)")[:200]
         raise LocalOpenSSLBroken(
-            message,
-            dependency=_broken_dependency(args[0]),
-        ) from exc
-    if completed.returncode != 0:
-        snippet = (completed.stderr.strip() or "(no stderr)")[:200]
-        raise LocalOpenSSLBroken(
-            f"openssl exited with code {completed.returncode}: {snippet}",
+            f"openssl exited with code {outcome.returncode}: {snippet}",
             dependency=_broken_dependency(args[0]),
         )
-    return completed.stdout
+    return outcome.stdout
 
 
 def _broken_dependency(path: str) -> OpenSSLDependency:

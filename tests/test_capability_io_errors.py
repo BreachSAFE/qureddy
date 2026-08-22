@@ -26,7 +26,9 @@ from qureddy.scanners.tls.openssl_probe._capability_io import (
 )
 from qureddy.scanners.tls.openssl_probe._results import decode_partial
 
-_RUN = "qureddy.scanners.tls.openssl_probe._capability_io.subprocess.run"
+# #296: subprocess execution now lives only in the executor, so that is the
+# seam to inject; _capability_io routes through it via run_openssl.
+_RUN = "qureddy.scanners.tls.openssl_probe.executor.subprocess.run"
 
 
 class TestRunOpensslErrors:
