@@ -1,39 +1,21 @@
 {
   "components": [
     {
-      "bom-ref": "crypto/protocol/tls-tlsv1",
+      "bom-ref": "crypto/algorithm/tls_aes_256_gcm_sha384",
       "cryptoProperties": {
-        "assetType": "protocol",
-        "protocolProperties": {
-          "type": "tls",
-          "version": "TLSv1"
-        }
+        "algorithmProperties": {
+          "classicalSecurityLevel": 256,
+          "primitive": "ae"
+        },
+        "assetType": "algorithm"
       },
-      "name": "TLSv1",
-      "type": "cryptographic-asset"
-    },
-    {
-      "bom-ref": "crypto/protocol/tls-tlsv1.1",
-      "cryptoProperties": {
-        "assetType": "protocol",
-        "protocolProperties": {
-          "type": "tls",
-          "version": "TLSv1.1"
+      "name": "TLS_AES_256_GCM_SHA384",
+      "properties": [
+        {
+          "name": "qureddy:observation",
+          "value": "negotiated"
         }
-      },
-      "name": "TLSv1.1",
-      "type": "cryptographic-asset"
-    },
-    {
-      "bom-ref": "crypto/protocol/tls-tlsv1.2",
-      "cryptoProperties": {
-        "assetType": "protocol",
-        "protocolProperties": {
-          "type": "tls",
-          "version": "TLSv1.2"
-        }
-      },
-      "name": "TLSv1.2",
+      ],
       "type": "cryptographic-asset"
     },
     {
@@ -50,7 +32,7 @@
             }
           ],
           "type": "tls",
-          "version": "TLSv1.3"
+          "version": "1.3"
         }
       },
       "name": "TLSv1.3",
@@ -59,24 +41,32 @@
     {
       "bom-ref": "crypto/algorithm/x25519",
       "cryptoProperties": {
+        "algorithmProperties": {
+          "cryptoFunctions": [
+            "keygen"
+          ],
+          "curve": "curve25519",
+          "nistQuantumSecurityLevel": 0,
+          "primitive": "key-agree"
+        },
         "assetType": "algorithm"
       },
       "name": "X25519",
+      "properties": [
+        {
+          "name": "qureddy:observation",
+          "value": "negotiated"
+        }
+      ],
       "type": "cryptographic-asset"
     }
   ],
   "dependencies": [
     {
+      "ref": "crypto/algorithm/tls_aes_256_gcm_sha384"
+    },
+    {
       "ref": "crypto/algorithm/x25519"
-    },
-    {
-      "ref": "crypto/protocol/tls-tlsv1"
-    },
-    {
-      "ref": "crypto/protocol/tls-tlsv1.1"
-    },
-    {
-      "ref": "crypto/protocol/tls-tlsv1.2"
     },
     {
       "ref": "crypto/protocol/tls-tlsv1.3"
@@ -84,10 +74,8 @@
     {
       "ref": "endpoint",
       "provides": [
+        "crypto/algorithm/tls_aes_256_gcm_sha384",
         "crypto/algorithm/x25519",
-        "crypto/protocol/tls-tlsv1",
-        "crypto/protocol/tls-tlsv1.1",
-        "crypto/protocol/tls-tlsv1.2",
         "crypto/protocol/tls-tlsv1.3",
         "crypto/algorithm/missing"
       ]
@@ -101,11 +89,250 @@
     },
     "properties": [
       {
+        "name": "qureddy:evidence.00.attempt_number",
+        "value": "1"
+      },
+      {
+        "name": "qureddy:evidence.00.cipher_suite",
+        "value": "TLS_AES_256_GCM_SHA384"
+      },
+      {
+        "name": "qureddy:evidence.00.command_sha256",
+        "value": "176b2514e20d878b9ed8fe8b3426b772f74be8a4f73d18b7fae8e3feab77ccd4"
+      },
+      {
+        "name": "qureddy:evidence.00.expected_group",
+        "value": "X25519MLKEM768"
+      },
+      {
+        "name": "qureddy:evidence.00.observation",
+        "value": "observed"
+      },
+      {
+        "name": "qureddy:evidence.00.observed_algorithm",
+        "value": "X25519"
+      },
+      {
+        "name": "qureddy:evidence.00.probe_role",
+        "value": "hybrid_readiness"
+      },
+      {
+        "name": "qureddy:evidence.00.protocol_version",
+        "value": "TLSv1.3"
+      },
+      {
+        "name": "qureddy:evidence.00.return_code",
+        "value": "0"
+      },
+      {
+        "name": "qureddy:evidence.00.source",
+        "value": "qureddy.scanners.tls.parse"
+      },
+      {
+        "name": "qureddy:evidence.00.stderr_sha256",
+        "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "qureddy:evidence.00.stdout_sha256",
+        "value": "32851daa1bcf11e94a96146113cb33f1445a2545079f691b2bd0afa210eb0fad"
+      },
+      {
+        "name": "qureddy:evidence.00.type",
+        "value": "tls.probe.parse"
+      },
+      {
+        "name": "qureddy:evidence.01.attempt_number",
+        "value": "1"
+      },
+      {
+        "name": "qureddy:evidence.01.cipher_suite",
+        "value": "TLS_AES_256_GCM_SHA384"
+      },
+      {
+        "name": "qureddy:evidence.01.command_sha256",
+        "value": "a665419360ba2b998b261a34deaa5c69b792ca7517ac8ee584c7c92e9243d5c2"
+      },
+      {
+        "name": "qureddy:evidence.01.expected_group",
+        "value": "X25519"
+      },
+      {
+        "name": "qureddy:evidence.01.observation",
+        "value": "negotiated"
+      },
+      {
+        "name": "qureddy:evidence.01.observed_algorithm",
+        "value": "X25519"
+      },
+      {
+        "name": "qureddy:evidence.01.probe_role",
+        "value": "classical_control"
+      },
+      {
+        "name": "qureddy:evidence.01.protocol_version",
+        "value": "TLSv1.3"
+      },
+      {
+        "name": "qureddy:evidence.01.return_code",
+        "value": "0"
+      },
+      {
+        "name": "qureddy:evidence.01.source",
+        "value": "qureddy.scanners.tls.parse"
+      },
+      {
+        "name": "qureddy:evidence.01.stderr_sha256",
+        "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "qureddy:evidence.01.stdout_sha256",
+        "value": "32851daa1bcf11e94a96146113cb33f1445a2545079f691b2bd0afa210eb0fad"
+      },
+      {
+        "name": "qureddy:evidence.01.type",
+        "value": "tls.negotiation"
+      },
+      {
+        "name": "qureddy:evidence.02.observation",
+        "value": "not_offered"
+      },
+      {
+        "name": "qureddy:evidence.02.protocol_version",
+        "value": "TLSv1"
+      },
+      {
+        "name": "qureddy:evidence.02.source",
+        "value": "qureddy.scanners.tls.legacy_probe"
+      },
+      {
+        "name": "qureddy:evidence.02.type",
+        "value": "tls.legacy.protocol"
+      },
+      {
+        "name": "qureddy:evidence.03.observation",
+        "value": "not_offered"
+      },
+      {
+        "name": "qureddy:evidence.03.protocol_version",
+        "value": "TLSv1.1"
+      },
+      {
+        "name": "qureddy:evidence.03.source",
+        "value": "qureddy.scanners.tls.legacy_probe"
+      },
+      {
+        "name": "qureddy:evidence.03.type",
+        "value": "tls.legacy.protocol"
+      },
+      {
+        "name": "qureddy:evidence.04.observation",
+        "value": "not_offered"
+      },
+      {
+        "name": "qureddy:evidence.04.protocol_version",
+        "value": "TLSv1.2"
+      },
+      {
+        "name": "qureddy:evidence.04.source",
+        "value": "qureddy.scanners.tls.legacy_probe"
+      },
+      {
+        "name": "qureddy:evidence.04.type",
+        "value": "tls.legacy.protocol"
+      },
+      {
+        "name": "qureddy:evidence.05.observation",
+        "value": "not_testable"
+      },
+      {
+        "name": "qureddy:evidence.05.source",
+        "value": "qureddy.scanners.tls.cert_probe"
+      },
+      {
+        "name": "qureddy:evidence.05.type",
+        "value": "tls.cert.signature"
+      },
+      {
+        "name": "qureddy:finding.00.confidence",
+        "value": "medium"
+      },
+      {
+        "name": "qureddy:finding.00.finding_type",
+        "value": "tls.kex.unexpected_group"
+      },
+      {
+        "name": "qureddy:finding.00.readiness",
+        "value": "quantum_vulnerable"
+      },
+      {
+        "name": "qureddy:finding.00.rule_id",
+        "value": "tls.hybrid.downgraded_to_classical"
+      },
+      {
+        "name": "qureddy:finding.00.severity",
+        "value": "low"
+      },
+      {
+        "name": "qureddy:finding.00.title",
+        "value": "Server rejected requested TLS 1.3 group and negotiated a different one"
+      },
+      {
+        "name": "qureddy:finding.01.confidence",
+        "value": "high"
+      },
+      {
+        "name": "qureddy:finding.01.finding_type",
+        "value": "tls.kex.classical"
+      },
+      {
+        "name": "qureddy:finding.01.readiness",
+        "value": "quantum_vulnerable"
+      },
+      {
+        "name": "qureddy:finding.01.rule_id",
+        "value": "tls.classical.negotiated_x25519"
+      },
+      {
+        "name": "qureddy:finding.01.severity",
+        "value": "low"
+      },
+      {
+        "name": "qureddy:finding.01.title",
+        "value": "Classical X25519 available on TLS 1.3 control probe"
+      },
+      {
+        "name": "qureddy:scan.readiness",
+        "value": "quantum_vulnerable"
+      },
+      {
+        "name": "qureddy:scan.scanner_name",
+        "value": "tls"
+      },
+      {
         "name": "qureddy:scan.status",
         "value": "completed"
+      },
+      {
+        "name": "qureddy:target.host",
+        "value": "192.0.2.10"
+      },
+      {
+        "name": "qureddy:target.locator",
+        "value": "tls://192.0.2.10:443"
+      },
+      {
+        "name": "qureddy:target.original_input",
+        "value": "192.0.2.10"
+      },
+      {
+        "name": "qureddy:target.port",
+        "value": "443"
+      },
+      {
+        "name": "qureddy:target.scheme",
+        "value": "tls"
       }
     ],
-    "timestamp": "2026-07-27T01:45:07.614356+00:00",
     "tools": {
       "components": [
         {
@@ -115,6 +342,14 @@
             {
               "name": "qureddy:collector.role",
               "value": "local-probe-runtime"
+            },
+            {
+              "name": "qureddy:openssl.supports_tls13_groups",
+              "value": "true"
+            },
+            {
+              "name": "qureddy:openssl.supports_x25519mlkem768",
+              "value": "true"
             }
           ],
           "type": "application",
@@ -124,12 +359,11 @@
           "bom-ref": "tool/qureddy",
           "name": "qureddy",
           "type": "application",
-          "version": "0.2.0"
+          "version": "0.2.22"
         }
       ]
     }
   },
-  "serialNumber": "urn:uuid:8ec0d3df-dca7-42c8-a790-404f70a6ced4",
   "version": 1,
   "$schema": "http://cyclonedx.org/schema/bom-1.7.schema.json",
   "bomFormat": "CycloneDX",

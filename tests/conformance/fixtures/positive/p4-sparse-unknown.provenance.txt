@@ -2,8 +2,7 @@ fixture: p4-sparse-unknown
 classification: minimized-from-captured
 command: qureddy scan tls 192.0.2.10 --format cbom --openssl tests/fixtures/openssl/fake/openssl_lacks_group.sh
 exit_code: 3
-captured_utc: 2026-08-22T02:37:35Z
-source: hermetic minimized local-capability failure
-producer_commit: eccbcd5909aca0c80eeaee557d67f282f88505c7
-installed_wheel_sha256: 7e83dc369a81d58f8ec9fefe11cea42255458e7781b57a3e6dcaabbfd935803a
-sha256: 1bf43c03c0bd6702fa195a88c108006d9e58ebd2ba8eb98bfbdcd7e0ed9c75c8
+captured_utc: 2026-08-22T05:21:46Z
+producer_commit: f600081282f31eff8718314085c4b1f3c5ce4913
+installed_wheel_sha256: 667316dfad4bc6d39282ba45fe7da0fc5f8ae19bdfa132eb2d07ae40c54c76cb
+sha256: 8862597e5c78f988d8f64bcfb5e7824f01b751f1ac0a8e80a2c07596cb8903fe

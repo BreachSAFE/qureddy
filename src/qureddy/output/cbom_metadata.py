@@ -158,15 +158,13 @@ def add_evidence_provenance(bom: Bom, result: ScanResult, *, reproducible: bool)
                 else probe.command.executable
             )
             command = " ".join([executable, *probe.command.args])
+            # Omit the empty-string hash (no stdout) rather than emit filler (#286).
+            stdout_hash = None if probe.stdout_sha256 == _EMPTY_SHA256 else probe.stdout_sha256
             pairs.extend(
                 [
                     (f"{prefix}.command_sha256", hashlib.sha256(command.encode()).hexdigest()),
                     (f"{prefix}.return_code", str(probe.return_code)),
-                    # Omit the empty-string hash (no stdout) rather than emit filler (#286).
-                    (
-                        f"{prefix}.stdout_sha256",
-                        probe.stdout_sha256 if probe.stdout_sha256 != _EMPTY_SHA256 else None,
-                    ),
+                    (f"{prefix}.stdout_sha256", stdout_hash),
                     (f"{prefix}.stderr_sha256", probe.stderr_sha256),
                     (f"{prefix}.attempt_number", str(probe.attempt_number)),
                 ]

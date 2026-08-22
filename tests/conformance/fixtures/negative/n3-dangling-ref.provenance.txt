@@ -2,6 +2,6 @@ fixture: n3-dangling-ref
 classification: synthetic-negative
 not_network_evidence: true
 derived_from: fixtures/positive/p2-classical-tls.cbom.json
-base_sha256: db51a5d2d8e4bf8308bae28a85776334458eb855f759a2b2fbb76533db283caa
+base_sha256: 78612bb2c6f16b530c53ab88aad984b694aba210cf7db286b0c4ff97d988a2f3
 mutation: endpoint provides a nonexistent component
-sha256: cadd86e8dfcfc35c83f905b008d05904934375b1a504c0356229d42b0af2dc96
+sha256: 7bc99643810b7079bf43f7ec53ee891fbeff7826189b85d64f17ed091267aaa1
