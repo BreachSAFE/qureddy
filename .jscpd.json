@@ -1,0 +1,14 @@
+{
+  "$schema": "https://raw.githubusercontent.com/kucherenko/jscpd/master/packages/jscpd/schema.json",
+  "threshold": 0.6,
+  "minTokens": 50,
+  "reporters": ["consoleFull"],
+  "absolute": true,
+  "gitignore": true,
+  "ignore": [
+    "**/tests/**",
+    "**/*.golden",
+    "**/conformance/fixtures/**",
+    "**/subprocess_inject/**"
+  ]
+}
