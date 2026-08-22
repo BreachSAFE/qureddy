@@ -362,7 +362,7 @@ class TLSScanner:
                 if pem
                 else None
             )
-        except LocalOpenSSLMissing, ValueError:
+        except (LocalOpenSSLMissing, ValueError):
             certificate = None
         evidence = evidence_from_certificate(asset, certificate)
         finding = finding_from_certificate(asset, evidence, certificate)
