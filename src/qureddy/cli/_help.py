@@ -29,6 +29,20 @@ _NO_WRAP_CONTEXT_SETTINGS = {
     "max_content_width": 10000,
 }
 
+# Issue #342: the OUTPUT section is byte-identical in the `scan tls` and `scan ssh` epilogs.
+# Define it once here (shared help machinery) and interpolate it into each command's epilog
+# before _colorize_help_text runs, so the two cannot drift while the rendered bytes are
+# unchanged. The literal "\b" is Click's no-wrap marker (ASCII backspace); see the note on
+# _SCAN_TLS_EPILOG in scan.py.
+_OUTPUT_HELP_SECTION = """\
+OUTPUT:
+
+\b
+--output / -o    Write the rendered document to a file instead of stdout
+                 (a path that cannot be opened exits 4).
+--compact        Minify JSON/CBOM to one line (--format json | cbom).
+--min-severity   Rich only: hide findings below this severity."""
+
 # Issue #266: `qureddy scan tls` output already colors its verdict panel,
 # tables, and findings (see output/_styles.py's color discipline) — plain
 # black-and-white --help text next to that was an inconsistent product.

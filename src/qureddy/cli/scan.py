@@ -25,7 +25,11 @@ from qureddy.cli._errors import (
     _fail,
 )
 from qureddy.cli._execute import _execute_scan
-from qureddy.cli._help import _NO_WRAP_CONTEXT_SETTINGS, _colorize_help_text
+from qureddy.cli._help import (
+    _NO_WRAP_CONTEXT_SETTINGS,
+    _OUTPUT_HELP_SECTION,
+    _colorize_help_text,
+)
 from qureddy.cli._options import (
     CompactOpt,
     FormatOpt,
@@ -98,13 +102,7 @@ qureddy scan tls example.com --format json --compact --output scan.json
 # Human report trimmed to medium-and-above findings (machine formats stay complete).
 qureddy scan tls example.com --min-severity medium
 
-OUTPUT:
-
-\b
---output / -o    Write the rendered document to a file instead of stdout
-                 (a path that cannot be opened exits 4).
---compact        Minify JSON/CBOM to one line (--format json | cbom).
---min-severity   Rich only: hide findings below this severity.
+{_OUTPUT_HELP_SECTION}
 
 SCAN BEHAVIOR:
 
