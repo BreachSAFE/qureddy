@@ -16,6 +16,12 @@ already agree):
   ``image.version`` label and selects the wheel to install)
 * the ``uv.lock`` entry for this package
 * the golden output contracts (``tests/golden/*.golden``)
+* the version-bearing prose in the docs that must quote a concrete release:
+  ``docs/reference/cli.md`` (intro sentence + version-line example),
+  ``docs/BADGE.md`` (the pyproject literal and the example release tag it
+  evidences), and ``docs/reference/json-schema.md`` (the sample
+  ``scanner_version``). These previously drifted because the bump did not
+  target them (see breachsafe/qureddy#340).
 
 ``--check`` additionally verifies the CHANGELOG documents the current version:
 a ``## [<version>] - <date>`` heading and a matching Contents entry must exist.
@@ -44,6 +50,9 @@ CHANGELOG = ROOT / "CHANGELOG.md"
 DOCKERFILE = ROOT / "Dockerfile"
 UVLOCK = ROOT / "uv.lock"
 GOLDEN = ROOT / "tests" / "golden"
+CLI_DOC = ROOT / "docs" / "reference" / "cli.md"
+BADGE_DOC = ROOT / "docs" / "BADGE.md"
+JSON_SCHEMA_DOC = ROOT / "docs" / "reference" / "json-schema.md"
 
 _PYPROJECT_VERSION = re.compile(r'^version = "(?P<v>[^"]+)"', re.MULTILINE)
 # shields.io badge: version-<v>-blue (dots and dashes are URL-escaped by shields, but
@@ -55,6 +64,17 @@ _DOCKER_ARG = re.compile(r"^ARG QUREDDY_VERSION=(?P<v>\d+\.\d+\.\d+[^\s]*)$", re
 _UVLOCK_VERSION = re.compile(
     r'(?P<pre>name = "breachsafe-qureddy"\nversion = ")(?P<v>[^"]+)(?P<post>")'
 )
+# docs/reference/cli.md quotes the release twice: the intro sentence's
+# ``qureddy <v>`` and the §1 version-line example ``BreachSAFE QuReddy <v> --``.
+_CLI_INTRO = re.compile(r"`qureddy (?P<v>\d+\.\d+\.\d+)`")
+_CLI_VERSION_LINE = re.compile(r"QuReddy (?P<v>\d+\.\d+\.\d+) --")
+# docs/BADGE.md cites the pyproject literal and an example release tag as the
+# evidence for the OpenSSF ``version_unique`` and ``version_tags`` criteria.
+_BADGE_PYPROJECT = re.compile(r'`version = "(?P<v>\d+\.\d+\.\d+)"`')
+_BADGE_TAG = re.compile(r"\(e\.g\. `v(?P<v>\d+\.\d+\.\d+)`\)")
+# docs/reference/json-schema.md sample output's ``scanner_version`` value (the
+# table row that merely names the field carries no version, so it is not matched).
+_JSON_SCHEMA_SCANNER = re.compile(r'"scanner_version": "(?P<v>\d+\.\d+\.\d+)"')
 
 
 def _simple_targets() -> list[tuple[Path, re.Pattern[str]]]:
@@ -69,6 +89,11 @@ def _simple_targets() -> list[tuple[Path, re.Pattern[str]]]:
         (CHANGELOG, _BADGE),
         (DOCKERFILE, _DOCKER_ARG),
         (UVLOCK, _UVLOCK_VERSION),
+        (CLI_DOC, _CLI_INTRO),
+        (CLI_DOC, _CLI_VERSION_LINE),
+        (BADGE_DOC, _BADGE_PYPROJECT),
+        (BADGE_DOC, _BADGE_TAG),
+        (JSON_SCHEMA_DOC, _JSON_SCHEMA_SCANNER),
     ]
 
 
