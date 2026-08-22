@@ -11,16 +11,34 @@ from rich.panel import Panel
 from rich.text import Text
 
 if TYPE_CHECKING:
-    from qureddy.core.models import ScanResult
+    from qureddy.core.models import ProbeResult, ScanResult
 
 
-def _commands_panel(result: ScanResult) -> Panel | None:
-    """At `-vvv` only: dump the exact OpenSSL invocations.
+def _command_text(probe: ProbeResult) -> Text:
+    """Render one probe's invocation as a `$ executable arg arg ...` line."""
+    cmd_line = Text("$ ", style="dim")
+    cmd_line.append(probe.command.executable, style="bold")
+    for arg in probe.command.args:
+        cmd_line.append(" ")
+        cmd_line.append(arg)
+    return cmd_line
 
-    Returns None when no probe was run (e.g., capability-failure path
-    that exited before any subprocess), so the panel doesn't render
-    a misleading empty box.
-    """
+
+def _meta_text(probe: ProbeResult) -> Text:
+    """Render one probe's return-code / duration / attempt metadata line."""
+    meta = Text("    ", style="dim")
+    meta.append(
+        f"return_code={probe.return_code} "
+        f"duration_ms={probe.duration_ms} "
+        f"attempt={probe.attempt_number}",
+    )
+    if probe.failure_category is not None:
+        meta.append(f" failure={probe.failure_category.value}", style="red")
+    return meta
+
+
+def _command_lines(result: ScanResult) -> list[Text]:
+    """Collect the deduplicated command + metadata lines for every probe."""
     lines: list[Text] = []
     seen: set[tuple[str, ...]] = set()
     for ev in result.evidence:
@@ -31,32 +49,33 @@ def _commands_panel(result: ScanResult) -> Panel | None:
         if rendered in seen:
             continue
         seen.add(rendered)
-        cmd_line = Text("$ ", style="dim")
-        cmd_line.append(probe.command.executable, style="bold")
-        for arg in probe.command.args:
-            cmd_line.append(" ")
-            cmd_line.append(arg)
-        lines.append(cmd_line)
-        meta = Text("    ", style="dim")
-        meta.append(
-            f"return_code={probe.return_code} "
-            f"duration_ms={probe.duration_ms} "
-            f"attempt={probe.attempt_number}",
-        )
-        if probe.failure_category is not None:
-            meta.append(f" failure={probe.failure_category.value}", style="red")
-        lines.append(meta)
-    if not lines:
-        return None
+        lines.extend((_command_text(probe), _meta_text(probe)))
+    return lines
 
+
+def _commands_body(lines: list[Text]) -> Text:
+    """Join rendered lines into one newline-separated body Text."""
     body = Text()
     for i, line in enumerate(lines):
         if i:
             body.append("\n")
         body.append_text(line)
+    return body
+
+
+def _commands_panel(result: ScanResult) -> Panel | None:
+    """At `-vvv` only: dump the exact OpenSSL invocations.
+
+    Returns None when no probe was run (e.g., capability-failure path
+    that exited before any subprocess), so the panel doesn't render
+    a misleading empty box.
+    """
+    lines = _command_lines(result)
+    if not lines:
+        return None
 
     return Panel(
-        body,
+        _commands_body(lines),
         title="Commands run (-vvv)",
         title_align="left",
         border_style="dim",

@@ -33,6 +33,31 @@ def _clean_error_line(line: str) -> str:
     return f"{msg} (alert {alert.group('num')})" if alert else msg
 
 
+def _alert_line(lines: list[str]) -> str | None:
+    """Return the first line naming a TLS alert, or None."""
+    return next((line for line in lines if "alert" in line.lower()), None)
+
+
+def _timeout_line(lines: list[str]) -> str | None:
+    """Return the first `[qureddy] timeout after Ns` marker line, or None."""
+    return next((line for line in lines if "timeout after" in line), None)
+
+
+def _select_error_line(lines: list[str]) -> str:
+    """Choose the most informative raw stderr line from `lines`.
+
+    Prefers the actual TLS alert line (e.g. `tlsv1 alert insufficient
+    security`) over trailing teardown noise like `SSL_shutdown`; falls back
+    to the `[qureddy] timeout after Ns` marker, then the last line. Callers
+    guarantee `lines` is non-empty.
+    """
+    alert = _alert_line(lines)
+    if alert is not None:
+        return alert
+    timeout = _timeout_line(lines)
+    return timeout if timeout is not None else lines[-1]
+
+
 def _last_error_line(probe: ProbeResult) -> str:
     """Return the most informative single line from a failing probe's stderr.
 
@@ -44,11 +69,32 @@ def _last_error_line(probe: ProbeResult) -> str:
     lines = [line.strip() for line in probe.stderr_excerpt.splitlines() if line.strip()]
     if not lines:
         return "(no error output captured)"
-    alert_line = next((line for line in lines if "alert" in line.lower()), None)
-    if alert_line is not None:
-        return _clean_error_line(alert_line)
-    timeout_line = next((line for line in lines if "timeout after" in line), None)
-    return _clean_error_line(timeout_line if timeout_line is not None else lines[-1])
+    return _clean_error_line(_select_error_line(lines))
+
+
+def _probe_group(probe: ProbeResult, fallback: str) -> str:
+    """Name the key-exchange group a probe exercised, for the Errors table.
+
+    Picks the first ML-KEM hybrid or classical group name from the probe's
+    command args (what the reader recognizes), falling back to the generic
+    evidence type when the args name no known group.
+    """
+    return next(
+        (a for a in probe.command.args if "MLKEM" in a or a in {"X25519", "P-256"}),
+        fallback,
+    )
+
+
+def _error_rows(result: ScanResult) -> list[tuple[str, str, str]]:
+    """Build (group, attempt, detail) rows for every failing probe attempt."""
+    rows: list[tuple[str, str, str]] = []
+    for ev in result.evidence:
+        probe = ev.probe_result
+        if probe is None or probe.failure_category is None:
+            continue
+        group = _probe_group(probe, ev.evidence_type)
+        rows.append((group, str(probe.attempt_number), _last_error_line(probe)))
+    return rows
 
 
 def _errors_table(result: ScanResult) -> Table | None:
@@ -59,16 +105,7 @@ def _errors_table(result: ScanResult) -> Table | None:
     only the bucketed `failure_category`. Returns None when nothing
     failed, so a clean scan shows no Errors section (issue #276).
     """
-    rows: list[tuple[str, str, str]] = []
-    for ev in result.evidence:
-        probe = ev.probe_result
-        if probe is None or probe.failure_category is None:
-            continue
-        group = next(
-            (a for a in probe.command.args if "MLKEM" in a or a in {"X25519", "P-256"}),
-            ev.evidence_type,
-        )
-        rows.append((group, str(probe.attempt_number), _last_error_line(probe)))
+    rows = _error_rows(result)
     if not rows:
         return None
     table = Table(
