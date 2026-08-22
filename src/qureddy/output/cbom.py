@@ -35,9 +35,9 @@ from cyclonedx.model.tool import ToolRepository
 from cyclonedx.output.json import JsonV1Dot7
 
 from qureddy.core.models import ObservationType, ScanResult
+from qureddy.output.cbom_assets import ENDPOINT_REF
 from qureddy.output.cbom_components import (
     CERTIFICATE_REF,
-    ENDPOINT_REF,
     add_algorithm_components,
     add_certificate_component,
     add_cipher_suite_components,

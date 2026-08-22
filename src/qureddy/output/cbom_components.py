@@ -15,7 +15,6 @@ from datetime import UTC, datetime
 from types import MappingProxyType
 from typing import TYPE_CHECKING, NamedTuple
 
-from cyclonedx.model import Property
 from cyclonedx.model.bom_ref import BomRef
 from cyclonedx.model.component import Component, ComponentType
 from cyclonedx.model.crypto import (
@@ -30,7 +29,11 @@ from cyclonedx.model.crypto import (
     ProtocolPropertiesType,
 )
 
-from qureddy.core.models import ObservationType
+from qureddy.output.cbom_assets import (
+    ENDPOINT_REF,
+    POSITIVE_OBSERVATIONS,
+    add_algorithm_assets,
+)
 from qureddy.scanners.tls.cert_sig import classify_pqc_signature
 
 if TYPE_CHECKING:
@@ -39,70 +42,30 @@ if TYPE_CHECKING:
     from qureddy.core.certificate import CertificateObservation
     from qureddy.core.models import Evidence, ScanResult
 
-ENDPOINT_REF = "endpoint"
 CERTIFICATE_REF = "crypto/certificate/leaf"
 # SSH evidence types handled by the SSH-specific emitters in cbom_ssh (host keys as
 # signatures, KEX groups with SSH KEX-name classification), skipped by the shared
 # TLS-oriented algorithm emitter so no bom-ref is emitted twice.
 _SSH_EVIDENCE_TYPES = frozenset({"ssh.hostkey", "ssh.kex", "ssh.kex.weak", "ssh.cipher", "ssh.mac"})
-POSITIVE_OBSERVATIONS = frozenset(
-    {ObservationType.NEGOTIATED, ObservationType.OFFERED, ObservationType.OBSERVED}
-)
-
-
-# Strongest-signal ordering: a group seen negotiated outranks one merely offered or
-# observed on a control probe, so the CBOM records the actual handshake outcome (#150).
-OBSERVATION_RANK: MappingProxyType[ObservationType, int] = MappingProxyType(
-    {
-        ObservationType.OBSERVED: 0,
-        ObservationType.OFFERED: 1,
-        ObservationType.NEGOTIATED: 2,
-    }
-)
 
 
 def add_algorithm_components(
     bom: Bom, result: ScanResult, provides_edges: dict[str, list[str]]
 ) -> dict[str, str]:
-    """Add one cryptographic asset per unique positively observed group.
+    """Add one cryptographic asset per unique positively observed TLS group.
 
-    Each component records the strongest observation seen for that group
-    (`qureddy:observation`) so a consumer can tell the negotiated group from one
-    merely offered or seen on a classical control probe (#150).
+    SSH evidence gets its own SSH-specific classified components (host keys are
+    signature primitives, #143; KEX groups need SSH KEX-name classification, #241/#242),
+    so this shared TLS-oriented emitter skips SSH evidence types — nothing is emitted
+    twice under the same bom-ref.
     """
-    algorithm_refs: dict[str, str] = {}
-    groups: dict[str, ObservationType] = {}
-    for evidence in result.evidence:
-        # SSH evidence gets its own SSH-specific classified components: host keys are
-        # signature primitives (add_ssh_host_key_components, #143) and KEX groups need
-        # SSH KEX-name classification for algorithmProperties (add_ssh_kex_components,
-        # #241/#242). This shared TLS-oriented emitter skips both so nothing is emitted
-        # twice under the same bom-ref.
-        if (
-            evidence.observation_type in POSITIVE_OBSERVATIONS
-            and evidence.negotiated_group
-            and evidence.evidence_type not in _SSH_EVIDENCE_TYPES
-        ):
-            seen = groups.get(evidence.negotiated_group)
-            if seen is None or OBSERVATION_RANK[evidence.observation_type] > OBSERVATION_RANK[seen]:
-                groups[evidence.negotiated_group] = evidence.observation_type
-    for group in sorted(groups):
-        ref = f"crypto/algorithm/{group.lower()}"
-        bom.components.add(
-            Component(
-                name=group,
-                type=ComponentType.CRYPTOGRAPHIC_ASSET,
-                bom_ref=ref,
-                crypto_properties=CryptoProperties(
-                    asset_type=CryptoAssetType.ALGORITHM,
-                    algorithm_properties=_algorithm_properties(group),
-                ),
-                properties=[Property(name="qureddy:observation", value=groups[group].value)],
-            )
-        )
-        algorithm_refs[group] = ref
-        provides_edges.setdefault(ENDPOINT_REF, []).append(ref)
-    return algorithm_refs
+    return add_algorithm_assets(
+        bom,
+        result,
+        provides_edges,
+        select=lambda e: e.negotiated_group if e.evidence_type not in _SSH_EVIDENCE_TYPES else None,
+        algorithm_properties=_algorithm_properties,
+    )
 
 
 # Classical security strength (bits) of the TLS 1.3 AEAD cipher suites qureddy observes.
@@ -116,6 +79,14 @@ _CIPHER_SUITE_BITS: MappingProxyType[str, int] = MappingProxyType(
 )
 
 
+def _cipher_suite_properties(suite: str) -> AlgorithmProperties | None:
+    """AEAD algorithmProperties for a TLS 1.3 cipher suite, keyed by classical bits."""
+    bits = _CIPHER_SUITE_BITS.get(suite)
+    if bits is None:
+        return None
+    return AlgorithmProperties(primitive=CryptoPrimitive.AE, classical_security_level=bits)
+
+
 def add_cipher_suite_components(
     bom: Bom, result: ScanResult, provides_edges: dict[str, list[str]]
 ) -> None:
@@ -125,33 +96,13 @@ def add_cipher_suite_components(
     `protocolProperties.cipherSuites`, so a core symmetric asset of the connection had
     no standalone component. Each carries the strongest observation seen for it.
     """
-    suites: dict[str, ObservationType] = {}
-    for evidence in result.evidence:
-        if evidence.observation_type in POSITIVE_OBSERVATIONS and evidence.cipher_suite:
-            seen = suites.get(evidence.cipher_suite)
-            if seen is None or OBSERVATION_RANK[evidence.observation_type] > OBSERVATION_RANK[seen]:
-                suites[evidence.cipher_suite] = evidence.observation_type
-    for suite in sorted(suites):
-        ref = f"crypto/algorithm/{suite.lower()}"
-        bits = _CIPHER_SUITE_BITS.get(suite)
-        algorithm_properties = (
-            AlgorithmProperties(primitive=CryptoPrimitive.AE, classical_security_level=bits)
-            if bits is not None
-            else None
-        )
-        bom.components.add(
-            Component(
-                name=suite,
-                type=ComponentType.CRYPTOGRAPHIC_ASSET,
-                bom_ref=ref,
-                crypto_properties=CryptoProperties(
-                    asset_type=CryptoAssetType.ALGORITHM,
-                    algorithm_properties=algorithm_properties,
-                ),
-                properties=[Property(name="qureddy:observation", value=suites[suite].value)],
-            )
-        )
-        provides_edges.setdefault(ENDPOINT_REF, []).append(ref)
+    add_algorithm_assets(
+        bom,
+        result,
+        provides_edges,
+        select=lambda e: e.cipher_suite,
+        algorithm_properties=_cipher_suite_properties,
+    )
 
 
 # Structured classification for the key-exchange groups qureddy positively observes, so a
