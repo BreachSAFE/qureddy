@@ -219,3 +219,20 @@ class TestParseSshTarget:
     def test_rejected_forms(self, target: str) -> None:
         with pytest.raises(TargetParseError):
             parse_ssh_target(target)
+
+
+class TestScanTargetValidationErrorWrapped:
+    """A host that clears string checks but trips a ScanTarget field validator must
+    surface as TargetParseError, never a leaked pydantic ValidationError (#325 —
+    found by the SSH-target fuzz harness)."""
+
+    # The exact bracket-bearing IPv6-ish input the atheris-3.14 fuzz gate crashed on.
+    _CRASH = "::%+:\x06+.\x06:3\x00:+::*.:..\x06:[:"
+
+    def test_ssh_target_wraps_validation_error(self) -> None:
+        with pytest.raises(TargetParseError):
+            parse_ssh_target(self._CRASH)
+
+    def test_tls_target_wraps_validation_error(self) -> None:
+        with pytest.raises(TargetParseError):
+            parse_target(self._CRASH)

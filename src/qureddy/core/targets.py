@@ -8,8 +8,41 @@ import ipaddress
 import re
 from urllib.parse import ParseResult, urlparse
 
+from pydantic import ValidationError
+
 from qureddy.core.errors import TargetParseError
 from qureddy.core.models import ScanTarget
+
+
+def _build_scan_target(
+    *,
+    original_input: str,
+    host: str,
+    port: int,
+    locator: str,
+    sni: str | None = None,
+    scheme: str = "tls",
+) -> ScanTarget:
+    """Build a ``ScanTarget``, converting pydantic errors to ``TargetParseError``.
+
+    The parsers promise to raise only ``TargetParseError`` (never a pydantic
+    error). A host that clears the string-level checks but still trips a
+    ``ScanTarget`` field validator (e.g. a bracket-bearing IPv6-ish value, found
+    by the SSH-target fuzz harness) must surface as ``TargetParseError``, not a
+    leaked ``ValidationError``.
+    """
+    try:
+        return ScanTarget(
+            original_input=original_input,
+            host=host,
+            port=port,
+            sni=sni,
+            scheme=scheme,
+            locator=locator,
+        )
+    except ValidationError as exc:
+        detail = exc.errors()[0].get("msg", "invalid target") if exc.errors() else "invalid target"
+        raise TargetParseError(f"invalid target: {detail}") from exc
 
 DEFAULT_PORT = 443
 HOSTNAME_PATTERN = re.compile(
@@ -73,7 +106,7 @@ def parse_target(
     # side — ScanTarget's own locator_matches_endpoint validator now
     # requires the bracketed form, which this was silently not producing.
     rendered_host = f"[{host}]" if ":" in host else host
-    return ScanTarget(
+    return _build_scan_target(
         original_input=input_str,
         host=host,
         port=port,
@@ -306,7 +339,7 @@ def parse_ssh_target(input_str: str, *, block_internal: bool = False) -> ScanTar
     host, _ = _validate_and_classify_host(host, invalid_prefix="invalid SSH host")
     _reject_internal_target(host, block_internal=block_internal)
     rendered = f"[{host}]" if ":" in host else host
-    return ScanTarget(
+    return _build_scan_target(
         original_input=input_str,
         host=host,
         port=port,
