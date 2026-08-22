@@ -634,6 +634,29 @@ class TestOccurrenceProvenanceGrammar:
         assert fields["return_code"] == "0"
         assert len(fields["command_sha256"]) == 64
 
+    def test_confidence_field_on_every_occurrence(self) -> None:
+        # #326: confidence is preserved as a queryable field on every occurrence.
+        for occurrence in _all_occurrences(_render(_build_result_with_probe("/usr/bin/openssl"))):
+            assert "confidence" in _parse_occurrence_context(occurrence["additionalContext"])
+
+    def test_subjectless_evidence_attaches_to_endpoint(self) -> None:
+        # #326: evidence with no crypto subject (a bare cert/failure record) is no longer
+        # dropped — it becomes an occurrence on the endpoint, so every evidence item maps.
+        base = _build_result()
+        subjectless = Evidence(
+            id="ev-cert",
+            asset_id=base.assets[0].id,
+            evidence_type="tls.cert.signature",
+            observation_type=ObservationType.NOT_TESTABLE,
+            source="qureddy.scanners.tls.cert_sig",
+        )
+        result = base.model_copy(update={"evidence": (*base.evidence, subjectless)})
+        payload = _render(result)
+        endpoint_occ = payload["metadata"]["component"].get("evidence", {}).get("occurrences", [])
+        assert any(
+            "evidence_type=tls.cert.signature" in o["additionalContext"] for o in endpoint_occ
+        )
+
 
 class TestReproducibleHostPathCanonicalization:
     """Reproducible CBOM must not encode host-specific probe executable paths (#207)."""
