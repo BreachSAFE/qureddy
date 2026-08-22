@@ -1,7 +1,14 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
 # SPDX-License-Identifier: Apache-2.0
 
+# The image builds the wheel from source in an in-image stage (#253), so the
+# build context ships the source tree the wheel target needs — not a host-built
+# dist/ artifact. Everything else stays out of the context.
 *
 !Dockerfile
-!dist/
-!dist/breachsafe_qureddy-*.whl
+!pyproject.toml
+!README.md
+!LICENSE
+!NOTICE
+!LICENSES/
+!src/

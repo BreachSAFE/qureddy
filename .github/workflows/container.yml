@@ -56,8 +56,8 @@ jobs:
           VERSION="$(grep -m1 -E '^version[[:space:]]*=' pyproject.toml | sed -E 's/.*"([^"]+)".*/\1/')"
           test -n "$VERSION" || { echo "ERROR: could not read version from pyproject.toml" >&2; exit 1; }
           echo "QUREDDY_VERSION=$VERSION" >> "$GITHUB_ENV"
-      - name: Build release wheel
-        run: uv tool run --from "build==1.3.0" python -m build --wheel
+      # The image builds its own wheel from source in an in-image stage (#253),
+      # so no host `python -m build` prestep is needed.
       - name: Build image
         run: |
           docker build \

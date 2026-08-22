@@ -74,14 +74,17 @@ Replace the tag with the returned `@sha256:...` reference in production jobs.
 
 ## 6. Build locally
 
+A fresh clone builds with no prerequisites; the image builds the wheel from
+source in an in-image stage, so no host `python -m build` step is needed:
+
 ```bash
-python -m build --wheel
 docker build --tag qureddy:local .
 docker run --rm qureddy:local --version
 ```
 
-The Dockerfile verifies the OpenSSL source archive SHA-256 before compiling
-and copies only the installed runtime into the final image.
+The Dockerfile verifies the OpenSSL source archive SHA-256 before compiling,
+builds the wheel from source, and copies only the installed runtime into the
+final image.
 
 ## 7. Publish a release image
 

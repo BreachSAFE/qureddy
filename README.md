@@ -85,6 +85,15 @@ docker run --rm ghcr.io/breachsafe/qureddy:latest \
 For reproducible deployments, pin an explicit version tag (for example
 `ghcr.io/breachsafe/qureddy:<version>`) or a `@sha256:` digest instead of `:latest`.
 
+To build the image from a fresh clone instead of pulling it, run `docker build`
+from the repository root. The image builds the wheel from source in an in-image
+stage, so no separate wheel-build step is required:
+
+```bash
+docker build --tag qureddy:local .
+docker run --rm qureddy:local --version
+```
+
 See the [Docker and GHCR guide](docs/how-to/docker.md)
 for digest pinning, local builds, output redirection, and publication policy.
 
