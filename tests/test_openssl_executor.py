@@ -129,3 +129,23 @@ class TestRaiseForLaunch:
     def test_timeout_on_ok_launch_does_not_raise(self) -> None:
         # A timeout is a per-site policy decision, not a launch failure.
         raise_for_launch(self._outcome(LaunchStatus.OK, timed_out=True), "/x/openssl")
+
+
+class TestCoerceStream:
+    """_coerce_stream normalizes partial timeout output to str (#296)."""
+
+    def test_none_becomes_empty_string(self) -> None:
+        from qureddy.scanners.tls.openssl_probe.executor import _coerce_stream
+
+        assert _coerce_stream(None) == ""
+
+    def test_bytes_are_utf8_decoded_replacing_errors(self) -> None:
+        from qureddy.scanners.tls.openssl_probe.executor import _coerce_stream
+
+        assert _coerce_stream(b"ok\xff") == "ok�"
+
+    def test_str_passes_through_unchanged(self) -> None:
+        # The real text=True TimeoutExpired path: partial output is already str.
+        from qureddy.scanners.tls.openssl_probe.executor import _coerce_stream
+
+        assert _coerce_stream("already text") == "already text"
