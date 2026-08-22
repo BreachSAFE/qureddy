@@ -64,9 +64,7 @@ def test_pq_cloudflareresearch_hybrid(scanner: TLSScanner) -> None:
     target = parse_target("pq.cloudflareresearch.com")
     result = scanner.scan(target)
     hybrid_findings = [
-        finding
-        for finding in result.findings
-        if finding.rule_id == "tls.hybrid.negotiated_x25519mlkem768"
+        finding for finding in result.findings if finding.rule_id == "tls.hybrid.negotiated_pq"
     ]
     assert hybrid_findings
     assert hybrid_findings[0].negotiated_group == "X25519MLKEM768"

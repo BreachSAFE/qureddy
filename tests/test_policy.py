@@ -62,7 +62,7 @@ class TestCoverageProbeRole:
 
 
 class TestHybridNegotiatedRule:
-    def test_negotiated_x25519mlkem768_produces_transitional_hybrid(self) -> None:
+    def test_negotiated_pq_hybrid_produces_transitional_hybrid(self) -> None:
         ev = _evidence(negotiated_group="X25519MLKEM768")
         findings = classify_evidence(_asset(), [ev])
         assert len(findings) == 1

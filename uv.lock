@@ -142,7 +142,7 @@ wheels = [
 
 [[package]]
 name = "breachsafe-qureddy"
-version = "0.2.33"
+version = "0.2.34"
 source = { editable = "." }
 dependencies = [
     { name = "click" },
