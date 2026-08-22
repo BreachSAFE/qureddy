@@ -2,7 +2,7 @@ fixture: p2-classical-tls
 classification: minimized-from-captured
 command: qureddy scan tls 192.0.2.10 --format cbom --openssl tests/conformance/shims/openssl_classical_replay.sh
 exit_code: 0
-captured_utc: 2026-08-22T07:11:04Z
-producer_commit: 6f212ce365409995a17a81c0000b0ad8971d2f5f
-installed_wheel_sha256: f2dd6568e966dbc0ffe969435de45c1c5b9ea9623e7a957128d8b9ac2920beb2
-sha256: a89f914d7a8216e8eafddce58c75d4d66ec61151ac9ba599ed86fde2f9cf06bd
+captured_utc: 2026-08-22T07:38:01Z
+producer_commit: c512f2c03225bd326c4d7d8fefbaf7a57f385728
+installed_wheel_sha256: 5574a88a0f9be524f7fe4f9f38669bf48b5c92ec22961fd77a24e47733827e0b
+sha256: 43f387123df849ff9c6f02990fea4fca3bbd87776ac09f59554c174ea261ff98

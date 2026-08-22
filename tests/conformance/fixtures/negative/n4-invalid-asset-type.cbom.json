@@ -75,11 +75,11 @@
         "occurrences": [
           {
             "location": "qureddy.scanners.tls.parse",
-            "additionalContext": "observed on tls.probe.parse (role=hybrid_readiness, expected=X25519MLKEM768, return_code=0, command_sha256=176b2514e20d878b9ed8fe8b3426b772f74be8a4f73d18b7fae8e3feab77ccd4)"
+            "additionalContext": "observation=observed; evidence_type=tls.probe.parse; role=hybrid_readiness; expected=X25519MLKEM768; return_code=0; command_sha256=176b2514e20d878b9ed8fe8b3426b772f74be8a4f73d18b7fae8e3feab77ccd4"
           },
           {
             "location": "qureddy.scanners.tls.parse",
-            "additionalContext": "negotiated on tls.negotiation (role=classical_control, expected=X25519, return_code=0, command_sha256=a665419360ba2b998b261a34deaa5c69b792ca7517ac8ee584c7c92e9243d5c2)"
+            "additionalContext": "observation=negotiated; evidence_type=tls.negotiation; role=classical_control; expected=X25519; return_code=0; command_sha256=a665419360ba2b998b261a34deaa5c69b792ca7517ac8ee584c7c92e9243d5c2"
           }
         ]
       }

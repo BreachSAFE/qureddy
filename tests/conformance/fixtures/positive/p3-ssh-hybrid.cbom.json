@@ -33,7 +33,7 @@
         "occurrences": [
           {
             "location": "qureddy.scanners.ssh.probe",
-            "additionalContext": "offered on ssh.cipher"
+            "additionalContext": "observation=offered; evidence_type=ssh.cipher"
           }
         ]
       }
@@ -59,7 +59,7 @@
         "occurrences": [
           {
             "location": "qureddy.scanners.ssh.probe",
-            "additionalContext": "offered on ssh.cipher"
+            "additionalContext": "observation=offered; evidence_type=ssh.cipher"
           }
         ]
       }
@@ -85,7 +85,7 @@
         "occurrences": [
           {
             "location": "qureddy.scanners.ssh.probe",
-            "additionalContext": "offered on ssh.cipher"
+            "additionalContext": "observation=offered; evidence_type=ssh.cipher"
           }
         ]
       }
@@ -111,7 +111,7 @@
         "occurrences": [
           {
             "location": "qureddy.scanners.ssh.probe",
-            "additionalContext": "offered on ssh.cipher"
+            "additionalContext": "observation=offered; evidence_type=ssh.cipher"
           }
         ]
       }
@@ -137,7 +137,7 @@
         "occurrences": [
           {
             "location": "qureddy.scanners.ssh.probe",
-            "additionalContext": "offered on ssh.cipher"
+            "additionalContext": "observation=offered; evidence_type=ssh.cipher"
           }
         ]
       }
@@ -163,7 +163,7 @@
         "occurrences": [
           {
             "location": "qureddy.scanners.ssh.probe",
-            "additionalContext": "offered on ssh.cipher"
+            "additionalContext": "observation=offered; evidence_type=ssh.cipher"
           }
         ]
       }
@@ -193,7 +193,7 @@
         "occurrences": [
           {
             "location": "qureddy.scanners.ssh.probe",
-            "additionalContext": "offered on ssh.kex"
+            "additionalContext": "observation=offered; evidence_type=ssh.kex"
           }
         ]
       }
@@ -223,7 +223,7 @@
         "occurrences": [
           {
             "location": "qureddy.scanners.ssh.probe",
-            "additionalContext": "offered on ssh.kex"
+            "additionalContext": "observation=offered; evidence_type=ssh.kex"
           }
         ]
       }
@@ -252,7 +252,7 @@
         "occurrences": [
           {
             "location": "qureddy.scanners.ssh.probe",
-            "additionalContext": "offered on ssh.kex"
+            "additionalContext": "observation=offered; evidence_type=ssh.kex"
           }
         ]
       }
@@ -282,7 +282,7 @@
         "occurrences": [
           {
             "location": "qureddy.scanners.ssh.probe",
-            "additionalContext": "offered on ssh.kex"
+            "additionalContext": "observation=offered; evidence_type=ssh.kex"
           }
         ]
       }
@@ -312,7 +312,7 @@
         "occurrences": [
           {
             "location": "qureddy.scanners.ssh.probe",
-            "additionalContext": "offered on ssh.kex"
+            "additionalContext": "observation=offered; evidence_type=ssh.kex"
           }
         ]
       }
@@ -342,7 +342,7 @@
         "occurrences": [
           {
             "location": "qureddy.scanners.ssh.probe",
-            "additionalContext": "offered on ssh.kex"
+            "additionalContext": "observation=offered; evidence_type=ssh.kex"
           }
         ]
       }
@@ -372,7 +372,7 @@
         "occurrences": [
           {
             "location": "qureddy.scanners.ssh.probe",
-            "additionalContext": "offered on ssh.hostkey"
+            "additionalContext": "observation=offered; evidence_type=ssh.hostkey"
           }
         ]
       }
@@ -397,7 +397,7 @@
         "occurrences": [
           {
             "location": "qureddy.scanners.ssh.probe",
-            "additionalContext": "offered on ssh.mac"
+            "additionalContext": "observation=offered; evidence_type=ssh.mac"
           }
         ]
       }
@@ -422,7 +422,7 @@
         "occurrences": [
           {
             "location": "qureddy.scanners.ssh.probe",
-            "additionalContext": "offered on ssh.mac"
+            "additionalContext": "observation=offered; evidence_type=ssh.mac"
           }
         ]
       }
@@ -447,7 +447,7 @@
         "occurrences": [
           {
             "location": "qureddy.scanners.ssh.probe",
-            "additionalContext": "offered on ssh.mac"
+            "additionalContext": "observation=offered; evidence_type=ssh.mac"
           }
         ]
       }
@@ -472,7 +472,7 @@
         "occurrences": [
           {
             "location": "qureddy.scanners.ssh.probe",
-            "additionalContext": "offered on ssh.mac"
+            "additionalContext": "observation=offered; evidence_type=ssh.mac"
           }
         ]
       }
@@ -502,7 +502,7 @@
         "occurrences": [
           {
             "location": "qureddy.scanners.ssh.probe",
-            "additionalContext": "offered on ssh.hostkey"
+            "additionalContext": "observation=offered; evidence_type=ssh.hostkey"
           }
         ]
       }
@@ -532,7 +532,7 @@
         "occurrences": [
           {
             "location": "qureddy.scanners.ssh.probe",
-            "additionalContext": "offered on ssh.hostkey"
+            "additionalContext": "observation=offered; evidence_type=ssh.hostkey"
           }
         ]
       }
@@ -576,7 +576,7 @@
         "occurrences": [
           {
             "location": "qureddy.scanners.ssh.probe",
-            "additionalContext": "offered on ssh.kex"
+            "additionalContext": "observation=offered; evidence_type=ssh.kex"
           }
         ]
       }
@@ -608,7 +608,7 @@
         "occurrences": [
           {
             "location": "qureddy.scanners.ssh.probe",
-            "additionalContext": "offered on ssh.kex"
+            "additionalContext": "observation=offered; evidence_type=ssh.kex"
           }
         ]
       }
@@ -638,7 +638,7 @@
         "occurrences": [
           {
             "location": "qureddy.scanners.ssh.probe",
-            "additionalContext": "offered on ssh.hostkey"
+            "additionalContext": "observation=offered; evidence_type=ssh.hostkey"
           }
         ]
       }
@@ -668,7 +668,7 @@
         "occurrences": [
           {
             "location": "qureddy.scanners.ssh.probe",
-            "additionalContext": "offered on ssh.hostkey"
+            "additionalContext": "observation=offered; evidence_type=ssh.hostkey"
           }
         ]
       }

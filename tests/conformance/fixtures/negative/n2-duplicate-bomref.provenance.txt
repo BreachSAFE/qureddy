@@ -2,6 +2,6 @@ fixture: n2-duplicate-bomref
 classification: synthetic-negative
 not_network_evidence: true
 derived_from: fixtures/positive/p2-classical-tls.cbom.json
-base_sha256: a89f914d7a8216e8eafddce58c75d4d66ec61151ac9ba599ed86fde2f9cf06bd
+base_sha256: 43f387123df849ff9c6f02990fea4fca3bbd87776ac09f59554c174ea261ff98
 mutation: first component duplicated
-sha256: 399ed0b8f88419c601a83265281d5039bcbb5abf50a4cb1f1d81634a79da988a
+sha256: edf827f6fccdc2c005628bb58214afc7a5a78c0ec57bad695ac05abf7aa5c782

@@ -2,6 +2,6 @@ fixture: n1-wrong-specversion
 classification: synthetic-negative
 not_network_evidence: true
 derived_from: fixtures/positive/p2-classical-tls.cbom.json
-base_sha256: a89f914d7a8216e8eafddce58c75d4d66ec61151ac9ba599ed86fde2f9cf06bd
+base_sha256: 43f387123df849ff9c6f02990fea4fca3bbd87776ac09f59554c174ea261ff98
 mutation: specVersion changed to 1.6
-sha256: a14a4ae196bb561aab6f780d9c5cba5931485879d9ecf4080a92b6ea5f8c9a97
+sha256: afaaa912155e83acec84eb1c1055091ce154d2e0c79f111c77ee264a0d4c5863

@@ -29,7 +29,7 @@
         "occurrences": [
           {
             "location": "qureddy.scanners.tls.legacy_probe",
-            "additionalContext": "offered on tls.legacy.cipher"
+            "additionalContext": "observation=offered; evidence_type=tls.legacy.cipher"
           }
         ]
       }
@@ -63,15 +63,15 @@
         "occurrences": [
           {
             "location": "qureddy.scanners.tls.legacy_probe",
-            "additionalContext": "offered on tls.legacy.cipher"
+            "additionalContext": "observation=offered; evidence_type=tls.legacy.cipher"
           },
           {
             "location": "qureddy.scanners.tls.legacy_probe",
-            "additionalContext": "offered on tls.legacy.cipher"
+            "additionalContext": "observation=offered; evidence_type=tls.legacy.cipher"
           },
           {
             "location": "qureddy.scanners.tls.legacy_probe",
-            "additionalContext": "offered on tls.legacy.cipher"
+            "additionalContext": "observation=offered; evidence_type=tls.legacy.cipher"
           }
         ]
       }
@@ -105,7 +105,7 @@
         "occurrences": [
           {
             "location": "qureddy.scanners.tls.legacy_probe",
-            "additionalContext": "offered on tls.legacy.cipher"
+            "additionalContext": "observation=offered; evidence_type=tls.legacy.cipher"
           }
         ]
       }
@@ -139,15 +139,15 @@
         "occurrences": [
           {
             "location": "qureddy.scanners.tls.legacy_probe",
-            "additionalContext": "offered on tls.legacy.cipher"
+            "additionalContext": "observation=offered; evidence_type=tls.legacy.cipher"
           },
           {
             "location": "qureddy.scanners.tls.legacy_probe",
-            "additionalContext": "offered on tls.legacy.cipher"
+            "additionalContext": "observation=offered; evidence_type=tls.legacy.cipher"
           },
           {
             "location": "qureddy.scanners.tls.legacy_probe",
-            "additionalContext": "offered on tls.legacy.cipher"
+            "additionalContext": "observation=offered; evidence_type=tls.legacy.cipher"
           }
         ]
       }
@@ -198,7 +198,7 @@
         "occurrences": [
           {
             "location": "qureddy.scanners.tls.legacy_probe",
-            "additionalContext": "offered on tls.legacy.cipher"
+            "additionalContext": "observation=offered; evidence_type=tls.legacy.cipher"
           }
         ]
       }
@@ -232,15 +232,15 @@
         "occurrences": [
           {
             "location": "qureddy.scanners.tls.legacy_probe",
-            "additionalContext": "offered on tls.legacy.cipher"
+            "additionalContext": "observation=offered; evidence_type=tls.legacy.cipher"
           },
           {
             "location": "qureddy.scanners.tls.legacy_probe",
-            "additionalContext": "offered on tls.legacy.cipher"
+            "additionalContext": "observation=offered; evidence_type=tls.legacy.cipher"
           },
           {
             "location": "qureddy.scanners.tls.legacy_probe",
-            "additionalContext": "offered on tls.legacy.cipher"
+            "additionalContext": "observation=offered; evidence_type=tls.legacy.cipher"
           }
         ]
       }
@@ -274,7 +274,7 @@
         "occurrences": [
           {
             "location": "qureddy.scanners.tls.legacy_probe",
-            "additionalContext": "offered on tls.legacy.cipher"
+            "additionalContext": "observation=offered; evidence_type=tls.legacy.cipher"
           }
         ]
       }
@@ -308,15 +308,15 @@
         "occurrences": [
           {
             "location": "qureddy.scanners.tls.legacy_probe",
-            "additionalContext": "offered on tls.legacy.cipher"
+            "additionalContext": "observation=offered; evidence_type=tls.legacy.cipher"
           },
           {
             "location": "qureddy.scanners.tls.legacy_probe",
-            "additionalContext": "offered on tls.legacy.cipher"
+            "additionalContext": "observation=offered; evidence_type=tls.legacy.cipher"
           },
           {
             "location": "qureddy.scanners.tls.legacy_probe",
-            "additionalContext": "offered on tls.legacy.cipher"
+            "additionalContext": "observation=offered; evidence_type=tls.legacy.cipher"
           }
         ]
       }
@@ -350,7 +350,7 @@
         "occurrences": [
           {
             "location": "qureddy.scanners.tls.legacy_probe",
-            "additionalContext": "offered on tls.legacy.cipher"
+            "additionalContext": "observation=offered; evidence_type=tls.legacy.cipher"
           }
         ]
       }
@@ -384,7 +384,7 @@
         "occurrences": [
           {
             "location": "qureddy.scanners.tls.legacy_probe",
-            "additionalContext": "offered on tls.legacy.cipher"
+            "additionalContext": "observation=offered; evidence_type=tls.legacy.cipher"
           }
         ]
       }
@@ -418,15 +418,15 @@
         "occurrences": [
           {
             "location": "qureddy.scanners.tls.legacy_probe",
-            "additionalContext": "offered on tls.legacy.cipher"
+            "additionalContext": "observation=offered; evidence_type=tls.legacy.cipher"
           },
           {
             "location": "qureddy.scanners.tls.legacy_probe",
-            "additionalContext": "offered on tls.legacy.cipher"
+            "additionalContext": "observation=offered; evidence_type=tls.legacy.cipher"
           },
           {
             "location": "qureddy.scanners.tls.legacy_probe",
-            "additionalContext": "offered on tls.legacy.cipher"
+            "additionalContext": "observation=offered; evidence_type=tls.legacy.cipher"
           }
         ]
       }
@@ -460,7 +460,7 @@
         "occurrences": [
           {
             "location": "qureddy.scanners.tls.legacy_probe",
-            "additionalContext": "offered on tls.legacy.cipher"
+            "additionalContext": "observation=offered; evidence_type=tls.legacy.cipher"
           }
         ]
       }
@@ -494,15 +494,15 @@
         "occurrences": [
           {
             "location": "qureddy.scanners.tls.legacy_probe",
-            "additionalContext": "offered on tls.legacy.cipher"
+            "additionalContext": "observation=offered; evidence_type=tls.legacy.cipher"
           },
           {
             "location": "qureddy.scanners.tls.legacy_probe",
-            "additionalContext": "offered on tls.legacy.cipher"
+            "additionalContext": "observation=offered; evidence_type=tls.legacy.cipher"
           },
           {
             "location": "qureddy.scanners.tls.legacy_probe",
-            "additionalContext": "offered on tls.legacy.cipher"
+            "additionalContext": "observation=offered; evidence_type=tls.legacy.cipher"
           }
         ]
       }
@@ -536,7 +536,7 @@
         "occurrences": [
           {
             "location": "qureddy.scanners.tls.legacy_probe",
-            "additionalContext": "offered on tls.legacy.cipher"
+            "additionalContext": "observation=offered; evidence_type=tls.legacy.cipher"
           }
         ]
       }
@@ -574,7 +574,7 @@
         "occurrences": [
           {
             "location": "qureddy.scanners.tls.legacy_probe",
-            "additionalContext": "offered on tls.legacy.protocol"
+            "additionalContext": "observation=offered; evidence_type=tls.legacy.protocol"
           }
         ]
       },
@@ -608,7 +608,7 @@
         "occurrences": [
           {
             "location": "qureddy.scanners.tls.legacy_probe",
-            "additionalContext": "offered on tls.legacy.protocol"
+            "additionalContext": "observation=offered; evidence_type=tls.legacy.protocol"
           }
         ]
       },
@@ -642,7 +642,7 @@
         "occurrences": [
           {
             "location": "qureddy.scanners.tls.legacy_probe",
-            "additionalContext": "offered on tls.legacy.protocol"
+            "additionalContext": "observation=offered; evidence_type=tls.legacy.protocol"
           }
         ]
       },
@@ -719,7 +719,7 @@
         "occurrences": [
           {
             "location": "qureddy.scanners.tls.parse",
-            "additionalContext": "negotiated on tls.negotiation (role=classical_control, expected=X25519, return_code=0, command_sha256=d78f93f651acbf1c66e5d411490065b73ba0bffdcad62edfb105bd2ec3d02fbe)"
+            "additionalContext": "observation=negotiated; evidence_type=tls.negotiation; role=classical_control; expected=X25519; return_code=0; command_sha256=d78f93f651acbf1c66e5d411490065b73ba0bffdcad62edfb105bd2ec3d02fbe"
           }
         ]
       }
@@ -763,7 +763,7 @@
         "occurrences": [
           {
             "location": "qureddy.scanners.tls.parse",
-            "additionalContext": "negotiated on tls.negotiation (role=hybrid_readiness, expected=X25519MLKEM768, return_code=0, command_sha256=25b212e8621b880aeb82ad7143dfb3ba93c4553d9618a6f4c9367e7880e364e1)"
+            "additionalContext": "observation=negotiated; evidence_type=tls.negotiation; role=hybrid_readiness; expected=X25519MLKEM768; return_code=0; command_sha256=25b212e8621b880aeb82ad7143dfb3ba93c4553d9618a6f4c9367e7880e364e1"
           }
         ]
       }

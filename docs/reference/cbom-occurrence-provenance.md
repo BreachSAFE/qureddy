@@ -6,7 +6,14 @@ string that records how that observation was made. Since CycloneDX 1.7 gives an 
 no dedicated fields for scan provenance, QuReddy encodes it in `additionalContext` as a
 strict, queryable `key=value` grammar (#307) rather than a prose sentence.
 
-## Grammar
+## Contents
+
+1. [Grammar](#1-grammar)
+2. [Fields](#2-fields)
+3. [Example](#3-example)
+4. [Stability](#4-stability)
+
+## 1. Grammar
 
 ```
 additionalContext := pair ("; " pair)*
@@ -28,7 +35,7 @@ def parse(context: str) -> dict[str, str]:
 
 No value contains `"; "` or `"="`, so this split never loses data.
 
-## Fields
+## 2. Fields
 
 The pairs are emitted in this order. Only `observation` and `evidence_type` are always
 present; the rest appear when the underlying evidence carries them.
@@ -43,7 +50,7 @@ present; the rest appear when the underlying evidence carries them.
 | `command_sha256` | when probed | SHA-256 over the probe command. Attributed by executable basename, so it stays byte-stable across hosts and in `--reproducible` (#207). |
 | `duration_ms` | non-reproducible only | Probe wall-clock time. Omitted under `--reproducible` (#162). |
 
-## Example
+## 3. Example
 
 ```
 observation=negotiated; evidence_type=tls.negotiation; role=hybrid_readiness; expected=X25519MLKEM768; return_code=0; command_sha256=25b212e8621b880aeb82ad7143dfb3ba93c4553d9618a6f4c9367e7880e364e1
@@ -55,7 +62,7 @@ The minimal form, for a signal with no probe record:
 observation=offered; evidence_type=ssh.cipher
 ```
 
-## Stability
+## 4. Stability
 
 This grammar is a supported output contract. A consumer that keyed on the previous prose
 form (`"<observation> on <evidence_type> (...)"`) must migrate to the split-and-partition
