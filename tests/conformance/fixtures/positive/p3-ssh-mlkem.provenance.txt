@@ -2,8 +2,8 @@ fixture: p3-ssh-mlkem
 classification: captured
 command: qureddy scan ssh gitlab.com --format cbom
 exit_code: 0
-captured_utc: 2026-08-22T02:37:35Z
-producer_commit: eccbcd5909aca0c80eeaee557d67f282f88505c7
-installed_wheel_sha256: 7e83dc369a81d58f8ec9fefe11cea42255458e7781b57a3e6dcaabbfd935803a
+captured_utc: 2026-08-22T05:21:46Z
+producer_commit: f600081282f31eff8718314085c4b1f3c5ce4913
+installed_wheel_sha256: 667316dfad4bc6d39282ba45fe7da0fc5f8ae19bdfa132eb2d07ae40c54c76cb
 target: live gitlab.com:22
-sha256: 98d35f25f6190e449fce346ac75005850e3b5901e3c363db82efcc6fee350956
+sha256: 9697bac77d4640db69d18710d7dff3055bbb55a9f33bb269a0d0d95884be1879

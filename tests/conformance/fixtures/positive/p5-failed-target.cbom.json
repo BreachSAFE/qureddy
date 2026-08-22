@@ -12,15 +12,162 @@
     },
     "properties": [
       {
+        "name": "qureddy:evidence.00.attempt_number",
+        "value": "1"
+      },
+      {
+        "name": "qureddy:evidence.00.command_sha256",
+        "value": "cbca7fed522a48081edb25e6e1e667c872bae0950f58f819972eadfa36f30544"
+      },
+      {
+        "name": "qureddy:evidence.00.expected_group",
+        "value": "X25519MLKEM768"
+      },
+      {
+        "name": "qureddy:evidence.00.observation",
+        "value": "observed"
+      },
+      {
+        "name": "qureddy:evidence.00.probe_role",
+        "value": "hybrid_readiness"
+      },
+      {
+        "name": "qureddy:evidence.00.return_code",
+        "value": "1"
+      },
+      {
+        "name": "qureddy:evidence.00.source",
+        "value": "qureddy.openssl_probe"
+      },
+      {
+        "name": "qureddy:evidence.00.stderr_sha256",
+        "value": "b010ba277c16522c5c852222136d45cfa41349ed31728c883743dc0841960f45"
+      },
+      {
+        "name": "qureddy:evidence.00.type",
+        "value": "tls.probe.failure"
+      },
+      {
+        "name": "qureddy:evidence.01.attempt_number",
+        "value": "1"
+      },
+      {
+        "name": "qureddy:evidence.01.command_sha256",
+        "value": "e378ee3d81ab12f35dca2b683d6c64e3229e85b1784346daeb9860afb5a793cc"
+      },
+      {
+        "name": "qureddy:evidence.01.expected_group",
+        "value": "X25519"
+      },
+      {
+        "name": "qureddy:evidence.01.observation",
+        "value": "observed"
+      },
+      {
+        "name": "qureddy:evidence.01.probe_role",
+        "value": "classical_control"
+      },
+      {
+        "name": "qureddy:evidence.01.return_code",
+        "value": "1"
+      },
+      {
+        "name": "qureddy:evidence.01.source",
+        "value": "qureddy.openssl_probe"
+      },
+      {
+        "name": "qureddy:evidence.01.stderr_sha256",
+        "value": "b010ba277c16522c5c852222136d45cfa41349ed31728c883743dc0841960f45"
+      },
+      {
+        "name": "qureddy:evidence.01.type",
+        "value": "tls.probe.failure"
+      },
+      {
+        "name": "qureddy:finding.00.confidence",
+        "value": "medium"
+      },
+      {
+        "name": "qureddy:finding.00.finding_type",
+        "value": "tls.kex.probe_failed"
+      },
+      {
+        "name": "qureddy:finding.00.readiness",
+        "value": "unknown"
+      },
+      {
+        "name": "qureddy:finding.00.rule_id",
+        "value": "tls.hybrid.probe_failed"
+      },
+      {
+        "name": "qureddy:finding.00.severity",
+        "value": "info"
+      },
+      {
+        "name": "qureddy:finding.00.title",
+        "value": "TLS probe failed"
+      },
+      {
+        "name": "qureddy:finding.01.confidence",
+        "value": "high"
+      },
+      {
+        "name": "qureddy:finding.01.finding_type",
+        "value": "tls.kex.classical_control_rejected"
+      },
+      {
+        "name": "qureddy:finding.01.readiness",
+        "value": "not_applicable"
+      },
+      {
+        "name": "qureddy:finding.01.rule_id",
+        "value": "tls.classical.control_rejected"
+      },
+      {
+        "name": "qureddy:finding.01.severity",
+        "value": "info"
+      },
+      {
+        "name": "qureddy:finding.01.title",
+        "value": "Classical control probe rejected \u2014 no pure-classical fallback accepted"
+      },
+      {
         "name": "qureddy:scan.failure_category",
         "value": "target_connect_failed"
       },
       {
+        "name": "qureddy:scan.readiness",
+        "value": "unknown"
+      },
+      {
+        "name": "qureddy:scan.scanner_name",
+        "value": "tls"
+      },
+      {
         "name": "qureddy:scan.status",
         "value": "target_connect_failed"
+      },
+      {
+        "name": "qureddy:target.host",
+        "value": "192.0.2.1"
+      },
+      {
+        "name": "qureddy:target.locator",
+        "value": "tls://192.0.2.1:443"
+      },
+      {
+        "name": "qureddy:target.original_input",
+        "value": "192.0.2.1"
+      },
+      {
+        "name": "qureddy:target.port",
+        "value": "443"
+      },
+      {
+        "name": "qureddy:target.scheme",
+        "value": "tls"
       }
     ],
-    "timestamp": "2026-07-27T01:45:08.316110+00:00",
     "tools": {
       "components": [
         {
@@ -30,6 +177,14 @@
             {
               "name": "qureddy:collector.role",
               "value": "local-probe-runtime"
+            },
+            {
+              "name": "qureddy:openssl.supports_tls13_groups",
+              "value": "true"
+            },
+            {
+              "name": "qureddy:openssl.supports_x25519mlkem768",
+              "value": "true"
             }
           ],
           "type": "application",
@@ -39,12 +194,11 @@
           "bom-ref": "tool/qureddy",
           "name": "qureddy",
           "type": "application",
-          "version": "0.2.0"
+          "version": "0.2.22"
         }
       ]
     }
   },
-  "serialNumber": "urn:uuid:2d36ed64-f1c1-4983-a075-bcdc5c1ec628",
   "version": 1,
   "$schema": "http://cyclonedx.org/schema/bom-1.7.schema.json",
   "bomFormat": "CycloneDX",

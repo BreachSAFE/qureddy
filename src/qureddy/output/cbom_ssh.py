@@ -100,17 +100,40 @@ def add_ssh_host_key_components(
     )
 
 
+def _ssh_cipher_bits(name: str) -> int | None:
+    """Classical key strength (bits) for an SSH cipher, or None if unknown (#286)."""
+    lowered = name.lower()
+    if "chacha20" in lowered:
+        return 256
+    if "3des" in lowered:
+        return 112  # 3DES effective strength (NIST SP 800-57)
+    for size in (256, 192, 128):
+        if f"aes{size}" in lowered or f"aes-{size}" in lowered:
+            return size
+    return None
+
+
 def _ssh_cipher_properties(name: str) -> AlgorithmProperties:
-    """Classical (level 0) algorithmProperties for an SSH cipher; primitive from classifier."""
+    """Build algorithmProperties for an SSH cipher (#286).
+
+    Symmetric ciphers are quantum-resistant, so emit ``classicalSecurityLevel`` — the
+    same representation the TLS AEAD cipher suites use — rather than a misleading
+    ``nistQuantumSecurityLevel: 0`` that reads as "no quantum resistance". The primitive
+    comes from the shared SSH classifier.
+    """
     return AlgorithmProperties(
         primitive=CryptoPrimitive(classify.cipher_primitive(name)),
-        nist_quantum_security_level=0,
+        classical_security_level=_ssh_cipher_bits(name),
     )
 
 
 def _ssh_mac_properties(_name: str) -> AlgorithmProperties:
-    """Classical (level 0) algorithmProperties for an SSH MAC (name-independent)."""
-    return AlgorithmProperties(primitive=CryptoPrimitive.MAC, nist_quantum_security_level=0)
+    """Build algorithmProperties for an SSH MAC: primitive only (#286).
+
+    A MAC has no meaningful ``classicalSecurityLevel`` in key bits and is not a PQC
+    algorithm, so neither level is emitted rather than a misleading ``0``.
+    """
+    return AlgorithmProperties(primitive=CryptoPrimitive.MAC)
 
 
 def add_ssh_transport_components(

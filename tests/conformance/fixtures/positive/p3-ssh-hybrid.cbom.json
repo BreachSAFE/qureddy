@@ -16,7 +16,7 @@
       "bom-ref": "crypto/algorithm/aes128-ctr",
       "cryptoProperties": {
         "algorithmProperties": {
-          "nistQuantumSecurityLevel": 0,
+          "classicalSecurityLevel": 128,
           "primitive": "block-cipher"
         },
         "assetType": "algorithm"
@@ -34,7 +34,7 @@
       "bom-ref": "crypto/algorithm/aes128-gcm@openssh.com",
       "cryptoProperties": {
         "algorithmProperties": {
-          "nistQuantumSecurityLevel": 0,
+          "classicalSecurityLevel": 128,
           "primitive": "ae"
         },
         "assetType": "algorithm"
@@ -52,7 +52,7 @@
       "bom-ref": "crypto/algorithm/aes192-ctr",
       "cryptoProperties": {
         "algorithmProperties": {
-          "nistQuantumSecurityLevel": 0,
+          "classicalSecurityLevel": 192,
           "primitive": "block-cipher"
         },
         "assetType": "algorithm"
@@ -70,7 +70,7 @@
       "bom-ref": "crypto/algorithm/aes256-ctr",
       "cryptoProperties": {
         "algorithmProperties": {
-          "nistQuantumSecurityLevel": 0,
+          "classicalSecurityLevel": 256,
           "primitive": "block-cipher"
         },
         "assetType": "algorithm"
@@ -88,7 +88,7 @@
       "bom-ref": "crypto/algorithm/aes256-gcm@openssh.com",
       "cryptoProperties": {
         "algorithmProperties": {
-          "nistQuantumSecurityLevel": 0,
+          "classicalSecurityLevel": 256,
           "primitive": "ae"
         },
         "assetType": "algorithm"
@@ -106,7 +106,7 @@
       "bom-ref": "crypto/algorithm/chacha20-poly1305@openssh.com",
       "cryptoProperties": {
         "algorithmProperties": {
-          "nistQuantumSecurityLevel": 0,
+          "classicalSecurityLevel": 256,
           "primitive": "ae"
         },
         "assetType": "algorithm"
@@ -277,7 +277,6 @@
       "bom-ref": "crypto/algorithm/hmac-sha2-256",
       "cryptoProperties": {
         "algorithmProperties": {
-          "nistQuantumSecurityLevel": 0,
           "primitive": "mac"
         },
         "assetType": "algorithm"
@@ -295,7 +294,6 @@
       "bom-ref": "crypto/algorithm/hmac-sha2-256-etm@openssh.com",
       "cryptoProperties": {
         "algorithmProperties": {
-          "nistQuantumSecurityLevel": 0,
           "primitive": "mac"
         },
         "assetType": "algorithm"
@@ -313,7 +311,6 @@
       "bom-ref": "crypto/algorithm/hmac-sha2-512",
       "cryptoProperties": {
         "algorithmProperties": {
-          "nistQuantumSecurityLevel": 0,
           "primitive": "mac"
         },
         "assetType": "algorithm"
@@ -331,7 +328,6 @@
       "bom-ref": "crypto/algorithm/hmac-sha2-512-etm@openssh.com",
       "cryptoProperties": {
         "algorithmProperties": {
-          "nistQuantumSecurityLevel": 0,
           "primitive": "mac"
         },
         "assetType": "algorithm"
@@ -593,12 +589,12 @@
     },
     "properties": [
       {
-        "name": "qureddy:evidence.00.negotiated_group",
-        "value": "sntrup761x25519-sha512"
-      },
-      {
         "name": "qureddy:evidence.00.observation",
         "value": "offered"
+      },
+      {
+        "name": "qureddy:evidence.00.observed_algorithm",
+        "value": "sntrup761x25519-sha512"
       },
       {
         "name": "qureddy:evidence.00.protocol_version",
@@ -613,12 +609,12 @@
         "value": "ssh.kex"
       },
       {
-        "name": "qureddy:evidence.01.negotiated_group",
-        "value": "sntrup761x25519-sha512@openssh.com"
-      },
-      {
         "name": "qureddy:evidence.01.observation",
         "value": "offered"
+      },
+      {
+        "name": "qureddy:evidence.01.observed_algorithm",
+        "value": "sntrup761x25519-sha512@openssh.com"
       },
       {
         "name": "qureddy:evidence.01.protocol_version",
@@ -633,12 +629,12 @@
         "value": "ssh.kex"
       },
       {
-        "name": "qureddy:evidence.02.negotiated_group",
-        "value": "curve25519-sha256"
-      },
-      {
         "name": "qureddy:evidence.02.observation",
         "value": "offered"
+      },
+      {
+        "name": "qureddy:evidence.02.observed_algorithm",
+        "value": "curve25519-sha256"
       },
       {
         "name": "qureddy:evidence.02.protocol_version",
@@ -653,12 +649,12 @@
         "value": "ssh.kex"
       },
       {
-        "name": "qureddy:evidence.03.negotiated_group",
-        "value": "curve25519-sha256@libssh.org"
-      },
-      {
         "name": "qureddy:evidence.03.observation",
         "value": "offered"
+      },
+      {
+        "name": "qureddy:evidence.03.observed_algorithm",
+        "value": "curve25519-sha256@libssh.org"
       },
       {
         "name": "qureddy:evidence.03.protocol_version",
@@ -673,12 +669,12 @@
         "value": "ssh.kex"
       },
       {
-        "name": "qureddy:evidence.04.negotiated_group",
-        "value": "ecdh-sha2-nistp256"
-      },
-      {
         "name": "qureddy:evidence.04.observation",
         "value": "offered"
+      },
+      {
+        "name": "qureddy:evidence.04.observed_algorithm",
+        "value": "ecdh-sha2-nistp256"
       },
       {
         "name": "qureddy:evidence.04.protocol_version",
@@ -693,12 +689,12 @@
         "value": "ssh.kex"
       },
       {
-        "name": "qureddy:evidence.05.negotiated_group",
-        "value": "ecdh-sha2-nistp384"
-      },
-      {
         "name": "qureddy:evidence.05.observation",
         "value": "offered"
+      },
+      {
+        "name": "qureddy:evidence.05.observed_algorithm",
+        "value": "ecdh-sha2-nistp384"
       },
       {
         "name": "qureddy:evidence.05.protocol_version",
@@ -713,12 +709,12 @@
         "value": "ssh.kex"
       },
       {
-        "name": "qureddy:evidence.06.negotiated_group",
-        "value": "ecdh-sha2-nistp521"
-      },
-      {
         "name": "qureddy:evidence.06.observation",
         "value": "offered"
+      },
+      {
+        "name": "qureddy:evidence.06.observed_algorithm",
+        "value": "ecdh-sha2-nistp521"
       },
       {
         "name": "qureddy:evidence.06.protocol_version",
@@ -733,12 +729,12 @@
         "value": "ssh.kex"
       },
       {
-        "name": "qureddy:evidence.07.negotiated_group",
-        "value": "diffie-hellman-group-exchange-sha256"
-      },
-      {
         "name": "qureddy:evidence.07.observation",
         "value": "offered"
+      },
+      {
+        "name": "qureddy:evidence.07.observed_algorithm",
+        "value": "diffie-hellman-group-exchange-sha256"
       },
       {
         "name": "qureddy:evidence.07.protocol_version",
@@ -753,12 +749,12 @@
         "value": "ssh.kex"
       },
       {
-        "name": "qureddy:evidence.08.negotiated_group",
-        "value": "ssh-ed25519"
-      },
-      {
         "name": "qureddy:evidence.08.observation",
         "value": "offered"
+      },
+      {
+        "name": "qureddy:evidence.08.observed_algorithm",
+        "value": "ssh-ed25519"
       },
       {
         "name": "qureddy:evidence.08.protocol_version",
@@ -773,12 +769,12 @@
         "value": "ssh.hostkey"
       },
       {
-        "name": "qureddy:evidence.09.negotiated_group",
-        "value": "ecdsa-sha2-nistp256"
-      },
-      {
         "name": "qureddy:evidence.09.observation",
         "value": "offered"
+      },
+      {
+        "name": "qureddy:evidence.09.observed_algorithm",
+        "value": "ecdsa-sha2-nistp256"
       },
       {
         "name": "qureddy:evidence.09.protocol_version",
@@ -793,12 +789,12 @@
         "value": "ssh.hostkey"
       },
       {
-        "name": "qureddy:evidence.10.negotiated_group",
-        "value": "rsa-sha2-512"
-      },
-      {
         "name": "qureddy:evidence.10.observation",
         "value": "offered"
+      },
+      {
+        "name": "qureddy:evidence.10.observed_algorithm",
+        "value": "rsa-sha2-512"
       },
       {
         "name": "qureddy:evidence.10.protocol_version",
@@ -813,12 +809,12 @@
         "value": "ssh.hostkey"
       },
       {
-        "name": "qureddy:evidence.11.negotiated_group",
-        "value": "rsa-sha2-256"
-      },
-      {
         "name": "qureddy:evidence.11.observation",
         "value": "offered"
+      },
+      {
+        "name": "qureddy:evidence.11.observed_algorithm",
+        "value": "rsa-sha2-256"
       },
       {
         "name": "qureddy:evidence.11.protocol_version",
@@ -833,12 +829,12 @@
         "value": "ssh.hostkey"
       },
       {
-        "name": "qureddy:evidence.12.negotiated_group",
-        "value": "ssh-rsa"
-      },
-      {
         "name": "qureddy:evidence.12.observation",
         "value": "offered"
+      },
+      {
+        "name": "qureddy:evidence.12.observed_algorithm",
+        "value": "ssh-rsa"
       },
       {
         "name": "qureddy:evidence.12.protocol_version",
@@ -853,12 +849,12 @@
         "value": "ssh.hostkey"
       },
       {
-        "name": "qureddy:evidence.13.negotiated_group",
-        "value": "chacha20-poly1305@openssh.com"
-      },
-      {
         "name": "qureddy:evidence.13.observation",
         "value": "offered"
+      },
+      {
+        "name": "qureddy:evidence.13.observed_algorithm",
+        "value": "chacha20-poly1305@openssh.com"
       },
       {
         "name": "qureddy:evidence.13.protocol_version",
@@ -873,12 +869,12 @@
         "value": "ssh.cipher"
       },
       {
-        "name": "qureddy:evidence.14.negotiated_group",
-        "value": "aes256-gcm@openssh.com"
-      },
-      {
         "name": "qureddy:evidence.14.observation",
         "value": "offered"
+      },
+      {
+        "name": "qureddy:evidence.14.observed_algorithm",
+        "value": "aes256-gcm@openssh.com"
       },
       {
         "name": "qureddy:evidence.14.protocol_version",
@@ -893,12 +889,12 @@
         "value": "ssh.cipher"
       },
       {
-        "name": "qureddy:evidence.15.negotiated_group",
-        "value": "aes128-gcm@openssh.com"
-      },
-      {
         "name": "qureddy:evidence.15.observation",
         "value": "offered"
+      },
+      {
+        "name": "qureddy:evidence.15.observed_algorithm",
+        "value": "aes128-gcm@openssh.com"
       },
       {
         "name": "qureddy:evidence.15.protocol_version",
@@ -913,12 +909,12 @@
         "value": "ssh.cipher"
       },
       {
-        "name": "qureddy:evidence.16.negotiated_group",
-        "value": "aes256-ctr"
-      },
-      {
         "name": "qureddy:evidence.16.observation",
         "value": "offered"
+      },
+      {
+        "name": "qureddy:evidence.16.observed_algorithm",
+        "value": "aes256-ctr"
       },
       {
         "name": "qureddy:evidence.16.protocol_version",
@@ -933,12 +929,12 @@
         "value": "ssh.cipher"
       },
       {
-        "name": "qureddy:evidence.17.negotiated_group",
-        "value": "aes192-ctr"
-      },
-      {
         "name": "qureddy:evidence.17.observation",
         "value": "offered"
+      },
+      {
+        "name": "qureddy:evidence.17.observed_algorithm",
+        "value": "aes192-ctr"
       },
       {
         "name": "qureddy:evidence.17.protocol_version",
@@ -953,12 +949,12 @@
         "value": "ssh.cipher"
       },
       {
-        "name": "qureddy:evidence.18.negotiated_group",
-        "value": "aes128-ctr"
-      },
-      {
         "name": "qureddy:evidence.18.observation",
         "value": "offered"
+      },
+      {
+        "name": "qureddy:evidence.18.observed_algorithm",
+        "value": "aes128-ctr"
       },
       {
         "name": "qureddy:evidence.18.protocol_version",
@@ -973,12 +969,12 @@
         "value": "ssh.cipher"
       },
       {
-        "name": "qureddy:evidence.19.negotiated_group",
-        "value": "hmac-sha2-512-etm@openssh.com"
-      },
-      {
         "name": "qureddy:evidence.19.observation",
         "value": "offered"
+      },
+      {
+        "name": "qureddy:evidence.19.observed_algorithm",
+        "value": "hmac-sha2-512-etm@openssh.com"
       },
       {
         "name": "qureddy:evidence.19.protocol_version",
@@ -993,12 +989,12 @@
         "value": "ssh.mac"
       },
       {
-        "name": "qureddy:evidence.20.negotiated_group",
-        "value": "hmac-sha2-256-etm@openssh.com"
-      },
-      {
         "name": "qureddy:evidence.20.observation",
         "value": "offered"
+      },
+      {
+        "name": "qureddy:evidence.20.observed_algorithm",
+        "value": "hmac-sha2-256-etm@openssh.com"
       },
       {
         "name": "qureddy:evidence.20.protocol_version",
@@ -1013,12 +1009,12 @@
         "value": "ssh.mac"
       },
       {
-        "name": "qureddy:evidence.21.negotiated_group",
-        "value": "hmac-sha2-512"
-      },
-      {
         "name": "qureddy:evidence.21.observation",
         "value": "offered"
+      },
+      {
+        "name": "qureddy:evidence.21.observed_algorithm",
+        "value": "hmac-sha2-512"
       },
       {
         "name": "qureddy:evidence.21.protocol_version",
@@ -1033,12 +1029,12 @@
         "value": "ssh.mac"
       },
       {
-        "name": "qureddy:evidence.22.negotiated_group",
-        "value": "hmac-sha2-256"
-      },
-      {
         "name": "qureddy:evidence.22.observation",
         "value": "offered"
+      },
+      {
+        "name": "qureddy:evidence.22.observed_algorithm",
+        "value": "hmac-sha2-256"
       },
       {
         "name": "qureddy:evidence.22.protocol_version",
@@ -1101,14 +1097,6 @@
         "value": "Weak SSH host-key algorithm offered (ssh-rsa)"
       },
       {
-        "name": "qureddy:scan.completed_at",
-        "value": "2026-08-22T02:27:58.393818+00:00"
-      },
-      {
-        "name": "qureddy:scan.id",
-        "value": "scan-4596b8366f6a"
-      },
-      {
         "name": "qureddy:scan.readiness",
         "value": "classically_weak"
       },
@@ -1117,16 +1105,8 @@
         "value": "ssh"
       },
       {
-        "name": "qureddy:scan.started_at",
-        "value": "2026-08-22T02:27:58.202831+00:00"
-      },
-      {
         "name": "qureddy:scan.status",
         "value": "completed"
-      },
-      {
-        "name": "qureddy:scan.total_attempts",
-        "value": "1"
       },
       {
         "name": "qureddy:target.host",
@@ -1149,19 +1129,17 @@
         "value": "ssh"
       }
     ],
-    "timestamp": "2026-08-22T02:27:58.393895+00:00",
     "tools": {
       "components": [
         {
           "bom-ref": "tool/qureddy",
           "name": "qureddy",
           "type": "application",
-          "version": "0.2.17"
+          "version": "0.2.22"
         }
       ]
     }
   },
-  "serialNumber": "urn:uuid:cbb46648-fa65-4009-8a55-eeb8171f1e06",
   "version": 1,
   "$schema": "http://cyclonedx.org/schema/bom-1.7.schema.json",
   "bomFormat": "CycloneDX",
