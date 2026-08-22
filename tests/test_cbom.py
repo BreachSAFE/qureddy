@@ -12,6 +12,8 @@ from __future__ import annotations
 import io
 import json
 
+import pytest
+
 from qureddy._branding import PROJECT_VERSION
 from qureddy.core.certificate import CertificateObservation
 from qureddy.core.models import (
@@ -137,6 +139,19 @@ class TestCycloneDx17Contract:
         assert all(
             prop["name"] != "qureddy:certificate.serial" for prop in component.get("properties", [])
         )
+
+    @pytest.mark.parametrize(
+        ("value", "expected"), [(True, "true"), (False, "false"), (None, "unknown")]
+    )
+    def test_certificate_self_signed_property_preserves_all_states(
+        self, value: bool | None, expected: str
+    ) -> None:
+        payload = _render(self._cert_result(is_self_signed=value))
+        certificate = next(
+            item for item in payload["components"] if item["bom-ref"] == "crypto/certificate/leaf"
+        )
+        properties = {prop["name"]: prop["value"] for prop in certificate["properties"]}
+        assert properties["qureddy:certificate.is_self_signed"] == expected
 
     def _cert_result(self, **overrides: object) -> object:
         fields: dict[str, object] = {

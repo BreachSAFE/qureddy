@@ -341,6 +341,13 @@ The component does not establish:
 Self-signed classification in QuReddy evidence requires signature verification;
 subject and issuer string equality alone is not accepted as proof.
 
+The component also carries the QuReddy extension property
+`qureddy:certificate.is_self_signed`. Its string value is `true` when verification
+completed successfully, `false` when verification completed and rejected the
+self-signature, and `unknown` when verification was unavailable (for example, a
+timeout). This namespaced property preserves the tri-state observation without
+adding a non-CycloneDX field to the schema-closed `certificateProperties` object.
+
 ## 13. Reproducibility
 
 By default the CBOM carries per-run identity (a CycloneDX `serialNumber` and

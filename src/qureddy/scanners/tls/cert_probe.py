@@ -58,7 +58,7 @@ class CertificateInfo:
     serial: str
     signature_algorithm: str
     public_key_summary: str
-    is_self_signed: bool
+    is_self_signed: bool | None
     is_post_quantum_signature: bool
     # #313: structured subject public key (algorithm name + size in bits) parsed from the
     # x509 text, alongside the free-text public_key_summary the console still prints.
@@ -161,7 +161,7 @@ def _is_self_signed(
     issuer: str,
     *,
     timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS,
-) -> bool:
+) -> bool | None:
     """True iff the certificate is both self-issued AND self-signed — issue #224.
 
     Equal subject/issuer DNs prove only "self-issued" — a certificate can have
@@ -177,17 +177,14 @@ def _is_self_signed(
     `-CAfile` and the cert-to-verify argument), not stdin, unlike `_x509`'s
     pattern — a securely-created temp file is written and removed in `finally`.
 
-    A subprocess timeout or nonzero exit resolves to `False`, never `True` —
-    this field asserts a positive cryptographic claim, so absence of proof
-    must not read as proof. A launch failure (missing / unlaunchable openssl)
+    A subprocess timeout resolves to `None` (verification unavailable), while a
+    nonzero exit resolves to `False` (verification completed and rejected). A
+    launch failure (missing / unlaunchable openssl)
     is different: it is a local-dependency problem, so it now propagates as the
     typed exit-3 error instead of being silently swallowed as `False` — issue
     #374, which is exactly the security bug the old blanket `except OSError`
     masked (a broken local toolchain would make every cert look not-self-signed).
-    A three-state true/false/undetermined model is the more complete answer
-    but changes this project's public `CertificateInfo`/`Evidence` shape,
-    which needs the same maintainer-authority schema decision as #226/#230 —
-    out of scope for this bounded fix.
+    The tri-state result preserves the distinction for downstream consumers.
     """
     if not subject or subject != issuer:
         return False
@@ -204,7 +201,7 @@ def _is_self_signed(
                 Path(cert_path).unlink()
     raise_for_launch(outcome, openssl_path)
     if outcome.timed_out:
-        return False
+        return None
     return outcome.returncode == 0
 
 
