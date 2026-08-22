@@ -358,7 +358,9 @@ class TestCycloneDx17Contract:
         payload = _render(
             self._cert_result(public_key_algorithm="rsaEncryption", public_key_bits=1024)
         )
-        verdict = {p["name"]: p["value"] for p in self._subject_key_component(payload)["properties"]}
+        verdict = {
+            p["name"]: p["value"] for p in self._subject_key_component(payload)["properties"]
+        }
         assert verdict["qureddy:readiness"] == "classically_weak"
         assert verdict["qureddy:severity"] == "high"
 

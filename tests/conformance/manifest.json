@@ -12,9 +12,9 @@
     }
   },
   "producer": {
-    "commit": "c512f2c03225bd326c4d7d8fefbaf7a57f385728",
-    "installed_wheel_sha256": "5574a88a0f9be524f7fe4f9f38669bf48b5c92ec22961fd77a24e47733827e0b",
-    "version": "0.2.25"
+    "commit": "950dbf2e52e01d9abe16dc9779dfb9dc376759df",
+    "installed_wheel_sha256": "411de13cdc86b1ef8cafadb6bf3673d3c1e85eafca939b23546913b99eda49c0",
+    "version": "0.2.26"
   },
   "fixtures": {
     "p1-hybrid-tls": {
@@ -68,7 +68,7 @@
     "p7-leaf-cert": {
       "kind": "positive",
       "classification": "captured",
-      "sha256": "8e7f37f70302eebb80cf91f969236832a0947915d1db9719011a3534c6e8326c",
+      "sha256": "4aba121de3236ec43ffc9a74312b20045e66c313620cfbaf3509d15ec4d00469",
       "official_rejects": false,
       "cli_rejects": false,
       "semantic_rejects": false
