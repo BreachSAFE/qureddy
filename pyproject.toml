@@ -8,7 +8,7 @@ name = "breachsafe-qureddy"
 version = "0.2.36"
 description = "Open-source post-quantum readiness scanner for TLS and SSH endpoints."
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.14"
 license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE", "LICENSES/*"]
 authors = [{name = "BreachSAFE QuReddy contributors"}]
@@ -21,8 +21,7 @@ classifiers = [
     "Operating System :: POSIX :: Linux",
     "Operating System :: Microsoft :: Windows",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Security :: Cryptography",
 ]
 
@@ -164,7 +163,7 @@ include = [
 # ============================================================================
 [tool.ruff]
 line-length = 100
-target-version = "py312"
+target-version = "py314"
 src = ["src", "tests"]
 
 [tool.ruff.format]
@@ -292,7 +291,7 @@ ignore-signatures = true
 # mypy
 # ============================================================================
 [tool.mypy]
-python_version = "3.12"
+python_version = "3.14"
 strict = true
 warn_return_any = true
 warn_unused_configs = true

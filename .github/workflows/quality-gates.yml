@@ -3,7 +3,7 @@
 # MAX code-quality + architecture gates (#360).
 #
 # INTERIM WIRING. This runs the same tools bundled by breachsafe-common's
-# reusable `quality-gates-python.yml` directly on Python 3.12, so the gate is
+# reusable `quality-gates-python.yml` directly on Python 3.14, so the gate is
 # live now without waiting on its prerequisites. Once breachsafe-common is
 # tagged `v1` and `ghcr.io/paul007ex/breachsafe-container:3.14-openssl3.5.7` is
 # published, this whole file collapses to a 4-line caller job that invokes the
@@ -50,10 +50,10 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Set up Python 3.12
+      - name: Set up Python 3.14
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
-          python-version: "3.12"
+          python-version: "3.14"
 
       - name: Install uv
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
@@ -96,10 +96,10 @@ jobs:
       - name: Install OpenSSL 3.5 LTS (probes need it)
         run: sudo apt-get update && sudo apt-get install -y openssl
 
-      - name: Set up Python 3.12
+      - name: Set up Python 3.14
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
-          python-version: "3.12"
+          python-version: "3.14"
 
       - name: Install uv
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1

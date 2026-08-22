@@ -27,8 +27,8 @@ from release_support import (
 
 
 def _static_commands(uv: Path, gitleaks: Path, gate: Gate) -> None:
-    run = [str(uv), "run", "--locked", "--python", "3.12"]
-    gate.run("sync", [str(uv), "sync", "--locked", "--python", "3.12", "--extra", "dev"])
+    run = [str(uv), "run", "--locked", "--python", "3.14"]
+    gate.run("sync", [str(uv), "sync", "--locked", "--python", "3.14", "--extra", "dev"])
     commands = (
         ("ruff-lint", [*run, "ruff", "check", "."]),
         ("ruff-format", [*run, "ruff", "format", "--check", "."]),
@@ -61,7 +61,7 @@ def _install_smokes(uv: Path, gate: Gate, artifacts: list[Path]) -> tuple[Path, 
     wheel = next(path for path in artifacts if path.suffix == ".whl")
     sdist = next(path for path in artifacts if path.name.endswith(".tar.gz"))
     smoke = gate.evidence.parent / "smoke"
-    gate.run("smoke-venv", [str(uv), "venv", "--python", "3.12", str(smoke)])
+    gate.run("smoke-venv", [str(uv), "venv", "--python", "3.14", str(smoke)])
     python = smoke / ("Scripts/python.exe" if platform.system() == "Windows" else "bin/python")
     console = smoke / ("Scripts/qureddy.exe" if platform.system() == "Windows" else "bin/qureddy")
     gate.run("smoke-install", [str(uv), "pip", "install", "--python", str(python), str(wheel)])
@@ -83,7 +83,7 @@ def _install_smokes(uv: Path, gate: Gate, artifacts: list[Path]) -> tuple[Path, 
         expected_exit=2,
     )
     sdist_smoke = gate.evidence.parent / "sdist-smoke"
-    gate.run("sdist-venv", [str(uv), "venv", "--python", "3.12", str(sdist_smoke)])
+    gate.run("sdist-venv", [str(uv), "venv", "--python", "3.14", str(sdist_smoke)])
     sdist_python = sdist_smoke / (
         "Scripts/python.exe" if platform.system() == "Windows" else "bin/python"
     )
@@ -95,9 +95,9 @@ def _install_smokes(uv: Path, gate: Gate, artifacts: list[Path]) -> tuple[Path, 
 
 
 def _build_and_conformance(uv: Path, gate: Gate, tool_cache: Path) -> None:
-    run = [str(uv), "run", "--locked", "--python", "3.12"]
+    run = [str(uv), "run", "--locked", "--python", "3.14"]
     dist = gate.evidence.parent / "dist"
-    gate.run("build", [str(uv), "build", "--python", "3.12", "--out-dir", str(dist)])
+    gate.run("build", [str(uv), "build", "--python", "3.14", "--out-dir", str(dist)])
     artifacts = sorted(
         path for path in dist.iterdir() if path.suffix == ".whl" or path.name.endswith(".tar.gz")
     )
@@ -137,8 +137,8 @@ def _build_and_conformance(uv: Path, gate: Gate, tool_cache: Path) -> None:
 
 def main() -> int:
     """Run every blocking local release check and always write evidence."""
-    if sys.version_info[:2] != (3, 12):
-        print("release gate requires Python 3.12", file=sys.stderr)
+    if sys.version_info[:2] != (3, 14):
+        print("release gate requires Python 3.14", file=sys.stderr)
         return 2
     commit = git_output("rev-parse", "HEAD")
     output = ROOT / "dist" / "release-evidence"
