@@ -11,7 +11,7 @@ from urllib.parse import ParseResult, urlparse
 from pydantic import ValidationError
 
 from qureddy.core.errors import TargetParseError
-from qureddy.core.models import ScanTarget
+from qureddy.core.models import HOSTNAME_PATTERN, ScanTarget
 
 
 def _build_scan_target(
@@ -46,10 +46,7 @@ def _build_scan_target(
 
 
 DEFAULT_PORT = 443
-HOSTNAME_PATTERN = re.compile(
-    r"^(?=.{1,253}$)(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)*"
-    r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?$",
-)
+# HOSTNAME_PATTERN is imported from core.models (its canonical home; #315).
 MIN_PORT = 1
 MAX_PORT = 65535
 
@@ -184,6 +181,7 @@ def _extract_url_host_port(cleaned: str) -> tuple[str, int]:
     if parsed.scheme not in {"https", "tls"}:
         msg = f"unsupported scheme {parsed.scheme!r}; expected https or tls"
         raise TargetParseError(msg)
+    _reject_tls_uri_extras(parsed)
     host = parsed.hostname
     if not host:
         raise TargetParseError("URL has no host component")
@@ -193,6 +191,27 @@ def _extract_url_host_port(cleaned: str) -> tuple[str, int]:
         msg = "URL contains an invalid port"
         raise TargetParseError(msg) from exc
     return host, _validate_port(port)
+
+
+def _reject_uri_credentials(parsed: ParseResult, *, scheme_label: str) -> None:
+    """Reject userinfo (user[:password]@) in a URI — shared by TLS and SSH."""
+    if parsed.username is not None or parsed.password is not None:
+        raise TargetParseError(f"{scheme_label} target must not contain credentials")
+
+
+def _reject_tls_uri_extras(parsed: ParseResult) -> None:
+    """Reject credentials/path/query/fragment in an https/tls URL (#366).
+
+    The URL parser previously kept only host+port and silently dropped
+    everything else, so ``https://alice:secret@example.com/p?x#f`` scanned
+    ``example.com:443`` with the credentials and path discarded. Mirror the SSH
+    parser's ``_reject_ssh_uri_extras`` and reject that data instead. A bare
+    trailing "/" (``urlparse`` path "/") is the one accepted path form; any real
+    path, params, query, or fragment is rejected.
+    """
+    _reject_uri_credentials(parsed, scheme_label="TLS")
+    if parsed.path not in ("", "/") or parsed.params or parsed.query or parsed.fragment:
+        raise TargetParseError("TLS target URL must not contain a path, query, or fragment")
 
 
 def _reject_ambiguous_unbracketed_ipv6(cleaned: str) -> None:
@@ -373,8 +392,7 @@ def _parse_ssh_uri(cleaned: str) -> tuple[str, int]:
 
 def _reject_ssh_uri_extras(parsed: ParseResult) -> None:
     """Reject credentials, paths, queries, and fragments in an SSH/SFTP URI."""
-    if parsed.username is not None or parsed.password is not None:
-        raise TargetParseError("SSH target must not contain credentials")
+    _reject_uri_credentials(parsed, scheme_label="SSH")
     if parsed.path or parsed.params or parsed.query or parsed.fragment:
         raise TargetParseError("SSH target URI must not contain a path, query, or fragment")
 

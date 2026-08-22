@@ -195,6 +195,79 @@ class TestModelImmutability:
             )
 
 
+class TestScanTargetBoundaryValidation:
+    """Issue #369: the ScanTarget construction boundary must reject invalid
+    host/SNI/scheme values that would otherwise flow into OpenSSL argv.
+    """
+
+    def test_host_with_trailing_newline_is_rejected(self) -> None:
+        # `.match` + `$` used to accept "example.com\n"; `.fullmatch` rejects it.
+        with pytest.raises(ValidationError):
+            ScanTarget(
+                original_input="example.com",
+                host="example.com\n",
+                port=443,
+                sni=None,
+                locator="tls://example.com\n:443",
+            )
+
+    @pytest.mark.parametrize(
+        "bad_sni",
+        [
+            "-oProxyCommand=x",  # leading dash -> OpenSSL option injection
+            "evil\n-servername",  # embedded newline + injected flag
+            "not a hostname",  # spaces
+            "a\x1b[31mb",  # ANSI escape / control chars
+            "host\n",  # trailing newline
+        ],
+    )
+    def test_malicious_sni_is_rejected(self, bad_sni: str) -> None:
+        with pytest.raises(ValidationError):
+            ScanTarget(
+                original_input="example.com",
+                host="example.com",
+                port=443,
+                sni=bad_sni,
+                locator="tls://example.com:443",
+            )
+
+    @pytest.mark.parametrize("scheme", ["ftp", "http", "gopher", ""])
+    def test_unsupported_scheme_is_rejected(self, scheme: str) -> None:
+        with pytest.raises(ValidationError):
+            ScanTarget(
+                original_input="example.com",
+                host="example.com",
+                port=443,
+                sni="example.com",
+                scheme=scheme,
+                locator=f"{scheme}://example.com:443",
+            )
+
+    @pytest.mark.parametrize("scheme", ["tls", "ssh"])
+    def test_supported_schemes_construct(self, scheme: str) -> None:
+        target = ScanTarget(
+            original_input="example.com",
+            host="example.com",
+            port=443,
+            sni="example.com",
+            scheme=scheme,
+            locator=f"{scheme}://example.com:443",
+        )
+        assert target.scheme == scheme
+
+    def test_valid_hostname_sni_and_ip_none_sni_construct(self) -> None:
+        hostname_target = _make_target()
+        assert hostname_target.sni == "example.com"
+        ip_target = ScanTarget(
+            original_input="1.2.3.4",
+            host="1.2.3.4",
+            port=443,
+            sni=None,
+            locator="tls://1.2.3.4:443",
+        )
+        assert ip_target.sni is None
+
+
 class TestNistQuantumSecurityLevel:
     """ge=0, le=5 validation per spec."""
 

@@ -163,6 +163,47 @@ class TestParseTargetInvalid:
             parse_target("example.com", sni_override=bad_sni)
 
 
+class TestParseTargetUrlExtras:
+    """Issue #366: a TLS URL must not silently drop credentials or URL components.
+
+    ``https://alice:secret@example.com/p?x#f`` used to normalize to
+    ``tls://example.com:443``, discarding the userinfo, path, query, and
+    fragment. Mirror the SSH parser and reject any such extra.
+    """
+
+    @pytest.mark.parametrize(
+        "bad_url",
+        [
+            "https://alice:secret@example.com/p?x#f",  # the full motivating case
+            "https://alice:secret@example.com",  # user + password only
+            "https://user@example.com",  # username only
+            "https://:secret@example.com",  # password only
+            "https://example.com/path",  # non-root path
+            "https://example.com/a/b",  # deeper path
+            "https://example.com?x=1",  # query
+            "https://example.com#frag",  # fragment
+            "tls://user@example.com:8443",  # same policy for the tls:// scheme
+        ],
+    )
+    def test_tls_url_with_extras_raises(self, bad_url: str) -> None:
+        with pytest.raises(TargetParseError):
+            parse_target(bad_url)
+
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "https://example.com",
+            "https://example.com/",  # bare trailing slash (empty path) is acceptable
+            "https://example.com:8443",
+            "https://example.com:8443/",
+        ],
+    )
+    def test_tls_url_without_extras_is_accepted(self, url: str) -> None:
+        result = parse_target(url)
+        assert result.host == "example.com"
+        assert result.scheme == "tls"
+
+
 class TestParseSshTarget:
     """SSH target grammar accepts only endpoint-intent-preserving forms."""
 
