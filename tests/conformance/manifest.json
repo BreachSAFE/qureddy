@@ -12,15 +12,15 @@
     }
   },
   "producer": {
-    "commit": "b91ea4fea6ce32a11cba7edec66834e14e98c92f",
-    "installed_wheel_sha256": "39b49159d0aa256003ee02840406579687e727d037b3a04fdc921a200b89cebe",
-    "version": "0.2.22"
+    "commit": "6f212ce365409995a17a81c0000b0ad8971d2f5f",
+    "installed_wheel_sha256": "f2dd6568e966dbc0ffe969435de45c1c5b9ea9623e7a957128d8b9ac2920beb2",
+    "version": "0.2.24"
   },
   "fixtures": {
     "p1-hybrid-tls": {
       "kind": "positive",
       "classification": "captured",
-      "sha256": "d2d28abaabb832b25170ad7a8d8d1e3a8fc0a6e2416a7e5e83609a74a7ada97f",
+      "sha256": "14b11eb7fe5656a0c131aeafea3ba6356183ce977c274df24cddcb6c9f46d65a",
       "official_rejects": false,
       "cli_rejects": false,
       "semantic_rejects": false
@@ -28,7 +28,7 @@
     "p2-classical-tls": {
       "kind": "positive",
       "classification": "minimized-from-captured",
-      "sha256": "3a004a37f2575da3894992a71ba5f8e90ff8c97ac9172f38608590b7cd4c8705",
+      "sha256": "a89f914d7a8216e8eafddce58c75d4d66ec61151ac9ba599ed86fde2f9cf06bd",
       "official_rejects": false,
       "cli_rejects": false,
       "semantic_rejects": false
@@ -36,7 +36,7 @@
     "p3-ssh-hybrid": {
       "kind": "positive",
       "classification": "captured",
-      "sha256": "19b91e78a0160a48b1d3310a6fd6b56da0ddbcaa7d43e85bededf03c88164a05",
+      "sha256": "7571f45cbfc2003629a35ca4d9e33e6976f4e26f6c419563f4733d86453d0d4c",
       "official_rejects": false,
       "cli_rejects": false,
       "semantic_rejects": false
@@ -44,7 +44,7 @@
     "p4-sparse-unknown": {
       "kind": "positive",
       "classification": "minimized-from-captured",
-      "sha256": "1b55b24b1a757bacf2466efb0ab734d872f7dc914874f4944eb623b15410f516",
+      "sha256": "01f442c85551bc937024f1fd9fe89ed53f6d6345ea338c35b51cb88695974379",
       "official_rejects": false,
       "cli_rejects": false,
       "semantic_rejects": false
@@ -52,7 +52,7 @@
     "p5-failed-target": {
       "kind": "positive",
       "classification": "minimized-from-captured",
-      "sha256": "8416f306171d3bd7367e65b4da727b69c1591bb641b3d3e4bc45ab41a5ec325d",
+      "sha256": "c3f459ed51730ff065fe8d5b3498343718cfce47049594c27d17d1645c41f939",
       "official_rejects": false,
       "cli_rejects": false,
       "semantic_rejects": false
@@ -60,7 +60,7 @@
     "p6-missing-openssl": {
       "kind": "positive",
       "classification": "minimized-from-captured",
-      "sha256": "e69f3e08fb8e538bc8731e41cc075e4227550dc20c76acceb811eddf640c406e",
+      "sha256": "6f9b5124c3d54012874f8b007853929dedfde7a435252ca8da8ceaedc55a268c",
       "official_rejects": false,
       "cli_rejects": false,
       "semantic_rejects": false
@@ -68,7 +68,7 @@
     "p7-leaf-cert": {
       "kind": "positive",
       "classification": "captured",
-      "sha256": "6dc43271ef98ffebd85cecab31b99635f762e1728a96b927a26f65975c834a82",
+      "sha256": "83001f2429d230ae554b8eb3715bcfa382a3a7a7e416f7e8a88952aad0715b92",
       "official_rejects": false,
       "cli_rejects": false,
       "semantic_rejects": false
@@ -76,7 +76,7 @@
     "n1-wrong-specversion": {
       "kind": "negative",
       "classification": "synthetic-negative",
-      "sha256": "2f5cfd02ac0beb1d1e15f456d1af7c653466681d0f5876e9dc01231b3bd7901e",
+      "sha256": "a14a4ae196bb561aab6f780d9c5cba5931485879d9ecf4080a92b6ea5f8c9a97",
       "official_rejects": false,
       "cli_rejects": true,
       "semantic_rejects": true
@@ -84,7 +84,7 @@
     "n2-duplicate-bomref": {
       "kind": "negative",
       "classification": "synthetic-negative",
-      "sha256": "1f88a028dd7bc01ec39337f34f6a1f1e6590610422bb4baa92e6d0e9b0251a5d",
+      "sha256": "399ed0b8f88419c601a83265281d5039bcbb5abf50a4cb1f1d81634a79da988a",
       "official_rejects": true,
       "cli_rejects": true,
       "semantic_rejects": true
@@ -92,7 +92,7 @@
     "n3-dangling-ref": {
       "kind": "negative",
       "classification": "synthetic-negative",
-      "sha256": "09dba6ce49f84d6c2ec5ce32711548a07e92d9bc6bbe702c831b2b9bb3f2cbe8",
+      "sha256": "c3930470feda654d67e5ca9b0e8861ec0dca6fc5b793b9580b691266b07faf09",
       "official_rejects": false,
       "cli_rejects": false,
       "semantic_rejects": true
@@ -100,7 +100,7 @@
     "n4-invalid-asset-type": {
       "kind": "negative",
       "classification": "synthetic-negative",
-      "sha256": "5d33966951d5b60358c967bf1aaaa2792202ec348a88fcf6dcede566b7542d39",
+      "sha256": "f5af67c12c1364465f62cdc85c5d32a4ca1a493fc75f8d7278d1b9969e6d5c1e",
       "official_rejects": true,
       "cli_rejects": true,
       "semantic_rejects": false
@@ -108,7 +108,7 @@
     "n5-malformed-date": {
       "kind": "negative",
       "classification": "synthetic-negative",
-      "sha256": "303bb727f0f3c78e7ea0b6766a5d190ec814a0b303762d7138447012a6ea81e9",
+      "sha256": "8ccae481c86ca05e39073191925650176ca68160df9661c46304676667e4bc90",
       "official_rejects": true,
       "cli_rejects": true,
       "semantic_rejects": false
@@ -116,7 +116,7 @@
     "n6-undeclared-top-level": {
       "kind": "negative",
       "classification": "synthetic-negative",
-      "sha256": "1bb656d856dda645f51df4b997d176ab62ec415afd3fcad422c8979532cbef11",
+      "sha256": "5f8b984faa8891f94e86f20fa6ae618cd51e576fe00850fe4b109a34387823a9",
       "official_rejects": true,
       "cli_rejects": true,
       "semantic_rejects": false
@@ -124,7 +124,7 @@
     "n7-secret-material": {
       "kind": "negative",
       "classification": "synthetic-negative",
-      "sha256": "f30703843c40530ef27315f05a1381839c9f09fa375f7c8adc78edacfa0c29dc",
+      "sha256": "64f834dffd91102254ecb81fb4536d07b96be4a30f2375c1526dc2cd35fd62fb",
       "official_rejects": false,
       "cli_rejects": false,
       "semantic_rejects": true
@@ -132,7 +132,7 @@
     "p3-ssh-mlkem": {
       "kind": "positive",
       "classification": "captured",
-      "sha256": "f1ccc949ac319ca7a483736d912ae26bf6328e0563f6aa9b1096cd72c1b22532",
+      "sha256": "36de2d97af94b9219558af05ebc23e74e918d08925258bf8ed9b8b196aa7910d",
       "official_rejects": false,
       "cli_rejects": false,
       "semantic_rejects": false

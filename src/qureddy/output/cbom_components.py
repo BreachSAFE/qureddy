@@ -43,10 +43,12 @@ if TYPE_CHECKING:
     from qureddy.core.models import Evidence, ScanResult
 
 CERTIFICATE_REF = "crypto/certificate/leaf"
-# SSH evidence types handled by the SSH-specific emitters in cbom_ssh (host keys as
-# signatures, KEX groups with SSH KEX-name classification), skipped by the shared
-# TLS-oriented algorithm emitter so no bom-ref is emitted twice.
-_SSH_EVIDENCE_TYPES = frozenset({"ssh.hostkey", "ssh.kex", "ssh.kex.weak", "ssh.cipher", "ssh.mac"})
+# Evidence types handled by dedicated emitters (SSH host keys/KEX/cipher/MAC in cbom_ssh;
+# legacy TLS ciphers in cbom_legacy), skipped by the generic algorithm emitter so no bom-ref
+# is emitted twice and each keeps its specialized classification.
+_SPECIALIZED_EVIDENCE_TYPES = frozenset(
+    {"ssh.hostkey", "ssh.kex", "ssh.kex.weak", "ssh.cipher", "ssh.mac", "tls.legacy.cipher"}
+)
 
 
 def add_algorithm_components(
@@ -63,7 +65,9 @@ def add_algorithm_components(
         bom,
         result,
         provides_edges,
-        select=lambda e: e.negotiated_group if e.evidence_type not in _SSH_EVIDENCE_TYPES else None,
+        select=lambda e: (
+            e.negotiated_group if e.evidence_type not in _SPECIALIZED_EVIDENCE_TYPES else None
+        ),
         algorithm_properties=_algorithm_properties,
     )
 

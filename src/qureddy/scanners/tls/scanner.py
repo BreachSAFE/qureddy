@@ -39,6 +39,7 @@ from qureddy.scanners.tls._cert_findings import (
 )
 from qureddy.scanners.tls._evidence import build_asset, evidence_from_probe
 from qureddy.scanners.tls._legacy_findings import (
+    cipher_evidence_from_legacy_result,
     evidence_from_legacy_result,
     finding_from_legacy_result,
 )
@@ -314,6 +315,11 @@ class TLSScanner:
             for ev, r in zip(evidence, results, strict=True)
             if (f := finding_from_legacy_result(asset, ev, r)) is not None
         ]
+        # Per-cipher evidence is appended after the finding zip (which pairs 1:1 with the
+        # protocol-level evidence above) so each accepted legacy cipher becomes a CBOM
+        # component without disturbing that pairing (#303).
+        for r in results:
+            evidence.extend(cipher_evidence_from_legacy_result(asset, r))
         return evidence, findings
 
     @staticmethod

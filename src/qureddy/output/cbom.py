@@ -43,6 +43,7 @@ from qureddy.output.cbom_components import (
     add_cipher_suite_components,
     add_protocol_components,
 )
+from qureddy.output.cbom_legacy import add_legacy_cipher_components
 from qureddy.output.cbom_metadata import (
     add_scan_status_properties,
     add_scan_target_metadata,
@@ -116,6 +117,7 @@ def render_cbom(
     add_ssh_kex_components(bom, result, provides_edges)
     add_ssh_transport_components(bom, result, provides_edges)
     add_cipher_suite_components(bom, result, provides_edges)
+    add_legacy_cipher_components(bom, result, provides_edges)
     add_protocol_components(bom, result, algorithm_refs, provides_edges)
     certificate = _captured_certificate(result)
     if certificate is not None:
