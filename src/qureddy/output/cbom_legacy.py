@@ -16,7 +16,11 @@ from typing import TYPE_CHECKING
 from cyclonedx.model import Property
 from cyclonedx.model.crypto import AlgorithmProperties
 
-from qureddy.output.cbom_assets import add_algorithm_assets
+from qureddy.output.cbom_assets import (
+    add_algorithm_assets,
+    select_by_evidence_type,
+    verdict_pairs,
+)
 from qureddy.output.cbom_cipher import cipher_classical_bits, cipher_primitive
 from qureddy.scanners.tls.legacy_probe import has_weak_cipher
 
@@ -45,15 +49,12 @@ def _legacy_cipher_verdict(name: str) -> list[Property]:
     classically_weak for a known-weak marker; otherwise quantum_vulnerable (classical crypto
     has no post-quantum confidentiality).
     """
-    if has_weak_cipher((name,)):
-        return [
-            Property(name="qureddy:readiness", value="classically_weak"),
-            Property(name="qureddy:severity", value="high"),
-        ]
-    return [
-        Property(name="qureddy:readiness", value="quantum_vulnerable"),
-        Property(name="qureddy:severity", value="low"),
-    ]
+    pairs = (
+        verdict_pairs("classically_weak", "high")
+        if has_weak_cipher((name,))
+        else verdict_pairs("quantum_vulnerable", "low")
+    )
+    return [Property(name=prop_name, value=value) for prop_name, value in pairs]
 
 
 def add_legacy_cipher_components(
@@ -64,9 +65,7 @@ def add_legacy_cipher_components(
         bom,
         result,
         provides_edges,
-        select=lambda e: (
-            e.negotiated_group if e.evidence_type == LEGACY_CIPHER_EVIDENCE_TYPE else None
-        ),
+        select=select_by_evidence_type(LEGACY_CIPHER_EVIDENCE_TYPE),
         algorithm_properties=_legacy_cipher_properties,
         extra_properties=_legacy_cipher_verdict,
     )

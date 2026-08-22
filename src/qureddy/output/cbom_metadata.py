@@ -16,7 +16,12 @@ from typing import TYPE_CHECKING, Any
 
 from cyclonedx.model import Property
 
-from qureddy.output.cbom_assets import ENDPOINT_REF, algorithm_ref, protocol_ref
+from qureddy.output.cbom_assets import (
+    ENDPOINT_REF,
+    algorithm_ref,
+    protocol_ref,
+    verdict_pairs,
+)
 
 if TYPE_CHECKING:
     from cyclonedx.model.bom import Bom
@@ -220,9 +225,10 @@ def finding_annotations(
         verdicts.setdefault(
             subject,
             [
-                {"name": "qureddy:readiness", "value": finding.readiness.value},
-                {"name": "qureddy:severity", "value": finding.severity.value},
-                {"name": "qureddy:rule_id", "value": finding.rule_id},
+                {"name": name, "value": value}
+                for name, value in verdict_pairs(
+                    finding.readiness.value, finding.severity.value, finding.rule_id
+                )
             ],
         )
     return annotations, verdicts

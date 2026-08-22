@@ -19,7 +19,7 @@ from cyclonedx.model.crypto import (
     CryptoPrimitive,
 )
 
-from qureddy.output.cbom_assets import add_algorithm_assets
+from qureddy.output.cbom_assets import add_algorithm_assets, select_by_evidence_type
 from qureddy.output.cbom_cipher import cipher_classical_bits, cipher_primitive
 from qureddy.output.cbom_components import signature_algorithm_properties
 from qureddy.scanners.ssh import classify
@@ -76,7 +76,7 @@ def add_ssh_kex_components(
         bom,
         result,
         provides_edges,
-        select=lambda e: e.negotiated_group if e.evidence_type == "ssh.kex" else None,
+        select=select_by_evidence_type("ssh.kex"),
         algorithm_properties=ssh_kex_algorithm_properties,
     )
 
@@ -96,7 +96,7 @@ def add_ssh_host_key_components(
         bom,
         result,
         provides_edges,
-        select=lambda e: e.negotiated_group if e.evidence_type == "ssh.hostkey" else None,
+        select=select_by_evidence_type("ssh.hostkey"),
         algorithm_properties=signature_algorithm_properties,
     )
 
@@ -138,13 +138,13 @@ def add_ssh_transport_components(
         bom,
         result,
         provides_edges,
-        select=lambda e: e.negotiated_group if e.evidence_type == "ssh.cipher" else None,
+        select=select_by_evidence_type("ssh.cipher"),
         algorithm_properties=_ssh_cipher_properties,
     )
     add_algorithm_assets(
         bom,
         result,
         provides_edges,
-        select=lambda e: e.negotiated_group if e.evidence_type == "ssh.mac" else None,
+        select=select_by_evidence_type("ssh.mac"),
         algorithm_properties=_ssh_mac_properties,
     )

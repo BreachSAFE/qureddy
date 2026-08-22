@@ -14,20 +14,21 @@ from rich.text import Text
 
 from qureddy.core.models import Evidence, ObservationType, Severity
 from qureddy.output._styles import style_group
+from qureddy.scanners.common.rollup import SEVERITY_ORDER
+from qureddy.scanners.tls.openssl_probe._constants import CLASSICAL_GROUP, HYBRID_GROUP
 
 if TYPE_CHECKING:
     from qureddy.core.models import ScanResult
 
-_HYBRID_GROUP = "X25519MLKEM768"
-_CLASSICAL_GROUP = "X25519"
+_HYBRID_GROUP = HYBRID_GROUP
+_CLASSICAL_GROUP = CLASSICAL_GROUP
 
-_SEVERITY_ORDER: dict[Severity, int] = {
-    Severity.CRITICAL: 0,
-    Severity.HIGH: 1,
-    Severity.MEDIUM: 2,
-    Severity.LOW: 3,
-    Severity.INFO: 4,
-}
+# Console orders findings most-severe first, the reverse of rollup's canonical
+# INFO=0..CRITICAL=4 ranking (#315). Negating that single source of truth keeps the
+# ordering identical without a second hand-maintained table: CRITICAL sorts lowest, so
+# an ascending sort and the `<=` severity-floor filter in render.py both keep
+# critical/high/medium and drop low/info, exactly as the old inline table did.
+_SEVERITY_ORDER: dict[Severity, int] = {sev: -rank for sev, rank in SEVERITY_ORDER.items()}
 
 
 def _pick_evidence(result: ScanResult, *, group: str) -> Evidence | None:

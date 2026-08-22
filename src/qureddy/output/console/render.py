@@ -96,8 +96,8 @@ def _filter_by_min_severity(
     """Keep findings at or above ``min_severity`` (rich-table display only).
 
     ``None`` means no filter. Severity ranks come from the shared
-    ``_SEVERITY_ORDER`` (critical=0 .. info=4), so "at or above medium" keeps
-    critical/high/medium and drops low/info.
+    ``_SEVERITY_ORDER`` (critical lowest .. info highest), so "at or above medium"
+    keeps critical/high/medium and drops low/info.
     """
     if min_severity is None:
         return findings

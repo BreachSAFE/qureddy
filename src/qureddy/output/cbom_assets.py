@@ -43,6 +43,35 @@ def protocol_ref(protocol: str, version: str) -> str:
     return f"crypto/protocol/{protocol}-{version.lower()}"
 
 
+def select_by_evidence_type(*evidence_types: str) -> Callable[[Evidence], str | None]:
+    """Build a ``select`` that yields ``negotiated_group`` only for the given evidence type(s).
+
+    The identical ``lambda e: e.negotiated_group if e.evidence_type == "X" else None`` shape
+    repeated across every SSH/legacy asset emitter (#315); this is the one place it lives.
+    Emitters selecting a different field (e.g. ``cipher_suite``) or an inverted set keep their
+    own inline ``select`` for readability.
+    """
+    allowed = frozenset(evidence_types)
+    return lambda evidence: evidence.negotiated_group if evidence.evidence_type in allowed else None
+
+
+def verdict_pairs(
+    readiness: str, severity: str, rule_id: str | None = None
+) -> list[tuple[str, str]]:
+    """Return the ``(name, value)`` pairs for a qureddy verdict block (#315).
+
+    The single home for the ``qureddy:readiness`` / ``qureddy:severity`` / ``qureddy:rule_id``
+    property names, so the legacy-cipher emitter (which wraps them as ``Property`` objects) and
+    the finding-annotation layer (which wraps them as dicts) cannot disagree on the names.
+    ``rule_id`` is omitted when None so callers that carry only readiness/severity get exactly
+    those two pairs, in that order.
+    """
+    pairs = [("qureddy:readiness", readiness), ("qureddy:severity", severity)]
+    if rule_id is not None:
+        pairs.append(("qureddy:rule_id", rule_id))
+    return pairs
+
+
 POSITIVE_OBSERVATIONS = frozenset(
     {ObservationType.NEGOTIATED, ObservationType.OFFERED, ObservationType.OBSERVED}
 )
