@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import ipaddress
 import re
-from urllib.parse import urlparse
+from urllib.parse import ParseResult, urlparse
 
 from qureddy.core.errors import TargetParseError
 from qureddy.core.models import ScanTarget
@@ -62,37 +62,11 @@ def parse_target(
         raise TargetParseError("target is empty")
 
     host, port = _extract_host_port(cleaned)
-    host = _strip_fqdn_root_dot(host)
-    is_ip = _is_ip_literal(host)
-
-    if not is_ip and _NUMERIC_HOST.fullmatch(host):
-        msg = (
-            f"noncanonical numeric IP target {host!r}; "
-            "use canonical dotted-decimal IPv4 (for example 127.0.0.1)"
-        )
-        raise TargetParseError(msg)
-
-    if not is_ip and not HOSTNAME_PATTERN.match(host):
-        msg = f"target host is not a valid hostname or IP: {host!r}"
-        raise TargetParseError(msg)
-
+    host, is_ip = _validate_and_classify_host(
+        host, invalid_prefix="target host is not a valid hostname or IP"
+    )
     _reject_internal_target(host, block_internal=block_internal)
-
-    if sni_override is not None:
-        if not sni_override.strip():
-            raise TargetParseError("--sni cannot be empty or whitespace-only")
-        # The derived SNI (sni = host) is validated by HOSTNAME_PATTERN; the override must
-        # meet the same bar or a newline/control char/ANSI escape/leading dash flows verbatim
-        # into OpenSSL's -servername value (#145). fullmatch (not match) because `$` also
-        # matches just before a trailing newline, which would let "host\n" through.
-        if not HOSTNAME_PATTERN.fullmatch(sni_override):
-            msg = f"--sni is not a valid hostname: {sni_override!r}"
-            raise TargetParseError(msg)
-        sni: str | None = sni_override
-    elif is_ip:
-        sni = None
-    else:
-        sni = host
+    sni = _resolve_sni(host, sni_override, is_ip=is_ip)
 
     # Issue #236: an unbracketed IPv6 host glued directly to ":{port}" in
     # the locator is the same ambiguous shape #223 rejects on the input
@@ -108,28 +82,48 @@ def parse_target(
     )
 
 
+def _validate_and_classify_host(host: str, *, invalid_prefix: str) -> tuple[str, bool]:
+    """Strip the FQDN root dot, then classify/validate the host, returning ``(host, is_ip)``.
+
+    Rejects noncanonical numeric IP forms (#255) and non-hostname/non-IP input. The
+    ``invalid_prefix`` lets each caller (TLS vs SSH) keep its own error wording while
+    sharing this validation.
+    """
+    host = _strip_fqdn_root_dot(host)
+    is_ip = _is_ip_literal(host)
+    if not is_ip and _NUMERIC_HOST.fullmatch(host):
+        msg = (
+            f"noncanonical numeric IP target {host!r}; "
+            "use canonical dotted-decimal IPv4 (for example 127.0.0.1)"
+        )
+        raise TargetParseError(msg)
+    if not is_ip and not HOSTNAME_PATTERN.match(host):
+        raise TargetParseError(f"{invalid_prefix}: {host!r}")
+    return host, is_ip
+
+
+def _resolve_sni(host: str, sni_override: str | None, *, is_ip: bool) -> str | None:
+    """Resolve the on-wire SNI: the validated override, else the host (None for an IP)."""
+    if sni_override is not None:
+        if not sni_override.strip():
+            raise TargetParseError("--sni cannot be empty or whitespace-only")
+        # The derived SNI (sni = host) is validated by HOSTNAME_PATTERN; the override must
+        # meet the same bar or a newline/control char/ANSI escape/leading dash flows verbatim
+        # into OpenSSL's -servername value (#145). fullmatch (not match) because `$` also
+        # matches just before a trailing newline, which would let "host\n" through.
+        if not HOSTNAME_PATTERN.fullmatch(sni_override):
+            msg = f"--sni is not a valid hostname: {sni_override!r}"
+            raise TargetParseError(msg)
+        return sni_override
+    if is_ip:
+        return None
+    return host
+
+
 def _extract_host_port(cleaned: str) -> tuple[str, int]:
     """Pull (host, port) out of any of the accepted input shapes."""
     if "://" in cleaned:
-        try:
-            parsed = urlparse(cleaned)
-        except ValueError as exc:
-            # urlparse raises ValueError eagerly on a malformed authority (e.g. an
-            # unclosed "[" IPv6 bracket); that is bad user input (exit 4), not an
-            # internal error (exit 70). (#139)
-            raise TargetParseError(f"malformed target URL: {cleaned!r}") from exc
-        if parsed.scheme not in {"https", "tls"}:
-            msg = f"unsupported scheme {parsed.scheme!r}; expected https or tls"
-            raise TargetParseError(msg)
-        host = parsed.hostname
-        if not host:
-            raise TargetParseError("URL has no host component")
-        try:
-            port = parsed.port if parsed.port is not None else DEFAULT_PORT
-        except ValueError as exc:
-            msg = "URL contains an invalid port"
-            raise TargetParseError(msg) from exc
-        return host, _validate_port(port)
+        return _extract_url_host_port(cleaned)
 
     if cleaned.startswith("[") and "]" in cleaned:
         return _parse_bracketed_ipv6(cleaned)
@@ -142,6 +136,29 @@ def _extract_host_port(cleaned: str) -> tuple[str, int]:
 
     _reject_ambiguous_unbracketed_ipv6(cleaned)
     return cleaned, DEFAULT_PORT
+
+
+def _extract_url_host_port(cleaned: str) -> tuple[str, int]:
+    """Pull (host, port) out of an ``https://``/``tls://`` URL form."""
+    try:
+        parsed = urlparse(cleaned)
+    except ValueError as exc:
+        # urlparse raises ValueError eagerly on a malformed authority (e.g. an
+        # unclosed "[" IPv6 bracket); that is bad user input (exit 4), not an
+        # internal error (exit 70). (#139)
+        raise TargetParseError(f"malformed target URL: {cleaned!r}") from exc
+    if parsed.scheme not in {"https", "tls"}:
+        msg = f"unsupported scheme {parsed.scheme!r}; expected https or tls"
+        raise TargetParseError(msg)
+    host = parsed.hostname
+    if not host:
+        raise TargetParseError("URL has no host component")
+    try:
+        port = parsed.port if parsed.port is not None else DEFAULT_PORT
+    except ValueError as exc:
+        msg = "URL contains an invalid port"
+        raise TargetParseError(msg) from exc
+    return host, _validate_port(port)
 
 
 def _reject_ambiguous_unbracketed_ipv6(cleaned: str) -> None:
@@ -286,18 +303,7 @@ def parse_ssh_target(input_str: str, *, block_internal: bool = False) -> ScanTar
         host, port = _parse_ssh_uri(cleaned)
     else:
         host, port = _parse_raw_ssh_endpoint(cleaned)
-    host = _strip_fqdn_root_dot(host)
-
-    is_ip = _is_ip_literal(host)
-    if not is_ip and _NUMERIC_HOST.fullmatch(host):
-        msg = (
-            f"noncanonical numeric IP target {host!r}; "
-            "use canonical dotted-decimal IPv4 (for example 127.0.0.1)"
-        )
-        raise TargetParseError(msg)
-    if not is_ip and not HOSTNAME_PATTERN.match(host):
-        msg = f"invalid SSH host: {host!r}"
-        raise TargetParseError(msg)
+    host, _ = _validate_and_classify_host(host, invalid_prefix="invalid SSH host")
     _reject_internal_target(host, block_internal=block_internal)
     rendered = f"[{host}]" if ":" in host else host
     return ScanTarget(
@@ -321,10 +327,7 @@ def _parse_ssh_uri(cleaned: str) -> tuple[str, int]:
     if parsed.scheme not in {"ssh", "sftp"}:
         msg = f"unsupported SSH scheme {parsed.scheme!r}; expected ssh or sftp"
         raise TargetParseError(msg)
-    if parsed.username is not None or parsed.password is not None:
-        raise TargetParseError("SSH target must not contain credentials")
-    if parsed.path or parsed.params or parsed.query or parsed.fragment:
-        raise TargetParseError("SSH target URI must not contain a path, query, or fragment")
+    _reject_ssh_uri_extras(parsed)
     if not parsed.hostname:
         raise TargetParseError("SSH target URI has no host component")
     try:
@@ -332,6 +335,14 @@ def _parse_ssh_uri(cleaned: str) -> tuple[str, int]:
     except ValueError as exc:
         raise TargetParseError("SSH target URI contains an invalid port") from exc
     return parsed.hostname, _validate_port(port)
+
+
+def _reject_ssh_uri_extras(parsed: ParseResult) -> None:
+    """Reject credentials, paths, queries, and fragments in an SSH/SFTP URI."""
+    if parsed.username is not None or parsed.password is not None:
+        raise TargetParseError("SSH target must not contain credentials")
+    if parsed.path or parsed.params or parsed.query or parsed.fragment:
+        raise TargetParseError("SSH target URI must not contain a path, query, or fragment")
 
 
 def _parse_raw_ssh_endpoint(cleaned: str) -> tuple[str, int]:

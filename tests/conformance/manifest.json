@@ -20,7 +20,7 @@
     "p1-hybrid-tls": {
       "kind": "positive",
       "classification": "captured",
-      "sha256": "693ccc58eba7c0946f0e90b8d66c40496cbbd181d8928ee57ca9de6246271b8a",
+      "sha256": "54472caf4c0848122251531fae43b8e3edb53a58a373b71146f2dd3712c60ef3",
       "official_rejects": false,
       "cli_rejects": false,
       "semantic_rejects": false

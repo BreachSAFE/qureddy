@@ -26,7 +26,7 @@ from qureddy.output.cbom_assets import (
 if TYPE_CHECKING:
     from cyclonedx.model.bom import Bom
 
-    from qureddy.core.models import OpenSSLDependency, ScanResult
+    from qureddy.core.models import Evidence, OpenSSLDependency, ScanResult
 
 
 def openssl_tool_properties(
@@ -157,40 +157,52 @@ def evidence_occurrences(
             # #326: evidence with no crypto subject (a bare failure/probe record) attaches to
             # the endpoint so every evidence item maps to an occurrence — no silent drop.
             ref = ENDPOINT_REF
-        # #307: strict "key=value" pairs joined by "; " so a consumer reads each provenance
-        # field without scraping prose — the fragility the flat layer had, in miniature.
-        # Keys are lower_snake_case; no value contains "; " or "=", so split-then-partition
-        # is a total parse. Grammar contract: docs/reference/cbom-occurrence-provenance.md.
-        fields = [
-            f"observation={evidence.observation_type.value}",
-            f"evidence_type={evidence.evidence_type}",
-            f"confidence={evidence.confidence.value}",  # #326: preserve confidence as a field
-        ]
-        # #326: co-observed cipher suite as a field (when it isn't already the occurrence subject).
-        if evidence.cipher_suite and evidence.cipher_suite != name:
-            fields.append(f"cipher_suite={evidence.cipher_suite}")
-        if evidence.probe_role:
-            fields.append(f"role={evidence.probe_role.value}")
-        if evidence.expected_group:
-            fields.append(f"expected={evidence.expected_group}")
-        probe = evidence.probe_result
-        if probe is not None:
-            executable = (
-                PurePosixPath(probe.command.executable).name
-                if reproducible
-                else probe.command.executable
-            )
-            command = " ".join([executable, *probe.command.args])
-            fields.append(f"return_code={probe.return_code}")
-            # Full digest (not truncated) so it keeps the reproducibility guarantee: the
-            # command is attributed by basename, not host path, and bytes stay stable (#207).
-            fields.append(f"command_sha256={hashlib.sha256(command.encode()).hexdigest()}")
-            if not reproducible:
-                fields.append(f"duration_ms={probe.duration_ms}")
+        fields = _provenance_fields(evidence, name, reproducible=reproducible)
         occurrences.setdefault(ref, []).append(
             {"location": evidence.source, "additionalContext": "; ".join(fields)}
         )
     return occurrences
+
+
+def _provenance_fields(evidence: Evidence, name: str | None, *, reproducible: bool) -> list[str]:
+    """Render one evidence item's probe provenance as the strict ``key=value`` field list (#307).
+
+    Strict "key=value" pairs (joined by "; " by the caller) so a consumer reads each provenance
+    field without scraping prose — the fragility the flat layer had, in miniature. Keys are
+    lower_snake_case; no value contains "; " or "=", so split-then-partition is a total parse.
+    Grammar contract: docs/reference/cbom-occurrence-provenance.md.
+    """
+    fields = [
+        f"observation={evidence.observation_type.value}",
+        f"evidence_type={evidence.evidence_type}",
+        f"confidence={evidence.confidence.value}",  # #326: preserve confidence as a field
+    ]
+    # #326: co-observed cipher suite as a field (when it isn't already the occurrence subject).
+    if evidence.cipher_suite and evidence.cipher_suite != name:
+        fields.append(f"cipher_suite={evidence.cipher_suite}")
+    if evidence.probe_role:
+        fields.append(f"role={evidence.probe_role.value}")
+    if evidence.expected_group:
+        fields.append(f"expected={evidence.expected_group}")
+    probe = evidence.probe_result
+    if probe is not None:
+        executable = (
+            PurePosixPath(probe.command.executable).name
+            if reproducible
+            else probe.command.executable
+        )
+        command = " ".join([executable, *probe.command.args])
+        # Full digest (not truncated) so it keeps the reproducibility guarantee: the
+        # command is attributed by basename, not host path, and bytes stay stable (#207).
+        fields.extend(
+            (
+                f"return_code={probe.return_code}",
+                f"command_sha256={hashlib.sha256(command.encode()).hexdigest()}",
+            )
+        )
+        if not reproducible:
+            fields.append(f"duration_ms={probe.duration_ms}")
+    return fields
 
 
 # CycloneDX requires annotation.timestamp; reproducible mode pins it to the Unix epoch so

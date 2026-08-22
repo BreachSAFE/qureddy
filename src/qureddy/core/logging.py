@@ -71,7 +71,7 @@ def configure_logging(
         # io.StringIO) got polluted with ANSI codes whenever the real
         # process stderr happened to be a terminal. `getattr` guards
         # test doubles that don't implement `isatty` at all.
-        honor_color = getattr(stream, "isatty", lambda: False)() and "NO_COLOR" not in os.environ
+        honor_color = getattr(stream, "isatty", bool)() and "NO_COLOR" not in os.environ
         processors.append(structlog.dev.ConsoleRenderer(colors=honor_color))
 
     structlog.configure(
