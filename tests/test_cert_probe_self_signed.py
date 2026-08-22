@@ -4,7 +4,8 @@
 
 Covers cert_probe.py:194-215 -- the `_is_self_signed` cryptographic check that
 writes the cert to a temp file, runs `openssl verify -check_ss_sig -CAfile`, and
-resolves any ambiguity (nonzero exit, timeout, OSError) to `False`. These tests
+resolves nonzero exit to `False`, timeout to `None`, and launch errors as typed
+exceptions. These tests
 drive the real function through the public `parse_certificate` entrypoint and
 assert the observable `is_self_signed` verdict, never that a private returned.
 
@@ -77,9 +78,8 @@ class TestIsSelfSignedVerifyPath:
             info = parse_certificate("/fixture/openssl", FIXTURE_PEM)
         assert info.is_self_signed is False
 
-    def test_verify_timeout_resolves_to_false(self) -> None:
-        """A hung `openssl verify` must not assert the positive claim -- absence
-        of proof is not proof (cert_probe.py:209-210)."""
+    def test_verify_timeout_resolves_to_unknown(self) -> None:
+        """A hung `openssl verify` leaves self-signature verification unknown."""
         with (
             patch("qureddy.scanners.tls.cert_probe._x509", side_effect=_x509_self_issued),
             patch(
@@ -88,7 +88,7 @@ class TestIsSelfSignedVerifyPath:
             ),
         ):
             info = parse_certificate("/fixture/openssl", FIXTURE_PEM)
-        assert info.is_self_signed is False
+        assert info.is_self_signed is None
 
     def test_verify_oserror_propagates_typed_local_error(self) -> None:
         """#374 security fix: an OSError launching `openssl verify` (a

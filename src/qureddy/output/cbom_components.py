@@ -15,6 +15,7 @@ from datetime import UTC, datetime
 from types import MappingProxyType
 from typing import TYPE_CHECKING, NamedTuple
 
+from cyclonedx.model import Property
 from cyclonedx.model.bom_ref import BomRef
 from cyclonedx.model.component import Component, ComponentType
 from cyclonedx.model.crypto import (
@@ -48,6 +49,7 @@ if TYPE_CHECKING:
     from qureddy.core.models import Evidence, ScanResult
 
 CERTIFICATE_REF = "crypto/certificate/leaf"
+SELF_SIGNED_PROPERTY = "qureddy:certificate.is_self_signed"
 # Evidence types handled by dedicated emitters (SSH host keys/KEX/cipher/MAC in cbom_ssh;
 # legacy TLS ciphers in cbom_legacy), skipped by the generic algorithm emitter so no bom-ref
 # is emitted twice and each keeps its specialized classification.
@@ -407,6 +409,16 @@ def add_certificate_component(
                     subject_public_key_ref=subject_key_ref,
                 ),
             ),
+            properties=[
+                Property(
+                    name=SELF_SIGNED_PROPERTY,
+                    value=(
+                        "unknown"
+                        if certificate.is_self_signed is None
+                        else str(certificate.is_self_signed).lower()
+                    ),
+                )
+            ],
         )
     )
     provides_edges.setdefault(ENDPOINT_REF, []).append(ref)

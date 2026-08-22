@@ -23,7 +23,7 @@ class CertificateObservation(BaseModel):
     serial: str
     signature_algorithm: str
     public_key_summary: str
-    is_self_signed: bool
+    is_self_signed: bool | None
     is_post_quantum_signature: bool
     # #313: the certificate's own subject public key (algorithm name + size in bits),
     # parsed structurally from the x509 text. The leaf key is the quantum-relevant fact.
