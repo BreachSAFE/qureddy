@@ -46,7 +46,7 @@ def main() -> int:
     """Enforce canonical source identity locally and in GitHub Actions."""
     repository_root = Path(__file__).resolve().parents[1]
     github_repository = os.environ.get("GITHUB_REPOSITORY")
-    if github_repository and github_repository != CANONICAL_REPOSITORY:
+    if github_repository and github_repository.lower() != CANONICAL_REPOSITORY:
         print(
             "Canonical provenance failed: "
             f"GitHub Actions repository is {github_repository!r}, expected {CANONICAL_REPOSITORY!r}.",
