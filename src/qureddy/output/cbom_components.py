@@ -381,11 +381,14 @@ def add_certificate_component(
     after typed serialization.
     """
     ref = CERTIFICATE_REF
-    sig_alg_ref = _add_signature_algorithm_component(
-        bom, certificate.signature_algorithm, provides_edges
-    )
+    # #343: emit the subject key first so that when a fully-PQ cert's signature and subject key
+    # are the same algorithm (ML-DSA-87 sig + ML-DSA-87 key), the one shared, deduped asset
+    # keeps the subject key's readiness verdict; the signature ref then reuses it.
     subject_key_ref = add_public_key_component(
         bom, certificate.public_key_algorithm, certificate.public_key_bits, provides_edges
+    )
+    sig_alg_ref = _add_signature_algorithm_component(
+        bom, certificate.signature_algorithm, provides_edges
     )
     bom.components.add(
         Component(

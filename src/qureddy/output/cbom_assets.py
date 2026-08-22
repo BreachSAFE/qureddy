@@ -151,7 +151,15 @@ def add_algorithm_component(
     asset loop above and the certificate-derived single-shot emitters (CA signature algorithm,
     subject public key) so none of them reimplement the component shape (#313). Returns the
     component's BomRef for callers that reference it (e.g. certificateProperties refs).
+
+    Idempotent by bom-ref (#343): if a component with this ref already exists, reuse it rather
+    than adding a second. A fully-PQ cert whose signature and subject key are the same
+    parameter set (ML-DSA-87 sig + ML-DSA-87 key) resolves both refs to one asset; adding two
+    Components with the same bom-ref made cyclonedx rename one to a random ref at
+    serialization, orphaning a component and breaking --reproducible.
     """
+    if any(existing.bom_ref.value == ref for existing in bom.components):
+        return BomRef(value=ref)
     bom.components.add(
         Component(
             name=name,
