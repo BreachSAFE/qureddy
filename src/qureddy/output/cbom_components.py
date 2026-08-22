@@ -34,7 +34,10 @@ from qureddy.output.cbom_assets import (
     POSITIVE_OBSERVATIONS,
     add_algorithm_assets,
     add_algorithm_component,
+    algorithm_ref,
+    protocol_ref,
 )
+from qureddy.output.cbom_cipher import cipher_classical_bits, cipher_primitive
 from qureddy.output.cbom_public_key import add_public_key_component
 from qureddy.scanners.tls.cert_sig import classify_pqc_signature
 
@@ -74,23 +77,15 @@ def add_algorithm_components(
     )
 
 
-# Classical security strength (bits) of the TLS 1.3 AEAD cipher suites qureddy observes.
-# AES-256-GCM and ChaCha20-Poly1305 provide 256-bit symmetric strength; AES-128-GCM, 128.
-_CIPHER_SUITE_BITS: MappingProxyType[str, int] = MappingProxyType(
-    {
-        "TLS_AES_128_GCM_SHA256": 128,
-        "TLS_AES_256_GCM_SHA384": 256,
-        "TLS_CHACHA20_POLY1305_SHA256": 256,
-    }
-)
-
-
 def _cipher_suite_properties(suite: str) -> AlgorithmProperties | None:
-    """AEAD algorithmProperties for a TLS 1.3 cipher suite, keyed by classical bits."""
-    bits = _CIPHER_SUITE_BITS.get(suite)
+    """AEAD algorithmProperties for a TLS 1.3 cipher suite, keyed by classical bits.
+
+    Classification is shared with the legacy TLS and SSH cipher emitters (#315).
+    """
+    bits = cipher_classical_bits(suite)
     if bits is None:
         return None
-    return AlgorithmProperties(primitive=CryptoPrimitive.AE, classical_security_level=bits)
+    return AlgorithmProperties(primitive=cipher_primitive(suite), classical_security_level=bits)
 
 
 def add_cipher_suite_components(
@@ -210,7 +205,7 @@ def add_protocol_components(
             for evidence in positive_evidence
             if (evidence.protocol, evidence.protocol_version) == (protocol, protocol_version)
         ]
-        ref = f"crypto/protocol/{protocol}-{protocol_version.lower()}"
+        ref = protocol_ref(protocol, protocol_version)
         bom.components.add(
             _protocol_component(
                 protocol,
@@ -365,7 +360,7 @@ def _add_signature_algorithm_component(
     return add_algorithm_component(
         bom,
         name=signature_algorithm,
-        ref=f"crypto/algorithm/{signature_algorithm.lower()}",
+        ref=algorithm_ref(signature_algorithm),
         algorithm_properties=signature_algorithm_properties(signature_algorithm),
         provides_edges=provides_edges,
     )

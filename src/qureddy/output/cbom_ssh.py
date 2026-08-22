@@ -20,6 +20,7 @@ from cyclonedx.model.crypto import (
 )
 
 from qureddy.output.cbom_assets import add_algorithm_assets
+from qureddy.output.cbom_cipher import cipher_classical_bits, cipher_primitive
 from qureddy.output.cbom_components import signature_algorithm_properties
 from qureddy.scanners.ssh import classify
 
@@ -100,30 +101,17 @@ def add_ssh_host_key_components(
     )
 
 
-def _ssh_cipher_bits(name: str) -> int | None:
-    """Classical key strength (bits) for an SSH cipher, or None if unknown (#286)."""
-    lowered = name.lower()
-    if "chacha20" in lowered:
-        return 256
-    if "3des" in lowered:
-        return 112  # 3DES effective strength (NIST SP 800-57)
-    for size in (256, 192, 128):
-        if f"aes{size}" in lowered or f"aes-{size}" in lowered:
-            return size
-    return None
-
-
 def _ssh_cipher_properties(name: str) -> AlgorithmProperties:
     """Build algorithmProperties for an SSH cipher (#286).
 
     Symmetric ciphers are quantum-resistant, so emit ``classicalSecurityLevel`` — the
     same representation the TLS AEAD cipher suites use — rather than a misleading
-    ``nistQuantumSecurityLevel: 0`` that reads as "no quantum resistance". The primitive
-    comes from the shared SSH classifier.
+    ``nistQuantumSecurityLevel: 0`` that reads as "no quantum resistance". Classification
+    is shared with the TLS 1.3 and legacy cipher emitters (#315).
     """
     return AlgorithmProperties(
-        primitive=CryptoPrimitive(classify.cipher_primitive(name)),
-        classical_security_level=_ssh_cipher_bits(name),
+        primitive=cipher_primitive(name),
+        classical_security_level=cipher_classical_bits(name),
     )
 
 
