@@ -207,13 +207,13 @@ dev = [
     { name = "xenon" },
 ]
 fuzz = [
-    { name = "atheris" },
+    { name = "atheris", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "allure-pytest", marker = "extra == 'dev'", specifier = ">=2.13" },
-    { name = "atheris", marker = "extra == 'fuzz'", specifier = ">=2.3" },
+    { name = "atheris", marker = "platform_machine == 'x86_64' and sys_platform == 'linux' and extra == 'fuzz'", specifier = ">=3.1" },
     { name = "bandit", marker = "extra == 'dev'", specifier = ">=1.7" },
     { name = "click", specifier = ">=8.3.3,<8.5" },
     { name = "cyclonedx-python-lib", specifier = ">=11.11,<12" },

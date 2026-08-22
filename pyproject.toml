@@ -108,11 +108,14 @@ dev = [
 # Coverage-guided fuzzing of the untrusted-input parsers (issue #86, #37).
 # Fuzz-only and optional: atheris is NOT installed by the normal dev extra
 # or the release gate, and the harnesses under tests/fuzz/ (named fuzz_*.py,
-# so pytest never collects them) import it behind a guard. atheris builds
-# against libFuzzer/Clang and is exercised in the ClusterFuzzLite container
-# (see .clusterfuzzlite/ and .github/workflows/cifuzz.yml), not in unit CI.
+# so pytest never collects them) import it behind a guard. atheris 3.1 is the
+# first release with a cp314 wheel (#325); it ships manylinux_x86_64 only, so
+# the fuzz gate runs on ubuntu-latest (amd64) at Python 3.14 in cifuzz.yml.
 fuzz = [
-    "atheris>=2.3",
+    # atheris 3.1 ships manylinux_x86_64 wheels only (no sdist, no macOS/arm64),
+    # so scope the requirement to where it can actually install; the fuzz gate
+    # runs on ubuntu-latest (amd64).
+    "atheris>=3.1; sys_platform == 'linux' and platform_machine == 'x86_64'",
 ]
 
 [project.scripts]
