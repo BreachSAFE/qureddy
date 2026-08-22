@@ -25,26 +25,37 @@ relationship graph.
 
 ## 1. Interoperability
 
-The document is structured in two layers (see
+The document is native CycloneDX throughout (see
 [CBOM design](../explanation/cbom-design.md)):
 
-1. A native crypto layer. Observed algorithms, protocols, and the certificate are
+1. Crypto inventory. Observed algorithms, protocols, and the certificate are
    real CycloneDX `components` with native `cryptoProperties`
    (`algorithmProperties`/`protocolProperties`/`certificateProperties`) and a
    native `provides` graph. Any CycloneDX 1.7, crypto-aware tool (for example IBM
    CBOMkit or Dependency-Track's crypto support) understands this layer, including
    the post-quantum posture, with no CVE identifiers required.
-2. A `qureddy:`-namespaced property layer under `metadata.properties`. QuReddy's
-   interpretation (per-finding verdicts, readiness) and the provenance trail live
-   here. `properties` is a valid CycloneDX extension point, so the document stays
-   valid and a tool that does not understand these keys ignores them; it never
-   fails ingestion. QuReddy-aware consumers (Qurum) read the full fidelity.
+2. Findings and evidence, also native (0.2.23, #287). Each observation is attached
+   to the asset it describes as `component.evidence.occurrences`; each finding is a
+   top-level `annotation` whose `subjects` link to that asset, carrying the title and
+   full description (including standards citations); each finding's machine verdict
+   (readiness, severity, rule id) is a queryable `qureddy:`-namespaced property on the
+   subject component.
+3. A small `qureddy:`-namespaced `metadata.properties` layer for scan, target, and
+   tool provenance only.
 
-Consequences: the document parses in every CycloneDX 1.7 tool; the crypto
-inventory is natively understood; the interpretation layer is semantically private
-to QuReddy-aware readers. Because `cryptoProperties` is CycloneDX 1.6+ and this
-document is 1.7, tooling pinned to CycloneDX 1.6 or earlier will not accept it. The
-full scan report, including findings, is also available in `--format json`.
+Consequences: the document parses in every CycloneDX 1.7 tool; the inventory,
+evidence occurrences, and annotations are natively understood; a QuReddy-aware
+consumer (Qurum, or a Prowler/OCSF mapper) additionally reads the verdict properties
+as fields rather than parsing prose. `properties`/`annotations`/`occurrences` are all
+valid CycloneDX, so a tool that ignores the `qureddy:` verdict keys never fails
+ingestion. Because `cryptoProperties` is CycloneDX 1.6+ and this document is 1.7,
+tooling pinned to 1.6 or earlier will not accept it. The full scan report is also
+available in `--format json`.
+
+Earlier releases (through 0.2.22) instead carried findings and evidence as flat
+`qureddy:finding.NN.*` / `qureddy:evidence.NN.*` `metadata.properties`; 0.2.23 replaced
+that with the native structures above (#287), so a consumer that keyed on those flat
+property names must migrate to the annotations, occurrences, and verdict properties.
 
 ## 2. Document identity
 

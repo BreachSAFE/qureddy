@@ -1,7 +1,7 @@
 # Changelog
 
 [![Status: Alpha](https://img.shields.io/badge/status-alpha-blue?style=flat-square)](https://github.com/breachsafe/qureddy)
-[![Version](https://img.shields.io/badge/version-0.2.22-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.23-blue?style=flat-square)](CHANGELOG.md)
 [![Keep a Changelog](https://img.shields.io/badge/keep%20a%20changelog-1.1.0-orange?style=flat-square)](https://keepachangelog.com/en/1.1.0/)
 [![SemVer](https://img.shields.io/badge/SemVer-2.0.0-blue?style=flat-square)](https://semver.org/spec/v2.0.0.html)
 
@@ -10,6 +10,21 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and version
 numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.2.23] - 2026-08-22
+
+### Changed
+
+- CBOM findings and evidence now use native CycloneDX 1.7 structures instead of a flat
+  `qureddy:` property namespace: evidence is attached to the crypto asset it describes as
+  `component.evidence.occurrences`, findings are top-level `annotations` linked to their
+  subject asset (carrying the full description and citations), and each finding's verdict
+  (readiness, severity, rule) is a queryable property on that asset. `metadata.properties`
+  now carries scan, target, and tool provenance only. Validated by two independent
+  CycloneDX 1.7 validators and mints a NIST-oscal-cli-valid OSCAL POA&M through
+  breachsafe-mint-oscal. A consumer that keyed on the old flat `qureddy:finding.NN.*` /
+  `qureddy:evidence.NN.*` property names must migrate to the annotations, occurrences, and
+  verdict properties. (#287, #285)
 
 ## [0.2.22] - 2026-08-22
 
@@ -153,29 +168,30 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Contents
 
-1. [0.2.22](#0222---2026-08-22)
-2. [0.2.21](#0221---2026-08-22)
-3. [0.2.20](#0220---2026-08-22)
-4. [0.2.18](#0218---2026-08-22)
-5. [0.2.17](#0217---2026-08-21)
-6. [0.2.16](#0216---2026-08-21)
-7. [0.2.15](#0215---2026-08-21)
-8. [0.2.14](#0214---2026-08-19)
-9. [0.2.13](#0213---2026-08-04)
-10. [0.2.12](#0212---2026-07-28)
-11. [0.2.11](#0211---2026-07-28)
-12. [0.2.10](#0210---2026-07-28)
-13. [0.2.9](#029---2026-07-28)
-14. [0.2.8](#028---2026-07-28)
-15. [0.2.7](#027---2026-07-28)
-16. [0.2.6](#026---2026-07-28)
-17. [0.2.5](#025---2026-07-28)
-18. [0.2.4](#024---2026-07-28)
-19. [0.2.3](#023---2026-07-27)
-20. [0.2.2](#022---2026-07-27)
-21. [0.2.1](#021---2026-07-27)
-22. [0.2.0](#020---2026-07-27)
-23. [0.1.0](#010---2026-05-10)
+1. [0.2.23](#0223---2026-08-22)
+2. [0.2.22](#0222---2026-08-22)
+3. [0.2.21](#0221---2026-08-22)
+4. [0.2.20](#0220---2026-08-22)
+5. [0.2.18](#0218---2026-08-22)
+6. [0.2.17](#0217---2026-08-21)
+7. [0.2.16](#0216---2026-08-21)
+8. [0.2.15](#0215---2026-08-21)
+9. [0.2.14](#0214---2026-08-19)
+10. [0.2.13](#0213---2026-08-04)
+11. [0.2.12](#0212---2026-07-28)
+12. [0.2.11](#0211---2026-07-28)
+13. [0.2.10](#0210---2026-07-28)
+14. [0.2.9](#029---2026-07-28)
+15. [0.2.8](#028---2026-07-28)
+16. [0.2.7](#027---2026-07-28)
+17. [0.2.6](#026---2026-07-28)
+18. [0.2.5](#025---2026-07-28)
+19. [0.2.4](#024---2026-07-28)
+20. [0.2.3](#023---2026-07-27)
+21. [0.2.2](#022---2026-07-27)
+22. [0.2.1](#021---2026-07-27)
+23. [0.2.0](#020---2026-07-27)
+24. [0.1.0](#010---2026-05-10)
 
 ## [0.2.12] - 2026-07-28
 
