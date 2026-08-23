@@ -77,6 +77,55 @@ def add_scan_status_properties(bom: Bom, result: ScanResult) -> None:
     bom.metadata.properties.add(
         Property(name="qureddy:scan.readiness", value=result.summary.readiness.value)
     )
+    _add_interpretation_properties(bom, result)
+    _add_provenance_properties(bom, result)
+    _add_rollup_properties(bom, result)
+
+
+def _add_interpretation_properties(bom: Bom, result: ScanResult) -> None:
+    """Add structured posture interpretation to CBOM metadata."""
+    if result.summary.interpretation is not None:
+        interpretation = result.summary.interpretation
+        axes = interpretation.axes
+        for name, value in (
+            ("qureddy:scan.effective_readiness", interpretation.effective.value),
+            ("qureddy:scan.headline", interpretation.headline),
+            ("qureddy:scan.recommended_action", interpretation.recommended_action),
+            ("qureddy:scan.pqc_support", axes.pqc_support.value),
+            ("qureddy:scan.axis.key_exchange", axes.key_exchange.value),
+            ("qureddy:scan.axis.downgrade_resistance", axes.downgrade_resistance.value),
+            ("qureddy:scan.axis.authentication", axes.authentication.value),
+            ("qureddy:scan.axis.protocol_hygiene", axes.protocol_hygiene.value),
+            ("qureddy:scan.policy_id", interpretation.policy_id),
+            ("qureddy:scan.policy_version", interpretation.policy_version),
+        ):
+            bom.metadata.properties.add(Property(name=name, value=value))
+        if interpretation.reason_codes:
+            bom.metadata.properties.add(
+                Property(
+                    name="qureddy:scan.reason_codes",
+                    value=",".join(interpretation.reason_codes),
+                )
+            )
+
+
+def _add_provenance_properties(bom: Bom, result: ScanResult) -> None:
+    """Add advisory build provenance, preserving unavailable values as absent."""
+    if result.scan.provenance is not None:
+        provenance = result.scan.provenance
+        pairs = [("qureddy:provenance.distribution", provenance.distribution)]
+        if provenance.source_revision is not None:
+            pairs.append(("qureddy:provenance.source_revision", provenance.source_revision))
+        if provenance.source_dirty is not None:
+            pairs.append(("qureddy:provenance.source_dirty", str(provenance.source_dirty).lower()))
+        if provenance.container_digest is not None:
+            pairs.append(("qureddy:provenance.container_digest", provenance.container_digest))
+        for name, value in pairs:
+            bom.metadata.properties.add(Property(name=name, value=value))
+
+
+def _add_rollup_properties(bom: Bom, result: ScanResult) -> None:
+    """Add compatibility rollup fields consumed by existing CBOM clients."""
     # #309: the JSON summary rollup (finding_count + highest_severity) belongs in the CBOM too,
     # so a consumer that keys on the CBOM alone (breachsafe-ux) never falls back to native JSON.
     bom.metadata.properties.add(

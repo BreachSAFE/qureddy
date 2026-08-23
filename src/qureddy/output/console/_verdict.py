@@ -97,7 +97,7 @@ def _summary_headline_and_recommendation(result: ScanResult) -> tuple[Text, Text
     return headline, _recommendation(result, readiness, hybrid_group, failure)
 
 
-def _compose_headline(
+def _compose_headline(  # noqa: PLR0911
     result: ScanResult,
     readiness: Readiness,
     failure: FailureCategory | None,
@@ -113,6 +113,11 @@ def _compose_headline(
         headline.append(" negotiated")
         return headline
     if readiness is Readiness.QUANTUM_VULNERABLE:
+        if any(f.rule_id == "tls.hybrid.probe_failed" for f in result.findings):
+            headline = compose_status("NOT READY", " — PQ support unconfirmed; classical ")
+            headline.append(classical_group or "key exchange")
+            headline.append(" observed")
+            return headline
         headline = compose_status("NOT READY", " — classical only (", group=classical_group)
         headline.append(")")
         return headline

@@ -60,6 +60,15 @@ def _summary_table(result: ScanResult) -> Table:
     table.add_row("schema_version", Text(result.schema_version))
     table.add_row("status", Text(scan.status))
     table.add_row("readiness", style_readiness(summary.readiness))
+    if summary.interpretation is not None:
+        table.add_row("interpretation", Text(summary.interpretation.headline))
+        table.add_row("recommended_action", Text(summary.interpretation.recommended_action))
+        axes = summary.interpretation.axes
+        table.add_row("pqc_support", Text(axes.pqc_support.value))
+        table.add_row("key_exchange_posture", Text(axes.key_exchange.value))
+        table.add_row("downgrade_resistance", Text(axes.downgrade_resistance.value))
+        table.add_row("authentication", Text(axes.authentication.value))
+        table.add_row("protocol_hygiene", Text(axes.protocol_hygiene.value))
     if scan.scanner_name == "ssh":
         # SSH has no TLS-style forced hybrid/classical probes or cipher suite;
         # show the KEX/host-key algorithms actually observed instead.
@@ -91,6 +100,17 @@ def _run_details_table(result: ScanResult) -> Table:
     table.add_row("scan_id", Text(result.scan.scan_id))
     table.add_row("scanner", Text(result.scan.scanner_name))
     table.add_row("version", Text(result.scan.scanner_version))
+    if result.scan.provenance is not None:
+        provenance = result.scan.provenance
+        table.add_row("distribution", Text(provenance.distribution))
+        table.add_row("source_revision", styled_or_dash(provenance.source_revision))
+        table.add_row(
+            "source_dirty",
+            styled_or_dash(
+                None if provenance.source_dirty is None else str(provenance.source_dirty).lower()
+            ),
+        )
+        table.add_row("container_digest", styled_or_dash(provenance.container_digest))
     table.add_row("started", Text(started))
     table.add_row("completed", Text(completed))
     table.add_row("duration", Text(f"{duration:.1f}s"))

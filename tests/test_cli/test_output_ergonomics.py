@@ -19,7 +19,7 @@ from typer.testing import CliRunner
 
 from qureddy.cli import app
 from qureddy.cli._render import _render
-from qureddy.core.models import OutputFormat, Severity
+from qureddy.core.models import OutputFormat, ScanProvenance, Severity
 from qureddy.output.cbom import render_cbom
 from qureddy.output.json import render_json
 from tests._fake_openssl import fake_openssl
@@ -144,6 +144,34 @@ def test_compact_cbom_is_single_line_and_valid() -> None:
     payload = json.loads(text)
     assert payload["specVersion"] == "1.7"
     assert payload["bomFormat"] == "CycloneDX"
+
+
+def test_cbom_carries_complete_build_provenance() -> None:
+    """All available advisory provenance fields survive CBOM projection."""
+    result = _build_result()
+    result = result.model_copy(
+        update={
+            "scan": result.scan.model_copy(
+                update={
+                    "provenance": ScanProvenance(
+                        distribution="container",
+                        source_revision="abc123",
+                        source_dirty=True,
+                        container_digest="sha256:digest",
+                    )
+                }
+            )
+        }
+    )
+    buffer = io.StringIO()
+    render_cbom(result, buffer)
+    properties = {
+        item["name"]: item["value"]
+        for item in json.loads(buffer.getvalue())["metadata"]["properties"]
+    }
+    assert properties["qureddy:provenance.source_revision"] == "abc123"
+    assert properties["qureddy:provenance.source_dirty"] == "true"
+    assert properties["qureddy:provenance.container_digest"] == "sha256:digest"
 
 
 def test_compact_flag_wired_through_cli(tmp_path) -> None:
