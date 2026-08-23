@@ -4,8 +4,7 @@
 
 from __future__ import annotations
 
-import os
-import shutil
+import os  # noqa: F401 -- compatibility module attribute for existing callers/tests
 
 from packaging.version import Version
 
@@ -13,7 +12,6 @@ from qureddy.core.errors import (
     LocalOpenSSLBroken,
     LocalOpenSSLIsLibreSSL,
     LocalOpenSSLLacksGroup,
-    LocalOpenSSLMissing,
     LocalOpenSSLTooOld,
     LocalOpenSSLVersionMismatch,
     LocalOpenSSLVersionUnreadable,
@@ -34,6 +32,10 @@ from qureddy.scanners.tls.openssl_probe._constants import (
     PINNED_OPENSSL_VERSION,
     is_supported_series,
 )
+from qureddy.scanners.tls.openssl_probe.resolver import (
+    resolve_openssl_path,
+    resolve_openssl_with_capability,
+)
 
 _INSTALL_GUIDANCE = (
     f"pip installs QuReddy, not OpenSSL. Install a checksum-verified OpenSSL {OPENSSL_LTS_LABEL} "  # noqa: S608  # nosec B608 -- operator guidance, not SQL
@@ -45,28 +47,12 @@ _INSTALL_GUIDANCE = (
     "maintained OpenSSL 3.5.x LTS distribution and pass its full path."
 )
 
-
-def resolve_openssl_path(explicit: str | None) -> str:
-    """Resolve ``--openssl``, then the environment override, then PATH."""
-    candidate = explicit or os.environ.get(ENV_OVERRIDE) or shutil.which("openssl")
-    if not candidate:
-        raise LocalOpenSSLMissing(
-            f"openssl binary not found on PATH or via QUREDDY_OPENSSL. {_INSTALL_GUIDANCE}",
-            dependency=_missing_dependency(None),
-        )
-    if not os.path.isfile(candidate) or not os.access(candidate, os.X_OK):
-        raise LocalOpenSSLMissing(
-            f"openssl path is not an executable file: {candidate}. {_INSTALL_GUIDANCE}",
-            dependency=_missing_dependency(candidate),
-        )
-    return candidate
-
-
-def _missing_dependency(path: str | None) -> OpenSSLDependency:
-    return OpenSSLDependency(
-        path=path,
-        failure_category=FailureCategory.LOCAL_OPENSSL_MISSING,
-    )
+__all__ = [
+    "probe_capability",
+    "raise_if_unusable",
+    "resolve_openssl_path",
+    "resolve_openssl_with_capability",
+]
 
 
 def probe_capability(

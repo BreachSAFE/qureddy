@@ -12,6 +12,7 @@ PINNED_OPENSSL_VERSION = Version("3.5.7")
 MIN_OPENSSL_VERSION = PINNED_OPENSSL_VERSION
 OPENSSL_LTS_SERIES = (3, 5)
 OPENSSL_LTS_LABEL = ".".join(str(part) for part in OPENSSL_LTS_SERIES)
+OPENSSL_LTS_FORMULA = f"openssl@{OPENSSL_LTS_LABEL}"
 
 
 def is_supported_series(version: Version) -> bool:
