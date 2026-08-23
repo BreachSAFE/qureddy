@@ -17,6 +17,14 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   packaging checks, and installation guidance no longer imply that the public PyPI
   package exists or should be probed before an explicit authorization.
 
+## [0.2.46] - 2026-08-23
+
+### Changed
+
+- **MAX quality gates now use the shared BreachSAFE workflow** (`#360`, `#412`):
+  QuReddy consumes the commit-pinned common `v1.1.1` contract and its fail-closed
+  anti-pattern diff gate in the pinned Python/OpenSSL container.
+
 ## [0.2.45] - 2026-08-22
 
 ### Fixed
@@ -454,8 +462,9 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Contents
 
-1. [0.2.45](#0245---2026-08-22)
-2. [0.2.44](#0244---2026-08-22)
+1. [0.2.46](#0246---2026-08-23)
+2. [0.2.45](#0245---2026-08-22)
+3. [0.2.44](#0244---2026-08-22)
 3. [0.2.43](#0243---2026-08-23)
 4. [0.2.42](#0242---2026-08-22)
 5. [0.2.39](#0239---2026-08-22)
