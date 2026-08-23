@@ -220,6 +220,12 @@
         }
       },
       "name": "CN=github.com",
+      "properties": [
+        {
+          "name": "qureddy:certificate.is_self_signed",
+          "value": "false"
+        }
+      ],
       "type": "cryptographic-asset"
     },
     {
