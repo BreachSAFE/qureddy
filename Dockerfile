@@ -79,7 +79,13 @@ RUN set -eu; \
       echo "${QUREDDY_WHEEL_SHA256}  ${wheel}" | sha256sum --check --strict; \
     fi; \
     pip install --no-cache-dir /tmp/wheel/*.whl; \
-    rm -rf /tmp/wheel
+    rm -rf /tmp/wheel; \
+    python -m pip uninstall --yes pip setuptools; \
+    rm -rf /usr/local/lib/python3.14/site-packages/pip \
+           /usr/local/lib/python3.14/site-packages/pip-*.dist-info \
+           /usr/local/lib/python3.14/site-packages/setuptools \
+           /usr/local/lib/python3.14/site-packages/setuptools-*.dist-info \
+           /usr/local/lib/python3.14/site-packages/pkg_resources
 
 USER qureddy
 WORKDIR /var/lib/qureddy
