@@ -341,8 +341,8 @@ def inspect_archives(artifacts: list[Path]) -> None:
     expected_wheel = re.compile(
         rf"^breachsafe_qureddy-{re.escape(version)}-[^-]+-[^-]+-[^-]+\.whl$"
     )
-    expected_sdist = f"breachsafe-qureddy-{version}.tar.gz"
-    if not expected_wheel.match(wheels[0].name) or sdists[0].name != expected_sdist:
+    expected_sdist = re.compile(rf"^breachsafe[-_]qureddy-{re.escape(version)}\.tar\.gz$")
+    if not expected_wheel.match(wheels[0].name) or not expected_sdist.match(sdists[0].name):
         raise RuntimeError(
             f"artifact version mismatch: source {version}, wheel {wheels[0].name}, "
             f"sdist {sdists[0].name}"
