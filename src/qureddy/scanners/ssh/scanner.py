@@ -16,13 +16,14 @@ from qureddy.core.models import (
     Finding,
     ObservationType,
     Readiness,
-    ScanMetadata,
     ScanResult,
     ScanSummary,
     ScanTarget,
     Severity,
 )
 from qureddy.scanners.common.assets import build_endpoint_asset
+from qureddy.scanners.common.metadata import build_scan_metadata
+from qureddy.scanners.common.posture import build_interpretation
 from qureddy.scanners.common.rollup import highest_severity, scan_readiness
 from qureddy.scanners.ssh import classify
 from qureddy.scanners.ssh._identity import server_identity_observations
@@ -65,10 +66,9 @@ def build_ssh_failure_result(
         notes=(cleaned_error,),
     )
     return ScanResult(
-        scan=ScanMetadata(
+        scan=build_scan_metadata(
             scan_id=new_id("scan"),
             started_at=started,
-            completed_at=datetime.now(UTC),
             scanner_name="ssh",
             status=failure_category.value,
             total_attempts=1,
@@ -84,6 +84,7 @@ def build_ssh_failure_result(
             highest_severity=None,
             readiness=Readiness.UNKNOWN,
             failure_category=failure_category,
+            interpretation=build_interpretation([], [evidence], failure_category),
         ),
     )
 
@@ -266,13 +267,13 @@ def _build_ssh_success_result(
     completed = datetime.now(UTC)
 
     return ScanResult(
-        scan=ScanMetadata(
+        scan=build_scan_metadata(
             scan_id=new_id("scan"),
             started_at=started,
-            completed_at=completed,
             scanner_name="ssh",
             status="completed",
             total_attempts=1,
+            completed_at=completed,
         ),
         target=target,
         dependencies=(),
@@ -285,6 +286,7 @@ def _build_ssh_success_result(
             highest_severity=highest,
             readiness=readiness,
             failure_category=None,
+            interpretation=build_interpretation(findings, evidence, None),
         ),
     )
 

@@ -26,13 +26,13 @@ from qureddy.core.models import (
     OpenSSLDependency,
     ProbeResult,
     ProbeRole,
-    ScanMetadata,
     ScanResult,
     ScanTarget,
 )
 from qureddy.core.policy import classify_evidence
 from qureddy.core.retry import run_with_retries
 from qureddy.core.status import STATUS_COMPLETED
+from qureddy.scanners.common.metadata import build_scan_metadata
 from qureddy.scanners.tls._cert_findings import (
     evidence_from_certificate,
     finding_from_certificate,
@@ -138,12 +138,13 @@ def _completed_scan_result(
     )
     status = summary.failure_category.value if summary.failure_category else STATUS_COMPLETED
     return ScanResult(
-        scan=ScanMetadata(
+        scan=build_scan_metadata(
             scan_id=scan_id,
             started_at=started,
-            completed_at=completed,
+            scanner_name="tls",
             status=status,
             total_attempts=total_attempts,
+            completed_at=completed,
         ),
         target=target,
         dependencies=(dependency,),

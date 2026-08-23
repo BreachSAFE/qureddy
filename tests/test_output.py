@@ -30,6 +30,7 @@ from qureddy.core.models import (
 )
 from qureddy.output.console import render_rich
 from qureddy.output.console._tables import _finding_crypto_detail
+from qureddy.output.console._verdict import _compose_headline
 
 ANSI_ESCAPE = re.compile(r"\x1b\[")
 
@@ -169,6 +170,32 @@ def _render_to_string(result: ScanResult) -> str:
     buf = io.StringIO()
     render_rich(result, buf)
     return buf.getvalue()
+
+
+def test_failed_hybrid_probe_headline_does_not_claim_classical_only() -> None:
+    result = _build_result().model_copy(
+        update={
+            "findings": (
+                _build_result()
+                .findings[0]
+                .model_copy(
+                    update={
+                        "rule_id": "tls.hybrid.probe_failed",
+                        "readiness": Readiness.QUANTUM_VULNERABLE,
+                    }
+                ),
+            )
+        }
+    )
+    headline = _compose_headline(
+        result,
+        Readiness.QUANTUM_VULNERABLE,
+        None,
+        hybrid_group=None,
+        classical_group="X25519",
+    )
+    assert "unconfirmed" in str(headline)
+    assert "classical only" not in str(headline)
 
 
 class TestSummaryRows:

@@ -100,6 +100,56 @@ class Readiness(str, Enum):
     NOT_APPLICABLE = "not_applicable"
 
 
+class PqcSupport(str, Enum):
+    """Observed PQ key-exchange capability, independent of overall posture."""
+
+    HYBRID_OBSERVED = "hybrid_observed"
+    PURE_PQ_OBSERVED = "pure_pq_observed"
+    CLASSICAL_ONLY_OBSERVED = "classical_only_observed"
+    UNKNOWN = "unknown"
+    NOT_TESTABLE = "not_testable"
+
+
+class AxisStatus(str, Enum):
+    """Stable status vocabulary for a posture axis."""
+
+    HYBRID = "hybrid"
+    PURE_PQ = "pure_pq"
+    CLASSICAL = "classical"
+    ACCEPTABLE = "acceptable"
+    ACTION_NEEDED = "action_needed"
+    UNKNOWN = "unknown"
+    NOT_TESTABLE = "not_testable"
+    NOT_APPLICABLE = "not_applicable"
+
+
+class PostureAxes(BaseModel):
+    """Independent posture dimensions derived from observed evidence."""
+
+    model_config = FROZEN
+
+    pqc_support: PqcSupport
+    key_exchange: AxisStatus
+    downgrade_resistance: AxisStatus
+    authentication: AxisStatus
+    protocol_hygiene: AxisStatus
+
+
+class ScanInterpretation(BaseModel):
+    """Explain the readiness rollup without changing the legacy verdict."""
+
+    model_config = FROZEN
+
+    effective: Readiness
+    headline: str
+    recommended_action: str
+    axes: PostureAxes
+    reason_codes: tuple[str, ...] = Field(default_factory=tuple)
+    evidence_refs: tuple[str, ...] = Field(default_factory=tuple)
+    policy_id: str
+    policy_version: str
+
+
 class Confidence(str, Enum):
     """Confidence level for a finding's evidence chain."""
 
@@ -377,6 +427,17 @@ class Finding(BaseModel):
     nist_quantum_security_level: int | None = Field(default=None, ge=0, le=5)
 
 
+class ScanProvenance(BaseModel):
+    """Advisory build identity; absent context remains explicitly null."""
+
+    model_config = FROZEN
+
+    distribution: str
+    source_revision: str | None = None
+    source_dirty: bool | None = None
+    container_digest: str | None = None
+
+
 class ScanMetadata(BaseModel):
     """Run-level metadata. Built once at end-of-scan."""
 
@@ -389,6 +450,7 @@ class ScanMetadata(BaseModel):
     scanner_version: str = _version
     status: str
     total_attempts: int = 1
+    provenance: ScanProvenance | None = Field(default=None, exclude_if=lambda value: value is None)
 
 
 class ScanSummary(BaseModel):
@@ -401,6 +463,9 @@ class ScanSummary(BaseModel):
     highest_severity: Severity | None = None
     readiness: Readiness
     failure_category: FailureCategory | None = None
+    interpretation: ScanInterpretation | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
 
 
 class ScanResult(BaseModel):

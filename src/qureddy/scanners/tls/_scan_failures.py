@@ -12,11 +12,11 @@ from qureddy.core.models import (
     FailureCategory,
     ObservationType,
     OpenSSLDependency,
-    ScanMetadata,
     ScanResult,
     ScanTarget,
 )
 from qureddy.core.policy import classify_evidence
+from qureddy.scanners.common.metadata import build_scan_metadata
 from qureddy.scanners.tls._evidence import build_asset
 from qureddy.scanners.tls._summary import build_summary
 
@@ -81,10 +81,10 @@ def _build_failure_result(
         update={"failure_category": failure_category}
     )
     return ScanResult(
-        scan=ScanMetadata(
+        scan=build_scan_metadata(
             scan_id=new_id("scan"),
             started_at=started,
-            completed_at=datetime.now(UTC),
+            scanner_name="tls",
             status=failure_category.value,
             total_attempts=0,
         ),
