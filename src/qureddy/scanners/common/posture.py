@@ -130,14 +130,12 @@ def _authentication_axis(types: set[str], *, not_testable: bool) -> AxisStatus:
     )
 
 
-def _protocol_axis(
-    types: set[str], rules: set[str], *, has_findings: bool, not_testable: bool
-) -> AxisStatus:
+def _protocol_axis(types: set[str], *, has_findings: bool, not_testable: bool) -> AxisStatus:
     return (
         AxisStatus.NOT_TESTABLE
         if not_testable
         else AxisStatus.ACTION_NEEDED
-        if "tls.legacy.protocol_offered" in types or "tls.classical.protocol_offered" in rules
+        if "tls.legacy.protocol_offered" in types
         else AxisStatus.ACCEPTABLE
         if has_findings
         else AxisStatus.UNKNOWN
@@ -168,9 +166,7 @@ def _build_axes(
         not_testable=not_testable,
     )
     authentication = _authentication_axis(types, not_testable=not_testable)
-    protocol_hygiene = _protocol_axis(
-        types, rules, has_findings=bool(findings), not_testable=not_testable
-    )
+    protocol_hygiene = _protocol_axis(types, has_findings=bool(findings), not_testable=not_testable)
     return PostureAxes(
         pqc_support=pqc_support,
         key_exchange=key_exchange,
@@ -183,7 +179,7 @@ def _build_axes(
 def _reason_codes(
     findings: list[Finding], failure_category: FailureCategory | None
 ) -> tuple[str, ...]:
-    types, rules, hybrid, pure_pq, classical, hybrid_failed = _signals(findings)
+    types, _rules, hybrid, pure_pq, classical, hybrid_failed = _signals(findings)
     candidates = (
         (hybrid, "hybrid_pqc_observed"),
         (pure_pq, "pure_pq_observed"),
@@ -191,7 +187,7 @@ def _reason_codes(
         (classical, "classical_kex_negotiated"),
         ("tls.cert.classical_signature" in types, "classical_certificate_signature"),
         (
-            "tls.legacy.protocol_offered" in types or "tls.classical.protocol_offered" in rules,
+            "tls.legacy.protocol_offered" in types,
             "deprecated_protocol_observed",
         ),
     )
