@@ -166,6 +166,14 @@ def main() -> int:
         gate = Gate(output / "manifest.json", environment, versions)
         try:
             verify_clean_source()
+            gate.run(
+                "release-metadata",
+                [
+                    sys.executable,
+                    "-c",
+                    "from release_support import verify_release_metadata; verify_release_metadata()",
+                ],
+            )
             gate.clean_worktree = True
             uv = download_tool("uv", tools)
             gitleaks = download_tool("gitleaks", tools)
