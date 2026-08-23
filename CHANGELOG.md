@@ -1,7 +1,7 @@
 # Changelog
 
 [![Status: Alpha](https://img.shields.io/badge/status-alpha-blue?style=flat-square)](https://github.com/breachsafe/qureddy)
-[![Version](https://img.shields.io/badge/version-0.2.46-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.48-blue?style=flat-square)](CHANGELOG.md)
 [![Keep a Changelog](https://img.shields.io/badge/keep%20a%20changelog-1.1.0-orange?style=flat-square)](https://keepachangelog.com/en/1.1.0/)
 [![SemVer](https://img.shields.io/badge/SemVer-2.0.0-blue?style=flat-square)](https://semver.org/spec/v2.0.0.html)
 
@@ -17,13 +17,23 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   packaging checks, and installation guidance no longer imply that the public PyPI
   package exists or should be probed before an explicit authorization.
 
+## [0.2.48] - 2026-08-23
+
+### Fixed
+
+- **MAX quality gates remain executable in GitHub Actions** (`#360`, `#414`):
+  the local fail-closed gate is restored while the private common workflow is
+  unavailable across the `breachsafe`/`paul007ex` organization boundary.
+- **Release identity is consistent**: package metadata, Docker banners, golden
+  fixtures, and lock data all report `0.2.48`.
+
 ## [0.2.46] - 2026-08-23
 
 ### Changed
 
-- **MAX quality gates now use the shared BreachSAFE workflow** (`#360`, `#412`):
-  QuReddy consumes the commit-pinned common `v1.1.1` contract and its fail-closed
-  anti-pattern diff gate in the pinned Python/OpenSSL container.
+- **MAX quality gates were prepared for the shared BreachSAFE workflow** (`#360`, `#412`):
+  the commit-pinned common `v1.1.1` contract and fail-closed anti-pattern diff gate
+  were validated locally; GitHub cross-owner access is tracked by #360.
 
 ## [0.2.45] - 2026-08-22
 
