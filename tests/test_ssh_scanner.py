@@ -149,6 +149,18 @@ def test_strong_kex_and_hostkeys_have_no_weak_findings() -> None:
     assert "ssh.hostkey.weak" not in rules
 
 
+def test_weak_transport_finding_is_emitted() -> None:
+    result = _run(
+        ("curve25519-sha256",),
+        ("ssh-ed25519",),
+        ciphers=("3des-cbc",),
+        macs=("hmac-md5",),
+    )
+    finding = next(f for f in result.findings if f.rule_id == "ssh.transport.weak")
+    assert "3des-cbc" in finding.title
+    assert "hmac-md5" in finding.title
+
+
 def test_host_keys_emitted_as_cbom_components() -> None:
     # A5/#143: the CBOM previously dropped host keys; every offered host key must
     # now appear as a signature-classified crypto asset the endpoint provides.

@@ -143,6 +143,13 @@ class TestResolveOpenSSLPath:
         with pytest.raises(LocalOpenSSLMissing, match="invalid override"):
             resolve_openssl_with_capability(str(explicit))
 
+    @pytest.mark.parametrize("platform", ["win32", "linux"])
+    def test_platform_guidance_mentions_moving_formula_channel(
+        self, platform: str, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(resolver_module.sys, "platform", platform)
+        assert "moving channel" in resolver_module._install_guidance()  # noqa: SLF001
+
 
 class TestProbeCapability:
     def test_non_launchable_binary_is_typed_local_failure(self) -> None:
