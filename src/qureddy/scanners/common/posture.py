@@ -25,6 +25,11 @@ def _ciso_text(
     reasons: tuple[str, ...],
 ) -> tuple[str, str]:
     """Create deterministic headline/action text from structured reasons."""
+    if "weak_classical_algorithm_observed" in reasons:
+        return (
+            "Classically weak algorithm exposure was observed.",
+            "Remove weak algorithms and re-scan the endpoint.",
+        )
     if "hybrid_pqc_observed" in reasons and "deprecated_protocol_observed" in reasons:
         return (
             "Hybrid PQC is available, but legacy protocol exposure remains.",
@@ -114,19 +119,29 @@ def _downgrade_axis(
         AxisStatus.NOT_TESTABLE
         if not_testable
         else AxisStatus.ACTION_NEEDED
-        if "tls.legacy.protocol_offered" in types or "tls.classical.protocol_offered" in rules
+        if (
+            "tls.legacy.protocol_offered" in types
+            or "tls.classical.protocol_offered" in rules
+            or bool({"ssh.kex.weak", "ssh.hostkey.weak", "ssh.transport.weak"} & types)
+        )
         else AxisStatus.ACCEPTABLE
         if classical or hybrid or pure_pq
         else AxisStatus.UNKNOWN
     )
 
 
-def _authentication_axis(types: set[str], *, not_testable: bool) -> AxisStatus:
+def _authentication_axis(
+    types: set[str], evidence_types: set[str], *, not_testable: bool
+) -> AxisStatus:
     return (
         AxisStatus.NOT_TESTABLE
         if not_testable
         else AxisStatus.CLASSICAL
-        if "tls.cert.classical_signature" in types
+        if (
+            "tls.cert.classical_signature" in types
+            or "ssh.hostkey" in evidence_types
+            or "ssh.hostkey.weak" in types
+        )
         else AxisStatus.PURE_PQ
         if "tls.cert.pq_signature" in types
         else AxisStatus.NOT_APPLICABLE
@@ -138,7 +153,11 @@ def _protocol_axis(types: set[str], *, has_findings: bool, not_testable: bool) -
         AxisStatus.NOT_TESTABLE
         if not_testable
         else AxisStatus.ACTION_NEEDED
-        if "tls.legacy.protocol_offered" in types
+        if (
+            "tls.legacy.protocol_offered" in types
+            or "ssh.transport.weak" in types
+            or "ssh.terrapin.posture" in types
+        )
         else AxisStatus.ACCEPTABLE
         if has_findings
         else AxisStatus.UNKNOWN
@@ -147,9 +166,11 @@ def _protocol_axis(types: set[str], *, has_findings: bool, not_testable: bool) -
 
 def _build_axes(
     findings: list[Finding],
+    evidence: list[Evidence],
     failure_category: FailureCategory | None,
 ) -> PostureAxes:
     types, rules, hybrid, pure_pq, classical, hybrid_failed = _signals(findings)
+    evidence_types = {ev.evidence_type for ev in evidence}
     not_testable = _is_not_testable(failure_category)
 
     pqc_support, key_exchange = _pqc_axis(
@@ -168,7 +189,7 @@ def _build_axes(
         pure_pq=pure_pq,
         not_testable=not_testable,
     )
-    authentication = _authentication_axis(types, not_testable=not_testable)
+    authentication = _authentication_axis(types, evidence_types, not_testable=not_testable)
     protocol_hygiene = _protocol_axis(types, has_findings=bool(findings), not_testable=not_testable)
     return PostureAxes(
         pqc_support=pqc_support,
@@ -193,6 +214,10 @@ def _reason_codes(
             "tls.legacy.protocol_offered" in types,
             "deprecated_protocol_observed",
         ),
+        (
+            bool({"ssh.kex.weak", "ssh.hostkey.weak", "ssh.transport.weak"} & types),
+            "weak_classical_algorithm_observed",
+        ),
     )
     codes = [code for present, code in candidates if present]
     if failure_category is not None:
@@ -206,7 +231,7 @@ def build_interpretation(
     failure_category: FailureCategory | None,
 ) -> ScanInterpretation:
     """Build stable posture axes and provenance from observed findings."""
-    axes = _build_axes(findings, failure_category)
+    axes = _build_axes(findings, evidence, failure_category)
     reason_codes = _reason_codes(findings, failure_category)
     headline, recommended_action = _ciso_text(axes, reason_codes)
     return ScanInterpretation(

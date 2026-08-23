@@ -7,8 +7,10 @@ from __future__ import annotations
 from qureddy.core.models import (
     AxisStatus,
     Confidence,
+    Evidence,
     FailureCategory,
     Finding,
+    ObservationType,
     PqcSupport,
     Readiness,
     Severity,
@@ -28,6 +30,17 @@ def _finding(rule_id: str, finding_type: str, readiness: Readiness) -> Finding:
         severity=Severity.INFO,
         readiness=readiness,
         confidence=Confidence.HIGH,
+    )
+
+
+def _ssh_evidence(evidence_type: str = "ssh.hostkey") -> Evidence:
+    return Evidence(
+        id="ev-ssh-1",
+        asset_id="asset-1",
+        evidence_type=evidence_type,
+        observation_type=ObservationType.OFFERED,
+        source="test",
+        protocol="ssh",
     )
 
 
@@ -152,3 +165,30 @@ def test_current_classical_protocol_is_not_deprecated_protocol_exposure() -> Non
     assert interpretation.axes.downgrade_resistance is AxisStatus.ACTION_NEEDED
     assert interpretation.axes.protocol_hygiene is AxisStatus.ACCEPTABLE
     assert "deprecated_protocol_observed" not in interpretation.reason_codes
+
+
+def test_ssh_weak_posture_is_reflected_in_all_relevant_axes() -> None:
+    """SSH findings must not produce a positive headline over a weak verdict."""
+    interpretation = build_interpretation(
+        [
+            _finding("ssh.kex.hybrid_offered", "ssh.kex.hybrid", Readiness.TRANSITIONAL_HYBRID),
+            _finding("ssh.hostkey.weak", "ssh.hostkey.weak", Readiness.CLASSICALLY_WEAK),
+            _finding("ssh.transport.weak", "ssh.transport.weak", Readiness.CLASSICALLY_WEAK),
+            _finding("ssh.terrapin.posture", "ssh.terrapin.posture", Readiness.NOT_APPLICABLE),
+        ],
+        [_ssh_evidence()],
+        None,
+    )
+
+    assert interpretation.effective is Readiness.CLASSICALLY_WEAK
+    assert interpretation.axes.authentication is AxisStatus.CLASSICAL
+    assert interpretation.axes.downgrade_resistance is AxisStatus.ACTION_NEEDED
+    assert interpretation.axes.protocol_hygiene is AxisStatus.ACTION_NEEDED
+    assert interpretation.headline.startswith("Classically weak")
+
+
+def test_ssh_hostkey_evidence_marks_classical_authentication_without_weak_finding() -> None:
+    """A strong SSH host-key offer is still classical authentication."""
+    interpretation = build_interpretation([], [_ssh_evidence()], None)
+
+    assert interpretation.axes.authentication is AxisStatus.CLASSICAL
