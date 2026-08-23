@@ -208,6 +208,26 @@ def test_archive_inspection_rejects_incomplete_build(tmp_path: Path) -> None:
         release_support.inspect_archives([wheel])
 
 
+def test_archive_inspection_rejects_version_mismatch(tmp_path: Path) -> None:
+    wheel = tmp_path / "breachsafe_qureddy-0.2.49-py3-none-any.whl"
+    sdist = tmp_path / "breachsafe-qureddy-0.2.49.tar.gz"
+    with zipfile.ZipFile(wheel, "w") as bundle:
+        bundle.writestr("qureddy/__init__.py", "__version__ = '0.2.49'\n")
+    with tarfile.open(sdist, "w:gz") as bundle:
+        root = "breachsafe-qureddy-0.2.49"
+        for name in ("PKG-INFO",):
+            info = tarfile.TarInfo(f"{root}/{name}")
+            info.size = 0
+            bundle.addfile(info)
+    with pytest.raises(RuntimeError, match="artifact version mismatch"):
+        release_support.inspect_archives([wheel, sdist])
+
+
+def test_release_metadata_matches_source() -> None:
+    version = release_support.verify_release_metadata()
+    assert version == release_support.source_version()
+
+
 def test_size_policy_rejects_oversized_file(tmp_path: Path) -> None:
     source = tmp_path / "src" / "qureddy"
     source.mkdir(parents=True)

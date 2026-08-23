@@ -7,6 +7,7 @@ from __future__ import annotations
 import hashlib
 import json
 import platform
+import re
 import shutil
 import subprocess
 import tarfile
@@ -252,6 +253,24 @@ def verify_clean_source() -> str:
     return git_output("rev-parse", "HEAD")
 
 
+def source_version() -> str:
+    """Return the package version declared by the source metadata."""
+    metadata = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    version = metadata.get("project", {}).get("version")
+    if not isinstance(version, str) or not version:
+        raise RuntimeError("pyproject.toml does not declare a package version")
+    return version
+
+
+def verify_release_metadata() -> str:
+    """Require the package version to be represented in the changelog."""
+    version = source_version()
+    changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
+    if not re.search(rf"^## \[{re.escape(version)}\](?: |$)", changelog, re.MULTILINE):
+        raise RuntimeError(f"CHANGELOG.md has no release section for package version {version}")
+    return version
+
+
 def locked_versions(commit: str) -> dict[str, str]:
     """Return evidence versions for locked Python tools."""
     packages = {
@@ -318,3 +337,13 @@ def inspect_archives(artifacts: list[Path]) -> None:
                 for name in inner
             ):
                 raise RuntimeError(f"unexpected sdist content in {artifact.name}")
+    version = source_version()
+    expected_wheel = re.compile(
+        rf"^breachsafe_qureddy-{re.escape(version)}-[^-]+-[^-]+-[^-]+\.whl$"
+    )
+    expected_sdist = f"breachsafe-qureddy-{version}.tar.gz"
+    if not expected_wheel.match(wheels[0].name) or sdists[0].name != expected_sdist:
+        raise RuntimeError(
+            f"artifact version mismatch: source {version}, wheel {wheels[0].name}, "
+            f"sdist {sdists[0].name}"
+        )
