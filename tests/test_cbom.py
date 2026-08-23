@@ -110,8 +110,12 @@ class TestCycloneDx17Contract:
             is_self_signed=True,
             is_post_quantum_signature=False,
         )
-        evidence = _build_result().evidence[0].model_copy(
-            update={"observation_type": ObservationType.OBSERVED, "certificate": certificate}
+        evidence = (
+            _build_result()
+            .evidence[0]
+            .model_copy(
+                update={"observation_type": ObservationType.OBSERVED, "certificate": certificate}
+            )
         )
         result = _build_result().model_copy(update={"evidence": (evidence, evidence)})
 
