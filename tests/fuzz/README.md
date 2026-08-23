@@ -16,7 +16,7 @@ extends the property-based coverage from issue #37 / #131.
 1. [Overview](#overview)
 2. [Harnesses](#harnesses)
 3. [Run a harness locally](#run-a-harness-locally)
-4. [ClusterFuzzLite in CI](#clusterfuzzlite-in-ci)
+4. [Atheris fuzzing in CI](#atheris-fuzzing-in-ci)
 
 ## Overview
 
@@ -54,10 +54,11 @@ python tests/fuzz/fuzz_target.py -max_total_time=60
 python tests/fuzz/fuzz_ssh_kexinit.py path/to/crash-input
 ```
 
-## ClusterFuzzLite in CI
+## Atheris fuzzing in CI
 
 Pull requests that touch the parsers, the harnesses, or the fuzzing setup run a
-short, bounded ClusterFuzzLite fuzz session via
-`.github/workflows/cifuzz.yml`. The build image and build script live under
-`.clusterfuzzlite/`. This is the self-hosted, no-acceptance-process alternative
-to Google OSS-Fuzz and provides the Scorecard "Fuzzing" signal.
+short, bounded Atheris session via `.github/workflows/cifuzz.yml`. The workflow
+installs the Python 3.14 `atheris>=3.1` wheel on an amd64 Linux runner and runs
+each harness for 45 seconds. This is the repository's PR-time fuzz check; it is
+separate from the optional hosted Google OSS-Fuzz onboarding tracked in issue
+#372.
