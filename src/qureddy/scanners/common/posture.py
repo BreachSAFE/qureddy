@@ -79,7 +79,10 @@ def _signals(findings: list[Finding]) -> tuple[set[str], set[str], bool, bool, b
         for f in findings
     )
     pure_pq = any(f.readiness is Readiness.QUANTUM_SAFE for f in findings)
-    classical = any("kex.classical" in value for value in types | rules)
+    classical = bool(
+        {"tls.kex.classical", "ssh.kex.classical"} & types
+        or {"tls.classical.negotiated_x25519", "ssh.kex.classical_only"} & rules
+    )
     hybrid_failed = "tls.hybrid.probe_failed" in rules
     return types, rules, hybrid, pure_pq, classical, hybrid_failed
 
