@@ -8,7 +8,7 @@ Use Case 4 (Detect Unsupported Local OpenSSL) is covered here.
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -16,6 +16,7 @@ import qureddy.scanners.tls.openssl_probe as openssl_probe_api
 import qureddy.scanners.tls.openssl_probe._constants as constants_module
 import qureddy.scanners.tls.openssl_probe.capability as capability_module
 import qureddy.scanners.tls.openssl_probe.probe as probe_module
+import qureddy.scanners.tls.openssl_probe.resolver as resolver_module
 from qureddy.core.errors import (
     LocalOpenSSLBroken,
     LocalOpenSSLIsLibreSSL,
@@ -33,6 +34,7 @@ from qureddy.scanners.tls.openssl_probe import (
     resolve_openssl_path,
     run_hybrid_probe,
 )
+from qureddy.scanners.tls.openssl_probe.capability import resolve_openssl_with_capability
 from tests._fake_openssl import fake_openssl
 
 
@@ -107,6 +109,36 @@ class TestResolveOpenSSLPath:
         )
         with pytest.raises(LocalOpenSSLMissing):
             resolve_openssl_path(str(non_exec))
+
+    def test_search_retries_after_invalid_candidate(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        dependency = OpenSSLDependency(path="/good/openssl", version="3.5.7")
+        monkeypatch.delenv("QUREDDY_OPENSSL", raising=False)
+        monkeypatch.setattr(
+            resolver_module, "_candidate_paths", lambda: ["/bad/openssl", "/good/openssl"]
+        )
+        monkeypatch.setattr(
+            resolver_module,
+            "_validate_candidate",
+            Mock(side_effect=[QureddyError("off-series"), dependency]),
+        )
+
+        path, result = resolve_openssl_with_capability(None)
+
+        assert path == "/good/openssl"
+        assert result is dependency
+
+    def test_explicit_invalid_candidate_does_not_fall_back(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(resolver_module, "_candidate_paths", lambda: ["/good/openssl"])
+        monkeypatch.setattr(
+            resolver_module,
+            "_validate_candidate",
+            Mock(side_effect=QureddyError("invalid override")),
+        )
+
+        with pytest.raises(LocalOpenSSLMissing, match="invalid override"):
+            resolve_openssl_with_capability("/explicit/openssl")
 
 
 class TestProbeCapability:

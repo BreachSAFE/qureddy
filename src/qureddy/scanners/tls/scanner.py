@@ -59,12 +59,10 @@ from qureddy.scanners.tls.openssl_probe import (
     CLASSICAL_GROUP,
     DEFAULT_TIMEOUT_SECONDS,
     HYBRID_GROUPS,
-    probe_capability,
-    raise_if_unusable,
-    resolve_openssl_path,
     run_classical_probe,
     run_hybrid_probe,
 )
+from qureddy.scanners.tls.openssl_probe.capability import resolve_openssl_with_capability
 
 # Re-exported for tests that pin the rollup behavior. Canonical impls
 # live in `_summary.py`; the public test surface stays on this module
@@ -234,10 +232,9 @@ class TLSScanner:
         return scan_id
 
     def _check_capability(self, timeout_seconds: int) -> tuple[str, OpenSSLDependency]:
-        openssl_path = resolve_openssl_path(self._openssl_path_override)
-        dependency = probe_capability(openssl_path, timeout_seconds=timeout_seconds)
-        raise_if_unusable(dependency)
-        return openssl_path, dependency
+        return resolve_openssl_with_capability(
+            self._openssl_path_override, timeout_seconds=timeout_seconds
+        )
 
     def _collect_evidence(
         self,
