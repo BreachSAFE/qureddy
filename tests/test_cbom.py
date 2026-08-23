@@ -16,13 +16,18 @@ import pytest
 
 from qureddy._branding import PROJECT_VERSION
 from qureddy.core.certificate import CertificateObservation
+from qureddy.core.errors import CbomError
 from qureddy.core.models import (
     Evidence,
     FailureCategory,
     ObservationType,
     OpenSSLDependency,
 )
-from qureddy.output.cbom import _assert_library_serialization_shape, render_cbom
+from qureddy.output.cbom import (
+    _assert_library_serialization_shape,
+    _captured_certificate,
+    render_cbom,
+)
 from qureddy.scanners.tls.scanner import build_capability_failure_result
 from tests._cbom_fixtures import _build_result, _forced_non_english_lc_time, _render
 
@@ -72,7 +77,7 @@ class TestCycloneDx17Contract:
     def test_library_intermediate_shape_guard_fails_closed(
         self, payload: dict[str, object], message: str
     ) -> None:
-        with pytest.raises(RuntimeError, match=message):
+        with pytest.raises(CbomError, match=message):
             _assert_library_serialization_shape(payload, has_certificate=False)
 
     def test_library_intermediate_shape_guard_rejects_bad_certificate_properties(self) -> None:
@@ -81,7 +86,7 @@ class TestCycloneDx17Contract:
             "components": [{"bom-ref": "crypto/certificate/leaf", "cryptoProperties": {}}],
             "metadata": {"component": {}},
         }
-        with pytest.raises(RuntimeError, match="certificateProperties"):
+        with pytest.raises(CbomError, match="certificateProperties"):
             _assert_library_serialization_shape(payload, has_certificate=True)
 
     def test_library_intermediate_shape_guard_rejects_missing_certificate(self) -> None:
@@ -90,8 +95,32 @@ class TestCycloneDx17Contract:
             "components": [],
             "metadata": {"component": {}},
         }
-        with pytest.raises(RuntimeError, match="certificate component"):
+        with pytest.raises(CbomError, match="certificate component"):
             _assert_library_serialization_shape(payload, has_certificate=True)
+
+    def test_rejects_multiple_captured_certificates(self) -> None:
+        certificate = CertificateObservation(
+            subject="CN=example.com",
+            issuer="CN=example.com",
+            not_before="2026-01-01T00:00:00Z",
+            not_after="2027-01-01T00:00:00Z",
+            serial="01",
+            signature_algorithm="sha256WithRSAEncryption",
+            public_key_summary="RSA 2048",
+            is_self_signed=True,
+            is_post_quantum_signature=False,
+        )
+        evidence = (
+            _build_result()
+            .evidence[0]
+            .model_copy(
+                update={"observation_type": ObservationType.OBSERVED, "certificate": certificate}
+            )
+        )
+        result = _build_result().model_copy(update={"evidence": (evidence, evidence)})
+
+        with pytest.raises(CbomError, match="at most one"):
+            _captured_certificate(result)
 
     def test_endpoint_is_metadata_only_with_stable_ref(self) -> None:
         first = _render(_build_result())

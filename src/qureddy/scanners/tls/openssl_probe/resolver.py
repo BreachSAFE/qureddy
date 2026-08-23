@@ -201,6 +201,7 @@ def _install_guidance() -> str:
     common = (
         f"pip installs QuReddy, not OpenSSL. Install a checksum-verified OpenSSL {OPENSSL_LTS_LABEL} LTS build with {HYBRID_GROUP} "
         f"(validated: {PINNED_OPENSSL_VERSION}); set {ENV_OVERRIDE}=<path> or pass --openssl PATH."
+        f" The {OPENSSL_LTS_FORMULA} package is a moving channel; verify the reported version."
     )
     if sys.platform == "darwin":
         return f"{common} macOS: `brew install {OPENSSL_LTS_FORMULA}` is a moving channel; verify the reported version. Linux: install from a trusted vendor. Windows: install a maintained build."

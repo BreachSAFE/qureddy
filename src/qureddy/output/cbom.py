@@ -34,6 +34,7 @@ from cyclonedx.model.component import Component, ComponentType
 from cyclonedx.model.tool import ToolRepository
 from cyclonedx.output.json import JsonV1Dot7
 
+from qureddy.core.errors import CbomError
 from qureddy.core.models import ObservationType, ScanResult
 from qureddy.output.cbom_assets import ENDPOINT_REF
 from qureddy.output.cbom_components import (
@@ -145,7 +146,7 @@ def _captured_certificate(result: ScanResult) -> CertificateObservation | None:
     observations = _observed_certificates(result)
     if len(observations) > 1:
         msg = f"expected at most one captured leaf certificate, got {len(observations)}"
-        raise ValueError(msg)
+        raise CbomError(msg)
     return observations[0] if observations else None
 
 
@@ -274,7 +275,7 @@ def _assert_library_serialization_shape(payload: dict[str, Any], has_certificate
     _assert_library_collections(dependencies, components)
     metadata = payload.get("metadata")
     if not isinstance(metadata, dict) or not isinstance(metadata.get("component"), dict):
-        raise RuntimeError("cyclonedx-python-lib JSON shape changed: metadata.component")
+        raise CbomError("cyclonedx-python-lib JSON shape changed: metadata.component")
     if has_certificate:
         _assert_certificate_shape(components)
 
@@ -282,16 +283,16 @@ def _assert_library_serialization_shape(payload: dict[str, Any], has_certificate
 def _assert_library_collections(dependencies: Any, components: Any) -> None:
     """Validate the collection and reference shapes consumed by gap patches."""
     if not isinstance(dependencies, list) or not isinstance(components, list):
-        raise RuntimeError("cyclonedx-python-lib JSON shape changed: dependencies/components")
+        raise CbomError("cyclonedx-python-lib JSON shape changed: dependencies/components")
     if any(
         not isinstance(item, dict) or not isinstance(item.get("ref"), str) for item in dependencies
     ):
-        raise RuntimeError("cyclonedx-python-lib JSON shape changed: dependency.ref")
+        raise CbomError("cyclonedx-python-lib JSON shape changed: dependency.ref")
     if any(
         not isinstance(item, dict) or not isinstance(item.get("bom-ref"), str)
         for item in components
     ):
-        raise RuntimeError("cyclonedx-python-lib JSON shape changed: component.bom-ref")
+        raise CbomError("cyclonedx-python-lib JSON shape changed: component.bom-ref")
 
 
 def _assert_certificate_shape(components: list[Any]) -> None:
@@ -300,7 +301,7 @@ def _assert_certificate_shape(components: list[Any]) -> None:
         (item for item in components if item.get("bom-ref") == CERTIFICATE_REF), None
     )
     if not isinstance(certificate, dict):
-        raise RuntimeError("cyclonedx-python-lib JSON shape changed: certificate component")
+        raise CbomError("cyclonedx-python-lib JSON shape changed: certificate component")
     crypto_properties = certificate.get("cryptoProperties")
     certificate_properties = (
         crypto_properties.get("certificateProperties")
@@ -308,7 +309,7 @@ def _assert_certificate_shape(components: list[Any]) -> None:
         else None
     )
     if not isinstance(certificate_properties, dict):
-        raise RuntimeError("cyclonedx-python-lib JSON shape changed: certificateProperties")
+        raise CbomError("cyclonedx-python-lib JSON shape changed: certificateProperties")
 
 
 def _patch_provides_edges(payload: dict[str, Any], provides_edges: dict[str, list[str]]) -> None:

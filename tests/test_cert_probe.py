@@ -16,7 +16,7 @@ from unittest.mock import patch
 
 import pytest
 
-from qureddy.core.errors import LocalOpenSSLBroken, LocalOpenSSLMissing
+from qureddy.core.errors import CertificateParseError, LocalOpenSSLBroken, LocalOpenSSLMissing
 from qureddy.scanners.tls._net import build_connect_target
 from qureddy.scanners.tls.cert_probe import (
     _certificate_text_details,
@@ -117,7 +117,7 @@ class TestParseCertificate:
         """Reviewer-flagged bug: subject='' == issuer='' on a failed fetch
         made every failed fetch look like a self-signed cert. Must fail
         loud, not compute a silently-wrong answer (trap #11 shape)."""
-        with pytest.raises(ValueError, match="empty"):
+        with pytest.raises(CertificateParseError, match="empty"):
             parse_certificate("/fixture/openssl", "")
 
     def test_public_key_fields_ignore_dn_injected_values(self) -> None:

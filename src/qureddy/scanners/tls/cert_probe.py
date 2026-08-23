@@ -36,6 +36,7 @@ from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
 
+from qureddy.core.errors import CertificateParseError
 from qureddy.core.logging import get_logger
 from qureddy.scanners.tls._net import build_connect_target
 from qureddy.scanners.tls.cert_sig import parse_certificate_signature
@@ -283,7 +284,7 @@ def parse_certificate(
     """Parse a PEM certificate using single-purpose `openssl x509` flags only — no `-text` full-dump parsing except the one field (signature algorithm) with no dedicated flag, same as testssl.sh.
 
     Raises:
-        ValueError: `pem` is empty. Reviewer-flagged bug: on an empty PEM,
+        CertificateParseError: `pem` is empty. Reviewer-flagged bug: on an empty PEM,
             every `-noout` call below returns "", so subject == issuer ==
             "" and is_self_signed silently comes out True — a failed
             fetch must not look identical to a genuine self-signed cert.
@@ -299,7 +300,7 @@ def parse_certificate(
     """
     if not pem.strip():
         msg = "cannot parse empty certificate PEM"
-        raise ValueError(msg)
+        raise CertificateParseError(msg)
     subject = _x509_value(openssl_path, pem, "-subject", "subject=", timeout_seconds)
     issuer = _x509_value(openssl_path, pem, "-issuer", "issuer=", timeout_seconds)
     not_before, not_after = _certificate_dates(openssl_path, pem, timeout_seconds)

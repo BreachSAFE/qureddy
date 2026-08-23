@@ -38,7 +38,7 @@ from qureddy.cli._options import (
 )
 from qureddy.cli._render import _open_output_file, _render
 from qureddy.cli.main import scan_app
-from qureddy.core.errors import SSHProbeError, TargetParseError
+from qureddy.core.errors import CbomError, SSHProbeError, TargetParseError
 from qureddy.core.logging import start_run_logging
 from qureddy.core.models import OutputFormat, ScanResult, ScanTarget
 from qureddy.core.targets import parse_ssh_target
@@ -172,7 +172,7 @@ def scan_ssh_cmd(
                 min_severity=min_severity,
                 stream=output_stream,
             )
-        except ValueError as exc:
+        except CbomError as exc:
             # #344: map a render-boundary defect to the exit-code contract, not a traceback.
             _echo_operator_diagnostic(
                 f"internal error rendering output: {exc}", machine_format=machine_format

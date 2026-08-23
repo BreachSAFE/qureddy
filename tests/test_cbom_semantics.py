@@ -18,6 +18,7 @@ from pathlib import Path
 
 import pytest
 
+from qureddy.core.errors import CbomError
 from qureddy.core.models import Evidence, ObservationType
 from qureddy.output.cbom_semantics import validate_cbom_semantics
 from tests._cbom_fixtures import (
@@ -40,7 +41,7 @@ class TestCbomSemanticGuard:
         payload = self._base()
         payload["specVersion"] = "1.6"
 
-        with pytest.raises(ValueError, match=r"exactly 1\.7"):
+        with pytest.raises(CbomError, match=r"exactly 1\.7"):
             validate_cbom_semantics(payload)
 
     def test_rejects_dangling_reference(self) -> None:
@@ -48,7 +49,7 @@ class TestCbomSemanticGuard:
         endpoint = next(item for item in payload["dependencies"] if item["ref"] == "endpoint")
         endpoint["provides"].append("crypto/algorithm/missing")
 
-        with pytest.raises(ValueError, match="dangling"):
+        with pytest.raises(CbomError, match="dangling"):
             validate_cbom_semantics(payload)
 
     def test_rejects_dangling_cipher_suite_algorithm_ref(self) -> None:
@@ -64,14 +65,14 @@ class TestCbomSemanticGuard:
             "crypto/algorithm/missing"
         )
 
-        with pytest.raises(ValueError, match="dangling"):
+        with pytest.raises(CbomError, match="dangling"):
             validate_cbom_semantics(payload)
 
     def test_rejects_duplicate_reference(self) -> None:
         payload = self._base()
         payload["components"].append(dict(payload["components"][0]))
 
-        with pytest.raises(ValueError, match="duplicate"):
+        with pytest.raises(CbomError, match="duplicate"):
             validate_cbom_semantics(payload)
 
     def test_rejects_duplicate_tool_reference(self) -> None:
@@ -80,7 +81,14 @@ class TestCbomSemanticGuard:
         duplicate["bom-ref"] = "endpoint"
         payload["metadata"]["tools"]["components"].append(duplicate)
 
-        with pytest.raises(ValueError, match="duplicate"):
+        with pytest.raises(CbomError, match="duplicate"):
+            validate_cbom_semantics(payload)
+
+    def test_rejects_unresolved_auto_generated_reference(self) -> None:
+        payload = self._base()
+        payload["components"].append({"bom-ref": "BomRef.1.2"})
+
+        with pytest.raises(CbomError, match="auto-generated"):
             validate_cbom_semantics(payload)
 
     @pytest.mark.parametrize(
@@ -102,7 +110,7 @@ class TestCbomSemanticGuard:
             }
         )
 
-        with pytest.raises(ValueError, match="secret-like"):
+        with pytest.raises(CbomError, match="secret-like"):
             validate_cbom_semantics(payload)
 
 
