@@ -55,6 +55,11 @@ flowchart TB
         ssh_classify["classify.py"]
     end
 
+    subgraph common ["src/qureddy/scanners/common/"]
+        rollup["rollup.py"]
+        assets["assets.py"]
+    end
+
     subgraph output ["src/qureddy/output/"]
         rich["console/"]
         json["json.py"]
@@ -80,6 +85,10 @@ flowchart TB
 
     ssh_scanner --> ssh_probe
     ssh_scanner --> ssh_classify
+    tls_scanner --> rollup
+    tls_scanner --> assets
+    ssh_scanner --> rollup
+    ssh_scanner --> assets
 
     tls_cli --> targets
     ssh_cli --> targets
@@ -109,8 +118,10 @@ CLI orchestration
 ```
 
 `core` owns shared types, target invariants, retry configuration, status, and
-policy. Scanner modules produce `ScanResult`. Output modules read that result
-and write to a caller-supplied stream.
+policy. `scanners/common/` owns the cross-protocol readiness/severity rollup and
+the stable endpoint-asset builder used by both scanners. Scanner modules produce
+`ScanResult`; output modules read that result and write to a caller-supplied
+stream.
 
 Renderers do not open sockets, run OpenSSL, or refetch certificates. CBOM uses
 the certificate observation captured during the TLS scan.
