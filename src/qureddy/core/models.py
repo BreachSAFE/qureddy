@@ -339,6 +339,8 @@ class Evidence(BaseModel):
     protocol_version: str | None = None
     cipher_suite: str | None = None
     negotiated_group: str | None = None
+    server_software: str | None = None
+    server_version: str | None = None
     probe_role: ProbeRole | None = None
     expected_group: str | None = None
     probe_result: ProbeResult | None = None

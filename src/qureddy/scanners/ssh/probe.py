@@ -10,6 +10,7 @@ explicit timeout, typed errors on malformed input.
 
 from __future__ import annotations
 
+import re
 import socket
 import struct
 from dataclasses import dataclass
@@ -44,6 +45,45 @@ class SSHOffer:
     ciphers: tuple[str, ...] = ()
     macs: tuple[str, ...] = ()
     strict_kex: bool = False
+    server_identity: SSHServerIdentity | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class SSHServerIdentity:
+    """The non-cryptographic product identity advertised by an SSH banner."""
+
+    software: str
+    version: str | None = None
+
+
+_SERVER_BANNER = re.compile(
+    r"^SSH-(?P<protocol>[0-9]+(?:\.[0-9]+)*)-(?P<product>[^\s\x00-\x1f\x7f]+)"
+)
+_PRODUCT_WITH_VERSION = re.compile(
+    r"^(?P<software>[A-Za-z][A-Za-z0-9.-]*?)[_-](?P<version>[0-9][A-Za-z0-9.+~:-]*)$"
+)
+
+
+def parse_server_banner(banner: str) -> SSHServerIdentity | None:
+    """Parse a safe software/version fact from an RFC 4253 server banner.
+
+    Only the first, protocol-defined product token is used. Comments after the
+    token are ignored; malformed/control-character tokens produce no identity.
+    """
+    if any(char in banner for char in "\r\n\x00\x01\x02\x03\x04\x05\x06\x07\x08\x0b\x0c\x0e\x0f"):
+        return None
+    fields = banner.split(None, 1)
+    token = fields[0] if fields else ""
+    match = _SERVER_BANNER.fullmatch(token)
+    if match is None or match.group("protocol") not in {"1.99", "2.0"}:
+        return None
+    product = match.group("product")
+    version_match = _PRODUCT_WITH_VERSION.fullmatch(product)
+    if version_match is None:
+        return SSHServerIdentity(software=product)
+    return SSHServerIdentity(
+        software=version_match.group("software"), version=version_match.group("version")
+    )
 
 
 def read_kexinit_offer(host: str, port: int, *, timeout_seconds: int) -> SSHOffer:
@@ -86,6 +126,7 @@ def read_kexinit_offer(host: str, port: int, *, timeout_seconds: int) -> SSHOffe
         ciphers=tuple(ciphers),
         macs=tuple(macs),
         strict_kex=strict_kex,
+        server_identity=parse_server_banner(banner),
     )
 
 

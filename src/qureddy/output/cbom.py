@@ -55,6 +55,7 @@ from qureddy.output.cbom_semantics import validate_cbom_semantics
 from qureddy.output.cbom_ssh import (
     add_ssh_host_key_components,
     add_ssh_kex_components,
+    add_ssh_server_identity_properties,
     add_ssh_transport_components,
 )
 
@@ -102,16 +103,11 @@ def render_cbom(
     # WHY: adding this same object to bom.components makes the library's
     # BomRefDiscriminator visit it twice and replace "endpoint" with a random
     # ref. metadata.component already establishes the document root.
-    endpoint = Component(
-        name=f"{result.target.host}:{result.target.port}",
-        type=ComponentType.APPLICATION,
-        bom_ref=ENDPOINT_REF,
-    )
+    endpoint = _build_endpoint_component(result)
     bom.metadata.component = endpoint
     _add_tool_provenance(bom, result, reproducible=reproducible)
     add_scan_status_properties(bom, result)
     add_scan_target_metadata(bom, result, reproducible=reproducible)
-
     algorithm_refs = add_algorithm_components(bom, result, provides_edges)
     add_ssh_host_key_components(bom, result, provides_edges)
     add_ssh_kex_components(bom, result, provides_edges)
@@ -122,7 +118,6 @@ def render_cbom(
     certificate = _captured_certificate(result)
     if certificate is not None:
         add_certificate_component(bom, certificate, provides_edges)
-
     bom.register_dependency(endpoint)
     _write_with_library_gap_patches(
         bom,
@@ -152,6 +147,16 @@ def _captured_certificate(result: ScanResult) -> CertificateObservation | None:
         msg = f"expected at most one captured leaf certificate, got {len(observations)}"
         raise ValueError(msg)
     return observations[0] if observations else None
+
+
+def _build_endpoint_component(result: ScanResult) -> Component:
+    endpoint = Component(
+        name=f"{result.target.host}:{result.target.port}",
+        type=ComponentType.APPLICATION,
+        bom_ref=ENDPOINT_REF,
+    )
+    add_ssh_server_identity_properties(endpoint, result)
+    return endpoint
 
 
 def _add_tool_provenance(bom: Bom, result: ScanResult, *, reproducible: bool = False) -> None:

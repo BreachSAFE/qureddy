@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from cyclonedx.model import Property
 from cyclonedx.model.crypto import (
     AlgorithmProperties,
     CryptoFunction,
@@ -26,8 +27,26 @@ from qureddy.scanners.ssh import classify
 
 if TYPE_CHECKING:
     from cyclonedx.model.bom import Bom
+    from cyclonedx.model.component import Component
 
     from qureddy.core.models import ScanResult
+
+
+def add_ssh_server_identity_properties(endpoint: Component, result: ScanResult) -> None:
+    """Copy the typed SSH server identity onto the CBOM endpoint component."""
+    identities = [e for e in result.evidence if e.evidence_type == "ssh.server"]
+    if not identities:
+        return
+    identity = identities[0]
+    if identity.server_software is not None:
+        endpoint.properties.add(
+            Property(name="qureddy:ssh.server.software", value=identity.server_software)
+        )
+    if identity.server_version is not None:
+        endpoint.properties.add(
+            Property(name="qureddy:ssh.server.version", value=identity.server_version)
+        )
+
 
 # CycloneDX cryptoFunctions per KEX primitive: a KEM does keygen/encapsulate/
 # decapsulate; a Diffie-Hellman/ECDH key-agreement does keygen; RSA key transport
