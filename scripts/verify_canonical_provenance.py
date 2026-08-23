@@ -16,9 +16,7 @@ CANONICAL_REPOSITORY = "breachsafe/qureddy"
 FORBIDDEN_REPOSITORY = "paul007ex" + "/qureddy"
 # Match the legacy repository identity at a URL/reference boundary. Do not
 # reject sibling products such as paul007ex/qureddy-ux.
-FORBIDDEN_REPOSITORY_PATTERN = re.compile(
-    re.escape(FORBIDDEN_REPOSITORY) + r"(?:[/:?#\s\"'`]|$)"
-)
+FORBIDDEN_REPOSITORY_PATTERN = re.compile(re.escape(FORBIDDEN_REPOSITORY) + r"(?:[/:?#\s\"'`]|$)")
 
 
 def tracked_files(repository_root: Path) -> list[Path]:
