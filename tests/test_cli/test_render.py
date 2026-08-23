@@ -99,6 +99,7 @@ def test_output_dir_creation_failure_is_usage_error(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Bundle setup reports a destination error before scanning."""
+
     def fail_mkdir(self: Path, *args: object, **kwargs: object) -> None:
         raise OSError(13, "permission denied")
 
