@@ -1,7 +1,9 @@
+<!-- markdownlint-disable MD022 MD025 MD026 -->
 # SPDX-FileCopyrightText: 2026 BreachSAFE
 # SPDX-License-Identifier: Apache-2.0
 #
 # QuReddy repository guidance for Claude Code and other coding agents.
+<!-- markdownlint-enable MD022 MD025 MD026 -->
 
 ## Contents
 
@@ -33,10 +35,11 @@ Read and apply these sources in order:
 - **Canonical source:** only `github.com/breachsafe/qureddy` is authoritative. Do not
   use similarly named personal or legacy repositories for source, release, or issue
   decisions.
-- **Distribution:** releases currently publish to TestPyPI only. Production PyPI is
-  intentionally not probed or published until separately authorized; a production
-  PyPI 404 is expected, not a release failure.
-- **Runtime baseline:** Python commands use 3.12+ (3.14 in current CI), and native
+- **Distribution:** TestPyPI is the only Python package index in scope for the
+  foreseeable future. Releases publish to TestPyPI only. Production PyPI is out of
+  scope: do not probe it, publish to it, or treat a production PyPI 404 as a failure.
+- **Runtime baseline:** Python commands, hooks, environments, and CI use Python 3.14+
+  everywhere, and native
   OpenSSL validation uses the pinned 3.5.7 LTS contract.
 - **SSH scope:** the SSH acquisition redesign and `ssh-audit` work remain parked in
   the 0.5.0 backlog unless a maintainer explicitly changes that scope.

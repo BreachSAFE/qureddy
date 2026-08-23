@@ -729,7 +729,7 @@ CI quality gates are split into two tiers based on cost-benefit at MVP scale.
 
 Promote a Tier 2 gate to per-PR execution when its runtime and signal justify the cost.
 
-CI runs on the matrix: **ubuntu-latest × macos-latest × windows-latest × Python 3.12**. All three platforms must pass for both tiers. OpenSSL 3.5.7 LTS is installed per-platform during CI setup.
+CI runs on the matrix: **ubuntu-latest × macos-latest × windows-latest × Python 3.14**. All three platforms must pass for both tiers. OpenSSL 3.5.7 LTS is installed per-platform during CI setup.
 
 ---
 

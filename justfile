@@ -101,12 +101,12 @@ cbom-determinism:
 
 # Build and verify one release-candidate artifact set with local evidence.
 release-gate:
-    python3 scripts/release_gate.py
+    uv run --locked --python 3.14 python scripts/release_gate.py
 
 # Secret scan. Requires gitleaks installed externally; falls back to trufflehog.
 secrets:
     @if command -v gitleaks > /dev/null; then \
-        gitleaks detect --no-git --source .; \
+        gitleaks git --no-banner --log-opts=HEAD .; \
     elif command -v trufflehog > /dev/null; then \
         trufflehog filesystem --no-update .; \
     else \

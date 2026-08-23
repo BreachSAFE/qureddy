@@ -45,7 +45,7 @@ directly; pass libFuzzer flags after the harness name.
 
 ```bash
 # Install the fuzz-only dependency group.
-uv pip install --python 3.12 -e '.[fuzz]'
+uv pip install --python 3.14 -e '.[fuzz]'
 
 # Fuzz one parser for 60 seconds.
 python tests/fuzz/fuzz_target.py -max_total_time=60

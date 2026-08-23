@@ -1,7 +1,7 @@
 # BreachSAFE QuReddy
 
 [![Version](https://img.shields.io/badge/version-0.2.52-blue?style=flat-square)](https://github.com/breachsafe/qureddy/blob/main/CHANGELOG.md)
-[![Python](https://img.shields.io/badge/python-3.12%2B-blue?style=flat-square&logo=python&logoColor=white)](https://www.python.org/downloads/)
+[![Python](https://img.shields.io/badge/python-3.14%2B-blue?style=flat-square&logo=python&logoColor=white)](https://www.python.org/downloads/)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue?style=flat-square)](LICENSE)
 [![Code Style: Ruff](https://img.shields.io/badge/code%20style-ruff-D7FF64?style=flat-square&logo=ruff&logoColor=black)](https://docs.astral.sh/ruff/)
 [![Type Checked: mypy strict](https://img.shields.io/badge/type%20check-mypy%20strict-blue?style=flat-square)](https://mypy-lang.org/)
@@ -78,10 +78,10 @@ For a browser-based TLS/SSH host that consumes QuReddy CBOM output, see
 > **TestPyPI-only distribution.** QuReddy is intentionally published to **TestPyPI**
 > only for now; do not expect `pipx install breachsafe-qureddy` to resolve from the
 > public PyPI package index. Install from TestPyPI with PyPI as a fallback for runtime
-> dependencies (**Python 3.12+**):
+> dependencies (**Python 3.14+**):
 >
 > ```bash
-> pipx install --python 3.12 \
+> pipx install --python 3.14 \
 >   --index-url https://test.pypi.org/simple/ \
 >   --pip-args '--extra-index-url https://pypi.org/simple/' \
 >   breachsafe-qureddy
@@ -104,7 +104,7 @@ The expected version line is:
 BreachSAFE QuReddy <version> -- https://www.breachsafe.ai
 ```
 
-QuReddy targets Python `>=3.12` and ships 3.12 and 3.13 classifiers. `pipx`
+QuReddy targets Python `>=3.14`. `pipx`
 creates an isolated environment and places `qureddy` on your command path. See the
 [installation and troubleshooting guide](docs/how-to/install.md) for macOS, Linux,
 Windows, virtual environment, upgrade, and uninstall instructions.
@@ -253,7 +253,7 @@ operator's system unless the operator sends them elsewhere.
 
 ## 10. Requirements
 
-- Python `>=3.12`, with 3.12 and 3.13 shipped as supported classifiers
+- Python `>=3.14`
 - Network reachability to the named target
 - OpenSSL 3.5.7 LTS for TLS scans only
 

@@ -1,6 +1,6 @@
 # Install and troubleshoot QuReddy
 
-Install the `breachsafe-qureddy` distribution with Python 3.12 or newer. Use `pipx` for
+Install the `breachsafe-qureddy` distribution with Python 3.14 or newer. Use `pipx` for
 the command line application or install into a managed virtual environment.
 SSH scanning works without OpenSSL. TLS scanning requires a separate OpenSSL
 3.5.7 LTS binary.
@@ -23,7 +23,7 @@ SSH scanning works without OpenSSL. TLS scanning requires a separate OpenSSL
 
 QuReddy requires:
 
-- Python `>=3.12`
+- Python `>=3.14`
 - macOS, Linux, or Windows
 - network reachability to the target
 - OpenSSL 3.5.7 LTS for `scan tls` only
@@ -31,13 +31,13 @@ QuReddy requires:
 Check Python before installing:
 
 ```bash
-python3.12 --version
+python3.14 --version
 ```
 
 On Windows PowerShell, use the Python launcher:
 
 ```powershell
-py -3.12 --version
+py -3.14 --version
 ```
 
 ## 2. Install with pipx
@@ -48,7 +48,7 @@ py -3.12 --version
 > pull runtime dependencies from PyPI:
 >
 > ```bash
-> pipx install --python 3.12 \
+> pipx install --python 3.14 \
 >   --index-url https://test.pypi.org/simple/ \
 >   --pip-args '--extra-index-url https://pypi.org/simple/' \
 >   breachsafe-qureddy
@@ -66,7 +66,7 @@ provides current platform instructions. After `pipx` is available:
 
 ```bash
 pipx ensurepath
-pipx install --python 3.12 \
+pipx install --python 3.14 \
   --index-url https://test.pypi.org/simple/ \
   --pip-args '--extra-index-url https://pypi.org/simple/' \
   breachsafe-qureddy
@@ -75,19 +75,19 @@ qureddy --version
 
 Open a new terminal if `qureddy` is not found after `pipx ensurepath`.
 
-QuReddy targets Python `>=3.12`. If your default `pipx` interpreter is
+QuReddy targets Python `>=3.14`. If your default `pipx` interpreter is
 newer (for example 3.13), a bare `pipx install` fails with
-`No matching distribution found`; pass `--python 3.12` (macOS/Linux) or use the
-`py -3.12` launcher (Windows) as shown in the platform sections below.
+`No matching distribution found`; pass `--python 3.14` (macOS/Linux) or use the
+`py -3.14` launcher (Windows) as shown in the platform sections below.
 
 ## 3. Install on macOS
 
 Homebrew can install Python and pipx:
 
 ```bash
-brew install python@3.12 pipx
+brew install python@3.14 pipx
 pipx ensurepath
-pipx install --python "$(brew --prefix python@3.12)/bin/python3.12" breachsafe-qureddy
+pipx install --python "$(brew --prefix python@3.14)/bin/python3.14" breachsafe-qureddy
 ```
 
 Do not select `/usr/bin/openssl`; current macOS systems expose LibreSSL at that
@@ -117,12 +117,12 @@ or the [QuReddy container](docker.md); do not bypass the version gate.
 
 ## 4. Install on Linux
 
-Install Python 3.12 and pipx from the distribution's supported package source.
+Install Python 3.14 and pipx from the distribution's supported package source.
 Then run:
 
 ```bash
 pipx ensurepath
-pipx install --python python3.12 breachsafe-qureddy
+pipx install --python python3.14 breachsafe-qureddy
 ```
 
 Distribution OpenSSL versions vary. Check the installed binary:
@@ -142,12 +142,12 @@ Do not substitute a current or moving release. Record the resulting path in
 
 ## 5. Install on Windows
 
-Install Python 3.12 and pipx, then run in PowerShell:
+Install Python 3.14 and pipx, then run in PowerShell:
 
 ```powershell
-py -3.12 -m pip install --user pipx
-py -3.12 -m pipx ensurepath
-py -3.12 -m pipx install `
+py -3.14 -m pip install --user pipx
+py -3.14 -m pipx ensurepath
+py -3.14 -m pipx install `
   --index-url https://test.pypi.org/simple/ `
   --pip-args "--extra-index-url https://pypi.org/simple/" `
   breachsafe-qureddy
@@ -161,7 +161,7 @@ will have separate release instructions.
 For a repeat TestPyPI install in PowerShell, use:
 
 ```powershell
-py -3.12 -m pipx install `
+py -3.14 -m pipx install `
   --index-url https://test.pypi.org/simple/ `
   --pip-args "--extra-index-url https://pypi.org/simple/" `
   breachsafe-qureddy
@@ -182,7 +182,7 @@ SSH scans do not need this step.
 Use this path when an application or CI job already manages an environment:
 
 ```bash
-python3.12 -m venv .venv
+python3.14 -m venv .venv
 . .venv/bin/activate
 python -m pip install breachsafe-qureddy
 qureddy --version
@@ -191,7 +191,7 @@ qureddy --version
 On Windows PowerShell, activate with:
 
 ```powershell
-py -3.12 -m venv .venv
+py -3.14 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install breachsafe-qureddy
 qureddy --version
@@ -275,11 +275,11 @@ pipx list
 
 ### Python version is rejected
 
-The release metadata requires Python `>=3.12`. Point pipx at Python
-3.12 explicitly:
+The release metadata requires Python `>=3.14`. Point pipx at Python
+3.14 explicitly:
 
 ```bash
-pipx install --python python3.12 breachsafe-qureddy
+pipx install --python python3.14 breachsafe-qureddy
 ```
 
 ### TLS scan exits 3

@@ -1,7 +1,7 @@
 # Local release gate
 
 The repository-owned release gate is the authority for candidate artifacts. Run it from a
-clean checkout with Python 3.12:
+clean checkout with Python 3.14:
 
 ```console
 python scripts/release_gate.py
@@ -13,7 +13,7 @@ check, builds one wheel and one sdist, inspects and clean-installs those exact b
 writes `dist/release-evidence/manifest.json`.
 
 The `release-gate` GitHub Actions workflow is a thin mirror on Linux, macOS, and Windows:
-it checks out full candidate history, selects Python 3.12, invokes this same command, and
+it checks out full candidate history, selects Python 3.14, invokes this same command, and
 uploads the manifest and exact candidate artifacts even when the command fails. It does
 not carry a second release policy or replace a failed command with a hosted-only check.
 

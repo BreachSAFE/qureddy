@@ -103,7 +103,7 @@ The gate builds and audits exact wheel and source distribution bytes. See the
 
 Read `docs/contributors/coding-rules.md` and `docs/contributors/examples.md`. The short version:
 
-- Python 3.12, typed (`mypy --strict`), formatted (`ruff format`), linted (`ruff check`)
+- Python 3.14, typed (`mypy --strict`), formatted (`ruff format`), linted (`ruff check`)
 - Functions ≤ 30 lines normal, 50 ceiling
 - Files ≤ 300 lines normal, 400 ceiling
 - Classes ≤ 200 lines

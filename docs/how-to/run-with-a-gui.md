@@ -61,6 +61,6 @@ The base QuReddy package does not emit an OSCAL compliance verdict.
 
 For host development, follow the
 [`breachsafe-ux` source instructions](https://github.com/paul007ex/breachsafe-ux/blob/main/docs/how-to/run-from-source.md).
-The host must be able to resolve a Python 3.12+ QuReddy installation on `PATH`.
+The host must be able to resolve a Python 3.14+ QuReddy installation on `PATH`.
 Use the descriptor files in that repository as the source of truth for command
 arguments and artifact handling.
