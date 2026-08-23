@@ -166,7 +166,7 @@ def _finding_crypto_detail(finding: Finding) -> Text:
     """Render the compact crypto discriminator for one finding."""
     if finding.negotiated_group:
         details = style_group(finding.negotiated_group)
-        if finding.algorithm:
+        if finding.algorithm and finding.algorithm != finding.negotiated_group:
             details.append(f" / {finding.algorithm}")
         return details
     if finding.algorithm:
