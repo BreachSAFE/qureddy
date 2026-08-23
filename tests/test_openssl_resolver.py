@@ -25,6 +25,10 @@ from qureddy.core.models import FailureCategory, OpenSSLDependency
 from qureddy.scanners.tls.openssl_probe import resolver
 
 
+def test_version_key_falls_back_for_unversioned_path() -> None:
+    assert resolver._version_key("/opt/openssl-dev/bin/openssl") == resolver.Version("0")  # noqa: SLF001
+
+
 def test_mac_candidates_include_installed_aliases(monkeypatch: pytest.MonkeyPatch) -> None:
     which = Mock(side_effect=["/bin/openssl", None])
     monkeypatch.setattr(resolver.shutil, "which", which)
