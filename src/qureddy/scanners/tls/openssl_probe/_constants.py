@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 """OpenSSL probe constants."""
 
+from __future__ import annotations
+
 from packaging.version import Version
 
 DEFAULT_TIMEOUT_SECONDS = 30

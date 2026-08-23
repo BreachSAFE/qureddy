@@ -7,3 +7,5 @@ severity rollup, error->FailureCategory mapping, retry, and algorithm classifica
 (#248). Nothing here is protocol-specific; a scanner supplies its own probe + findings
 and folds them through these helpers so the verdict logic can't drift per protocol.
 """
+
+from __future__ import annotations

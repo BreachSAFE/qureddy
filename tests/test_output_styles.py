@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 """Tests for Rich style policy and unknown-readiness recommendations."""
 
+from __future__ import annotations
+
 from qureddy.core.models import FailureCategory, Readiness, Severity
 from qureddy.output._styles import unknown_headline, unknown_recommendation
 from qureddy.output.console import _style_group, _style_readiness, _style_severity
