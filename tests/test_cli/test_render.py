@@ -94,6 +94,58 @@ def test_output_dir_cannot_be_combined_with_output(tmp_path: Path) -> None:
     assert "cannot be used together" in (result.stdout + result.stderr)
 
 
+def test_output_dir_creation_failure_is_usage_error(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Bundle setup reports a destination error before scanning."""
+    def fail_mkdir(self: Path, *args: object, **kwargs: object) -> None:
+        raise OSError(13, "permission denied")
+
+    monkeypatch.setattr(Path, "mkdir", fail_mkdir)
+    result = CliRunner().invoke(
+        app,
+        [
+            "scan",
+            "tls",
+            "example.com",
+            "--output-dir",
+            str(tmp_path / "run"),
+        ],
+    )
+    assert result.exit_code == 4
+    assert "cannot create --output-dir" in (result.stdout + result.stderr)
+
+
+def test_output_bundle_write_failure_is_usage_error(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Bundle persistence errors remain distinct from scan failures."""
+    fake = fake_openssl("openssl_too_old")
+    run_dir = tmp_path / "run"
+    run_dir.mkdir()
+
+    def fail_write_text(self: Path, *args: object, **kwargs: object) -> int:
+        raise OSError(28, "no space left on device")
+
+    monkeypatch.setattr(Path, "write_text", fail_write_text)
+    result = CliRunner().invoke(
+        app,
+        [
+            "scan",
+            "tls",
+            "example.com",
+            "--openssl",
+            fake,
+            "--output-dir",
+            str(run_dir),
+        ],
+    )
+    assert result.exit_code == 4
+    assert "cannot write scan bundle" in (result.stdout + result.stderr)
+
+
 def test_rich_format_renders_header() -> None:
     runner = CliRunner()
     result = runner.invoke(
