@@ -1,7 +1,7 @@
 # Changelog
 
 [![Status: Alpha](https://img.shields.io/badge/status-alpha-blue?style=flat-square)](https://github.com/breachsafe/qureddy)
-[![Version](https://img.shields.io/badge/version-0.2.42-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.43-blue?style=flat-square)](CHANGELOG.md)
 [![Keep a Changelog](https://img.shields.io/badge/keep%20a%20changelog-1.1.0-orange?style=flat-square)](https://keepachangelog.com/en/1.1.0/)
 [![SemVer](https://img.shields.io/badge/SemVer-2.0.0-blue?style=flat-square)](https://semver.org/spec/v2.0.0.html)
 
@@ -10,6 +10,23 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and version
 numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.2.43] - 2026-08-23
+
+### Fixed
+
+- **SSH server identity is now captured as typed evidence** (`#290`): banner software and
+  version facts are validated, emitted without changing readiness, and included in CBOM
+  endpoint properties.
+- **OpenSSL linked-library versions now honor the pinned 3.5.7 floor** (`#389`): executable
+  and linked-library validation use one symmetric policy and preserve typed failures.
+- **CBOM certificate conformance fixtures now track emitter shape** (`#390`): certificate
+  self-signed state is represented and fixture drift fails the conformance gate.
+
+### Changed
+
+- **Deterministic output is named explicitly** (`#323`): `--deterministic` is canonical;
+  `--reproducible` remains a hidden compatibility alias.
 
 ## [0.2.42] - 2026-08-22
 
@@ -406,9 +423,10 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Contents
 
-1. [0.2.42](#0242---2026-08-22)
-2. [0.2.39](#0239---2026-08-22)
-3. [0.2.38](#0238---2026-08-22)
+1. [0.2.43](#0243---2026-08-23)
+2. [0.2.42](#0242---2026-08-22)
+3. [0.2.39](#0239---2026-08-22)
+4. [0.2.38](#0238---2026-08-22)
 4. [0.2.37](#0237---2026-08-22)
 5. [0.2.36](#0236---2026-08-22)
 6. [0.2.35](#0235---2026-08-22)
