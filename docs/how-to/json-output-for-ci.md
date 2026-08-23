@@ -34,6 +34,18 @@ schema_version, scan, target, dependencies, assets, evidence, findings, summary
 
 Don't depend on field order *inside* the nested objects; only the top level is contractually stable.
 
+When an evidence pipeline needs JSON and CBOM from the same observation, use
+bundle mode instead of invoking two scans:
+
+```bash
+qureddy scan tls api.example.com --output-dir evidence/run-001
+```
+
+This performs one scan and writes `scan.json` plus `scan.cdx.json` with the same
+scan ID, timestamps, target identity, findings, and evidence. Both documents
+are written for target or local-collector failures too, preserving the failure
+evidence alongside the exit code.
+
 ## 3. Branch on the exit code
 
 QuReddy uses POSIX exit codes:

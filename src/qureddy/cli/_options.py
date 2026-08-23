@@ -138,6 +138,13 @@ OutputOpt = Annotated[
         "(stdout stays clean; exit codes unchanged). A path that cannot be opened exits 4.",
     ),
 ]
+OutputDirOpt = Annotated[
+    Path | None,
+    typer.Option(
+        "--output-dir",
+        help="Write correlated JSON and CBOM documents to this run directory (one scan).",
+    ),
+]
 CompactOpt = Annotated[
     bool,
     typer.Option(

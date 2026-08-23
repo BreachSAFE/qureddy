@@ -39,6 +39,7 @@ from qureddy.cli._options import (
     LogOpt,
     MinSeverityOpt,
     OpenSSLOpt,
+    OutputDirOpt,
     OutputOpt,
     QuietOpt,
     RetriesOpt,
@@ -49,7 +50,7 @@ from qureddy.cli._options import (
     TimeoutOpt,
     VerboseOpt,
 )
-from qureddy.cli._render import _open_output_file, _render
+from qureddy.cli._render import _open_output_file, _prepare_output_dir, _render
 from qureddy.cli.main import scan_app
 from qureddy.core.errors import CbomError, RetryConfigError, TargetParseError
 from qureddy.core.logging import start_run_logging
@@ -86,6 +87,10 @@ qureddy scan tls google.com
 \b
 # Machine-readable JSON for CI pipelines.
 qureddy scan tls pq.cloudflareresearch.com --format json
+
+\b
+# Correlated JSON and CBOM from one network scan.
+qureddy scan tls pq.cloudflareresearch.com --output-dir run/
 
 \b
 # Scan an IP target with an SNI override for a name-based virtual host.
@@ -186,6 +191,7 @@ def scan_tls(
     openssl: OpenSSLOpt = None,
     output_format: FormatOpt = OutputFormat.RICH,
     output: OutputOpt = None,
+    output_dir: OutputDirOpt = None,
     compact: CompactOpt = False,
     min_severity: MinSeverityOpt = None,
     timeout: TimeoutOpt = DEFAULT_TIMEOUT_SECONDS,
@@ -200,21 +206,21 @@ def scan_tls(
     reproducible: DeprecatedReproducibleOpt = False,
 ) -> None:
     """Scan a TLS endpoint for post-quantum readiness."""
-    machine_format = output_format in (OutputFormat.JSON, OutputFormat.CBOM)
     log_stream = _open_run_log(
-        log=log, machine_format=machine_format, verbose=verbose, json_logs=json_logs, quiet=quiet
+        log=log,
+        machine_format=_is_machine_format(output_dir, output_format),
+        verbose=verbose,
+        json_logs=json_logs,
+        quiet=quiet,
     )
     try:
-        # All scan/render work (including opening --output) lives in this try so
-        # the log stream is always closed, even when arg parsing exits early
-        # (an invalid --retry-on, or a bad --output path) — see #194 for why a
-        # stray log line must never reach the machine document on stdout.
         exit_code = _scan_and_render(
             target=target,
             sni=sni,
             openssl=openssl,
             output_format=output_format,
             output=output,
+            output_dir=output_dir,
             compact=compact,
             min_severity=min_severity,
             timeout=timeout,
@@ -223,7 +229,6 @@ def scan_tls(
             retry_delay=retry_delay,
             verbose=verbose,
             reproducible=deterministic or reproducible,
-            machine_format=machine_format,
         )
         raise typer.Exit(code=exit_code)
     finally:
@@ -239,6 +244,7 @@ def _scan_and_render(
     openssl: str | None,
     output_format: OutputFormat,
     output: Path | None,
+    output_dir: Path | None,
     compact: bool,
     min_severity: Severity | None,
     timeout: int,
@@ -247,15 +253,9 @@ def _scan_and_render(
     retry_delay: float,
     verbose: int,
     reproducible: bool,
-    machine_format: bool,
 ) -> int:
-    """Open ``--output``, run one TLS scan, render, and return the exit code.
-
-    The ``--output`` stream (when set) is owned here so it is always closed, and
-    a path that cannot be opened exits 4 before any scan work — the same
-    contract as ``--log``. When ``--output`` is unset the renderer writes to
-    stdout as before.
-    """
+    machine_format = _is_machine_format(output_dir, output_format)
+    _prepare_output_dir(output_dir, output)
     output_stream: IO[str] | None = _open_output_file(output)
     try:
         retry_set = _parse_retry_args(retry_on, retries, retry_delay)
@@ -277,18 +277,27 @@ def _scan_and_render(
                 compact=compact,
                 min_severity=min_severity,
                 stream=output_stream,
+                output_dir=output_dir,
             )
         except CbomError as exc:
-            # #344: a render-boundary defect (e.g. a semantic-validator ValueError) must map to
-            # the exit-code contract, not escape as an internal traceback.
             _echo_operator_diagnostic(
                 f"internal error rendering output: {exc}", machine_format=machine_format
             )
             return EXIT_INTERNAL_ERROR
         return exit_code
     finally:
-        if output_stream is not None:
-            output_stream.close()
+        _close_output_stream(output_stream)
+
+
+def _is_machine_format(output_dir: Path | None, output_format: OutputFormat) -> bool:
+    """Return whether stdout must remain free of human-readable diagnostics."""
+    return output_dir is not None or output_format in (OutputFormat.JSON, OutputFormat.CBOM)
+
+
+def _close_output_stream(stream: IO[str] | None) -> None:
+    """Close an optional output stream owned by the scan command."""
+    if stream is not None:
+        stream.close()
 
 
 def _parse_retry_args(

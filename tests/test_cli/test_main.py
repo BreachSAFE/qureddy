@@ -32,6 +32,7 @@ def test_scan_help_lists_documented_options() -> None:
     assert "--retry-delay" in result.stdout
     assert "--json-logs" in result.stdout
     assert "--deterministic" in result.stdout
+    assert "--output-dir" in result.stdout
     assert "--reproducible" not in result.stdout
 
 
