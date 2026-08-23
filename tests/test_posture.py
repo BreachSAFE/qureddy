@@ -105,3 +105,27 @@ def test_interpretation_covers_positive_and_classical_paths() -> None:
 
     unknown = build_interpretation([], [], None)
     assert unknown.headline == "PQC posture is unknown."
+
+
+def test_current_classical_protocol_is_not_deprecated_protocol_exposure() -> None:
+    """TLS 1.2 classical KEX must not trigger legacy-protocol hygiene advice."""
+    interpretation = build_interpretation(
+        [
+            _finding(
+                "tls.classical.negotiated_x25519",
+                "tls.kex.classical",
+                Readiness.QUANTUM_VULNERABLE,
+            ),
+            _finding(
+                "tls.classical.protocol_offered",
+                "tls.kex.classical_protocol",
+                Readiness.QUANTUM_VULNERABLE,
+            ),
+        ],
+        [],
+        None,
+    )
+
+    assert interpretation.axes.downgrade_resistance is AxisStatus.ACTION_NEEDED
+    assert interpretation.axes.protocol_hygiene is AxisStatus.ACCEPTABLE
+    assert "deprecated_protocol_observed" not in interpretation.reason_codes
