@@ -8,6 +8,9 @@ import json
 
 import pytest
 
+from qureddy.core.certificate import CertificateObservation
+from qureddy.core.models import Evidence, ObservationType
+from tests._cbom_fixtures import _build_result, _render
 from tests.conformance.harness import (
     FIXTURE_DIR,
     load_manifest,
@@ -53,8 +56,8 @@ def test_positive_fixture_passes_official_and_semantic_gates(
 ) -> None:
     payload = _load(name, details)
 
-    assert official_errors(payload) == []
-    assert semantic_errors(payload) == []
+    assert not official_errors(payload)
+    assert not semantic_errors(payload)
 
 
 @pytest.mark.parametrize(("name", "details"), _cases("negative"))
@@ -101,9 +104,9 @@ def test_positive_fixture_inventory_matrix() -> None:
     assert "crypto/algorithm/x25519mlkem768" in component_refs["p1-hybrid-tls"]
     assert "crypto/algorithm/x25519mlkem768" not in component_refs["p2-classical-tls"]
     assert "crypto/protocol/ssh-2.0" in component_refs["p3-ssh-hybrid"]
-    assert component_refs["p4-sparse-unknown"] == set()
-    assert component_refs["p5-failed-target"] == set()
-    assert component_refs["p6-missing-openssl"] == set()
+    assert not component_refs["p4-sparse-unknown"]
+    assert not component_refs["p5-failed-target"]
+    assert not component_refs["p6-missing-openssl"]
     assert "crypto/certificate/leaf" in component_refs["p7-leaf-cert"]
     certificate = next(
         component
@@ -111,3 +114,62 @@ def test_positive_fixture_inventory_matrix() -> None:
         if component["bom-ref"] == "crypto/certificate/leaf"
     )
     assert certificate["cryptoProperties"]["certificateProperties"]["serialNumber"]
+    for payload in fixtures.values():
+        for component in payload.get("components", []):
+            if component.get("cryptoProperties", {}).get("assetType") == "certificate":
+                properties = {
+                    prop["name"]: prop["value"] for prop in component.get("properties", [])
+                }
+                assert properties["qureddy:certificate.is_self_signed"] in {
+                    "true",
+                    "false",
+                    "unknown",
+                }
+
+
+def test_certificate_fixture_matches_current_emitter() -> None:
+    """Keep the captured certificate corpus coupled to the CBOM emitter.
+
+    Schema validation cannot see an emitter/fixture mismatch when both the old
+    and new shapes are schema-valid.  Re-render the deterministic certificate
+    facts captured by p7 and compare the complete certificate component so a
+    future CBOM shape change fails closed until its fixture is deliberately
+    refreshed.
+    """
+    fixtures = load_manifest()["fixtures"]
+    captured = _load("p7-leaf-cert", fixtures["p7-leaf-cert"])
+    captured_certificate = next(
+        component
+        for component in captured["components"]
+        if component["bom-ref"] == "crypto/certificate/leaf"
+    )
+    certificate = CertificateObservation(
+        subject="CN=github.com",
+        issuer=("C=GB, O=Sectigo Limited, CN=Sectigo Public Server Authentication CA DV E36"),
+        not_before="Jul  3 00:00:00 2026 GMT",
+        not_after="Sep 30 23:59:59 2026 GMT",
+        serial="72010E03F4A067FE4E796266430718F6",
+        signature_algorithm="ecdsa-with-SHA256",
+        public_key_summary="Public Key Algorithm: id-ecPublicKey",
+        is_self_signed=False,
+        is_post_quantum_signature=False,
+        public_key_algorithm="id-ecPublicKey",
+        public_key_bits=256,
+    )
+    result = _build_result()
+    evidence = Evidence(
+        id="ev-cert",
+        asset_id="asset-1",
+        evidence_type="tls.cert.signature",
+        observation_type=ObservationType.OBSERVED,
+        source="qureddy.scanners.tls.cert_sig",
+        certificate=certificate,
+    )
+    rendered = _render(result.model_copy(update={"evidence": (*result.evidence, evidence)}))
+    emitted_certificate = next(
+        component
+        for component in rendered["components"]
+        if component["bom-ref"] == "crypto/certificate/leaf"
+    )
+
+    assert emitted_certificate == captured_certificate

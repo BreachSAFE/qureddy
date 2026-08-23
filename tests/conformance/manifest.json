@@ -20,7 +20,7 @@
     "p1-hybrid-tls": {
       "kind": "positive",
       "classification": "captured",
-      "sha256": "54472caf4c0848122251531fae43b8e3edb53a58a373b71146f2dd3712c60ef3",
+      "sha256": "19d01c805cf8a01f72e852d5b3bdbf391fbfd8fdd4e7746c98a281edc26dc984",
       "official_rejects": false,
       "cli_rejects": false,
       "semantic_rejects": false
@@ -68,7 +68,7 @@
     "p7-leaf-cert": {
       "kind": "positive",
       "classification": "captured",
-      "sha256": "4aba121de3236ec43ffc9a74312b20045e66c313620cfbaf3509d15ec4d00469",
+      "sha256": "d0d52fba5cd47590d89493c7ac496f118c39e753fa51be3c29340fae8afda5ea",
       "official_rejects": false,
       "cli_rejects": false,
       "semantic_rejects": false
