@@ -59,9 +59,9 @@ on the form.
 | `repo_public` | Met | `breachsafe/qureddy` is a public GitHub repository. |
 | `repo_track` | Met | Git version control. |
 | `repo_distributed` | Met | Git is distributed. |
-| `version_unique` | Met | `pyproject.toml` `version = "0.2.43"`; each release bumps it (`scripts/bump_version.py`). |
+| `version_unique` | Met | `pyproject.toml` `version = "0.2.44"`; each release bumps it (`scripts/bump_version.py`). |
 | `version_semver` | Met | Semantic versioning on the `0.2.x` line. |
-| `version_tags` | Met | Releases are tagged `vX.Y.Z` (e.g. `v0.2.43`). |
+| `version_tags` | Met | Releases are tagged `vX.Y.Z` (e.g. `v0.2.44`). |
 | `release_notes` | Met | `CHANGELOG.md` (Keep a Changelog format). |
 | `release_notes_vulns` | Met | `CHANGELOG.md` records security-relevant fixes; `SECURITY.md` §4 covers advisory publication. |
 
