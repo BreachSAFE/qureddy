@@ -51,6 +51,29 @@ def test_failed_hybrid_probe_does_not_claim_classical_only() -> None:
     assert "hybrid_probe_failed" in interpretation.reason_codes
 
 
+def test_rejected_classical_control_does_not_claim_classical_negotiated() -> None:
+    interpretation = build_interpretation(
+        [
+            _finding(
+                "tls.hybrid.negotiated_pq",
+                "tls.kex.hybrid",
+                Readiness.TRANSITIONAL_HYBRID,
+            ),
+            _finding(
+                "tls.classical.control_rejected",
+                "tls.kex.classical_control_rejected",
+                Readiness.NOT_APPLICABLE,
+            ),
+        ],
+        [],
+        None,
+    )
+
+    assert interpretation.axes.pqc_support is PqcSupport.HYBRID_OBSERVED
+    assert interpretation.axes.key_exchange is AxisStatus.HYBRID
+    assert "classical_kex_negotiated" not in interpretation.reason_codes
+
+
 def test_failed_target_is_not_testable_even_with_partial_findings() -> None:
     interpretation = build_interpretation(
         [
