@@ -25,6 +25,7 @@ from qureddy.core.models import (
 from qureddy.scanners.common.assets import build_endpoint_asset
 from qureddy.scanners.common.rollup import highest_severity, scan_readiness
 from qureddy.scanners.ssh import classify
+from qureddy.scanners.ssh._identity import server_identity_observations
 from qureddy.scanners.ssh.probe import read_kexinit_offer
 
 if TYPE_CHECKING:
@@ -414,8 +415,8 @@ def scan_ssh(target: ScanTarget, *, timeout_seconds: int = 8) -> ScanResult:
     offer = read_kexinit_offer(target.host, target.port, timeout_seconds=timeout_seconds)
     asset = build_endpoint_asset(target, asset_type="ssh.endpoint", protocol="ssh")
     kex_evidence, kex_finding = _kex_observations(asset, offer.kex_algorithms)
-    evidence = kex_evidence.copy()
-    findings = [kex_finding]
+    evidence, findings = kex_evidence.copy(), [kex_finding]
+    evidence.extend(server_identity_observations(asset, offer.server_identity))
     weak_kex_result = _weak_kex_observation(asset, offer.kex_algorithms)
     if weak_kex_result is not None:
         weak_kex_evidence, weak_kex_finding = weak_kex_result

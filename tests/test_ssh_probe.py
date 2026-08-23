@@ -18,7 +18,30 @@ import time
 import pytest
 
 from qureddy.core.errors import SSHProbeError
-from qureddy.scanners.ssh.probe import read_kexinit_offer
+from qureddy.scanners.ssh.probe import parse_server_banner, read_kexinit_offer
+
+
+@pytest.mark.parametrize(
+    ("banner", "software", "version"),
+    [
+        ("SSH-2.0-OpenSSH_9.6p1 Ubuntu-3ubuntu13.5", "OpenSSH", "9.6p1"),
+        ("SSH-2.0-Dropbear_2022.83", "Dropbear", "2022.83"),
+        ("SSH-2.0-libssh-0.10.6", "libssh", "0.10.6"),
+        ("SSH-2.0-custom-build", "custom-build", None),
+    ],
+)
+def test_parse_server_banner_identity(banner: str, software: str, version: str | None) -> None:
+    identity = parse_server_banner(banner)
+    assert identity is not None
+    assert (identity.software, identity.version) == (software, version)
+
+
+@pytest.mark.parametrize(
+    "banner",
+    ["", "SSH-1.5-OpenSSH_9.6", "SSH-2.0-OpenSSH_9.6\nX-Injected: bad", "SSH-2.0-\x00bad"],
+)
+def test_parse_server_banner_rejects_malformed_or_injected_values(banner: str) -> None:
+    assert parse_server_banner(banner) is None
 
 
 def _serve(behavior, *, banner: bytes = b"SSH-2.0-test\r\n", coalesce: bytes = b"") -> int:

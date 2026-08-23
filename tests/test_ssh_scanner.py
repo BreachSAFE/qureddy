@@ -16,7 +16,7 @@ from qureddy.core.targets import parse_ssh_target
 from qureddy.output.cbom import render_cbom
 from qureddy.output.console import render_rich
 from qureddy.scanners.ssh import classify
-from qureddy.scanners.ssh.probe import SSHOffer
+from qureddy.scanners.ssh.probe import SSHOffer, SSHServerIdentity
 from qureddy.scanners.ssh.scanner import scan_ssh
 
 
@@ -27,6 +27,7 @@ def _run(
     ciphers: tuple[str, ...] = (),
     macs: tuple[str, ...] = (),
     strict_kex: bool = False,
+    server_identity: SSHServerIdentity | None = None,
 ):
     offer = SSHOffer(
         server_banner="SSH-2.0-test",
@@ -35,6 +36,7 @@ def _run(
         ciphers=ciphers,
         macs=macs,
         strict_kex=strict_kex,
+        server_identity=server_identity,
     )
     target = parse_ssh_target("test.invalid")
     with patch("qureddy.scanners.ssh.scanner.read_kexinit_offer", return_value=offer):
@@ -68,6 +70,25 @@ def test_scanner_name_and_scheme() -> None:
     assert r.target.scheme == "ssh"
     assert r.target.locator.startswith("ssh://")
     assert r.dependencies == ()  # SSH has no openssl dependency
+
+
+def test_server_identity_is_typed_evidence_and_cbom_endpoint_property() -> None:
+    result = _run(
+        ("curve25519-sha256",),
+        ("ssh-ed25519",),
+        server_identity=SSHServerIdentity(software="OpenSSH", version="9.6p1"),
+    )
+    evidence = next(e for e in result.evidence if e.evidence_type == "ssh.server")
+    assert (evidence.server_software, evidence.server_version) == ("OpenSSH", "9.6p1")
+    stream = io.StringIO()
+    render_cbom(result, stream)
+    properties = {
+        item["name"]: item["value"]
+        for item in json.loads(stream.getvalue())["metadata"]["component"].get("properties", [])
+    }
+    assert properties["qureddy:ssh.server.software"] == "OpenSSH"
+    assert properties["qureddy:ssh.server.version"] == "9.6p1"
+    assert result.summary.readiness is Readiness.QUANTUM_VULNERABLE
 
 
 def test_sntrup_also_counts_as_hybrid() -> None:
