@@ -45,6 +45,7 @@ Task-oriented recipes for someone who already knows the basics.
 - [Scan an SSH or SFTP endpoint](how-to/scan-ssh.md)
 - [Capture machine-readable output for CI](how-to/json-output-for-ci.md)
 - [Generate a CBOM](how-to/generate-a-cbom.md)
+- [Run QuReddy with a GUI](how-to/run-with-a-gui.md)
 
 ### [Reference](reference/)
 
@@ -55,6 +56,7 @@ Look-it-up information. Comprehensive, accurate, dry.
 - [JSON output schema](reference/json-schema.md) — the locked top-level keys, every field type
 - [CycloneDX CBOM output](reference/cbom.md) — emitted 1.7 components, references, metadata, and limits
 - [Failure categories](reference/failure-categories.md) — the `FailureCategory` enum, what each value means, retry eligibility
+- [Host integration](reference/host-integration.md) — CLI, stdout artifact, exit-code, CBOM, and posture contract for GUI hosts
 
 ### [Explanation](explanation/)
 

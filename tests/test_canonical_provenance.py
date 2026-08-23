@@ -18,6 +18,20 @@ def test_forbidden_references_reports_legacy_repository(monkeypatch, tmp_path: P
     assert provenance.forbidden_references(tmp_path) == ["candidate.md"]
 
 
+def test_sibling_product_reference_is_not_treated_as_legacy_repository(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """The UX image name shares a prefix but is a different product/repository."""
+    candidate = tmp_path / "candidate.md"
+    candidate.write_text(
+        "ghcr.io/paul007ex/qureddy-ux:latest\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(provenance, "tracked_files", lambda _root: [candidate])
+
+    assert provenance.forbidden_references(tmp_path) == []
+
+
 def test_main_rejects_wrong_github_actions_repository(monkeypatch) -> None:
     """Release and CI jobs cannot claim the canonical guard from another repository."""
     monkeypatch.setenv("GITHUB_REPOSITORY", "example/incorrect")

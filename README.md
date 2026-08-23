@@ -70,6 +70,9 @@ See the [Docker and GHCR guide](docs/how-to/docker.md) for digest pinning, local
 builds, output redirection, and publication policy. To install QuReddy as a local
 Python application instead, see [section 2](#2-install-locally-with-pipx).
 
+For a browser-based TLS/SSH host that consumes QuReddy CBOM output, see
+[Run QuReddy with a GUI](docs/how-to/run-with-a-gui.md).
+
 ## 2. Install locally with pipx
 
 > **TestPyPI-only distribution.** QuReddy is intentionally published to **TestPyPI**
