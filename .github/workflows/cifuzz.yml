@@ -12,8 +12,8 @@
 # Scorecard's Fuzzing check detects the `import atheris` harnesses under
 # tests/fuzz/, so the fuzzing signal is preserved without the OSS-Fuzz image.
 #
-# Advisory (continue-on-error): a crash surfaces here but never blocks a PR; the
-# parsers are total-by-contract and the harnesses assert that invariant.
+# A harness crash is a blocking PR signal: the parsers are total-by-contract and
+# the harnesses assert that invariant.
 
 name: CIFuzz
 
@@ -38,7 +38,6 @@ jobs:
   fuzz:
     name: Atheris fuzz (py3.14, amd64)
     runs-on: ubuntu-latest # amd64 — atheris ships manylinux_x86_64 wheels only (#325)
-    continue-on-error: true # advisory until the harness run stabilizes (#86/#239)
     permissions:
       contents: read
     steps:
@@ -59,7 +58,8 @@ jobs:
 
       - name: Fuzz each harness (bounded)
         # 45s per harness keeps the PR gate to a couple of minutes. A crash makes
-        # atheris exit non-zero and fails this (advisory) job with the repro.
+        # Atheris exits non-zero on a crash; the workflow must fail closed and
+        # retain the reproducer in the job log for diagnosis.
         run: |
           for harness in tests/fuzz/fuzz_*.py; do
             echo "::group::$harness"
