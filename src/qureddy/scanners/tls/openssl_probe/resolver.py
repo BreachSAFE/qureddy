@@ -16,7 +16,16 @@ import shutil
 import sys
 from pathlib import Path
 
-from qureddy.core.errors import LocalOpenSSLMissing, QureddyError
+from qureddy.core.errors import (
+    LocalOpenSSLBroken,
+    LocalOpenSSLIsLibreSSL,
+    LocalOpenSSLLacksGroup,
+    LocalOpenSSLMissing,
+    LocalOpenSSLTooOld,
+    LocalOpenSSLVersionMismatch,
+    LocalOpenSSLVersionUnreadable,
+    QureddyError,
+)
 from qureddy.core.models import FailureCategory, OpenSSLDependency
 from qureddy.scanners.tls.openssl_probe._constants import (
     ENV_OVERRIDE,
@@ -145,8 +154,23 @@ def resolve_openssl_with_capability(
     """Resolve and return a path plus its single canonical capability result."""
     override = explicit or os.environ.get(ENV_OVERRIDE)
     if override:
+        if not Path(override).is_file() or not os.access(override, os.X_OK):
+            raise LocalOpenSSLMissing(
+                f"openssl path is not an executable file: {override}. {_install_guidance()}",
+                dependency=_missing_dependency(override),
+            )
         try:
             return override, _validate_candidate(override, timeout_seconds)
+        except (
+            LocalOpenSSLBroken,
+            LocalOpenSSLIsLibreSSL,
+            LocalOpenSSLLacksGroup,
+            LocalOpenSSLMissing,
+            LocalOpenSSLTooOld,
+            LocalOpenSSLVersionMismatch,
+            LocalOpenSSLVersionUnreadable,
+        ):
+            raise
         except QureddyError as error:
             raise LocalOpenSSLMissing(
                 f"{override}: {error}. {_install_guidance()}",

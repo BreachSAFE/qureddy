@@ -128,8 +128,11 @@ class TestResolveOpenSSLPath:
         assert result is dependency
 
     def test_explicit_invalid_candidate_does_not_fall_back(
-        self, monkeypatch: pytest.MonkeyPatch
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
+        explicit = tmp_path / "openssl"
+        explicit.write_text("#!/bin/sh\nexit 1\n")
+        explicit.chmod(0o755)
         monkeypatch.setattr(resolver_module, "_candidate_paths", lambda: ["/good/openssl"])
         monkeypatch.setattr(
             resolver_module,
@@ -138,7 +141,7 @@ class TestResolveOpenSSLPath:
         )
 
         with pytest.raises(LocalOpenSSLMissing, match="invalid override"):
-            resolve_openssl_with_capability("/explicit/openssl")
+            resolve_openssl_with_capability(str(explicit))
 
 
 class TestProbeCapability:
@@ -232,9 +235,19 @@ class TestOpenSSLLtsSeriesContract:
                 id="lower-patch",
             ),
             pytest.param(
+                "OpenSSL 3.5.3 1 Apr 2026",
+                "local_openssl_too_old",
+                id="older-lts-patch",
+            ),
+            pytest.param(
                 "OpenSSL 3.5.8 1 Jun 2026",
                 None,
                 id="higher-patch-accepted",
+            ),
+            pytest.param(
+                "OpenSSL 3.5.9 1 Jun 2026",
+                None,
+                id="latest-lts-patch-accepted",
             ),
             pytest.param(
                 "OpenSSL 3.4.99 1 Jan 2026",
@@ -282,12 +295,27 @@ class TestOpenSSLLtsSeriesContract:
         assert dep.failure_category is not None
         assert dep.failure_category.value == "local_openssl_too_old"
 
-    def test_linked_library_must_remain_on_supported_lts_series(self) -> None:
+    @pytest.mark.parametrize(
+        ("library_version", "expected_category"),
+        [
+            pytest.param("3.5.3", FailureCategory.LOCAL_OPENSSL_TOO_OLD, id="older-lts-patch"),
+            pytest.param("3.5.6", FailureCategory.LOCAL_OPENSSL_TOO_OLD, id="pre-baseline-patch"),
+            pytest.param("3.5.7", None, id="baseline"),
+            pytest.param("3.5.9", None, id="newer-lts-patch"),
+            pytest.param(
+                "3.6.0", FailureCategory.LOCAL_OPENSSL_VERSION_MISMATCH, id="newer-series"
+            ),
+            pytest.param("3.4.99", FailureCategory.LOCAL_OPENSSL_TOO_OLD, id="older-series"),
+        ],
+    )
+    def test_linked_library_uses_same_floor_and_series_policy(
+        self, library_version: str, expected_category: FailureCategory | None
+    ) -> None:
         dep = _probe_synthetic_version(
-            "OpenSSL 3.5.7 9 Jun 2026 (Library: OpenSSL 3.5.8 1 Jun 2026)",
+            f"OpenSSL 3.5.7 9 Jun 2026 (Library: OpenSSL {library_version} 1 Jun 2026)",
         )
 
-        assert dep.failure_category is None
+        assert dep.failure_category is expected_category
 
     def test_matching_cli_and_linked_library_versions_are_accepted(self) -> None:
         dep = _probe_synthetic_version(

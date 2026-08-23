@@ -120,15 +120,29 @@ def _capability_failure_category(
 def _version_mismatch_category(
     version: Version, library_version: Version | None, *, supports_hybrid: bool
 ) -> FailureCategory | None:
-    """Classify a readable version against the supported LTS series."""
+    """Classify executable and linked-library versions using one policy."""
+    for candidate in (version, library_version):
+        if candidate is None:
+            continue
+        failure = _version_failure_category(candidate)
+        if failure is not None:
+            return failure
+    if not supports_hybrid:
+        return FailureCategory.LOCAL_OPENSSL_LACKS_GROUP
+    return None
+
+
+def _version_failure_category(version: Version) -> FailureCategory | None:
+    """Classify one executable or linked-library version.
+
+    ``PINNED_OPENSSL_VERSION`` is the validated runtime floor. Applying this
+    predicate to both values prevents a binary with an older linked libcrypto
+    from passing merely because its executable reports a newer patch.
+    """
     if version < PINNED_OPENSSL_VERSION:
         return FailureCategory.LOCAL_OPENSSL_TOO_OLD
     if not is_supported_series(version):
         return FailureCategory.LOCAL_OPENSSL_VERSION_MISMATCH
-    if library_version is not None and not is_supported_series(library_version):
-        return FailureCategory.LOCAL_OPENSSL_VERSION_MISMATCH
-    if not supports_hybrid:
-        return FailureCategory.LOCAL_OPENSSL_LACKS_GROUP
     return None
 
 
