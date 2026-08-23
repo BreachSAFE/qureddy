@@ -247,7 +247,7 @@ class TestCycloneDx17Contract:
         # #343: a fully-PQ cert whose signature and subject key are the same parameter set
         # (ML-DSA-87 sig + ML-DSA-87 key) must resolve both refs to ONE shared asset — not two
         # Components with the same bom-ref that cyclonedx renames to a random ref (which
-        # orphaned a component and broke --reproducible).
+        # orphaned a component and broke --deterministic).
         result = self._cert_result(
             signature_algorithm="ML-DSA-87",
             public_key_algorithm="ML-DSA-87",
@@ -373,7 +373,7 @@ class TestCycloneDx17Contract:
         assert certificate_properties["notValidAfter"] == "2027-07-17T07:18:11+00:00"
 
     def test_reproducible_mode_is_byte_identical_and_drops_run_identity(self) -> None:
-        # #162: --reproducible omits the per-run identity so the same scan is
+        # #162: --deterministic omits the per-run identity so the same scan is
         # content-addressable (byte-identical on repeat).
         first = io.StringIO()
         second = io.StringIO()

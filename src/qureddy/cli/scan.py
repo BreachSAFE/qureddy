@@ -32,6 +32,8 @@ from qureddy.cli._help import (
 )
 from qureddy.cli._options import (
     CompactOpt,
+    DeprecatedReproducibleOpt,
+    DeterministicOpt,
     FormatOpt,
     JsonLogsOpt,
     LogOpt,
@@ -39,7 +41,6 @@ from qureddy.cli._options import (
     OpenSSLOpt,
     OutputOpt,
     QuietOpt,
-    ReproducibleOpt,
     RetriesOpt,
     RetryDelayOpt,
     RetryOnOpt,
@@ -195,7 +196,8 @@ def scan_tls(
     json_logs: JsonLogsOpt = False,
     quiet: QuietOpt = False,
     log: LogOpt = None,
-    reproducible: ReproducibleOpt = False,
+    deterministic: DeterministicOpt = False,
+    reproducible: DeprecatedReproducibleOpt = False,
 ) -> None:
     """Scan a TLS endpoint for post-quantum readiness."""
     machine_format = output_format in (OutputFormat.JSON, OutputFormat.CBOM)
@@ -220,7 +222,7 @@ def scan_tls(
             retries=retries,
             retry_delay=retry_delay,
             verbose=verbose,
-            reproducible=reproducible,
+            reproducible=deterministic or reproducible,
             machine_format=machine_format,
         )
         raise typer.Exit(code=exit_code)

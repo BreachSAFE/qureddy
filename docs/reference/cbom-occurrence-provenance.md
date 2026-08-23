@@ -49,8 +49,8 @@ present; the rest appear when the underlying evidence carries them.
 | `role` | when probed | Probe role, e.g. `hybrid_readiness`, `classical_control`. |
 | `expected` | when probed | Group the probe forced, e.g. `X25519MLKEM768`. |
 | `return_code` | when probed | Probe process exit code. |
-| `command_sha256` | when probed | SHA-256 over the probe command. Attributed by executable basename, so it stays byte-stable across hosts and in `--reproducible` (#207). |
-| `duration_ms` | non-reproducible only | Probe wall-clock time. Omitted under `--reproducible` (#162). |
+| `command_sha256` | when probed | SHA-256 over the probe command. Attributed by executable basename, so it stays byte-stable across hosts and in `--deterministic` (#207). |
+| `duration_ms` | non-deterministic only | Probe wall-clock time. Omitted under `--deterministic` (#162). |
 
 ## 3. Example
 

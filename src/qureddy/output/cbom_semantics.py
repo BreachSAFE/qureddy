@@ -34,7 +34,7 @@ def _check_bom_ref_integrity(declared_refs: list[str]) -> None:
         raise ValueError(msg)
     # A literal duplicate bom-ref is silently renamed to a random ``BomRef.<n>.<n>`` by
     # cyclonedx's BomRefDiscriminator at serialization, which erases the duplicate above and
-    # makes output non-deterministic (breaks --reproducible). A surviving auto-generated ref is
+    # makes output non-deterministic (breaks --deterministic). A surviving auto-generated ref is
     # the fingerprint of that class of bug — reject it so it cannot slip past.
     auto_generated = _auto_generated_refs(declared_refs)
     if auto_generated:

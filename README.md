@@ -203,7 +203,7 @@ interpretation and provenance are native CycloneDX too: evidence is
 `component.evidence.occurrences`, findings are top-level `annotations`, and each
 finding's verdict is `qureddy:`-namespaced `properties` on the subject component;
 scan/target/tool provenance stays in `qureddy:`-namespaced `metadata.properties`.
-Unaware tools ignore the `qureddy:` keys without failing. Add `--reproducible` for a
+Unaware tools ignore the `qureddy:` keys without failing. Add `--deterministic` for a
 byte- and digest-identical document. See [the CBOM design doc](docs/explanation/cbom-design.md)
 for the design and interoperability boundary.
 

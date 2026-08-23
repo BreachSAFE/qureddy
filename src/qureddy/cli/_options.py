@@ -75,13 +75,22 @@ FormatOpt = Annotated[
         case_sensitive=False,
     ),
 ]
-ReproducibleOpt = Annotated[
+DeterministicOpt = Annotated[
     bool,
     typer.Option(
-        "--reproducible",
+        "--deterministic",
         help="CBOM: omit per-run identity (serial, timestamps, scan id) for a stable digest.",
     ),
 ]
+# Keep the old spelling parseable for one deprecation cycle without advertising it in help.  Typer
+# does not expose Click's ``hidden`` option in its public Option() signature, but OptionInfo carries
+# the attribute through to TyperOption, where Click honors it.
+_DEPRECATED_REPRODUCIBLE_OPTION = typer.Option(
+    "--reproducible",
+    help="Deprecated alias for --deterministic.",
+)
+_DEPRECATED_REPRODUCIBLE_OPTION.hidden = True
+DeprecatedReproducibleOpt = Annotated[bool, _DEPRECATED_REPRODUCIBLE_OPTION]
 TimeoutOpt = Annotated[
     int,
     typer.Option(

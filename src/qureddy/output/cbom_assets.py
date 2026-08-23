@@ -161,7 +161,7 @@ def add_algorithm_component(
     than adding a second. A fully-PQ cert whose signature and subject key are the same
     parameter set (ML-DSA-87 sig + ML-DSA-87 key) resolves both refs to one asset; adding two
     Components with the same bom-ref made cyclonedx rename one to a random ref at
-    serialization, orphaning a component and breaking --reproducible.
+    serialization, orphaning a component and breaking --deterministic.
     """
     if any(existing.bom_ref.value == ref for existing in bom.components):
         return BomRef(value=ref)
