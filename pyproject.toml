@@ -322,9 +322,9 @@ no_implicit_optional = true
 strict_equality = true
 extra_checks = true
 
-[[tool.mypy.overrides]]
-module = "tests.*"
-disallow_untyped_defs = false  # tests can have looser typing
+# The release gate type-checks ``src/qureddy`` only. Keep this configuration
+# free of an unused ``tests.*`` override; if test typing becomes a gate input,
+# add it together with an explicit command and coverage contract.
 
 # ============================================================================
 # pytest + pytest-rerunfailures + pytest-cov
