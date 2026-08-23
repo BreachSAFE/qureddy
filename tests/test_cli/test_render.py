@@ -7,6 +7,8 @@ from __future__ import annotations
 import json
 import re
 import subprocess
+from datetime import datetime
+from pathlib import Path
 from urllib.parse import urlsplit
 
 import pytest
@@ -45,6 +47,104 @@ def test_json_output_top_level_keys_in_locked_order() -> None:
         "summary",
     ]
     assert list(payload.keys()) == expected
+
+
+def test_output_dir_emits_correlated_json_and_cbom_from_one_scan(tmp_path: Path) -> None:
+    """Issue #430: bundle projections retain one scan identity and observation window."""
+    run_dir = tmp_path / "run"
+    result = CliRunner().invoke(
+        app,
+        [
+            "scan",
+            "tls",
+            "example.com",
+            "--openssl",
+            fake_openssl("openssl_too_old"),
+            "--output-dir",
+            str(run_dir),
+        ],
+    )
+    assert result.exit_code == 3, result.output
+    json_payload = json.loads((run_dir / "scan.json").read_text(encoding="utf-8"))
+    cbom_payload = json.loads((run_dir / "scan.cdx.json").read_text(encoding="utf-8"))
+    properties = {item["name"]: item["value"] for item in cbom_payload["metadata"]["properties"]}
+    assert cbom_payload["specVersion"] == "1.7"
+    assert json_payload["scan"]["scan_id"] == properties["qureddy:scan.id"]
+    for field in ("started_at", "completed_at"):
+        json_time = datetime.fromisoformat(json_payload["scan"][field].replace("Z", "+00:00"))
+        cbom_time = datetime.fromisoformat(properties[f"qureddy:scan.{field}"])
+        assert json_time == cbom_time
+
+
+def test_output_dir_cannot_be_combined_with_output(tmp_path: Path) -> None:
+    """Bundle mode rejects ambiguous destinations before running a scan."""
+    result = CliRunner().invoke(
+        app,
+        [
+            "scan",
+            "tls",
+            "example.com",
+            "--output",
+            str(tmp_path / "scan.json"),
+            "--output-dir",
+            str(tmp_path / "run"),
+        ],
+    )
+    assert result.exit_code == 4
+    assert "cannot be used together" in (result.stdout + result.stderr)
+
+
+def test_output_dir_creation_failure_is_usage_error(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Bundle setup reports a destination error before scanning."""
+
+    def fail_mkdir(self: Path, *args: object, **kwargs: object) -> None:
+        raise OSError(13, "permission denied")
+
+    monkeypatch.setattr(Path, "mkdir", fail_mkdir)
+    result = CliRunner().invoke(
+        app,
+        [
+            "scan",
+            "tls",
+            "example.com",
+            "--output-dir",
+            str(tmp_path / "run"),
+        ],
+    )
+    assert result.exit_code == 4
+    assert "cannot create --output-dir" in (result.stdout + result.stderr)
+
+
+def test_output_bundle_write_failure_is_usage_error(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Bundle persistence errors remain distinct from scan failures."""
+    fake = fake_openssl("openssl_too_old")
+    run_dir = tmp_path / "run"
+    run_dir.mkdir()
+
+    def fail_write_text(self: Path, *args: object, **kwargs: object) -> int:
+        raise OSError(28, "no space left on device")
+
+    monkeypatch.setattr(Path, "write_text", fail_write_text)
+    result = CliRunner().invoke(
+        app,
+        [
+            "scan",
+            "tls",
+            "example.com",
+            "--openssl",
+            fake,
+            "--output-dir",
+            str(run_dir),
+        ],
+    )
+    assert result.exit_code == 4
+    assert "cannot write scan bundle" in (result.stdout + result.stderr)
 
 
 def test_rich_format_renders_header() -> None:

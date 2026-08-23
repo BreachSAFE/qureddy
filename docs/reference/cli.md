@@ -68,6 +68,7 @@ qureddy scan ssh [OPTIONS] TARGET
 | --- | --- | --- | --- |
 | `--format` | `rich`, `json`, or `cbom` | `rich` | Select output; repeated values use the last occurrence |
 | `--output`, `-o` | path | standard output | Write the rendered document to a file instead of standard output; standard output stays empty; a path that cannot be opened exits `4` |
+| `--output-dir` | directory | none | Run one scan and write correlated `scan.json` and `scan.cdx.json`; cannot be combined with `--output` |
 | `--compact` | flag | off | Minify `--format json` or `cbom` to a single line; no effect on `rich` |
 | `--min-severity` | `critical`, `high`, `medium`, `low`, or `info` | none | Rich output only: hide findings below this severity; machine formats stay complete |
 | `--timeout` | integer `1..300` | `8` | Socket timeout in seconds |
@@ -128,6 +129,7 @@ qureddy scan tls pq.cloudflareresearch.com
 qureddy scan tls 1.1.1.1:443 --sni one.one.one.one
 qureddy scan tls example.com --format json
 qureddy scan tls example.com --format json --compact --output scan.json
+qureddy scan tls example.com --output-dir evidence/run-001
 qureddy scan tls example.com --min-severity medium
 qureddy scan tls example.com --format cbom
 qureddy scan tls example.com --openssl /absolute/path/to/openssl
@@ -181,6 +183,11 @@ before DNS or socket access.
 single line for streaming to `jq` or a log shipper. `--min-severity` trims the
 `rich` findings table only; the `json` and `cbom` documents always carry every
 finding, so the machine-document contract holds regardless of the filter.
+
+`--output-dir` is the evidence-bundle mode. It executes the scanner once and
+writes both projections from the same in-memory result, preserving the same
+`scan.scan_id`, timestamps, target, findings, and evidence. The bundle contains
+`scan.json` (`qureddy.scan.v1`) and `scan.cdx.json` (CycloneDX 1.7).
 
 ## 7. Output streams
 

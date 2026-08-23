@@ -4,17 +4,16 @@
 
 from __future__ import annotations
 
+import io
 import sys
-from typing import IO, TYPE_CHECKING
+from pathlib import Path
+from typing import IO
 
 from qureddy.cli._errors import EXIT_USAGE, _fail
 from qureddy.core.models import OutputFormat, ScanResult, Severity
 from qureddy.output.cbom import render_cbom
 from qureddy.output.console import render_rich
 from qureddy.output.json import render_json
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 
 def _open_output_file(output: Path | None) -> IO[str] | None:
@@ -32,6 +31,37 @@ def _open_output_file(output: Path | None) -> IO[str] | None:
         _fail(f"cannot write --output file {output}: {exc.strerror or exc}", EXIT_USAGE)
 
 
+def _prepare_output_dir(output_dir: Path | None, output: Path | None) -> None:
+    """Validate and create a bundle directory before scan work begins."""
+    if output_dir is None:
+        return
+    if output is not None:
+        _fail("--output and --output-dir cannot be used together", EXIT_USAGE)
+    try:
+        output_dir.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        _fail(f"cannot create --output-dir {output_dir}: {exc.strerror or exc}", EXIT_USAGE)
+
+
+def _render_bundle(
+    result: ScanResult,
+    output_dir: Path,
+    *,
+    reproducible: bool,
+    compact: bool,
+) -> None:
+    """Write JSON and CBOM projections of one in-memory scan result."""
+    json_stream = io.StringIO()
+    cbom_stream = io.StringIO()
+    render_json(result, json_stream, compact=compact)
+    render_cbom(result, cbom_stream, reproducible=reproducible, compact=compact)
+    try:
+        (output_dir / "scan.json").write_text(json_stream.getvalue(), encoding="utf-8")
+        (output_dir / "scan.cdx.json").write_text(cbom_stream.getvalue(), encoding="utf-8")
+    except OSError as exc:
+        _fail(f"cannot write scan bundle in {output_dir}: {exc.strerror or exc}", EXIT_USAGE)
+
+
 def _render(
     result: ScanResult,
     output_format: OutputFormat,
@@ -41,6 +71,7 @@ def _render(
     compact: bool = False,
     min_severity: Severity | None = None,
     stream: IO[str] | None = None,
+    output_dir: Path | None = None,
 ) -> None:
     """Dispatch to the JSON, CBOM, or Rich renderer.
 
@@ -50,6 +81,9 @@ def _render(
     trims the human findings table only — the machine document stays complete
     (issue #30 machine-purity contract).
     """
+    if output_dir is not None:
+        _render_bundle(result, output_dir, reproducible=reproducible, compact=compact)
+        return
     target = stream if stream is not None else sys.stdout
     if output_format is OutputFormat.JSON:
         render_json(result, target, compact=compact)
