@@ -17,6 +17,12 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   packaging checks, and installation guidance no longer imply that the public PyPI
   package exists or should be probed before an explicit authorization.
 
+### Fixed
+
+- SSH posture interpretation now reflects classical host-key authentication, weak
+  algorithms, transport hygiene, and Terrapin evidence instead of rendering a
+  hybrid-positive headline over a classically weak verdict (`#434`, PR #445).
+
 ## [0.2.51] - 2026-08-23
 
 ### Fixed
