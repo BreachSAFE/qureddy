@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
-# Publish the built wheel + sdist to TestPyPI (and, when ready, PyPI) via OIDC Trusted
-# Publishing — NO API tokens in the repo. Register a matching TestPyPI "pending publisher":
+# Publish the built wheel + sdist to TestPyPI only via OIDC Trusted Publishing — NO API
+# tokens in the repo. Public PyPI publication is deliberately deferred until explicitly
+# authorized and must not be treated as a release or verification target in the meantime.
+# Register a matching TestPyPI "pending publisher":
 #   owner=breachsafe  repo=qureddy  workflow=release.yml  environment=testpypi
 #
 # "TestPyPI gets the latest": every GitHub Release (and manual dispatch) rebuilds and uploads.
@@ -50,7 +52,7 @@ jobs:
         run: |
           uv tool run --from "twine==6.2.0" twine check dist/*
       # SLSA build provenance for the wheel + sdist (#85). Verifiable with
-      # `gh attestation verify <file> --repo breachsafe/qureddy`. The TestPyPI/PyPI
+      # `gh attestation verify <file> --repo breachsafe/qureddy`. The TestPyPI
       # publish also emits PEP 740 attestations via OIDC (id-token in that job).
       - name: Attest build provenance for the distributions
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
@@ -123,17 +125,6 @@ jobs:
           repository-url: https://test.pypi.org/legacy/
           skip-existing: true      # don't fail if this version is already on TestPyPI
 
-  # Enable once a real-PyPI Trusted Publisher (environment: pypi) is registered:
-  # pypi:
-  #   name: publish to PyPI (OIDC)
-  #   needs: testpypi
-  #   runs-on: ubuntu-latest
-  #   environment: pypi
-  #   permissions:
-  #     id-token: write
-  #   steps:
-  #     - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-  #       with:
-  #         name: dist
-  #         path: dist/
-  #     - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release-v1
+  # Public PyPI publication is intentionally absent. Add it only in a separately
+  # reviewed change after an explicit release authorization and a real-PyPI
+  # trusted-publisher configuration are in place.

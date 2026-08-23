@@ -19,9 +19,8 @@ You will finish with one human report and one parseable JSON result.
 ## 1. Install QuReddy
 
 This tutorial runs the `qureddy` command directly, so install it locally with
-`pipx`. QuReddy requires Python `>=3.12`. It is published to TestPyPI while the
-public PyPI release is finalized, so install from TestPyPI with PyPI as a fallback
-for runtime dependencies:
+`pipx`. QuReddy requires Python `>=3.12` and is intentionally published to TestPyPI
+only for now. Install from TestPyPI with PyPI as a fallback for runtime dependencies:
 
 ```bash
 pipx install --python 3.12 \

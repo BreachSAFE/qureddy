@@ -72,10 +72,10 @@ Python application instead, see [section 2](#2-install-locally-with-pipx).
 
 ## 2. Install locally with pipx
 
-> **Pre-release.** QuReddy is published to **TestPyPI** while the public PyPI
-> release is finalized, so `pipx install breachsafe-qureddy` does not resolve from
-> PyPI yet. Install from TestPyPI with PyPI as a fallback for runtime dependencies
-> (**Python 3.12+**):
+> **TestPyPI-only distribution.** QuReddy is intentionally published to **TestPyPI**
+> only for now; do not expect `pipx install breachsafe-qureddy` to resolve from the
+> public PyPI package index. Install from TestPyPI with PyPI as a fallback for runtime
+> dependencies (**Python 3.12+**):
 >
 > ```bash
 > pipx install --python 3.12 \
@@ -85,9 +85,9 @@ Python application instead, see [section 2](#2-install-locally-with-pipx).
 > ```
 >
 > The `--extra-index-url` pulls runtime dependencies from PyPI, because TestPyPI
-> hosts only QuReddy and does not mirror every dependency release. Keep both
-> indexes. Once the PyPI release lands, this simplifies to
-> `pipx install breachsafe-qureddy`.
+> hosts only QuReddy and does not mirror every dependency release. Keep both indexes.
+> The public PyPI package will be announced separately if and when that release is
+> authorized.
 
 Confirm the installation:
 

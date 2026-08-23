@@ -11,6 +11,12 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- **Distribution policy is explicitly TestPyPI-only for now**: release automation,
+  packaging checks, and installation guidance no longer imply that the public PyPI
+  package exists or should be probed before an explicit authorization.
+
 ## [0.2.45] - 2026-08-22
 
 ### Fixed
