@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 """Public OpenSSL capability and TLS-probe API."""
 
+from __future__ import annotations
+
 from qureddy.scanners.tls._classify import classify_failure as _classify_failure
 from qureddy.scanners.tls.openssl_probe._constants import (
     CLASSICAL_GROUP,

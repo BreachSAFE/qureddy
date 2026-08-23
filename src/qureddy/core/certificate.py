@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 """Internal typed certificate observation shared by scanners and renderers."""
 
+from __future__ import annotations
+
 from pydantic import BaseModel, ConfigDict
 
 _FROZEN = ConfigDict(frozen=True, extra="forbid")

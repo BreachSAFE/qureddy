@@ -209,9 +209,10 @@ select = [
     "BLE",  # flake8-blind-except (catches `except Exception:` without noqa)
     "SLF",  # flake8-self (private-member access from outside the class)
     "D",    # pydocstyle — Google docstring convention per coding-rules.md Rule 5.
-            # PLR0915 (too-many-statements, default max=50) is already active via
+    # PLR0915 (too-many-statements, default max=50) is already active via
             # the PL selector and matches the Rule 2.2 function-size ceiling.
 ]
+
 ignore = [
     "E501",     # line-too-long, handled by formatter
     "PLR0913",  # too-many-arguments — Typer commands legitimately have many
@@ -242,6 +243,10 @@ ignore = [
     # TOCTOU window the current single-namespace approach avoids.
     "PTH113",
 ]
+
+[tool.ruff.lint.isort]
+# Rule 4.3: every Python module declares postponed annotations explicitly.
+required-imports = ["from __future__ import annotations"]
 
 [tool.ruff.lint.pydocstyle]
 # coding-rules.md Rule 5 mandates Google-style docstrings.
