@@ -26,6 +26,12 @@ from qureddy.scanners.common.assets import build_endpoint_asset
 from qureddy.scanners.common.rollup import highest_severity, scan_readiness
 from qureddy.scanners.ssh import classify
 from qureddy.scanners.ssh._identity import server_identity_observations
+from qureddy.scanners.ssh._observations import (
+    ssh_offered_evidence,
+    ssh_weak_finding,
+    terrapin_observation,
+    weak_kex_observation,
+)
 from qureddy.scanners.ssh.probe import read_kexinit_offer
 
 if TYPE_CHECKING:
@@ -82,63 +88,6 @@ def build_ssh_failure_result(
     )
 
 
-def _ssh_offered_evidence(
-    asset: Asset,
-    *,
-    evidence_type: str,
-    notes: tuple[str, ...],
-    name: str | None = None,
-) -> Evidence:
-    """One OFFERED SSH evidence record (#315).
-
-    Every SSH observation is OFFERED over ``ssh`` ``2.0`` from the KEXINIT probe; only the
-    evidence type, the optional algorithm name (``negotiated_group``, which the shared CBOM
-    emitter attaches), and the notes vary. One builder so those fixed fields live in a single
-    place instead of five copies.
-    """
-    return Evidence(
-        id=new_id("ev"),
-        asset_id=asset.id,
-        evidence_type=evidence_type,
-        observation_type=ObservationType.OFFERED,
-        source="qureddy.scanners.ssh.probe",
-        protocol="ssh",
-        protocol_version="2.0",
-        negotiated_group=name,
-        notes=notes,
-    )
-
-
-def _ssh_weak_finding(
-    asset: Asset,
-    *,
-    rule_id: str,
-    finding_type: str,
-    title: str,
-    description: str,
-    evidence_ids: tuple[str, ...],
-) -> Finding:
-    """A weak-SSH-algorithm Finding (#315).
-
-    The host-key, transport (cipher/MAC), and key-exchange weak findings share the same
-    shape — MEDIUM / CLASSICALLY_WEAK / HIGH confidence over ``ssh`` — and differ only in
-    rule/type/title/description/evidence. One builder so the shape lives in a single place.
-    """
-    return Finding(
-        id=new_id("finding"),
-        asset_id=asset.id,
-        evidence_ids=evidence_ids,
-        rule_id=rule_id,
-        finding_type=finding_type,
-        title=title,
-        description=description,
-        severity=Severity.MEDIUM,
-        readiness=Readiness.CLASSICALLY_WEAK,
-        confidence=Confidence.HIGH,
-        protocol="ssh",
-    )
-
-
 def _kex_group_evidence(asset: Asset, group: str, *, is_pq: bool) -> Evidence:
     """One OFFERED evidence record for a single offered KEX group.
 
@@ -148,7 +97,7 @@ def _kex_group_evidence(asset: Asset, group: str, *, is_pq: bool) -> Evidence:
     the group name so the shared CBOM emitter attaches it.
     """
     kind = "PQ hybrid KEX offered" if is_pq else "classical KEX offered"
-    return _ssh_offered_evidence(
+    return ssh_offered_evidence(
         asset, evidence_type="ssh.kex", name=group, notes=(f"{kind}: {group}",)
     )
 
@@ -198,7 +147,7 @@ def _no_kex_evidence(asset: Asset) -> Evidence:
     gives the classical-only verdict a valid evidence reference in the degenerate
     empty-offer case (a Finding must cite at least one evidence id).
     """
-    return _ssh_offered_evidence(asset, evidence_type="ssh.kex", notes=("no KEX groups offered",))
+    return ssh_offered_evidence(asset, evidence_type="ssh.kex", notes=("no KEX groups offered",))
 
 
 def _kex_observations(asset: Asset, algorithms: tuple[str, ...]) -> tuple[list[Evidence], Finding]:
@@ -230,9 +179,7 @@ def _host_key_evidence(asset: Asset, algorithm: str) -> tuple[Evidence, bool]:
     """
     note = classify.weak_host_key_note(algorithm)
     notes = (f"{algorithm}: {note}",) if note else (f"host-key algorithm offered: {algorithm}",)
-    evidence = _ssh_offered_evidence(
-        asset, evidence_type="ssh.hostkey", name=algorithm, notes=notes
-    )
+    evidence = ssh_offered_evidence(asset, evidence_type="ssh.hostkey", name=algorithm, notes=notes)
     return evidence, note is not None
 
 
@@ -250,7 +197,7 @@ def _host_key_observations(
     if not weak_ids:
         return evidence, None
     weak = classify.weak_host_keys(algorithms)
-    finding = _ssh_weak_finding(
+    finding = ssh_weak_finding(
         asset,
         rule_id="ssh.hostkey.weak",
         finding_type="ssh.hostkey.weak",
@@ -283,14 +230,14 @@ def _cipher_mac_observations(
     )
     for evidence_type, label, name, note in items:
         notes = (f"{name}: {note}",) if note else (f"{label} offered: {name}",)
-        record = _ssh_offered_evidence(asset, evidence_type=evidence_type, name=name, notes=notes)
+        record = ssh_offered_evidence(asset, evidence_type=evidence_type, name=name, notes=notes)
         evidence.append(record)
         if note is not None:
             weak_ids.append(record.id)
             weak_names.append(name)
     if not weak_ids:
         return evidence, None
-    finding = _ssh_weak_finding(
+    finding = ssh_weak_finding(
         asset,
         rule_id="ssh.transport.weak",
         finding_type="ssh.transport.weak",
@@ -301,73 +248,6 @@ def _cipher_mac_observations(
             "are deprecated in modern OpenSSH."
         ),
         evidence_ids=tuple(weak_ids),
-    )
-    return evidence, finding
-
-
-def _weak_kex_observation(
-    asset: Asset, algorithms: tuple[str, ...]
-) -> tuple[Evidence, Finding] | None:
-    """Build the weak-KEX result pair, if a deprecated key exchange is offered."""
-    weak = classify.weak_kex(algorithms)
-    if not weak:
-        return None
-    reasons = classify.weak_kex_reasons(algorithms)
-    evidence = _ssh_offered_evidence(asset, evidence_type="ssh.kex.weak", notes=reasons)
-    finding = _ssh_weak_finding(
-        asset,
-        rule_id="ssh.kex.weak",
-        finding_type="ssh.kex.weak",
-        title=f"Weak SSH key-exchange algorithm offered ({', '.join(weak)})",
-        description=(
-            "Deprecated key-exchange algorithms offered. Small (1024-bit) MODP groups "
-            "and SHA-1 key-exchange hashes are disabled by default in modern OpenSSH."
-        ),
-        evidence_ids=(evidence.id,),
-    )
-    return evidence, finding
-
-
-def _terrapin_observation(
-    asset: Asset,
-    *,
-    strict_kex: bool,
-    ciphers: tuple[str, ...],
-    macs: tuple[str, ...],
-) -> tuple[Evidence, Finding]:
-    """Report observable Terrapin posture without collapsing it into readiness.
-
-    Strict-KEX and the offered cipher/MAC names are independent facts. The finding is
-    informational and endpoint-scoped so it does not claim that a vulnerable mode was
-    negotiated or that the server is exploitable under every client configuration.
-    """
-    strict = "present" if strict_kex else "absent"
-    susceptible_modes = classify.terrapin_susceptible_modes(ciphers, macs)
-    modes_text = ", ".join(susceptible_modes) or "none"
-    evidence = _ssh_offered_evidence(
-        asset,
-        evidence_type="ssh.terrapin",
-        notes=(
-            f"strict KEX marker: {strict}",
-            f"Terrapin-susceptible offered modes: {modes_text}",
-        ),
-    )
-    finding = Finding(
-        id=new_id("finding"),
-        asset_id=asset.id,
-        evidence_ids=(evidence.id,),
-        rule_id="ssh.terrapin.posture",
-        finding_type="ssh.terrapin.posture",
-        title="SSH Terrapin posture observed",
-        description=(
-            f"Strict KEX is {strict}; Terrapin-susceptible offered modes are recorded "
-            f"as evidence ({modes_text}). This is an "
-            "offered-capability fact, not a negotiated-exploitability verdict."
-        ),
-        severity=Severity.INFO,
-        readiness=Readiness.NOT_APPLICABLE,
-        confidence=Confidence.HIGH,
-        protocol="ssh",
     )
     return evidence, finding
 
@@ -417,7 +297,7 @@ def scan_ssh(target: ScanTarget, *, timeout_seconds: int = 8) -> ScanResult:
     kex_evidence, kex_finding = _kex_observations(asset, offer.kex_algorithms)
     evidence, findings = kex_evidence.copy(), [kex_finding]
     evidence.extend(server_identity_observations(asset, offer.server_identity))
-    weak_kex_result = _weak_kex_observation(asset, offer.kex_algorithms)
+    weak_kex_result = weak_kex_observation(asset, offer.kex_algorithms)
     if weak_kex_result is not None:
         weak_kex_evidence, weak_kex_finding = weak_kex_result
         evidence.append(weak_kex_evidence)
@@ -434,7 +314,7 @@ def scan_ssh(target: ScanTarget, *, timeout_seconds: int = 8) -> ScanResult:
     evidence.extend(cipher_mac_evidence)
     if weak_transport_finding is not None:
         findings.append(weak_transport_finding)
-    terrapin_evidence, terrapin_finding = _terrapin_observation(
+    terrapin_evidence, terrapin_finding = terrapin_observation(
         asset,
         strict_kex=offer.strict_kex,
         ciphers=offer.ciphers,
