@@ -1,7 +1,7 @@
 # Changelog
 
 [![Status: Alpha](https://img.shields.io/badge/status-alpha-blue?style=flat-square)](https://github.com/breachsafe/qureddy)
-[![Version](https://img.shields.io/badge/version-0.2.49-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.50-blue?style=flat-square)](CHANGELOG.md)
 [![Keep a Changelog](https://img.shields.io/badge/keep%20a%20changelog-1.1.0-orange?style=flat-square)](https://keepachangelog.com/en/1.1.0/)
 [![SemVer](https://img.shields.io/badge/SemVer-2.0.0-blue?style=flat-square)](https://semver.org/spec/v2.0.0.html)
 
@@ -16,6 +16,14 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Distribution policy is explicitly TestPyPI-only for now**: release automation,
   packaging checks, and installation guidance no longer imply that the public PyPI
   package exists or should be probed before an explicit authorization.
+
+## [0.2.50] - 2026-08-23
+
+### Added
+
+- **Correlated scan bundles** (`#430`, `#435`): one TLS scan can now emit JSON and
+  CycloneDX CBOM documents with the same scan identity, timestamps, target, and
+  evidence without a second network execution.
 
 ## [0.2.49] - 2026-08-23
 
@@ -480,6 +488,7 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Contents
 
+1. [0.2.50](#0250---2026-08-23)
 1. [0.2.49](#0249---2026-08-23)
 2. [0.2.48](#0248---2026-08-23)
 3. [0.2.46](#0246---2026-08-23)
