@@ -201,12 +201,13 @@ def _install_guidance() -> str:
     common = (
         f"pip installs QuReddy, not OpenSSL. Install a checksum-verified OpenSSL {OPENSSL_LTS_LABEL} LTS build with {HYBRID_GROUP} "
         f"(validated: {PINNED_OPENSSL_VERSION}); set {ENV_OVERRIDE}=<path> or pass --openssl PATH."
+        f" The {OPENSSL_LTS_FORMULA} package is a moving channel; verify the reported version."
     )
     if sys.platform == "darwin":
         return f"{common} macOS: `brew install {OPENSSL_LTS_FORMULA}` is a moving channel; verify the reported version. Linux: install from a trusted vendor. Windows: install a maintained build."
     if sys.platform.startswith("win"):
-        return f"{common} Windows: install a maintained OpenSSL {OPENSSL_LTS_LABEL} LTS build or use Docker. macOS: `brew install {OPENSSL_LTS_FORMULA}` is a moving channel; verify the reported version. Linux: install from a trusted vendor."
-    return f"{common} Linux: install OpenSSL {OPENSSL_LTS_LABEL} from your distribution or trusted vendor. macOS: `brew install {OPENSSL_LTS_FORMULA}` is a moving channel; verify the reported version. Windows: install a maintained build."
+        return f"{common} Windows: install a maintained OpenSSL {OPENSSL_LTS_LABEL} LTS build or use Docker. macOS: `brew install {OPENSSL_LTS_FORMULA}`. Linux: install from a trusted vendor."
+    return f"{common} Linux: install OpenSSL {OPENSSL_LTS_LABEL} from your distribution or trusted vendor. macOS: `brew install {OPENSSL_LTS_FORMULA}`. Windows: install a maintained build."
 
 
 __all__ = ["resolve_openssl_path", "resolve_openssl_with_capability"]

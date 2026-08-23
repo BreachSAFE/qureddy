@@ -15,7 +15,7 @@ from datetime import UTC, datetime
 
 import structlog
 
-from qureddy.core.errors import CertificateParseError, LocalOpenSSLMissing
+from qureddy.core.errors import LocalOpenSSLMissing
 from qureddy.core.ids import new_id
 from qureddy.core.logging import get_logger
 from qureddy.core.models import (
@@ -359,7 +359,7 @@ class TLSScanner:
                 if pem
                 else None
             )
-        except (LocalOpenSSLMissing, CertificateParseError):
+        except (LocalOpenSSLMissing, ValueError):
             certificate = None
         evidence = evidence_from_certificate(asset, certificate)
         finding = finding_from_certificate(asset, evidence, certificate)

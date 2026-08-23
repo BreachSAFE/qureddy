@@ -22,7 +22,7 @@ class CbomError(QureddyError):
     """
 
 
-class CertificateParseError(QureddyError):
+class CertificateParseError(QureddyError, ValueError):
     """The certificate parser received an invalid internal input."""
 
 

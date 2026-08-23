@@ -84,6 +84,13 @@ class TestCbomSemanticGuard:
         with pytest.raises(CbomError, match="duplicate"):
             validate_cbom_semantics(payload)
 
+    def test_rejects_unresolved_auto_generated_reference(self) -> None:
+        payload = self._base()
+        payload["components"].append({"bom-ref": "BomRef.1.2"})
+
+        with pytest.raises(CbomError, match="auto-generated"):
+            validate_cbom_semantics(payload)
+
     @pytest.mark.parametrize(
         ("name", "value"),
         [

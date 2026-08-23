@@ -386,6 +386,21 @@ def test_render_failure_maps_to_exit_70_not_traceback(monkeypatch: pytest.Monkey
     assert result.exception is None or isinstance(result.exception, SystemExit)
 
 
+def test_ssh_render_failure_maps_to_exit_70_not_traceback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """SSH uses the same typed CBOM output boundary as TLS."""
+    monkeypatch.setattr(ssh_cli_module, "_run_ssh_probe", lambda *a, **k: (object(), 0))
+
+    def _boom(*_a: object, **_k: object) -> None:
+        raise CbomError("duplicate bom-ref")
+
+    monkeypatch.setattr(ssh_cli_module, "_render", _boom)
+    result = CliRunner().invoke(app, ["scan", "ssh", "example.com"])
+    assert result.exit_code == 70
+    assert "internal error rendering" in result.stderr.lower()
+
+
 # --- _execute helper branches (#364 coverage) ---
 
 import typer  # noqa: E402
