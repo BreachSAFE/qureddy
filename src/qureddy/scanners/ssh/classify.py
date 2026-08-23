@@ -92,6 +92,23 @@ _WEAK_MAC_NOTES = MappingProxyType(
     }
 )
 
+_TERRAPIN_CHACHA20 = "chacha20-poly1305@openssh.com"
+
+
+def terrapin_susceptible_modes(ciphers: tuple[str, ...], macs: tuple[str, ...]) -> tuple[str, ...]:
+    """Return offered cipher/MAC combinations relevant to the Terrapin attack surface.
+
+    ChaCha20-Poly1305 is reported independently. CBC modes are reported only when an
+    encrypt-then-MAC offer exists, because a CBC cipher by itself is not the issue's
+    Terrapin combination.
+    """
+    modes = [name for name in ciphers if name == _TERRAPIN_CHACHA20]
+    etm_macs = tuple(name for name in macs if name.endswith("-etm@openssh.com"))
+    modes.extend(
+        f"{cipher} + {mac}" for cipher in ciphers if cipher.endswith("-cbc") for mac in etm_macs
+    )
+    return tuple(modes)
+
 
 def weak_cipher_note(name: str) -> str | None:
     """Justification note if the SSH cipher is weak/deprecated, else None."""

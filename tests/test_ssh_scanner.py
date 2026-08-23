@@ -20,9 +20,21 @@ from qureddy.scanners.ssh.probe import SSHOffer
 from qureddy.scanners.ssh.scanner import scan_ssh
 
 
-def _run(kex: tuple[str, ...], host_keys: tuple[str, ...]):
+def _run(
+    kex: tuple[str, ...],
+    host_keys: tuple[str, ...],
+    *,
+    ciphers: tuple[str, ...] = (),
+    macs: tuple[str, ...] = (),
+    strict_kex: bool = False,
+):
     offer = SSHOffer(
-        server_banner="SSH-2.0-test", kex_algorithms=kex, host_key_algorithms=host_keys
+        server_banner="SSH-2.0-test",
+        kex_algorithms=kex,
+        host_key_algorithms=host_keys,
+        ciphers=ciphers,
+        macs=macs,
+        strict_kex=strict_kex,
     )
     target = parse_ssh_target("test.invalid")
     with patch("qureddy.scanners.ssh.scanner.read_kexinit_offer", return_value=offer):
@@ -187,6 +199,39 @@ def test_empty_kex_offer_is_classical_only_no_crash() -> None:
     r = _run((), ("ssh-ed25519",))
     assert r.summary.readiness is Readiness.QUANTUM_VULNERABLE
     assert any(f.rule_id == "ssh.kex.classical_only" for f in r.findings)
+
+
+def test_terrapin_posture_is_reported_as_fact_without_readiness_downgrade() -> None:
+    result = _run(
+        ("curve25519-sha256",),
+        ("ssh-ed25519",),
+        ciphers=("chacha20-poly1305@openssh.com", "aes256-ctr"),
+        macs=("hmac-sha2-256-etm@openssh.com", "hmac-sha2-256"),
+        strict_kex=True,
+    )
+    finding = next(f for f in result.findings if f.rule_id == "ssh.terrapin.posture")
+    evidence = next(e for e in result.evidence if e.evidence_type == "ssh.terrapin")
+    assert finding.severity.value == "info"
+    assert finding.readiness is Readiness.NOT_APPLICABLE
+    assert result.summary.readiness is Readiness.QUANTUM_VULNERABLE
+    assert evidence.notes == (
+        "strict KEX marker: present",
+        "Terrapin-susceptible offered modes: chacha20-poly1305@openssh.com",
+    )
+
+
+def test_terrapin_fact_records_absent_strict_kex_and_no_relevant_modes() -> None:
+    result = _run(
+        ("curve25519-sha256",),
+        ("ssh-ed25519",),
+        ciphers=("aes256-ctr",),
+        macs=("hmac-sha2-256",),
+    )
+    evidence = next(e for e in result.evidence if e.evidence_type == "ssh.terrapin")
+    assert evidence.notes == (
+        "strict KEX marker: absent",
+        "Terrapin-susceptible offered modes: none",
+    )
 
 
 # --- #241: PQ-hybrid KEX component carries algorithmProperties + level -----------

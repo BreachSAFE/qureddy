@@ -116,3 +116,4 @@ def test_pseudo_kex_markers_filtered() -> None:
     assert "ext-info-s" not in offer.kex_algorithms
     assert "kex-strict-s-v00@openssh.com" not in offer.kex_algorithms
     assert "mlkem768x25519-sha256" in offer.kex_algorithms
+    assert offer.strict_kex is True

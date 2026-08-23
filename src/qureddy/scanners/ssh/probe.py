@@ -43,6 +43,7 @@ class SSHOffer:
     host_key_algorithms: tuple[str, ...]
     ciphers: tuple[str, ...] = ()
     macs: tuple[str, ...] = ()
+    strict_kex: bool = False
 
 
 def read_kexinit_offer(host: str, port: int, *, timeout_seconds: int) -> SSHOffer:
@@ -69,6 +70,7 @@ def read_kexinit_offer(host: str, port: int, *, timeout_seconds: int) -> SSHOffe
         _log.debug("ssh_probe.failed", host=host, port=port, error=str(exc))
         msg = f"ssh probe of {host}:{port} failed: {exc}"
         raise SSHProbeError(msg) from exc
+    strict_kex = "kex-strict-s-v00@openssh.com" in kex
     real_kex = tuple(a for a in kex if a not in _PSEUDO_KEX)
     _log.debug(
         "ssh_probe.kexinit",
@@ -83,6 +85,7 @@ def read_kexinit_offer(host: str, port: int, *, timeout_seconds: int) -> SSHOffe
         host_key_algorithms=tuple(host_keys),
         ciphers=tuple(ciphers),
         macs=tuple(macs),
+        strict_kex=strict_kex,
     )
 
 

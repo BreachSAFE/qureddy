@@ -327,6 +327,50 @@ def _weak_kex_observation(
     return evidence, finding
 
 
+def _terrapin_observation(
+    asset: Asset,
+    *,
+    strict_kex: bool,
+    ciphers: tuple[str, ...],
+    macs: tuple[str, ...],
+) -> tuple[Evidence, Finding]:
+    """Report observable Terrapin posture without collapsing it into readiness.
+
+    Strict-KEX and the offered cipher/MAC names are independent facts. The finding is
+    informational and endpoint-scoped so it does not claim that a vulnerable mode was
+    negotiated or that the server is exploitable under every client configuration.
+    """
+    strict = "present" if strict_kex else "absent"
+    susceptible_modes = classify.terrapin_susceptible_modes(ciphers, macs)
+    modes_text = ", ".join(susceptible_modes) or "none"
+    evidence = _ssh_offered_evidence(
+        asset,
+        evidence_type="ssh.terrapin",
+        notes=(
+            f"strict KEX marker: {strict}",
+            f"Terrapin-susceptible offered modes: {modes_text}",
+        ),
+    )
+    finding = Finding(
+        id=new_id("finding"),
+        asset_id=asset.id,
+        evidence_ids=(evidence.id,),
+        rule_id="ssh.terrapin.posture",
+        finding_type="ssh.terrapin.posture",
+        title="SSH Terrapin posture observed",
+        description=(
+            f"Strict KEX is {strict}; Terrapin-susceptible offered modes are recorded "
+            f"as evidence ({modes_text}). This is an "
+            "offered-capability fact, not a negotiated-exploitability verdict."
+        ),
+        severity=Severity.INFO,
+        readiness=Readiness.NOT_APPLICABLE,
+        confidence=Confidence.HIGH,
+        protocol="ssh",
+    )
+    return evidence, finding
+
+
 def _build_ssh_success_result(
     target: ScanTarget,
     asset: Asset,
@@ -389,4 +433,12 @@ def scan_ssh(target: ScanTarget, *, timeout_seconds: int = 8) -> ScanResult:
     evidence.extend(cipher_mac_evidence)
     if weak_transport_finding is not None:
         findings.append(weak_transport_finding)
+    terrapin_evidence, terrapin_finding = _terrapin_observation(
+        asset,
+        strict_kex=offer.strict_kex,
+        ciphers=offer.ciphers,
+        macs=offer.macs,
+    )
+    evidence.append(terrapin_evidence)
+    findings.append(terrapin_finding)
     return _build_ssh_success_result(target, asset, evidence, findings, started)
