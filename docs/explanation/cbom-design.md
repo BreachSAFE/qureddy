@@ -69,7 +69,7 @@ separate flat `qureddy:` findings/evidence dump.
    CycloneDX extension point, so these keep the document valid and are ignored
    gracefully by any tool that does not understand them.
 
-Content addressing is opt-in: `--reproducible` omits the per-run identity fields
+Content addressing is opt-in: `--deterministic` omits the per-run identity fields
 (serialNumber, metadata timestamp, scan id and timing, evidence duration, the
 host-specific OpenSSL path, retry-varying attempt count) and pins every annotation
 `timestamp` to the Unix epoch, so the same scan is byte- and digest-identical.

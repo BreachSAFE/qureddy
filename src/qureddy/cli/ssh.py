@@ -25,12 +25,13 @@ from qureddy.cli._help import (
 )
 from qureddy.cli._options import (
     CompactOpt,
+    DeprecatedReproducibleOpt,
+    DeterministicOpt,
     FormatOpt,
     JsonLogsOpt,
     MinSeverityOpt,
     OutputOpt,
     QuietOpt,
-    ReproducibleOpt,
     SshTargetArg,
     TimeoutOpt,
     VerboseOpt,
@@ -141,7 +142,8 @@ def scan_ssh_cmd(
     verbose: VerboseOpt = 0,
     json_logs: JsonLogsOpt = False,
     quiet: QuietOpt = False,
-    reproducible: ReproducibleOpt = False,
+    deterministic: DeterministicOpt = False,
+    reproducible: DeprecatedReproducibleOpt = False,
 ) -> None:
     """Scan an SSH endpoint for post-quantum readiness."""
     # Mirror scan tls: machine formats default to quiet so stdout stays a
@@ -165,7 +167,7 @@ def scan_ssh_cmd(
                 result,
                 fmt,
                 verbose,
-                reproducible=reproducible,
+                reproducible=deterministic or reproducible,
                 compact=compact,
                 min_severity=min_severity,
                 stream=output_stream,

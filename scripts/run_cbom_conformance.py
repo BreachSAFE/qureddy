@@ -79,7 +79,7 @@ def _capture_final_bytes(
         target,
         "--format",
         "cbom",
-        "--reproducible",
+        "--deterministic",
         "--openssl",
         str(openssl),
     ]
@@ -102,7 +102,7 @@ def _capture_final_bytes(
 
 
 def _validate_hash_seed_determinism(binary: Path, console: Path) -> None:
-    """Prove reproducible CBOM bytes are stable across Python hash seeds (#196).
+    """Prove deterministic CBOM bytes are stable across Python hash seeds (#196).
 
     The in-process repeatability check proves repeated rendering inside one
     interpreter is stable, but not that set/dict iteration order cannot shift the
@@ -140,7 +140,7 @@ def _validate_hash_seed_determinism(binary: Path, console: Path) -> None:
             seed_paths.append(path)
         if seed_bytes[0] != seed_bytes[1]:
             msg = (
-                "reproducible CBOM bytes differ across PYTHONHASHSEED "
+                "deterministic CBOM bytes differ across PYTHONHASHSEED "
                 f"({seed_paths[0].name} vs {seed_paths[1].name})"
             )
             raise RuntimeError(msg)
@@ -176,7 +176,7 @@ def _validate_installed_console(binary: Path, console: Path) -> None:
             expected_exit=_TARGET_FAILURE_EXIT,
         )
         if normalized_volatile_fields(first) != normalized_volatile_fields(second):
-            msg = "installed console output is nondeterministic in reproducible mode"
+            msg = "installed console output is nondeterministic in deterministic mode"
             raise RuntimeError(msg)
         _assert_positive_inventory(first)
         for path, payload in (

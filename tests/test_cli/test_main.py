@@ -31,6 +31,26 @@ def test_scan_help_lists_documented_options() -> None:
     assert "--retries" in result.stdout
     assert "--retry-delay" in result.stdout
     assert "--json-logs" in result.stdout
+    assert "--deterministic" in result.stdout
+    assert "--reproducible" not in result.stdout
+
+
+def test_deterministic_flag_and_deprecated_alias_enable_same_mode(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The old spelling remains a hidden compatibility alias for one cycle."""
+    runner = CliRunner()
+    calls: list[bool] = []
+
+    def fake_scan_and_render(**kwargs: object) -> int:
+        calls.append(bool(kwargs["reproducible"]))
+        return 0
+
+    monkeypatch.setattr("qureddy.cli.scan._scan_and_render", fake_scan_and_render)
+    for flag in ("--deterministic", "--reproducible"):
+        result = runner.invoke(app, ["scan", "tls", "example.com", flag])
+        assert result.exit_code == 0, result.output
+    assert calls == [True, True]
 
 
 def test_scan_tls_help_carries_examples_block() -> None:

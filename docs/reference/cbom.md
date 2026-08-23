@@ -198,7 +198,7 @@ Each finding is a top-level CycloneDX `annotation`:
 | --- | --- |
 | `subjects` | `bom-ref` of the crypto asset the finding concerns |
 | `annotator` | the QuReddy tool component (`tool/qureddy`) |
-| `timestamp` | the real scan completion time (`completed_at`); pinned to `1970-01-01T00:00:00+00:00` under `--reproducible` |
+| `timestamp` | the real scan completion time (`completed_at`); pinned to `1970-01-01T00:00:00+00:00` under `--deterministic` |
 | `text` | the finding title plus its full description, including any standards citations |
 
 Annotation `bom-ref` values are unique, and every `subjects` entry resolves to a
@@ -215,7 +215,7 @@ verdict as queryable fields rather than parsing the annotation prose.
 
 Scan and target provenance stay in `metadata.properties`. Every emitted key is
 concrete and named below; none is a wildcard a consumer has to guess. Keys marked
-per-run are omitted under `--reproducible` so the document is content-addressable.
+per-run are omitted under `--deterministic` so the document is content-addressable.
 
 | `metadata.properties` key | Presence | Value |
 | --- | --- | --- |
@@ -353,7 +353,7 @@ adding a non-CycloneDX field to the schema-closed `certificateProperties` object
 By default the CBOM carries per-run identity (a CycloneDX `serialNumber` and
 `metadata.timestamp`, each finding annotation `timestamp`, plus `qureddy:scan.id`
 and the scan start/finish times), so two runs of the same scan produce different
-bytes. Pass `--reproducible` to omit those fields and pin every annotation
+bytes. Pass `--deterministic` to omit those fields and pin every annotation
 `timestamp` to the Unix epoch (`1970-01-01T00:00:00+00:00`): the same observed
 crypto then yields byte- and digest-identical output for content addressing. The
 crypto inventory, ordering, and values are identical either way.
