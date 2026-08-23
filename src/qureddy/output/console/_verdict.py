@@ -140,7 +140,15 @@ def _classically_weak_headline(result: ScanResult, hybrid_group: str | None) -> 
     headline.append("Protocol hygiene: ", style="bold")
     headline.append("ACTION NEEDED", style="bold yellow")
     headline.append(" — ")
-    headline.append(_legacy_protocols(result))
+    legacy_protocols = _legacy_protocols(result)
+    headline.append(
+        legacy_protocols
+        or (
+            "classical SSH algorithms remain offered"
+            if result.scan.scanner_name == "ssh"
+            else "classical fallback accepted"
+        )
+    )
     return headline
 
 
@@ -173,10 +181,16 @@ def _classically_weak_with_pqc_recommendation(result: ScanResult, hybrid_group: 
     hiding the other.
     """
     protocols = _legacy_protocols(result)
+    if protocols is None and result.scan.scanner_name == "ssh":
+        return (
+            f"PQ hybrid {hybrid_group} works. "
+            "Classical SSH algorithms remain offered; review fallback posture."
+        )
+    protocols = protocols or "classical fallback accepted"
     return CLASSICALLY_WEAK_WITH_PQC_TEMPLATE.format(hybrid_group=hybrid_group, protocols=protocols)
 
 
-def _legacy_protocols(result: ScanResult) -> str:
+def _legacy_protocols(result: ScanResult) -> str | None:
     """Return the offered legacy protocol versions in stable order."""
     protocols = sorted(
         {
@@ -185,7 +199,7 @@ def _legacy_protocols(result: ScanResult) -> str:
             if f.finding_type == FINDING_TYPE_LEGACY_PROTOCOL_OFFERED and f.protocol_version
         }
     )
-    return ", ".join(protocols) or "classical fallback accepted"
+    return ", ".join(protocols) or None
 
 
 def _verdict_panel_border(result: ScanResult) -> str:

@@ -299,3 +299,17 @@ def test_ssh_output_and_compact_write_clean_file(tmp_path) -> None:
     payload = json.loads(text)
     assert payload["summary"]["failure_category"] == "target_connect_failed"
     assert payload["scan"]["scanner_name"] == "ssh"
+
+
+def test_ssh_output_dir_writes_correlated_json_and_cbom(tmp_path) -> None:
+    """SSH supports the same correlated bundle contract as TLS (#451)."""
+    run_dir = tmp_path / "ssh-run"
+    result = CliRunner().invoke(
+        app,
+        ["scan", "ssh", _refused_loopback_target(), "--output-dir", str(run_dir)],
+    )
+    assert result.exit_code == 2, result.output
+    json_payload = json.loads((run_dir / "scan.json").read_text(encoding="utf-8"))
+    cbom_payload = json.loads((run_dir / "scan.cdx.json").read_text(encoding="utf-8"))
+    assert json_payload["scan"]["scanner_name"] == "ssh"
+    assert cbom_payload["bomFormat"] == "CycloneDX"

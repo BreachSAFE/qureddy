@@ -30,13 +30,14 @@ from qureddy.cli._options import (
     FormatOpt,
     JsonLogsOpt,
     MinSeverityOpt,
+    OutputDirOpt,
     OutputOpt,
     QuietOpt,
     SshTargetArg,
     TimeoutOpt,
     VerboseOpt,
 )
-from qureddy.cli._render import _open_output_file, _render
+from qureddy.cli._render import _open_output_file, _prepare_output_dir, _render
 from qureddy.cli.main import scan_app
 from qureddy.core.errors import CbomError, SSHProbeError, TargetParseError
 from qureddy.core.logging import start_run_logging
@@ -136,6 +137,7 @@ def scan_ssh_cmd(
     target: SshTargetArg,
     fmt: FormatOpt = OutputFormat.RICH,
     output: OutputOpt = None,
+    output_dir: OutputDirOpt = None,
     compact: CompactOpt = False,
     min_severity: MinSeverityOpt = None,
     timeout: TimeoutOpt = 8,
@@ -149,7 +151,7 @@ def scan_ssh_cmd(
     # Mirror scan tls: machine formats default to quiet so stdout stays a
     # clean document, but an explicit -v/-vv/-vvv still wins. Keeps the
     # verbosity/logging surface consistent across subcommands.
-    machine_format = fmt is not OutputFormat.RICH
+    machine_format = output_dir is not None or fmt is not OutputFormat.RICH
     effective_quiet = quiet or (machine_format and verbose == 0)
     # log=None: `scan ssh` has no --log yet; shares the helper so log-capture wiring is not duplicated.
     start_run_logging(verbosity=verbose, json_logs=json_logs, quiet=effective_quiet, log=None)
@@ -159,6 +161,7 @@ def scan_ssh_cmd(
         _fail(f"invalid target: {exc}", EXIT_USAGE)
     # --output stream is owned here so a rich-mode probe failure (which exits
     # before rendering) still closes it; a bad path exits 4 before the scan.
+    _prepare_output_dir(output_dir, output)
     output_stream = _open_output_file(output)
     try:
         result, exit_code = _run_ssh_probe(scan_target, timeout, machine_format=machine_format)
@@ -171,6 +174,7 @@ def scan_ssh_cmd(
                 compact=compact,
                 min_severity=min_severity,
                 stream=output_stream,
+                output_dir=output_dir,
             )
         except CbomError as exc:
             # #344: map a render-boundary defect to the exit-code contract, not a traceback.

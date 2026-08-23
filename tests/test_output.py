@@ -30,7 +30,10 @@ from qureddy.core.models import (
 )
 from qureddy.output.console import render_rich
 from qureddy.output.console._tables import _finding_crypto_detail
-from qureddy.output.console._verdict import _compose_headline
+from qureddy.output.console._verdict import (
+    _classically_weak_with_pqc_recommendation,
+    _compose_headline,
+)
 
 ANSI_ESCAPE = re.compile(r"\x1b\[")
 
@@ -355,6 +358,17 @@ class TestExistingContractStillHolds:
         assert "Protocol hygiene:" in out
         assert "ACTION NEEDED" in out
         assert "FAIL — weak legacy fallback" not in out
+
+    def test_ssh_hybrid_recommendation_uses_ssh_wording(self) -> None:
+        result = _build_result()
+        result = result.model_copy(
+            update={"scan": result.scan.model_copy(update={"scanner_name": "ssh"})}
+        )
+        recommendation = _classically_weak_with_pqc_recommendation(result, "sntrup761x25519")
+        assert recommendation == (
+            "PQ hybrid sntrup761x25519 works. "
+            "Classical SSH algorithms remain offered; review fallback posture."
+        )
 
     def test_rule_id_is_not_ellipsized(
         self,
