@@ -65,6 +65,8 @@
       "probe_role": null,
       "protocol": "tls",
       "protocol_version": "TLSv1.3",
+      "server_software": null,
+      "server_version": null,
       "source": "qureddy.scanners.tls.parse"
     },
     {
@@ -104,6 +106,8 @@
       "probe_role": null,
       "protocol": "tls",
       "protocol_version": "TLSv1.3",
+      "server_software": null,
+      "server_version": null,
       "source": "qureddy.scanners.tls.parse"
     }
   ],
