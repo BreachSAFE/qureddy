@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   quality-gates:
-    uses: paul007ex/breachsafe-common/.github/workflows/quality-gates-python.yml@v1.1.1
+    uses: paul007ex/breachsafe-common/.github/workflows/quality-gates-python.yml@26e1f8f3f6d37a9771aaeb567413c08b51ef1bcc # v1.1.1
     with:
       module: qureddy
       coverage_min: 90
