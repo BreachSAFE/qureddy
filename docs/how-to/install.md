@@ -42,10 +42,10 @@ py -3.12 --version
 
 ## 2. Install with pipx
 
-> **Pre-release (TestPyPI).** QuReddy is available on
-> [TestPyPI](https://test.pypi.org/project/breachsafe-qureddy/) while the PyPI
-> release is finalized. Until then, install from TestPyPI and pull runtime
-> dependencies from PyPI:
+> **TestPyPI-only distribution.** QuReddy is available on
+> [TestPyPI](https://test.pypi.org/project/breachsafe-qureddy/) only for now. Do not
+> use a plain `pipx install breachsafe-qureddy` command; install from TestPyPI and
+> pull runtime dependencies from PyPI:
 >
 > ```bash
 > pipx install --python 3.12 \
@@ -54,8 +54,7 @@ py -3.12 --version
 >   breachsafe-qureddy
 > ```
 >
-> The commands below (plain `pipx install breachsafe-qureddy`) apply once the PyPI
-> release is published.
+> A public PyPI package, if authorized later, will be announced separately.
 
 If the resolver reports that no Click version satisfies `>=8.3.3`, the PyPI
 fallback is missing. TestPyPI does not mirror QuReddy's runtime dependencies;
@@ -67,7 +66,10 @@ provides current platform instructions. After `pipx` is available:
 
 ```bash
 pipx ensurepath
-pipx install breachsafe-qureddy
+pipx install --python 3.12 \
+  --index-url https://test.pypi.org/simple/ \
+  --pip-args '--extra-index-url https://pypi.org/simple/' \
+  breachsafe-qureddy
 qureddy --version
 ```
 
@@ -145,11 +147,18 @@ Install Python 3.12 and pipx, then run in PowerShell:
 ```powershell
 py -3.12 -m pip install --user pipx
 py -3.12 -m pipx ensurepath
-py -3.12 -m pipx install breachsafe-qureddy
+py -3.12 -m pipx install `
+  --index-url https://test.pypi.org/simple/ `
+  --pip-args "--extra-index-url https://pypi.org/simple/" `
+  breachsafe-qureddy
 qureddy --version
 ```
 
-For the TestPyPI rehearsal, use both indexes in PowerShell:
+The TestPyPI install above deliberately uses both indexes: TestPyPI supplies QuReddy,
+while PyPI supplies runtime dependencies. A public PyPI package, if authorized later,
+will have separate release instructions.
+
+For a repeat TestPyPI install in PowerShell, use:
 
 ```powershell
 py -3.12 -m pipx install `

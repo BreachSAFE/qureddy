@@ -1049,4 +1049,4 @@ In addition to Tier 1:
 - [ ] No expired `SELF-SCAN ACCEPTED` or `SECURITY EXCEPTION ACCEPTED` markers
 - [ ] SBOM/CBOM generated and validated
 - [ ] Sigstore signing succeeded
-- [ ] PyPI trusted publisher configuration verified
+- [ ] TestPyPI trusted publisher configuration verified (public PyPI is deliberately deferred)
