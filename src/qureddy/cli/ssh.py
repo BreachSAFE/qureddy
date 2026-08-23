@@ -148,9 +148,7 @@ def scan_ssh_cmd(
     reproducible: DeprecatedReproducibleOpt = False,
 ) -> None:
     """Scan an SSH endpoint for post-quantum readiness."""
-    # Mirror scan tls: machine formats default to quiet so stdout stays a
-    # clean document, but an explicit -v/-vv/-vvv still wins. Keeps the
-    # verbosity/logging surface consistent across subcommands.
+    # Match TLS machine-format quieting; explicit verbosity still wins.
     machine_format = output_dir is not None or fmt is not OutputFormat.RICH
     effective_quiet = quiet or (machine_format and verbose == 0)
     # log=None: `scan ssh` has no --log yet; shares the helper so log-capture wiring is not duplicated.
@@ -159,8 +157,7 @@ def scan_ssh_cmd(
         scan_target = parse_ssh_target(target, block_internal=_block_internal_targets())
     except TargetParseError as exc:
         _fail(f"invalid target: {exc}", EXIT_USAGE)
-    # --output stream is owned here so a rich-mode probe failure (which exits
-    # before rendering) still closes it; a bad path exits 4 before the scan.
+    # Validate destinations before scanning; this stream is owned and closed here.
     _prepare_output_dir(output_dir, output)
     output_stream = _open_output_file(output)
     try:
