@@ -14,6 +14,18 @@ class QureddyError(Exception):
     """Base class for all QuReddy errors."""
 
 
+class CbomError(QureddyError):
+    """CBOM construction or semantic validation failed internally.
+
+    This is an implementation/output failure, not a target or local-tool
+    failure, and therefore maps to the CLI's internal-error exit code (70).
+    """
+
+
+class CertificateParseError(QureddyError):
+    """The certificate parser received an invalid internal input."""
+
+
 class TargetParseError(QureddyError):
     """User input could not be parsed into a valid ScanTarget."""
 

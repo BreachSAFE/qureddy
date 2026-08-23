@@ -16,6 +16,7 @@ import pytest
 
 from qureddy._branding import PROJECT_VERSION
 from qureddy.core.certificate import CertificateObservation
+from qureddy.core.errors import CbomError
 from qureddy.core.models import (
     Evidence,
     FailureCategory,
@@ -72,7 +73,7 @@ class TestCycloneDx17Contract:
     def test_library_intermediate_shape_guard_fails_closed(
         self, payload: dict[str, object], message: str
     ) -> None:
-        with pytest.raises(RuntimeError, match=message):
+        with pytest.raises(CbomError, match=message):
             _assert_library_serialization_shape(payload, has_certificate=False)
 
     def test_library_intermediate_shape_guard_rejects_bad_certificate_properties(self) -> None:
@@ -81,7 +82,7 @@ class TestCycloneDx17Contract:
             "components": [{"bom-ref": "crypto/certificate/leaf", "cryptoProperties": {}}],
             "metadata": {"component": {}},
         }
-        with pytest.raises(RuntimeError, match="certificateProperties"):
+        with pytest.raises(CbomError, match="certificateProperties"):
             _assert_library_serialization_shape(payload, has_certificate=True)
 
     def test_library_intermediate_shape_guard_rejects_missing_certificate(self) -> None:
@@ -90,7 +91,7 @@ class TestCycloneDx17Contract:
             "components": [],
             "metadata": {"component": {}},
         }
-        with pytest.raises(RuntimeError, match="certificate component"):
+        with pytest.raises(CbomError, match="certificate component"):
             _assert_library_serialization_shape(payload, has_certificate=True)
 
     def test_endpoint_is_metadata_only_with_stable_ref(self) -> None:

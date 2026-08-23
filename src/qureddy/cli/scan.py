@@ -51,7 +51,7 @@ from qureddy.cli._options import (
 )
 from qureddy.cli._render import _open_output_file, _render
 from qureddy.cli.main import scan_app
-from qureddy.core.errors import RetryConfigError, TargetParseError
+from qureddy.core.errors import CbomError, RetryConfigError, TargetParseError
 from qureddy.core.logging import start_run_logging
 from qureddy.core.models import FailureCategory, OutputFormat, ScanTarget, Severity
 from qureddy.core.retry import parse_retry_on, validate_retry_args
@@ -278,7 +278,7 @@ def _scan_and_render(
                 min_severity=min_severity,
                 stream=output_stream,
             )
-        except ValueError as exc:
+        except CbomError as exc:
             # #344: a render-boundary defect (e.g. a semantic-validator ValueError) must map to
             # the exit-code contract, not escape as an internal traceback.
             _echo_operator_diagnostic(

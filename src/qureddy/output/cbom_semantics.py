@@ -8,6 +8,8 @@ import re
 from collections.abc import Iterator
 from typing import Any
 
+from qureddy.core.errors import CbomError
+
 _SECRET_PATTERNS = (
     re.compile(
         r"-----BEGIN (?:[A-Z0-9]+ )*PRIVATE KEY(?: BLOCK)?-----",
@@ -31,7 +33,7 @@ def _check_bom_ref_integrity(declared_refs: list[str]) -> None:
     duplicates = _duplicate_refs(declared_refs)
     if duplicates:
         msg = f"duplicate bom-ref values: {', '.join(duplicates)}"
-        raise ValueError(msg)
+        raise CbomError(msg)
     # A literal duplicate bom-ref is silently renamed to a random ``BomRef.<n>.<n>`` by
     # cyclonedx's BomRefDiscriminator at serialization, which erases the duplicate above and
     # makes output non-deterministic (breaks --deterministic). A surviving auto-generated ref is
@@ -39,7 +41,7 @@ def _check_bom_ref_integrity(declared_refs: list[str]) -> None:
     auto_generated = _auto_generated_refs(declared_refs)
     if auto_generated:
         msg = f"non-deterministic auto-generated bom-ref (unresolved duplicate): {auto_generated}"
-        raise ValueError(msg)
+        raise CbomError(msg)
 
 
 def _duplicate_refs(declared_refs: list[str]) -> list[str]:
@@ -56,7 +58,7 @@ def validate_cbom_semantics(payload: dict[str, Any]) -> None:
     """Reject semantic defects that schema validators do not consistently catch."""
     if payload.get("specVersion") != "1.7":
         msg = "CBOM specVersion must be exactly 1.7"
-        raise ValueError(msg)
+        raise CbomError(msg)
 
     graph_refs = _graph_refs(payload)
     _check_bom_ref_integrity(_declared_refs(payload, graph_refs))
@@ -65,11 +67,11 @@ def validate_cbom_semantics(payload: dict[str, Any]) -> None:
     dangling = _dangling_refs(payload, known_refs)
     if dangling:
         msg = f"dangling references: {', '.join(sorted(dangling))}"
-        raise ValueError(msg)
+        raise CbomError(msg)
 
     if _contains_secret_like_material(payload):
         msg = "CBOM contains secret-like material"
-        raise ValueError(msg)
+        raise CbomError(msg)
 
 
 def _known_refs(graph_refs: list[Any]) -> set[str]:

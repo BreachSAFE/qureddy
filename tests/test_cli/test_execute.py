@@ -14,6 +14,7 @@ import qureddy.cli.scan as scan_cli_module
 import qureddy.cli.ssh as ssh_cli_module
 from qureddy.cli import app, main
 from qureddy.core import retry as retry_module
+from qureddy.core.errors import CbomError
 from tests._fake_openssl import fake_openssl
 
 
@@ -370,13 +371,13 @@ def test_local_openssl_version_unreadable_exits_3() -> None:
 
 
 def test_render_failure_maps_to_exit_70_not_traceback(monkeypatch: pytest.MonkeyPatch) -> None:
-    """#344: a ValueError at the render boundary maps to the exit-code contract
+    """#344: a CbomError at the render boundary maps to the exit-code contract
     (EXIT_INTERNAL_ERROR = 70) with an operator diagnostic, not an escaped traceback."""
     monkeypatch.setattr(scan_cli_module, "_execute_scan", lambda *a, **k: (object(), 0))
 
     def _boom(*_a: object, **_k: object) -> None:
         msg = "duplicate bom-ref"
-        raise ValueError(msg)
+        raise CbomError(msg)
 
     monkeypatch.setattr(scan_cli_module, "_render", _boom)
     result = CliRunner().invoke(app, ["scan", "tls", "example.com"])
