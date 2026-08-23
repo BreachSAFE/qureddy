@@ -120,15 +120,6 @@ def weak_mac_note(name: str) -> str | None:
     return _WEAK_MAC_NOTES.get(name)
 
 
-# name -> human note, for reporting
-KEX_NOTES = MappingProxyType(
-    {
-        "mlkem768x25519-sha256": "ML-KEM-768 + X25519 hybrid (FIPS 203)",
-        "sntrup761x25519-sha512": "Streamlined NTRU Prime + X25519 hybrid",
-    }
-)
-
-
 class KexClass(NamedTuple):
     """Structured classification of one SSH KEX group for the CBOM (#241).
 
@@ -199,13 +190,6 @@ def weak_host_keys(offer_host_keys: tuple[str, ...]) -> tuple[str, ...]:
 def weak_host_key_note(algorithm: str) -> str | None:
     """The weakness justification for one host-key algorithm, or None if not weak."""
     return _WEAK_HOST_KEY_NOTES.get(algorithm)
-
-
-def weak_host_key_reasons(offer_host_keys: tuple[str, ...]) -> tuple[str, ...]:
-    """One 'name: reason' note per weak host-key algorithm offered, for reporting."""
-    return tuple(
-        f"{a}: {_WEAK_HOST_KEY_NOTES[a]}" for a in offer_host_keys if a in _WEAK_HOST_KEY_NOTES
-    )
 
 
 def weak_kex(offer_kex: tuple[str, ...]) -> tuple[str, ...]:
