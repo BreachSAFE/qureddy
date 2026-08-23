@@ -29,6 +29,7 @@ from qureddy.core.models import (
     Severity,
 )
 from qureddy.output.console import render_rich
+from qureddy.output.console._tables import _finding_crypto_detail
 
 ANSI_ESCAPE = re.compile(r"\x1b\[")
 
@@ -178,6 +179,47 @@ class TestSummaryRows:
         out = _render_to_string(_build_result())
         assert "protocol" in out
         assert "TLSv1.3" in out
+
+
+class TestFindingCryptoDetail:
+    """The compact Findings crypto cell must not duplicate one value."""
+
+    def test_identical_group_and_algorithm_is_rendered_once(self) -> None:
+        finding = Finding(
+            id="f-ssh",
+            asset_id="asset-ssh",
+            evidence_ids=("ev-ssh",),
+            rule_id="ssh.kex.hybrid_offered",
+            finding_type="ssh.kex.hybrid_offered",
+            title="Hybrid KEX",
+            description="d",
+            severity=Severity.INFO,
+            readiness=Readiness.TRANSITIONAL_HYBRID,
+            confidence=Confidence.HIGH,
+            protocol="ssh",
+            negotiated_group="sntrup761x25519-sha512",
+            algorithm="sntrup761x25519-sha512",
+        )
+
+        assert str(_finding_crypto_detail(finding)) == "sntrup761x25519-sha512"
+
+    def test_distinct_group_and_algorithm_keep_both_values(self) -> None:
+        finding = Finding(
+            id="f-tls",
+            asset_id="asset-tls",
+            evidence_ids=("ev-tls",),
+            rule_id="tls.kex.hybrid",
+            finding_type="tls.kex.hybrid",
+            title="Hybrid KEX",
+            description="d",
+            severity=Severity.INFO,
+            readiness=Readiness.TRANSITIONAL_HYBRID,
+            confidence=Confidence.HIGH,
+            negotiated_group="X25519MLKEM768",
+            algorithm="ECDHE",
+        )
+
+        assert str(_finding_crypto_detail(finding)) == "X25519MLKEM768 / ECDHE"
 
     def test_cipher_suite_row_present(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("NO_COLOR", "1")
