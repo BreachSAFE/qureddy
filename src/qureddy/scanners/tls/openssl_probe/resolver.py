@@ -11,10 +11,11 @@ LibreSSL) and on Windows (where PATH often contains an unrelated OpenSSL).
 from __future__ import annotations
 
 import os
-import re
 import shutil
 import sys
-from pathlib import Path
+from pathlib import Path, PurePath
+
+from packaging.version import InvalidVersion, Version
 
 from qureddy.core.errors import (
     LocalOpenSSLBroken,
@@ -36,8 +37,13 @@ from qureddy.scanners.tls.openssl_probe._constants import (
 )
 
 
-def _version_key(value: str) -> list[int]:
-    return [int(part) for part in re.findall(r"\d+", value)] or [0]
+def _version_key(value: str) -> Version:
+    """Return the canonical packaging version encoded in an OpenSSL path."""
+    name = PurePath(value).parent.parent.name.removeprefix("openssl").lstrip("-_")
+    try:
+        return Version(name)
+    except InvalidVersion:
+        return Version("0")
 
 
 def _present(*paths: str | None) -> list[str]:
