@@ -170,8 +170,7 @@ def main() -> int:
                 "release-metadata",
                 [
                     sys.executable,
-                    "-c",
-                    "from release_support import verify_release_metadata; verify_release_metadata()",
+                    str(ROOT / "scripts" / "verify_release_metadata.py"),
                 ],
             )
             gate.clean_worktree = True
