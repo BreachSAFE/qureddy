@@ -638,7 +638,7 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Docker's default build argument and container-publication workflow now use the current
   release version instead of stale 0.2.x defaults.
- 
+
 ## Contents
 
 1. [0.2.65](#0265---2026-08-24)
