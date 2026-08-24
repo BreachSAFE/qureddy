@@ -130,3 +130,14 @@ jobs:
           path: .allure-results
           if-no-files-found: warn
           retention-days: 14
+
+  # Canary for #427: exercise the public reusable gate without changing the
+  # blocking pull-request path until its first real consumer run is green.
+  reusable-canary:
+    name: Reusable gate canary
+    if: github.event_name == 'workflow_dispatch'
+    uses: paul007ex/breachsafe-golden-python/.github/workflows/quality-gates-python.yml@v1
+    with:
+      module: qureddy
+      coverage_min: 90
+      container_tag: 3.14-openssl3.5.7
