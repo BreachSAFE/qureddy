@@ -26,6 +26,15 @@ class FakeCollector:
         return CollectionResult(self.collector_name, self.collector_version)
 
 
+class FakeScanCollector(FakeCollector):
+    """Registry fixture that exposes the live scanner seam."""
+
+    scanner_name = "tls"
+
+    def scan(self, subject: object, *, timeout_seconds: int) -> object:
+        return subject
+
+
 def test_registry_selects_by_source_and_policy() -> None:
     registry = CollectorRegistry()
     registry.register(FakeCollector("native-tls", Capability.TLS_ENDPOINT))
@@ -49,3 +58,16 @@ def test_registry_rejects_ambiguous_or_unsupported_selection() -> None:
             ScanSource(kind=SourceKind.ENDPOINT, protocol="ssh", locator="x"),
             tool_policy=ToolPolicy.SSH_AUDIT,
         )
+
+
+def test_registry_select_scanner_requires_executable_collector() -> None:
+    registry = CollectorRegistry()
+    registry.register(FakeScanCollector("native-tls", Capability.TLS_ENDPOINT))
+    source = ScanSource(kind=SourceKind.ENDPOINT, protocol="tls", locator="example.com:443")
+
+    assert registry.select_scanner(source).scanner_name == "tls"
+
+    registry = CollectorRegistry()
+    registry.register(FakeCollector("native-tls", Capability.TLS_ENDPOINT))
+    with pytest.raises(CollectorSelectionError, match="cannot execute a scan"):
+        registry.select_scanner(source)

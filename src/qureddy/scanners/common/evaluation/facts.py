@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from pydantic import BaseModel, ConfigDict
@@ -88,48 +89,98 @@ def _semantic_signals(
     evidence_types: set[str],
 ) -> set[SemanticSignal]:
     """Map legacy protocol identifiers to the stable signal taxonomy once."""
-    signals: set[SemanticSignal] = set()
-    if any(
+    signals = {
+        signal
+        for signal, predicate in _SIGNAL_PREDICATES
+        if predicate(findings, types, rules, evidence_types)
+    }
+    if SemanticSignal.WEAK_ALGORITHM in signals:
+        signals.update({SemanticSignal.WEAK_ALGORITHM, SemanticSignal.DOWNGRADE_ACTION_NEEDED})
+    if SemanticSignal.WEAK_ALGORITHM in signals:
+        signals.add(SemanticSignal.HYGIENE_WEAK)
+    return signals
+
+
+SignalPredicate = Callable[[list[Finding], set[str], set[str], set[str]], bool]
+
+
+def _hybrid_signal(findings: list[Finding], *_: set[str]) -> bool:
+    """Return whether a transitional hybrid finding was observed."""
+    return any(
         finding.readiness.value == "transitional_hybrid"
         and (
             _has_suffix({finding.finding_type}, "kex.hybrid")
             or _has_suffix({finding.rule_id}, "kex.hybrid")
         )
         for finding in findings
-    ):
-        signals.add(SemanticSignal.HYBRID_PQC)
-    if any(finding.readiness.value == "quantum_safe" for finding in findings):
-        signals.add(SemanticSignal.PURE_PQC)
-    if (
-        _has_suffix(types, "kex.classical")
-        or _has_suffix(rules, "classical.negotiated_x25519")
-        or _has_suffix(rules, "kex.classical_only")
-        or _has_suffix(rules, "kex.classical_alternative")
-    ):
-        signals.add(SemanticSignal.CLASSICAL_KEX)
-    if _has_suffix(rules, "hybrid.probe_failed"):
-        signals.add(SemanticSignal.HYBRID_PROBE_FAILED)
-    if _has_suffix(types, "legacy.protocol_offered"):
-        signals.add(SemanticSignal.LEGACY_PROTOCOL)
-    if _has_suffix(rules, "classical.protocol_offered"):
-        signals.add(SemanticSignal.DOWNGRADE_ACTION_NEEDED)
-    if any(_has_suffix(types, suffix) for suffix in ("kex.weak", "hostkey.weak", "transport.weak")):
-        signals.update({SemanticSignal.WEAK_ALGORITHM, SemanticSignal.DOWNGRADE_ACTION_NEEDED})
-    if _has_suffix(types, "transport.weak") or _has_suffix(types, "terrapin.posture"):
-        signals.add(SemanticSignal.PROTOCOL_ACTION_NEEDED)
-    if (
-        _has_suffix(types, "cert.classical_signature")
-        or _has_suffix(evidence_types, "hostkey")
-        or _has_suffix(types, "hostkey.weak")
-    ):
-        signals.add(SemanticSignal.AUTHENTICATION_CLASSICAL)
-    if _has_suffix(types, "cert.pq_signature"):
-        signals.add(SemanticSignal.AUTHENTICATION_PQ)
-    if _has_suffix(types, "cert.classical_signature"):
-        signals.add(SemanticSignal.CLASSICAL_CERTIFICATE)
-    if SemanticSignal.WEAK_ALGORITHM in signals:
-        signals.add(SemanticSignal.HYGIENE_WEAK)
-    return signals
+    )
+
+
+def _pure_pq_signal(findings: list[Finding], *_: set[str]) -> bool:
+    """Return whether a pure post-quantum finding was observed."""
+    return any(finding.readiness.value == "quantum_safe" for finding in findings)
+
+
+def _classical_kex_signal(_: list[Finding], types: set[str], rules: set[str], __: set[str]) -> bool:
+    """Return whether a classical key-exchange path was observed."""
+    return any(
+        (
+            _has_suffix(types, "kex.classical"),
+            _has_suffix(rules, "classical.negotiated_x25519"),
+            _has_suffix(rules, "kex.classical_only"),
+            _has_suffix(rules, "kex.classical_alternative"),
+        )
+    )
+
+
+def _rule_signal(suffix: str) -> SignalPredicate:
+    """Build a predicate for a rule suffix."""
+    return lambda _findings, _types, rules, _evidence: _has_suffix(rules, suffix)
+
+
+def _type_signal(suffix: str) -> SignalPredicate:
+    """Build a predicate for a finding-type suffix."""
+    return lambda _findings, types, _rules, _evidence: _has_suffix(types, suffix)
+
+
+def _weak_signal(_: list[Finding], types: set[str], _rules: set[str], __: set[str]) -> bool:
+    """Return whether an explicit weak algorithm finding was observed."""
+    return any(
+        _has_suffix(types, suffix) for suffix in ("kex.weak", "hostkey.weak", "transport.weak")
+    )
+
+
+def _authentication_classical_signal(
+    _: list[Finding], types: set[str], _rules: set[str], evidence_types: set[str]
+) -> bool:
+    """Return whether classical authentication evidence was observed."""
+    return any(
+        (
+            _has_suffix(types, "cert.classical_signature"),
+            _has_suffix(evidence_types, "hostkey"),
+            _has_suffix(types, "hostkey.weak"),
+        )
+    )
+
+
+_SIGNAL_PREDICATES: tuple[tuple[SemanticSignal, SignalPredicate], ...] = (
+    (SemanticSignal.HYBRID_PQC, _hybrid_signal),
+    (SemanticSignal.PURE_PQC, _pure_pq_signal),
+    (SemanticSignal.CLASSICAL_KEX, _classical_kex_signal),
+    (SemanticSignal.HYBRID_PROBE_FAILED, _rule_signal("hybrid.probe_failed")),
+    (SemanticSignal.LEGACY_PROTOCOL, _type_signal("legacy.protocol_offered")),
+    (SemanticSignal.DOWNGRADE_ACTION_NEEDED, _rule_signal("classical.protocol_offered")),
+    (SemanticSignal.WEAK_ALGORITHM, _weak_signal),
+    (
+        SemanticSignal.PROTOCOL_ACTION_NEEDED,
+        lambda _f, types, _r, _e: any(
+            (_has_suffix(types, "transport.weak"), _has_suffix(types, "terrapin.posture"))
+        ),
+    ),
+    (SemanticSignal.AUTHENTICATION_CLASSICAL, _authentication_classical_signal),
+    (SemanticSignal.AUTHENTICATION_PQ, _type_signal("cert.pq_signature")),
+    (SemanticSignal.CLASSICAL_CERTIFICATE, _type_signal("cert.classical_signature")),
+)
 
 
 def _has_suffix(values: set[str], suffix: str) -> bool:

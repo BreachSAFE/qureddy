@@ -97,7 +97,7 @@ docs-links:
 # independent-CLI cross-seed check runs inside the full `release-gate`.
 cbom-determinism:
     uv run --locked pytest \
-        tests/test_cbom.py::TestReproducibleHostPathCanonicalization -q
+        tests/test_cbom_semantics.py::TestReproducibleHostPathCanonicalization -q
 
 # Build and verify one release-candidate artifact set with local evidence.
 release-gate:
