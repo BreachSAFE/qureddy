@@ -33,7 +33,7 @@ from qureddy.core.models import (
     Readiness,
     Severity,
 )
-from qureddy.scanners.tls.openssl_probe._constants import HYBRID_GROUPS
+from qureddy.core.pqc import has_classical_half, is_hybrid_pq
 
 DASH = "—"
 
@@ -43,11 +43,6 @@ DASH = "—"
 # dark terminal.
 BRAND_CYAN = "#3ae7f4"
 BODY_TEXT = "#cbd5e1"
-
-PQ_GROUPS: frozenset[str] = frozenset(HYBRID_GROUPS)
-CLASSICAL_GROUPS: frozenset[str] = frozenset(
-    {"X25519", "secp256r1", "secp384r1", "secp521r1"},
-)
 
 READINESS_STYLE: dict[Readiness, str] = {
     Readiness.QUANTUM_SAFE: "bold green",
@@ -172,9 +167,9 @@ def style_group(group: str | None) -> Text:
     """Render a TLS 1.3 group name with PQ/classical/unknown styling."""
     if not group:
         return Text(DASH, style="dim")
-    if group in PQ_GROUPS:
+    if is_hybrid_pq(group):
         return Text(group, style="bold green")
-    if group in CLASSICAL_GROUPS:
+    if has_classical_half(group):
         return Text(group, style="yellow")
     return Text(group)
 

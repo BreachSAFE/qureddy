@@ -10,7 +10,8 @@ from rich import box
 from rich.panel import Panel
 from rich.text import Text
 
-from qureddy.core.models import FailureCategory, Readiness
+from qureddy.core.models import FailureCategory, ProbeRole, Readiness
+from qureddy.core.signatures import pqc_signature_standard
 from qureddy.output._styles import (
     CLASSICALLY_WEAK_WITH_PQC_TEMPLATE,
     RECOMMENDATION_TEXT,
@@ -19,13 +20,12 @@ from qureddy.output._styles import (
     unknown_recommendation,
     verdict_border_style,
 )
-from qureddy.output.console._evidence import _CLASSICAL_GROUP, _HYBRID_GROUP, _pick_evidence
-from qureddy.scanners.tls._cert_findings import (
+from qureddy.output.console._evidence import _pick_evidence
+from qureddy.scanners.common.finding_types import (
     FINDING_TYPE_CLASSICAL_SIGNATURE,
+    FINDING_TYPE_LEGACY_PROTOCOL_OFFERED,
     FINDING_TYPE_PQ_SIGNATURE,
 )
-from qureddy.scanners.tls._legacy_findings import FINDING_TYPE_LEGACY_PROTOCOL_OFFERED
-from qureddy.scanners.tls.cert_sig import pqc_signature_standard
 
 if TYPE_CHECKING:
     from qureddy.core.models import ScanInterpretation, ScanResult
@@ -115,7 +115,7 @@ def _legacy_summary_headline_and_recommendation(result: ScanResult) -> tuple[Tex
         ),
         None,
     )
-    classical_evidence = _pick_evidence(result, group=_CLASSICAL_GROUP)
+    classical_evidence = _pick_evidence(result, role=ProbeRole.CLASSICAL_CONTROL)
     classical_group = classical_evidence.negotiated_group if classical_evidence else None
 
     headline = _compose_headline(
@@ -233,7 +233,7 @@ def _verdict_panel_border(result: ScanResult) -> str:
     """Use amber for mixed posture; red means unambiguously broken posture."""
     if (
         result.summary.readiness is Readiness.CLASSICALLY_WEAK
-        and _pick_evidence(result, group=_HYBRID_GROUP) is not None
+        and _pick_evidence(result, role=ProbeRole.HYBRID_READINESS) is not None
     ):
         return "yellow"
     return verdict_border_style(result.summary.readiness)

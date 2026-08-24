@@ -19,8 +19,8 @@ from typing import TYPE_CHECKING, NamedTuple
 from cyclonedx.model import Property
 from cyclonedx.model.crypto import AlgorithmProperties, CryptoPrimitive
 
+from qureddy.core.signatures import classify_pqc_signature
 from qureddy.output.cbom_assets import add_algorithm_component, algorithm_ref
-from qureddy.scanners.tls.cert_sig import classify_pqc_signature
 
 if TYPE_CHECKING:
     from cyclonedx.model.bom import Bom

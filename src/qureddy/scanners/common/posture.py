@@ -14,10 +14,11 @@ from qureddy.core.models import (
     HygieneStatus,
     PostureAxes,
     PqcSupport,
-    Readiness,
     ScanInterpretation,
 )
 from qureddy.scanners.common.evaluation import (
+    PostureSignals,
+    derive_signals,
     evaluate_posture,
 )
 from qureddy.scanners.common.evaluation import reason_codes as build_reason_codes
@@ -82,23 +83,6 @@ def _is_not_testable(failure_category: FailureCategory | None) -> bool:
     }
 
 
-def _signals(findings: list[Finding]) -> tuple[set[str], set[str], bool, bool, bool, bool]:
-    types = {f.finding_type for f in findings}
-    rules = {f.rule_id for f in findings}
-    hybrid = any(
-        f.readiness is Readiness.TRANSITIONAL_HYBRID
-        and "kex.hybrid" in (f.finding_type + f.rule_id)
-        for f in findings
-    )
-    pure_pq = any(f.readiness is Readiness.QUANTUM_SAFE for f in findings)
-    classical = bool(
-        {"tls.kex.classical", "ssh.kex.classical"} & types
-        or {"tls.classical.negotiated_x25519", "ssh.kex.classical_only"} & rules
-    )
-    hybrid_failed = "tls.hybrid.probe_failed" in rules
-    return types, rules, hybrid, pure_pq, classical, hybrid_failed
-
-
 def _pqc_axis(
     *, classical: bool, hybrid: bool, pure_pq: bool, hybrid_failed: bool, not_testable: bool
 ) -> tuple[PqcSupport, AxisStatus]:
@@ -113,58 +97,38 @@ def _pqc_axis(
     return PqcSupport.UNKNOWN, AxisStatus.UNKNOWN
 
 
-def _downgrade_axis(
-    types: set[str],
-    rules: set[str],
-    *,
-    classical: bool,
-    hybrid: bool,
-    pure_pq: bool,
-    not_testable: bool,
-) -> AxisStatus:
+def _downgrade_axis(signals: PostureSignals, *, not_testable: bool) -> AxisStatus:
     return (
         AxisStatus.NOT_TESTABLE
         if not_testable
         else AxisStatus.ACTION_NEEDED
-        if (
-            "tls.legacy.protocol_offered" in types
-            or "tls.classical.protocol_offered" in rules
-            or bool({"ssh.kex.weak", "ssh.hostkey.weak", "ssh.transport.weak"} & types)
-        )
+        if signals.downgrade_action_needed
         else AxisStatus.ACCEPTABLE
-        if classical or hybrid or pure_pq
+        if signals.classical_kex or signals.hybrid or signals.pure_pq
         else AxisStatus.UNKNOWN
     )
 
 
-def _authentication_axis(
-    types: set[str], evidence_types: set[str], *, not_testable: bool
-) -> AxisStatus:
+def _authentication_axis(signals: PostureSignals, *, not_testable: bool) -> AxisStatus:
     return (
         AxisStatus.NOT_TESTABLE
         if not_testable
         else AxisStatus.CLASSICAL
-        if (
-            "tls.cert.classical_signature" in types
-            or "ssh.hostkey" in evidence_types
-            or "ssh.hostkey.weak" in types
-        )
+        if signals.authentication_classical
         else AxisStatus.PURE_PQ
-        if "tls.cert.pq_signature" in types
+        if signals.authentication_pq
         else AxisStatus.NOT_APPLICABLE
     )
 
 
-def _protocol_axis(types: set[str], *, has_findings: bool, not_testable: bool) -> AxisStatus:
+def _protocol_axis(
+    signals: PostureSignals, *, has_findings: bool, not_testable: bool
+) -> AxisStatus:
     return (
         AxisStatus.NOT_TESTABLE
         if not_testable
         else AxisStatus.ACTION_NEEDED
-        if (
-            "tls.legacy.protocol_offered" in types
-            or "ssh.transport.weak" in types
-            or "ssh.terrapin.posture" in types
-        )
+        if signals.protocol_action_needed
         else AxisStatus.ACCEPTABLE
         if has_findings
         else AxisStatus.UNKNOWN
@@ -191,23 +155,18 @@ def _hndl_exposure(
 
 
 def _hygiene_status(
-    types: set[str],
-    *,
-    classical: bool,
-    not_testable: bool,
-    has_findings: bool,
+    signals: PostureSignals, *, not_testable: bool, has_findings: bool
 ) -> HygieneStatus:
     """Classify present-day hygiene independently of HNDL exposure."""
     if not_testable:
         return HygieneStatus.UNKNOWN
-    if bool({"ssh.kex.weak", "ssh.hostkey.weak", "ssh.transport.weak"} & types):
+    if signals.hygiene_weak:
         return HygieneStatus.WEAK
     if (
-        classical
-        or "tls.cert.classical_signature" in types
-        or "tls.legacy.protocol_offered" in types
-        or "tls.classical.protocol_offered" in types
-        or "ssh.terrapin.posture" in types
+        signals.classical_kex
+        or signals.authentication_classical
+        or signals.downgrade_action_needed
+        or signals.protocol_action_needed
     ):
         return HygieneStatus.ACTION_NEEDED
     return HygieneStatus.OK if has_findings else HygieneStatus.UNKNOWN
@@ -283,28 +242,22 @@ def _build_axes(
     evidence: list[Evidence],
     failure_category: FailureCategory | None,
 ) -> PostureAxes:
-    types, rules, hybrid, pure_pq, classical, hybrid_failed = _signals(findings)
-    evidence_types = {ev.evidence_type for ev in evidence}
+    signals = derive_signals(findings, evidence)
     not_testable = _is_not_testable(failure_category)
 
     pqc_support, key_exchange = _pqc_axis(
-        classical=classical,
-        hybrid=hybrid,
-        pure_pq=pure_pq,
-        hybrid_failed=hybrid_failed,
+        classical=signals.classical_kex,
+        hybrid=signals.hybrid,
+        pure_pq=signals.pure_pq,
+        hybrid_failed=signals.hybrid_failed,
         not_testable=not_testable,
     )
 
-    downgrade = _downgrade_axis(
-        types,
-        rules,
-        classical=classical,
-        hybrid=hybrid,
-        pure_pq=pure_pq,
-        not_testable=not_testable,
+    downgrade = _downgrade_axis(signals, not_testable=not_testable)
+    authentication = _authentication_axis(signals, not_testable=not_testable)
+    protocol_hygiene = _protocol_axis(
+        signals, has_findings=bool(findings), not_testable=not_testable
     )
-    authentication = _authentication_axis(types, evidence_types, not_testable=not_testable)
-    protocol_hygiene = _protocol_axis(types, has_findings=bool(findings), not_testable=not_testable)
     return PostureAxes(
         pqc_support=pqc_support,
         key_exchange=key_exchange,
@@ -323,18 +276,17 @@ def build_interpretation(
     """Build stable posture axes and provenance from observed findings."""
     axes = _build_axes(findings, evidence, failure_category)
     reason_codes = build_reason_codes(findings, failure_category)
-    types, _rules, hybrid, pure_pq, classical, _hybrid_failed = _signals(findings)
+    signals = derive_signals(findings, evidence)
     not_testable = _is_not_testable(failure_category)
     headline, recommended_action = _ciso_text(axes, reason_codes)
     hndl_exposure = _hndl_exposure(
-        classical=classical,
-        hybrid=hybrid,
-        pure_pq=pure_pq,
+        classical=signals.classical_kex,
+        hybrid=signals.hybrid,
+        pure_pq=signals.pure_pq,
         not_testable=not_testable,
     )
     hygiene_status = _hygiene_status(
-        types,
-        classical=classical,
+        signals,
         not_testable=not_testable,
         has_findings=bool(findings),
     )

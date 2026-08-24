@@ -10,6 +10,7 @@ from rich import box
 from rich.table import Table
 from rich.text import Text
 
+from qureddy.core.models import ProbeRole
 from qureddy.output._styles import (
     BODY_TEXT,
     style_capability,
@@ -22,15 +23,13 @@ from qureddy.output._styles import (
     styled_or_dash,
 )
 from qureddy.output.console._evidence import (
-    _CLASSICAL_GROUP,
-    _HYBRID_GROUP,
     _SEVERITY_ORDER,
     _first_cipher_suite,
     _first_protocol_version,
     _pick_evidence,
     _style_probe_status,
 )
-from qureddy.scanners.tls._legacy_findings import FINDING_TYPE_LEGACY_PROTOCOL_OFFERED
+from qureddy.scanners.common.finding_types import FINDING_TYPE_LEGACY_PROTOCOL_OFFERED
 
 if TYPE_CHECKING:
     from qureddy.core.models import Finding, ScanResult
@@ -84,8 +83,8 @@ def _summary_table(result: ScanResult) -> Table:
         table.add_row("key_exchange", _style_ssh_kex(result))
         table.add_row("host_keys", _style_ssh_hostkeys(result))
     else:
-        hybrid_evidence = _pick_evidence(result, group=_HYBRID_GROUP)
-        classical_evidence = _pick_evidence(result, group=_CLASSICAL_GROUP)
+        hybrid_evidence = _pick_evidence(result, role=ProbeRole.HYBRID_READINESS)
+        classical_evidence = _pick_evidence(result, role=ProbeRole.CLASSICAL_CONTROL)
         table.add_row("protocol", styled_or_dash(_first_protocol_version(result.evidence)))
         table.add_row("cipher_suite", styled_or_dash(_first_cipher_suite(result.evidence)))
         table.add_row("hybrid_probe", _style_probe_status(hybrid_evidence))

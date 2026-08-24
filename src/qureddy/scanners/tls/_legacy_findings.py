@@ -13,6 +13,9 @@ builder — kept separate on purpose (issue #192).
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+from qureddy.core.ciphers import has_weak_cipher
 from qureddy.core.ids import new_id
 from qureddy.core.models import (
     Asset,
@@ -23,16 +26,19 @@ from qureddy.core.models import (
     Readiness,
     Severity,
 )
-from qureddy.scanners.tls.legacy_probe import LegacyProtocolResult, has_weak_cipher
+from qureddy.scanners.common.finding_types import (
+    FINDING_TYPE_CLASSICAL_PROTOCOL,
+    FINDING_TYPE_LEGACY_PROTOCOL_OFFERED,
+)
+
+if TYPE_CHECKING:
+    from qureddy.scanners.tls.legacy_probe import LegacyProtocolResult
+
 
 # Named once here (the module that owns this finding_type value) so
 # console.py's lookup imports it instead of re-typing the literal
 # string in a second place — same pattern as _cert_findings.py's
 # FINDING_TYPE_PQ_SIGNATURE/FINDING_TYPE_CLASSICAL_SIGNATURE.
-FINDING_TYPE_LEGACY_PROTOCOL_OFFERED = "tls.legacy.protocol_offered"
-FINDING_TYPE_CLASSICAL_PROTOCOL = "tls.kex.classical_protocol"
-
-
 def _legacy_protocol_notes(result: LegacyProtocolResult) -> tuple[str, ...]:
     """Notes for a completed legacy-protocol sweep (offered or not)."""
     notes: tuple[str, ...] = (

@@ -12,16 +12,13 @@ from typing import TYPE_CHECKING
 
 from rich.text import Text
 
-from qureddy.core.models import Evidence, ObservationType, Severity
+from qureddy.core.models import Evidence, ObservationType, ProbeRole, Severity
+from qureddy.core.pqc import is_hybrid_pq, is_pq_kem
 from qureddy.output._styles import style_group
 from qureddy.scanners.common.rollup import SEVERITY_ORDER
-from qureddy.scanners.tls.openssl_probe._constants import CLASSICAL_GROUP, HYBRID_GROUP
 
 if TYPE_CHECKING:
     from qureddy.core.models import ScanResult
-
-_HYBRID_GROUP = HYBRID_GROUP
-_CLASSICAL_GROUP = CLASSICAL_GROUP
 
 # Console orders findings most-severe first, the reverse of rollup's canonical
 # INFO=0..CRITICAL=4 ranking (#315). Negating that single source of truth keeps the
@@ -31,13 +28,12 @@ _CLASSICAL_GROUP = CLASSICAL_GROUP
 _SEVERITY_ORDER: dict[Severity, int] = {sev: -rank for sev, rank in SEVERITY_ORDER.items()}
 
 
-def _pick_evidence(result: ScanResult, *, group: str) -> Evidence | None:
-    """Find the evidence record produced by the latest probe attempt targeting `group`.
+def _pick_evidence(result: ScanResult, *, role: ProbeRole) -> Evidence | None:
+    """Find the latest evidence record produced for a probe role.
 
-    Disambiguates hybrid vs classical by inspecting the probe command
-    args rather than evidence IDs. (The scanner currently generates
-    UUID-based evidence IDs; an `ev-classical-x25519` convention was
-    proposed in an earlier draft but not adopted.)
+    Probe roles are canonical evidence semantics, so output does not need to
+    know TLS/OpenSSL group names. The scanner currently generates UUID-based
+    evidence IDs; role is the stable selector.
 
     Issue #250: retries accumulate one Evidence per attempt in
     chronological order, so the first match is the oldest attempt, not
@@ -45,14 +41,24 @@ def _pick_evidence(result: ScanResult, *, group: str) -> Evidence | None:
     #241's fix in `_summary.py` — a later successful retry must
     supersede an earlier failed attempt's evidence, not the reverse.
     """
-    matches = [
-        ev
-        for ev in result.evidence
-        if ev.probe_result is not None and group in ev.probe_result.command.args
-    ]
+    matches = [ev for ev in result.evidence if ev.probe_role is role]
+    if not matches:
+        # Archived/pre-role fixtures use the neutral group classifier as a
+        # compatibility bridge; new scans always take the role path above.
+        matches = [ev for ev in result.evidence if _legacy_role_match(ev, role)]
     if not matches:
         return None
     return max(matches, key=lambda ev: ev.probe_result.attempt_number)  # type: ignore[union-attr]
+
+
+def _legacy_role_match(evidence: Evidence, role: ProbeRole) -> bool:
+    """Match pre-role evidence without importing a protocol scanner."""
+    group = evidence.negotiated_group
+    if not group:
+        return False
+    if role is ProbeRole.HYBRID_READINESS:
+        return is_hybrid_pq(group)
+    return role is ProbeRole.CLASSICAL_CONTROL and not is_pq_kem(group)
 
 
 def _first_protocol_version(evidence: tuple[Evidence, ...]) -> str | None:

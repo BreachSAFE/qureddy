@@ -33,19 +33,20 @@ from qureddy.core.models import (
     Readiness,
     Severity,
 )
+from qureddy.scanners.common.finding_types import (
+    FINDING_TYPE_CLASSICAL_SIGNATURE,
+    FINDING_TYPE_PQ_SIGNATURE,
+)
 from qureddy.scanners.tls.cert_sig import pqc_signature_standard
 
 if TYPE_CHECKING:
     from qureddy.scanners.tls.cert_probe import CertificateInfo
 
+
 # Named once here (the module that owns these finding_type values) so
 # console.py's lookup can import them instead of re-typing the literal
 # strings in a second place, where they could silently drift out of
 # sync with a rename here.
-FINDING_TYPE_PQ_SIGNATURE = "tls.cert.pq_signature"
-FINDING_TYPE_CLASSICAL_SIGNATURE = "tls.cert.classical_signature"
-
-
 def evidence_from_certificate(asset: Asset, certificate: CertificateInfo | None) -> Evidence:
     """One Evidence record for the cert axis — present even when the fetch failed.
 

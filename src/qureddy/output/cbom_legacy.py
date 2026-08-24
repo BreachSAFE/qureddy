@@ -16,13 +16,13 @@ from typing import TYPE_CHECKING
 from cyclonedx.model import Property
 from cyclonedx.model.crypto import AlgorithmProperties
 
+from qureddy.core.ciphers import has_weak_cipher
 from qureddy.output.cbom_assets import (
     add_algorithm_assets,
     select_by_evidence_type,
     verdict_pairs,
 )
 from qureddy.output.cbom_cipher import cipher_classical_bits, cipher_primitive
-from qureddy.scanners.tls.legacy_probe import has_weak_cipher
 
 if TYPE_CHECKING:
     from cyclonedx.model.bom import Bom

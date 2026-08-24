@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from pydantic import BaseModel, ConfigDict
 
 from qureddy.core.models import (
@@ -29,6 +31,92 @@ class PostureFacts(BaseModel):
     classical_alternative: str | None = None
     certificate_chain_signature: str | None = None
     weak_algorithms: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class PostureSignals:
+    """Neutral policy signals derived once from protocol-specific records."""
+
+    hybrid: bool
+    pure_pq: bool
+    classical_kex: bool
+    hybrid_failed: bool
+    downgrade_action_needed: bool
+    authentication_classical: bool
+    authentication_pq: bool
+    classical_certificate: bool
+    legacy_protocol: bool
+    weak_algorithm: bool
+    protocol_action_needed: bool
+    hygiene_weak: bool
+
+
+def derive_signals(findings: list[Finding], evidence: list[Evidence]) -> PostureSignals:
+    """Translate protocol finding IDs into stable evaluator signals."""
+    types = {finding.finding_type for finding in findings}
+    rules = {finding.rule_id for finding in findings}
+    evidence_types = {item.evidence_type for item in evidence}
+    hybrid, classical_kex, hybrid_failed = _kex_signals(findings, types, rules)
+    authentication_classical, authentication_pq, classical_certificate = _authentication_signals(
+        types, evidence_types
+    )
+    legacy_protocol = _has_suffix(types, "legacy.protocol_offered")
+    weak_algorithm = any(
+        _has_suffix(types, suffix) for suffix in ("kex.weak", "hostkey.weak", "transport.weak")
+    )
+    return PostureSignals(
+        hybrid=hybrid,
+        pure_pq=any(finding.readiness.value == "quantum_safe" for finding in findings),
+        classical_kex=classical_kex,
+        hybrid_failed=hybrid_failed,
+        downgrade_action_needed=legacy_protocol
+        or _has_suffix(rules, "classical.protocol_offered")
+        or weak_algorithm,
+        authentication_classical=authentication_classical,
+        authentication_pq=authentication_pq,
+        classical_certificate=classical_certificate,
+        legacy_protocol=legacy_protocol,
+        weak_algorithm=weak_algorithm,
+        protocol_action_needed=legacy_protocol
+        or any(_has_suffix(types, suffix) for suffix in ("transport.weak", "terrapin.posture")),
+        hygiene_weak=weak_algorithm,
+    )
+
+
+def _kex_signals(
+    findings: list[Finding], types: set[str], rules: set[str]
+) -> tuple[bool, bool, bool]:
+    return (
+        any(
+            finding.readiness.value == "transitional_hybrid"
+            and (
+                _has_suffix({finding.finding_type}, "kex.hybrid")
+                or _has_suffix({finding.rule_id}, "kex.hybrid")
+            )
+            for finding in findings
+        ),
+        _has_suffix(types, "kex.classical")
+        or _has_suffix(rules, "classical.negotiated_x25519")
+        or _has_suffix(rules, "kex.classical_only"),
+        _has_suffix(rules, "hybrid.probe_failed"),
+    )
+
+
+def _authentication_signals(types: set[str], evidence_types: set[str]) -> tuple[bool, bool, bool]:
+    return (
+        bool(
+            _has_suffix(types, "cert.classical_signature")
+            or _has_suffix(evidence_types, "hostkey")
+            or _has_suffix(types, "hostkey.weak")
+        ),
+        _has_suffix(types, "cert.pq_signature"),
+        _has_suffix(types, "cert.classical_signature"),
+    )
+
+
+def _has_suffix(values: set[str], suffix: str) -> bool:
+    """Match a semantic finding suffix without coupling to a protocol prefix."""
+    return any(value == suffix or value.endswith(f".{suffix}") for value in values)
 
 
 def normalize_facts(
@@ -94,7 +182,7 @@ def _certificate_signature(findings: list[Finding]) -> str | None:
         (
             finding.algorithm
             for finding in findings
-            if finding.finding_type == "tls.cert.classical_signature" and finding.algorithm
+            if _has_suffix({finding.finding_type}, "cert.classical_signature") and finding.algorithm
         ),
         None,
     )

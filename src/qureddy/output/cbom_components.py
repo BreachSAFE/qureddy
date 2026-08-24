@@ -30,6 +30,7 @@ from cyclonedx.model.crypto import (
     ProtocolPropertiesType,
 )
 
+from qureddy.core.signatures import classify_pqc_signature
 from qureddy.output.cbom_assets import (
     POSITIVE_OBSERVATIONS,
     add_algorithm_assets,
@@ -40,7 +41,6 @@ from qureddy.output.cbom_assets import (
 )
 from qureddy.output.cbom_cipher import cipher_classical_bits, cipher_primitive
 from qureddy.output.cbom_public_key import add_public_key_component
-from qureddy.scanners.tls.cert_sig import classify_pqc_signature
 
 if TYPE_CHECKING:
     from cyclonedx.model.bom import Bom

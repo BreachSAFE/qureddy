@@ -102,34 +102,10 @@ LEGACY_PROTOCOLS: tuple[tuple[str, str], ...] = (
     ("-tls1_2", "TLSv1.2"),
 )
 
-# Substring markers for ciphers considered broken/weak regardless of
-# protocol version. OpenSSL cipher names encode the primitive directly
-# (e.g. "DES-CBC3-SHA" contains "DES", "ECDHE-RSA-RC4-SHA" contains
-# "RC4"), so substring matching against real OpenSSL-assigned names is
-# sufficient — no separate lookup table to maintain or drift from.
-#
-# "ADH"/"AECDH" not "ANON" (issue #214): anonymous-DH ciphers use the
-# ADH-/AECDH- prefixes — confirmed live, `openssl ciphers -s ...` never
-# emits a name containing the literal substring "ANON". The old "ANON"
-# marker was dead: it could never match, so ADH-*/AECDH-* (unauthenticated,
-# trivially MITM-able) silently passed as "not weak". Two separate markers
-# are required, not one: "ADH" is NOT a substring of "AECDH" ("AECDH" is
-# A-E-C-D-H, not A-D-H consecutively) — confirmed live neither bare
-# substring produces false positives against the real cipher list (no
-# match inside DHE-*/ECDHE-* authenticated cipher names).
-WEAK_CIPHER_MARKERS: tuple[str, ...] = (
-    "3DES",
-    "DES",
-    "RC4",
-    "RC2",
-    "NULL",
-    "EXPORT",
-    "MD5",
-    "ADH",
-    "AECDH",
-)
 
-
+# Weak-cipher markers and their protocol-neutral predicate live in
+# ``qureddy.core.ciphers`` so output adapters and future scanners share one
+# source of truth.
 @dataclass(frozen=True, slots=True)
 class LegacyProtocolResult:
     """Outcome of one protocol's cipher-enumeration sweep."""
@@ -145,13 +121,6 @@ class LegacyProtocolResult:
     result: `offered=False` alone doesn't distinguish "we asked and the
     answer was no" from "we don't know, the probe never finished."
     """
-
-
-def has_weak_cipher(accepted_ciphers: tuple[str, ...]) -> bool:
-    """True if any accepted cipher name matches a known-weak marker."""
-    return any(
-        marker in cipher.upper() for cipher in accepted_ciphers for marker in WEAK_CIPHER_MARKERS
-    )
 
 
 def _run_openssl(
