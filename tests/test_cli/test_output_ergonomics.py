@@ -13,6 +13,7 @@ from __future__ import annotations
 import io
 import json
 import socket
+from datetime import datetime
 
 import pytest
 from typer.testing import CliRunner
@@ -313,3 +314,7 @@ def test_ssh_output_dir_writes_correlated_json_and_cbom(tmp_path) -> None:
     cbom_payload = json.loads((run_dir / "scan.cdx.json").read_text(encoding="utf-8"))
     assert json_payload["scan"]["scanner_name"] == "ssh"
     assert cbom_payload["bomFormat"] == "CycloneDX"
+    assert cbom_payload["serialNumber"].startswith("urn:uuid:")
+    assert cbom_payload["version"] == 1
+    datetime.fromisoformat(cbom_payload["metadata"]["timestamp"])
+    assert cbom_payload["metadata"]["component"]["bom-ref"] == "endpoint"
