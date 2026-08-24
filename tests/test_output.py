@@ -192,6 +192,29 @@ def test_hndl_first_summary_is_rendered_from_canonical_interpretation() -> None:
     assert "Hardening:  Protocol hardening is required" in out
 
 
+def test_offered_evidence_without_probe_result_does_not_crash_renderer() -> None:
+    """SSH-style offered records are inventory evidence, not probe attempts."""
+    result = _build_result().model_copy(
+        update={
+            "evidence": (
+                *_build_result().evidence,
+                Evidence(
+                    id="ev-offered",
+                    asset_id="asset-1",
+                    evidence_type="ssh.kex",
+                    observation_type=ObservationType.OFFERED,
+                    source="qureddy.scanners.ssh.probe",
+                    negotiated_group="sntrup761x25519-sha512",
+                ),
+            )
+        }
+    )
+
+    out = _render_to_string(result)
+
+    assert "QuReddy" in out
+
+
 def test_failed_hybrid_probe_headline_does_not_claim_classical_only() -> None:
     result = _build_result().model_copy(
         update={

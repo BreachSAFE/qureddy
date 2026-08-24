@@ -1,7 +1,7 @@
 # Changelog
 
 [![Status: Alpha](https://img.shields.io/badge/status-alpha-blue?style=flat-square)](https://github.com/breachsafe/qureddy)
-[![Version](https://img.shields.io/badge/version-0.2.67-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.68-blue?style=flat-square)](CHANGELOG.md)
 [![Keep a Changelog](https://img.shields.io/badge/keep%20a%20changelog-1.1.0-orange?style=flat-square)](https://keepachangelog.com/en/1.1.0/)
 [![SemVer](https://img.shields.io/badge/SemVer-2.0.0-blue?style=flat-square)](https://semver.org/spec/v2.0.0.html)
 
@@ -16,6 +16,15 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Distribution policy is explicitly TestPyPI-only for now**: release automation,
   packaging checks, and installation guidance no longer imply that the public PyPI
   package exists or should be probed before an explicit authorization.
+
+## [0.2.68] - 2026-08-24
+
+### Fixed
+
+- Rich SSH output no longer crashes when rendering offered KEX/host-key evidence
+  that has no probe-attempt metadata.
+- SSH evaluation preserves the classical-downgrade interpretation for mixed
+  hybrid and classical offers, while ignoring unknown vendor KEX names.
 
 ## [0.2.67] - 2026-08-24
 
@@ -696,6 +705,7 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 62. [0.1.0](#010---2026-05-10)
 63. [0.2.66](#0266---2026-08-24)
 64. [0.2.67](#0267---2026-08-24)
+65. [0.2.68](#0268---2026-08-24)
 
 ## [0.2.12] - 2026-07-28
 

@@ -48,7 +48,13 @@ def _pick_evidence(result: ScanResult, *, role: ProbeRole) -> Evidence | None:
         matches = [ev for ev in result.evidence if _legacy_role_match(ev, role)]
     if not matches:
         return None
-    return max(matches, key=lambda ev: ev.probe_result.attempt_number)  # type: ignore[union-attr]
+    # Offered evidence is intentionally probe-free, so it has no attempt
+    # number.  Treat it as the oldest record rather than crashing the rich
+    # renderer while selecting a role summary.
+    return max(
+        matches,
+        key=lambda ev: ev.probe_result.attempt_number if ev.probe_result is not None else -1,
+    )
 
 
 def _legacy_role_match(evidence: Evidence, role: ProbeRole) -> bool:
