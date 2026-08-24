@@ -4,8 +4,9 @@
 
 QuReddy has two endpoint scanners behind one typed result model. The TLS path
 uses local OpenSSL subprocesses. The SSH path uses a direct socket. Rich, JSON,
-and CycloneDX renderers consume the same `ScanResult` and do not perform
-collection.
+JSONL, and CycloneDX renderers consume the same `ScanResult` and do not perform
+collection. `--output-dir` executes one scan and fans that result out to all
+supported projections.
 
 ## Contents
 
@@ -63,6 +64,7 @@ flowchart TB
     subgraph output ["src/qureddy/output/"]
         rich["console/"]
         json["json.py"]
+        jsonl["jsonl.py"]
         cbom["cbom.py"]
         semantics["cbom_semantics.py"]
     end
@@ -98,10 +100,12 @@ flowchart TB
 
     render --> rich
     render --> json
+    render --> jsonl
     render --> cbom
     cbom --> semantics
     rich --> models
     json --> models
+    jsonl --> models
     cbom --> models
 ```
 
@@ -121,7 +125,10 @@ CLI orchestration
 policy. `scanners/common/` owns the cross-protocol readiness/severity rollup and
 the stable endpoint-asset builder used by both scanners. Scanner modules produce
 `ScanResult`; output modules read that result and write to a caller-supplied
-stream.
+stream. Protocol adapters own protocol vocabulary; shared policy and outputs
+consume canonical models and neutral semantic facts. Remaining legacy
+output-to-TLS helper imports are tracked in #462 and are not a pattern for new
+code.
 
 Renderers do not open sockets, run OpenSSL, or refetch certificates. CBOM uses
 the certificate observation captured during the TLS scan.
@@ -190,6 +197,7 @@ modify the endpoint. It reads the cleartext offer and closes the socket.
 flowchart LR
     result["ScanResult"] --> rich["Rich renderer"]
     result --> json["JSON renderer"]
+    result --> jsonl["JSONL renderer"]
     result --> cbom["CycloneDX 1.7 renderer"]
     cbom --> semantic["semantic validation"]
     rich --> stdout["stdout"]

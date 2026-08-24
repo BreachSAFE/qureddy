@@ -514,7 +514,9 @@ def scan_tls(
     target: str = typer.Argument(..., help="Target to scan (host[:port])"),
     sni: str | None = typer.Option(None, help="SNI override (required for IP targets)"),
     openssl: str | None = typer.Option(None, "--openssl", help="Path to openssl binary"),
-    output_format: str = typer.Option("rich", "--format", help="rich | json"),
+    output_format: str = typer.Option(
+        "rich", "--format", help="rich | json | jsonl | cbom"
+    ),
     timeout: int = typer.Option(30, help="Per-probe timeout in seconds"),
     verbose: int = typer.Option(0, "-v", count=True, help="Verbosity (-v/-vv/-vvv)"),
     json_logs: bool = typer.Option(False, "--json-logs"),

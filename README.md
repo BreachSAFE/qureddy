@@ -21,7 +21,7 @@ cleartext KEXINIT offer directly and do not require OpenSSL.
 3. [Run the first SSH scan](#3-run-the-first-ssh-scan)
 4. [Prepare OpenSSL for TLS](#4-prepare-openssl-for-tls)
 5. [Run the first TLS scan](#5-run-the-first-tls-scan)
-6. [Write JSON or CBOM output](#6-write-json-or-cbom-output)
+6. [Write JSON, JSONL, CBOM, or a bundle](#6-write-json-jsonl-cbom-or-a-bundle)
 7. [Interpret the evidence](#7-interpret-the-evidence)
 8. [Exit codes](#8-exit-codes)
 9. [Network and privacy scope](#9-network-and-privacy-scope)
@@ -44,9 +44,9 @@ docker run --rm ghcr.io/breachsafe/qureddy:latest scan ssh github.com
 ```
 
 Each command needs outbound network access to the named target: TCP port 443 for
-the TLS example, TCP port 22 for the SSH example. Add `--format json` or
-`--format cbom` for machine output, as shown in
-[section 6](#6-write-json-or-cbom-output).
+the TLS example, TCP port 22 for the SSH example. Add `--format json`,
+`--format jsonl`, or `--format cbom` for machine output, as shown in
+[section 6](#6-write-json-jsonl-cbom-or-a-bundle).
 
 For reproducible deployments, pin an immutable reference instead of `:latest`.
 Use an explicit version tag, or preferably a `@sha256:` digest:
@@ -185,12 +185,19 @@ For an IP target that requires Server Name Indication (SNI):
 qureddy scan tls 1.1.1.1:443 --sni one.one.one.one
 ```
 
-## 6. Write JSON or CBOM output
+## 6. Write JSON, JSONL, CBOM, or a bundle
 
 Use JSON for QuReddy's complete scan result:
 
 ```bash
 qureddy scan ssh github.com --format json > github-ssh.json
+```
+
+Use JSONL for one finding or evidence record per line, which is convenient for
+streaming pipelines:
+
+```bash
+qureddy scan ssh github.com --format jsonl > github-ssh.jsonl
 ```
 
 Use CBOM for a CycloneDX 1.7 Cryptography Bill of Materials containing the
@@ -199,6 +206,15 @@ positively observed cryptographic assets:
 ```bash
 qureddy scan ssh github.com --format cbom > github-ssh.cdx.json
 ```
+
+Use `--output-dir` to run the scanner once and write every supported projection:
+
+```bash
+qureddy scan ssh github.com --output-dir evidence/github-ssh
+```
+
+The directory contains `scan.json`, `scan.jsonl`, `scan.cdx.json`, and
+`scan.rich.txt`. Bundle mode cannot be combined with `--output`.
 
 The crypto assets use native CycloneDX `cryptoProperties`, so any CycloneDX 1.7
 crypto-aware tool understands the inventory and post-quantum posture. QuReddy's

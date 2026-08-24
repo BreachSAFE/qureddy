@@ -2,9 +2,11 @@
 # SPDX-License-Identifier: Apache-2.0
 """Typed seams shared by protocol-specific scanners.
 
-The contract deliberately stops at ``ScanResult``.  Serialization and OSCAL
-projection remain downstream concerns, so adding a scanner does not require a
-second copy of the output model or renderer logic.
+The contract deliberately stops at ``ScanResult``. Serialization and OSCAL
+projection remain downstream concerns. Outputs consume canonical core models
+and neutral semantic facts; they must not import protocol-private scanner
+modules. A future scanner may reuse this result boundary, but a general scanner
+registry is intentionally deferred until a third source is approved.
 """
 
 from __future__ import annotations
