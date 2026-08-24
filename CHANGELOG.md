@@ -1,7 +1,7 @@
 # Changelog
 
 [![Status: Alpha](https://img.shields.io/badge/status-alpha-blue?style=flat-square)](https://github.com/breachsafe/qureddy)
-[![Version](https://img.shields.io/badge/version-0.2.65-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.66-blue?style=flat-square)](CHANGELOG.md)
 [![Keep a Changelog](https://img.shields.io/badge/keep%20a%20changelog-1.1.0-orange?style=flat-square)](https://keepachangelog.com/en/1.1.0/)
 [![SemVer](https://img.shields.io/badge/SemVer-2.0.0-blue?style=flat-square)](https://semver.org/spec/v2.0.0.html)
 
@@ -16,6 +16,14 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Distribution policy is explicitly TestPyPI-only for now**: release automation,
   packaging checks, and installation guidance no longer imply that the public PyPI
   package exists or should be probed before an explicit authorization.
+
+## [0.2.66] - 2026-08-24
+
+### Fixed
+
+- SSH scans now retain classical KEX offered alongside a PQ hybrid, correctly
+  reporting `protected_defeasible` HNDL exposure instead of overstating protection.
+- Added regression coverage for the SSH hybrid-plus-classical downgrade path.
 
 ## [0.2.65] - 2026-08-24
 
@@ -680,6 +688,7 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 60. [0.2.1](#021---2026-07-27)
 61. [0.2.0](#020---2026-07-27)
 62. [0.1.0](#010---2026-05-10)
+63. [0.2.66](#0266---2026-08-24)
 
 ## [0.2.12] - 2026-07-28
 
