@@ -210,6 +210,17 @@ The existing `effective` field remains unchanged for compatibility. The two
 additional fields prevent a present-day hygiene finding from hiding a
 post-quantum negotiation, or vice versa.
 
+The `display` object is the CISO-facing wording for the same evidence. It is
+derived by QuReddy and is safe to show directly in dashboards; consumers that
+need stable filtering should continue to use the enum fields above.
+
+| Field | Meaning |
+| --- | --- |
+| `display.overall_status` | Plain-language rollup, such as `Hybrid PQC protection with hardening required` |
+| `display.quantum_protection` | What PQC key-exchange evidence was observed |
+| `display.future_quantum_risk` | HNDL/downgrade interpretation in plain language |
+| `display.current_hygiene` | Present-day protocol hardening interpretation |
+
 ## 11. Enumerated values
 
 `observation_type`:

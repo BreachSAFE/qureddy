@@ -126,6 +126,10 @@ def test_interpretation_covers_positive_and_classical_paths() -> None:
     assert "legacy protocol" in hybrid_legacy.headline
     assert hybrid_legacy.hndl_exposure is HndlExposure.PROTECTED
     assert hybrid_legacy.hygiene_status is HygieneStatus.ACTION_NEEDED
+    assert hybrid_legacy.display.overall_status == "Hybrid PQC protection with hardening required"
+    assert (
+        "Protected against harvest-now/decrypt-later" in hybrid_legacy.display.future_quantum_risk
+    )
 
     pure = build_interpretation(
         [_finding("tls.pq.negotiated_pure", "tls.kex.pq", Readiness.QUANTUM_SAFE)], [], None
@@ -133,6 +137,7 @@ def test_interpretation_covers_positive_and_classical_paths() -> None:
     assert pure.headline.startswith("Pure post-quantum")
     assert pure.hndl_exposure is HndlExposure.PROTECTED
     assert pure.hygiene_status is HygieneStatus.OK
+    assert pure.display.overall_status == "Post-quantum protection observed"
 
 
 def test_classical_only_is_at_risk_and_action_needed() -> None:
@@ -150,6 +155,7 @@ def test_classical_only_is_at_risk_and_action_needed() -> None:
 
     assert interpretation.hndl_exposure is HndlExposure.AT_RISK
     assert interpretation.hygiene_status is HygieneStatus.ACTION_NEEDED
+    assert interpretation.display.overall_status == "Classical-only protection observed"
 
     classical = build_interpretation(
         [

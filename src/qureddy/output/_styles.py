@@ -87,14 +87,17 @@ VERDICT_BORDER: dict[Readiness, str] = {
 HNDL_STYLE: dict[HndlExposure, str] = {
     HndlExposure.PROTECTED: "bold green",
     HndlExposure.PROTECTED_DEFEASIBLE: "bold yellow",
-    HndlExposure.AT_RISK: "bold red",
+    # At-risk is a remediation priority, not proof of an active compromise.
+    HndlExposure.AT_RISK: "bold yellow",
     HndlExposure.UNKNOWN: "dim",
 }
 
 HYGIENE_STYLE: dict[HygieneStatus, str] = {
     HygieneStatus.OK: "bold green",
     HygieneStatus.ACTION_NEEDED: "bold yellow",
-    HygieneStatus.WEAK: "bold red",
+    # Keep red for actual scanner/crypto breakage; hygiene findings are
+    # actionable remediation signals and should not look like an incident.
+    HygieneStatus.WEAK: "bold yellow",
     HygieneStatus.UNKNOWN: "dim",
 }
 
@@ -145,12 +148,24 @@ def style_severity(severity: Severity) -> Text:
 
 def style_hndl(exposure: HndlExposure) -> Text:
     """Render HNDL exposure with a separate future-risk palette."""
-    return Text(exposure.value, style=HNDL_STYLE.get(exposure, "dim"))
+    labels = {
+        HndlExposure.PROTECTED: "protected",
+        HndlExposure.PROTECTED_DEFEASIBLE: "protected; downgrade path remains",
+        HndlExposure.AT_RISK: "at risk",
+        HndlExposure.UNKNOWN: "unknown",
+    }
+    return Text(labels[exposure], style=HNDL_STYLE.get(exposure, "dim"))
 
 
 def style_hygiene(status: HygieneStatus) -> Text:
     """Render present-day hygiene with a separate current-risk palette."""
-    return Text(status.value, style=HYGIENE_STYLE.get(status, "dim"))
+    labels = {
+        HygieneStatus.OK: "no immediate issue",
+        HygieneStatus.ACTION_NEEDED: "hardening required",
+        HygieneStatus.WEAK: "weak crypto; remediate",
+        HygieneStatus.UNKNOWN: "unknown",
+    }
+    return Text(labels[status], style=HYGIENE_STYLE.get(status, "dim"))
 
 
 def style_group(group: str | None) -> Text:

@@ -11,6 +11,7 @@ from qureddy.core.models import (
     Finding,
     HndlExposure,
     HygieneStatus,
+    InterpretationDisplay,
     PostureAxes,
     PqcSupport,
     Readiness,
@@ -208,6 +209,63 @@ def _hygiene_status(
     return HygieneStatus.OK if has_findings else HygieneStatus.UNKNOWN
 
 
+def _display(
+    axes: PostureAxes,
+    *,
+    hndl_exposure: HndlExposure,
+    hygiene_status: HygieneStatus,
+    not_testable: bool,
+) -> InterpretationDisplay:
+    """Translate stable machine statuses into concise CISO-facing language."""
+    if not_testable:
+        return InterpretationDisplay(
+            overall_status="Unable to assess",
+            quantum_protection="PQC capability could not be tested",
+            future_quantum_risk="Exposure is unknown",
+            current_hygiene="Security hygiene could not be assessed",
+        )
+
+    quantum_protection = {
+        PqcSupport.PURE_PQ_OBSERVED: "Pure post-quantum key exchange observed",
+        PqcSupport.HYBRID_OBSERVED: "Hybrid PQC key exchange observed",
+        PqcSupport.CLASSICAL_ONLY_OBSERVED: "Only classical key exchange observed",
+        PqcSupport.UNKNOWN: "No PQC key exchange was confirmed",
+        PqcSupport.NOT_TESTABLE: "PQC capability could not be tested",
+    }[axes.pqc_support]
+    future_quantum_risk = {
+        HndlExposure.PROTECTED: "Protected against harvest-now/decrypt-later exposure",
+        HndlExposure.PROTECTED_DEFEASIBLE: (
+            "Protected today, but a classical downgrade path remains"
+        ),
+        HndlExposure.AT_RISK: "At risk of harvest-now/decrypt-later exposure",
+        HndlExposure.UNKNOWN: "Exposure is unknown",
+    }[hndl_exposure]
+    current_hygiene = {
+        HygieneStatus.OK: "No immediate protocol hardening issue identified",
+        HygieneStatus.ACTION_NEEDED: "Protocol hardening is required",
+        HygieneStatus.WEAK: "Weak cryptography requires remediation",
+        HygieneStatus.UNKNOWN: "Security hygiene could not be assessed",
+    }[hygiene_status]
+    if axes.pqc_support is PqcSupport.PURE_PQ_OBSERVED:
+        overall_status = "Post-quantum protection observed"
+    elif axes.pqc_support is PqcSupport.HYBRID_OBSERVED:
+        overall_status = (
+            "Hybrid PQC protection observed"
+            if hygiene_status is HygieneStatus.OK
+            else "Hybrid PQC protection with hardening required"
+        )
+    elif axes.pqc_support is PqcSupport.CLASSICAL_ONLY_OBSERVED:
+        overall_status = "Classical-only protection observed"
+    else:
+        overall_status = "PQC protection could not be confirmed"
+    return InterpretationDisplay(
+        overall_status=overall_status,
+        quantum_protection=quantum_protection,
+        future_quantum_risk=future_quantum_risk,
+        current_hygiene=current_hygiene,
+    )
+
+
 def _build_axes(
     findings: list[Finding],
     evidence: list[Evidence],
@@ -280,22 +338,30 @@ def build_interpretation(
     types, _rules, hybrid, pure_pq, classical, _hybrid_failed = _signals(findings)
     not_testable = _is_not_testable(failure_category)
     headline, recommended_action = _ciso_text(axes, reason_codes)
+    hndl_exposure = _hndl_exposure(
+        classical=classical,
+        hybrid=hybrid,
+        pure_pq=pure_pq,
+        not_testable=not_testable,
+    )
+    hygiene_status = _hygiene_status(
+        types,
+        classical=classical,
+        not_testable=not_testable,
+        has_findings=bool(findings),
+    )
     return ScanInterpretation(
         effective=scan_readiness(findings),
         headline=headline,
         recommended_action=recommended_action,
-        hndl_exposure=_hndl_exposure(
-            classical=classical,
-            hybrid=hybrid,
-            pure_pq=pure_pq,
+        display=_display(
+            axes,
+            hndl_exposure=hndl_exposure,
+            hygiene_status=hygiene_status,
             not_testable=not_testable,
         ),
-        hygiene_status=_hygiene_status(
-            types,
-            classical=classical,
-            not_testable=not_testable,
-            has_findings=bool(findings),
-        ),
+        hndl_exposure=hndl_exposure,
+        hygiene_status=hygiene_status,
         axes=axes,
         reason_codes=reason_codes,
         evidence_refs=tuple(ev.id for ev in evidence),

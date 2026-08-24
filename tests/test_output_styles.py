@@ -65,8 +65,12 @@ class TestColorStyleRules:
     def test_hndl_defeasible_is_amber(self) -> None:
         assert style_hndl(HndlExposure.PROTECTED_DEFEASIBLE).style == "bold yellow"
 
-    def test_hygiene_weak_is_red(self) -> None:
-        assert style_hygiene(HygieneStatus.WEAK).style == "bold red"
+    def test_hygiene_weak_is_amber(self) -> None:
+        assert style_hygiene(HygieneStatus.WEAK).style == "bold yellow"
+
+    def test_hndl_and_hygiene_use_ciso_labels(self) -> None:
+        assert "downgrade path" in style_hndl(HndlExposure.PROTECTED_DEFEASIBLE).plain
+        assert style_hygiene(HygieneStatus.ACTION_NEEDED).plain == "hardening required"
 
 
 class TestUnknownRecommendationLibreSSL:

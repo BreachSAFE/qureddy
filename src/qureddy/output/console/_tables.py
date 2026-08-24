@@ -63,7 +63,12 @@ def _summary_table(result: ScanResult) -> Table:
     table.add_row("status", Text(scan.status))
     table.add_row("readiness", style_readiness(summary.readiness))
     if summary.interpretation is not None:
-        table.add_row("interpretation", Text(summary.interpretation.headline))
+        display = summary.interpretation.display
+        table.add_row("overall_status", Text(display.overall_status))
+        table.add_row("quantum_protection", Text(display.quantum_protection))
+        table.add_row("future_quantum_risk", Text(display.future_quantum_risk))
+        table.add_row("current_hygiene", Text(display.current_hygiene))
+        table.add_row("technical_detail", Text(summary.interpretation.headline))
         table.add_row("recommended_action", Text(summary.interpretation.recommended_action))
         table.add_row("hndl_exposure", style_hndl(summary.interpretation.hndl_exposure))
         table.add_row("hygiene_status", style_hygiene(summary.interpretation.hygiene_status))

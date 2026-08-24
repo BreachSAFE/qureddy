@@ -141,6 +141,17 @@ class HygieneStatus(str, Enum):
     UNKNOWN = "unknown"
 
 
+class InterpretationDisplay(BaseModel):
+    """CISO-facing interpretation text derived from the stable status axes."""
+
+    model_config = FROZEN
+
+    overall_status: str
+    quantum_protection: str
+    future_quantum_risk: str
+    current_hygiene: str
+
+
 class PostureAxes(BaseModel):
     """Independent posture dimensions derived from observed evidence."""
 
@@ -161,6 +172,7 @@ class ScanInterpretation(BaseModel):
     effective: Readiness
     headline: str
     recommended_action: str
+    display: InterpretationDisplay
     hndl_exposure: HndlExposure
     hygiene_status: HygieneStatus
     axes: PostureAxes
