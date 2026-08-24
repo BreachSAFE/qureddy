@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import IO, TextIO
+from typing import IO, TextIO, cast
 
 import structlog
 import typer
@@ -52,9 +52,12 @@ from qureddy.cli._options import (
 )
 from qureddy.cli._render import _open_output_file, _prepare_output_dir, _render
 from qureddy.cli.main import scan_app
+from qureddy.collectors import NativeTLSCollector
+from qureddy.core.contracts import Scanner, ScanSource, SourceKind
 from qureddy.core.errors import CbomError, RetryConfigError, TargetParseError
 from qureddy.core.logging import start_run_logging
 from qureddy.core.models import FailureCategory, OutputFormat, ScanTarget, Severity
+from qureddy.core.registry import CollectorRegistry
 from qureddy.core.retry import parse_retry_on, validate_retry_args
 from qureddy.core.targets import parse_target
 from qureddy.scanners.tls.openssl_probe import DEFAULT_TIMEOUT_SECONDS
@@ -261,12 +264,12 @@ def _scan_and_render(
         retry_set = _parse_retry_args(retry_on, retries, retry_delay)
         scan_target = _parse_cli_target(target, sni)
         structlog.contextvars.bind_contextvars(target=scan_target.locator)
-        scanner = TLSScanner(
-            openssl_path=openssl,
-            retry=RetryConfig(retries=retries, retry_delay=retry_delay, retry_on=retry_set),
-        )
+        scanner = _build_tls_scanner(openssl, retries, retry_delay, retry_set)
         result, exit_code = _execute_scan(
-            scanner, scan_target, timeout, machine_format=machine_format
+            _select_tls_scanner(scanner, scan_target),
+            scan_target,
+            timeout,
+            machine_format=machine_format,
         )
         try:
             _render(
@@ -296,6 +299,27 @@ def _is_machine_format(output_dir: Path | None, output_format: OutputFormat) -> 
         OutputFormat.CBOM,
         OutputFormat.JSONL,
     )
+
+
+def _build_tls_scanner(
+    openssl: str | None,
+    retries: int,
+    retry_delay: float,
+    retry_set: frozenset[FailureCategory],
+) -> TLSScanner:
+    """Build the configured native scanner before registry selection."""
+    return TLSScanner(
+        openssl_path=openssl,
+        retry=RetryConfig(retries=retries, retry_delay=retry_delay, retry_on=retry_set),
+    )
+
+
+def _select_tls_scanner(scanner: TLSScanner, target: ScanTarget) -> Scanner[ScanTarget]:
+    """Select the native TLS collector through the protocol registry."""
+    selected = CollectorRegistry([NativeTLSCollector(scanner)]).select(
+        ScanSource(kind=SourceKind.ENDPOINT, protocol="tls", locator=target.locator)
+    )
+    return cast("Scanner[ScanTarget]", selected)
 
 
 def _close_output_stream(stream: IO[str] | None) -> None:

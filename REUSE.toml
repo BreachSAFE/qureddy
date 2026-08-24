@@ -53,6 +53,13 @@ precedence = "override"
 SPDX-FileCopyrightText = "2026 BreachSAFE"
 SPDX-License-Identifier = "Apache-2.0"
 
+# Python bytecode is generated locally and is never distributed as source.
+[[annotations]]
+path = "**/__pycache__/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "Generated"
+SPDX-License-Identifier = "Apache-2.0"
+
 [[annotations]]
 path = "tests/fixtures/**"
 precedence = "aggregate"
@@ -86,4 +93,3 @@ SPDX-License-Identifier = "Apache-2.0"
 path = "LICENSES/Apache-2.0.txt"
 SPDX-FileCopyrightText = "2004 Apache Software Foundation"
 SPDX-License-Identifier = "Apache-2.0"
-

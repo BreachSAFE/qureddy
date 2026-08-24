@@ -96,6 +96,7 @@ class CollectionResult:
     findings: tuple[Finding, ...] = ()
     provenance: ScanProvenance | None = None
     failure: CollectionFailure | None = None
+    scan_result: ScanResult | None = None
 
 
 class ToolAdapter(Protocol):

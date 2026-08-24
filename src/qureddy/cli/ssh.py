@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import os
 import re
+from typing import cast
 
 import typer
 
@@ -39,11 +40,18 @@ from qureddy.cli._options import (
 )
 from qureddy.cli._render import _open_output_file, _prepare_output_dir, _render
 from qureddy.cli.main import scan_app
+from qureddy.collectors import NativeSSHCollector
+from qureddy.core.contracts import Scanner, ScanSource, SourceKind
 from qureddy.core.errors import CbomError, SSHProbeError, TargetParseError
 from qureddy.core.logging import start_run_logging
 from qureddy.core.models import OutputFormat, ScanResult, ScanTarget
+from qureddy.core.registry import CollectorRegistry
 from qureddy.core.targets import parse_ssh_target
-from qureddy.scanners.ssh.scanner import build_ssh_failure_result, scan_ssh
+from qureddy.scanners.ssh.scanner import (  # noqa: F401 - compatibility patch target for embedders
+    SSHScanner,
+    build_ssh_failure_result,
+    scan_ssh,
+)
 
 _SCAN_SSH_EPILOG = _colorize_help_text(f"""\
 EXAMPLES:
@@ -148,20 +156,19 @@ def scan_ssh_cmd(
     reproducible: DeprecatedReproducibleOpt = False,
 ) -> None:
     """Scan an SSH endpoint for post-quantum readiness."""
-    # Match TLS machine-format quieting; explicit verbosity still wins.
     machine_format = output_dir is not None or fmt is not OutputFormat.RICH
     effective_quiet = quiet or (machine_format and verbose == 0)
-    # log=None: `scan ssh` has no --log yet; shares the helper so log-capture wiring is not duplicated.
     start_run_logging(verbosity=verbose, json_logs=json_logs, quiet=effective_quiet, log=None)
-    try:
-        scan_target = parse_ssh_target(target, block_internal=_block_internal_targets())
-    except TargetParseError as exc:
-        _fail(f"invalid target: {exc}", EXIT_USAGE)
-    # Validate destinations before scanning; this stream is owned and closed here.
+    scan_target = _parse_ssh_scan_target(target)
     _prepare_output_dir(output_dir, output)
     output_stream = _open_output_file(output)
     try:
-        result, exit_code = _run_ssh_probe(scan_target, timeout, machine_format=machine_format)
+        result, exit_code = _run_ssh_probe(
+            _select_ssh_scanner(scan_target),
+            scan_target,
+            timeout,
+            machine_format=machine_format,
+        )
         try:
             _render(
                 result,
@@ -187,6 +194,7 @@ def scan_ssh_cmd(
 
 
 def _run_ssh_probe(
+    scanner: Scanner[ScanTarget],
     scan_target: ScanTarget,
     timeout: int,
     *,
@@ -200,7 +208,7 @@ def _run_ssh_probe(
     plus exit 2 (issue #30) so stdout is never left empty.
     """
     try:
-        return scan_ssh(scan_target, timeout_seconds=timeout), EXIT_OK
+        return scanner.scan(scan_target, timeout_seconds=timeout), EXIT_OK
     except SSHProbeError as exc:
         # Present a clean, classified message on stderr — never the raw
         # OSError/errno. Exit 2 (target scan failed), same contract as tls.
@@ -210,3 +218,19 @@ def _run_ssh_probe(
             raise typer.Exit(code=EXIT_TARGET_FAILED) from None
         result = build_ssh_failure_result(scan_target, exc, cleaned_error=cleaned)
         return result, EXIT_TARGET_FAILED
+
+
+def _parse_ssh_scan_target(target: str) -> ScanTarget:
+    """Parse an SSH CLI target and preserve the usage-error contract."""
+    try:
+        return parse_ssh_target(target, block_internal=_block_internal_targets())
+    except TargetParseError as exc:
+        _fail(f"invalid target: {exc}", EXIT_USAGE)
+
+
+def _select_ssh_scanner(target: ScanTarget) -> Scanner[ScanTarget]:
+    """Select the native SSH collector through the protocol registry."""
+    selected = CollectorRegistry([NativeSSHCollector(SSHScanner())]).select(
+        ScanSource(kind=SourceKind.ENDPOINT, protocol="ssh", locator=target.locator)
+    )
+    return cast("Scanner[ScanTarget]", selected)

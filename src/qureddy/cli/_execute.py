@@ -32,9 +32,9 @@ from qureddy.scanners.tls.scanner import (
 )
 
 if TYPE_CHECKING:
+    from qureddy.core.contracts import Scanner
     from qureddy.core.errors import _LocalOpenSSLProblem
     from qureddy.core.models import ScanResult, ScanTarget
-    from qureddy.scanners.tls.scanner import TLSScanner
 
 
 def _handle_local_dependency(
@@ -84,7 +84,7 @@ def _handle_scan_failure(
 
 
 def _execute_scan(
-    scanner: TLSScanner,
+    scanner: Scanner[ScanTarget],
     scan_target: ScanTarget,
     timeout: int,
     *,
