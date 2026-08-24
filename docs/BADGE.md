@@ -152,9 +152,10 @@ These cannot be completed from a pull request and are the maintainer's to do
 1. **Register and answer the questionnaire** at https://www.bestpractices.dev
    for `breachsafe/qureddy` (#92), using the evidence above; then add the
    earned badge to `README.md` and `SECURITY.md`.
-2. **Enable branch protection on `main`** requiring pull-request review and
-   passing status checks (#84). This also fixes the Scorecard
-   Branch-Protection, Code-Review, and CI-Tests checks (#220).
+2. **Branch protection is enabled on `main`** via the `Pull-request protection` ruleset.
+   It requires pull-request review, the release gate, the PR CI matrix, MAX quality,
+   changed-line coverage, and CodeQL. The ruleset has no bypass actors. This fixes the
+   Scorecard Branch-Protection, Code-Review, and CI-Tests checks (#220).
 3. **Publish releases through `release.yml`** so cosign signing runs (#219).
 4. **Confirm org/repo security settings** Scorecard reads: token permissions,
    published security policy, and Dependabot/security-advisory settings.

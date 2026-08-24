@@ -172,6 +172,11 @@ For everything else — bug fixes, feature work, architecture changes — the fu
 
 ### On enforcement
 
-Today this is honor-system. Branch protection that mechanically requires `decision:approved` is **deferred until the repo goes public** (see commit `ea2c042`); enabling it on a private repo costs more than it saves while only the project lead and a small set of agents merge. When the repo flips public, the deferred `scripts/enable-branch-protection.sh` lands and turns this into a hard gate.
+The repository is public and `main` is mechanically protected by the active GitHub
+`Pull-request protection` ruleset. Direct pushes, force-pushes, deletion, and merges that
+skip the required PR review or status checks are rejected. The ruleset requires the local
+release gate on Linux/macOS, the PR CI matrix, MAX code-quality, changed-line coverage,
+and CodeQL. It has no bypass actors; any emergency ruleset change must be recorded and
+reverted before a package release.
 
 Until then: the rules above are followed because they are written down, and PRs that violate them are flagged in retrospective audit (e.g., issue #48). The cost of following them — one `## Review:` comment per docs PR — is small enough that the absence of CI enforcement is not a license to skip.
