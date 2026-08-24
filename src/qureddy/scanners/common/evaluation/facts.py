@@ -97,7 +97,8 @@ def _kex_signals(
         ),
         _has_suffix(types, "kex.classical")
         or _has_suffix(rules, "classical.negotiated_x25519")
-        or _has_suffix(rules, "kex.classical_only"),
+        or _has_suffix(rules, "kex.classical_only")
+        or _has_suffix(rules, "kex.classical_alternative"),
         _has_suffix(rules, "hybrid.probe_failed"),
     )
 

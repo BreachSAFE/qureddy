@@ -11,7 +11,7 @@ from unittest.mock import patch
 
 import pytest
 
-from qureddy.core.models import Readiness
+from qureddy.core.models import HndlExposure, Readiness
 from qureddy.core.targets import parse_ssh_target
 from qureddy.output.cbom import render_cbom
 from qureddy.output.console import render_rich
@@ -47,6 +47,23 @@ def test_pq_hybrid_offered_is_transitional_hybrid() -> None:
     r = _run(("mlkem768x25519-sha256", "curve25519-sha256"), ("ssh-ed25519",))
     assert r.summary.readiness is Readiness.TRANSITIONAL_HYBRID
     assert any(f.rule_id == "ssh.kex.hybrid_offered" for f in r.findings)
+
+
+def test_pq_hybrid_with_classical_fallback_is_defeasible() -> None:
+    result = _run(
+        (
+            "sntrup761x25519-sha512@openssh.com",
+            "curve25519-sha256",
+            "ecdh-sha2-nistp256",
+        ),
+        ("ssh-ed25519",),
+    )
+
+    rules = {finding.rule_id for finding in result.findings}
+    assert "ssh.kex.hybrid_offered" in rules
+    assert "ssh.kex.classical_alternative" in rules
+    assert result.summary.interpretation.hndl_exposure is HndlExposure.PROTECTED_DEFEASIBLE
+    assert "classical_kex_negotiated" in result.summary.interpretation.reason_codes
 
 
 def test_classical_only_is_quantum_vulnerable() -> None:
