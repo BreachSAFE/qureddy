@@ -71,7 +71,7 @@ FormatOpt = Annotated[
     # command line.
     typer.Option(
         "--format",
-        help="Output format: rich | json | cbom (repeat to override; last wins).",
+        help="Output format: rich | json | cbom | jsonl (repeat to override; last wins).",
         case_sensitive=False,
     ),
 ]
@@ -142,7 +142,7 @@ OutputDirOpt = Annotated[
     Path | None,
     typer.Option(
         "--output-dir",
-        help="Write correlated JSON and CBOM documents to this run directory (one scan).",
+        help="Write every supported projection to this run directory (JSON, CBOM, JSONL, Rich).",
     ),
 ]
 CompactOpt = Annotated[
@@ -150,7 +150,7 @@ CompactOpt = Annotated[
     typer.Option(
         "--compact",
         help="Machine formats (--format json | cbom): emit minified single-line JSON. "
-        "Default: indented. No effect on --format rich.",
+        "JSONL is always one object per line. Default: indented. No effect on --format rich.",
     ),
 ]
 MinSeverityOpt = Annotated[

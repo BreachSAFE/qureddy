@@ -14,6 +14,7 @@ from qureddy.core.models import OutputFormat, ScanResult, Severity
 from qureddy.output.cbom import render_cbom
 from qureddy.output.console import render_rich
 from qureddy.output.json import render_json
+from qureddy.output.jsonl import render_jsonl
 
 
 def _open_output_file(output: Path | None) -> IO[str] | None:
@@ -50,14 +51,20 @@ def _render_bundle(
     reproducible: bool,
     compact: bool,
 ) -> None:
-    """Write JSON and CBOM projections of one in-memory scan result."""
+    """Write every currently supported projection of one scan result."""
     json_stream = io.StringIO()
     cbom_stream = io.StringIO()
+    jsonl_stream = io.StringIO()
+    rich_stream = io.StringIO()
     render_json(result, json_stream, compact=compact)
     render_cbom(result, cbom_stream, reproducible=reproducible, compact=compact)
+    render_jsonl(result, jsonl_stream)
+    render_rich(result, rich_stream)
     try:
         (output_dir / "scan.json").write_text(json_stream.getvalue(), encoding="utf-8")
         (output_dir / "scan.cdx.json").write_text(cbom_stream.getvalue(), encoding="utf-8")
+        (output_dir / "scan.jsonl").write_text(jsonl_stream.getvalue(), encoding="utf-8")
+        (output_dir / "scan.rich.txt").write_text(rich_stream.getvalue(), encoding="utf-8")
     except OSError as exc:
         _fail(f"cannot write scan bundle in {output_dir}: {exc.strerror or exc}", EXIT_USAGE)
 
@@ -73,7 +80,7 @@ def _render(
     stream: IO[str] | None = None,
     output_dir: Path | None = None,
 ) -> None:
-    """Dispatch to the JSON, CBOM, or Rich renderer.
+    """Dispatch to the JSON, CBOM, JSONL, or Rich renderer.
 
     ``stream`` defaults to the current ``sys.stdout``; ``--output`` supplies a
     file stream instead, which keeps stdout empty (and byte-clean) for the
@@ -89,5 +96,7 @@ def _render(
         render_json(result, target, compact=compact)
     elif output_format is OutputFormat.CBOM:
         render_cbom(result, target, reproducible=reproducible, compact=compact)
+    elif output_format is OutputFormat.JSONL:
+        render_jsonl(result, target)
     else:
         render_rich(result, target, verbosity=verbose, min_severity=min_severity)

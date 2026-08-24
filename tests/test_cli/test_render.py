@@ -74,6 +74,36 @@ def test_output_dir_emits_correlated_json_and_cbom_from_one_scan(tmp_path: Path)
         json_time = datetime.fromisoformat(json_payload["scan"][field].replace("Z", "+00:00"))
         cbom_time = datetime.fromisoformat(properties[f"qureddy:scan.{field}"])
         assert json_time == cbom_time
+    jsonl_lines = (run_dir / "scan.jsonl").read_text(encoding="utf-8").splitlines()
+    assert all(
+        json.loads(line)["info"]["metadata"]["scan_id"] == json_payload["scan"]["scan_id"]
+        for line in jsonl_lines
+    )
+    assert (run_dir / "scan.rich.txt").read_text(encoding="utf-8").startswith("QuReddy")
+
+
+def test_jsonl_format_emits_one_machine_record_per_finding() -> None:
+    result = CliRunner().invoke(
+        app,
+        [
+            "scan",
+            "tls",
+            "example.com",
+            "--openssl",
+            fake_openssl("openssl_too_old"),
+            "--format",
+            "jsonl",
+        ],
+    )
+    assert result.exit_code == 3, result.output
+    lines = result.stdout.splitlines()
+    assert lines
+    records = [json.loads(line) for line in lines]
+    assert len(records) == len({record["finding_hash"] for record in records})
+    for record in records:
+        assert record["type"] == "ssl"
+        assert record["info"]["metadata"]["scan_id"]
+        assert record["info"]["metadata"]["scanner_version"]
 
 
 def test_output_dir_cannot_be_combined_with_output(tmp_path: Path) -> None:

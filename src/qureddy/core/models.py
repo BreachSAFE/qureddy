@@ -254,6 +254,9 @@ class OutputFormat(str, Enum):
     CBOM = "cbom"
     """CycloneDX 1.7 CBOM export — see qureddy.output.cbom."""
 
+    JSONL = "jsonl"
+    """One Osmedeus/nuclei-compatible finding object per line."""
+
 
 class ScanTarget(BaseModel):
     """A normalized scan target.

@@ -41,9 +41,10 @@ bundle mode instead of invoking two scans:
 qureddy scan tls api.example.com --output-dir evidence/run-001
 ```
 
-This performs one scan and writes `scan.json` plus `scan.cdx.json` with the same
-scan ID, timestamps, target identity, findings, and evidence. Both documents
-are written for target or local-collector failures too, preserving the failure
+This performs one scan and writes the complete artifact bundle: `scan.json`,
+`scan.cdx.json`, `scan.jsonl`, and `scan.rich.txt`. All projections share the
+same scan ID, timestamps, target identity, findings, and evidence. Every artifact
+is written for target or local-collector failures too, preserving the failure
 evidence alongside the exit code.
 
 ## 3. Branch on the exit code

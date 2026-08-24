@@ -291,7 +291,11 @@ def _scan_and_render(
 
 def _is_machine_format(output_dir: Path | None, output_format: OutputFormat) -> bool:
     """Return whether stdout must remain free of human-readable diagnostics."""
-    return output_dir is not None or output_format in (OutputFormat.JSON, OutputFormat.CBOM)
+    return output_dir is not None or output_format in (
+        OutputFormat.JSON,
+        OutputFormat.CBOM,
+        OutputFormat.JSONL,
+    )
 
 
 def _close_output_stream(stream: IO[str] | None) -> None:
