@@ -209,6 +209,23 @@ def _hygiene_status(
     return HygieneStatus.OK if has_findings else HygieneStatus.UNKNOWN
 
 
+def _overall_status(
+    support: PqcSupport,
+    hygiene_status: HygieneStatus,
+) -> str:
+    if support is PqcSupport.PURE_PQ_OBSERVED:
+        return "Post-quantum protection observed"
+    if support is PqcSupport.HYBRID_OBSERVED:
+        return (
+            "Hybrid PQC protection observed"
+            if hygiene_status is HygieneStatus.OK
+            else "Hybrid PQC protection with hardening required"
+        )
+    if support is PqcSupport.CLASSICAL_ONLY_OBSERVED:
+        return "Classical-only protection observed"
+    return "PQC protection could not be confirmed"
+
+
 def _display(
     axes: PostureAxes,
     *,
@@ -246,20 +263,8 @@ def _display(
         HygieneStatus.WEAK: "Weak cryptography requires remediation",
         HygieneStatus.UNKNOWN: "Security hygiene could not be assessed",
     }[hygiene_status]
-    if axes.pqc_support is PqcSupport.PURE_PQ_OBSERVED:
-        overall_status = "Post-quantum protection observed"
-    elif axes.pqc_support is PqcSupport.HYBRID_OBSERVED:
-        overall_status = (
-            "Hybrid PQC protection observed"
-            if hygiene_status is HygieneStatus.OK
-            else "Hybrid PQC protection with hardening required"
-        )
-    elif axes.pqc_support is PqcSupport.CLASSICAL_ONLY_OBSERVED:
-        overall_status = "Classical-only protection observed"
-    else:
-        overall_status = "PQC protection could not be confirmed"
     return InterpretationDisplay(
-        overall_status=overall_status,
+        overall_status=_overall_status(axes.pqc_support, hygiene_status),
         quantum_protection=quantum_protection,
         future_quantum_risk=future_quantum_risk,
         current_hygiene=current_hygiene,
