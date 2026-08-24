@@ -85,7 +85,7 @@ def _ciso_summary(interpretation: ScanInterpretation) -> tuple[Text, Text]:
     headline = Text(
         "\n".join(
             (
-                f"Future Harvest-Now, Decrypt-Later Risk (HNDL): {display.future_quantum_risk}",
+                f"Future Harvest-Now, Decrypt-Later Risk (HNDL):\n  {display.future_quantum_risk}",
                 f"Quantum protection observed: {display.quantum_protection}",
                 f"Current security hardening:   {display.current_hygiene}",
                 f"Overall assessment:           {display.overall_status}",
@@ -96,11 +96,10 @@ def _ciso_summary(interpretation: ScanInterpretation) -> tuple[Text, Text]:
 
 
 def _legacy_summary_headline_and_recommendation(result: ScanResult) -> tuple[Text, Text]:
-    """Return the pre-0.2.56 summary for incomplete/legacy results.
+    """Return the pre-HNDL summary for incomplete/legacy results.
 
-    The headline is a plain-English at-a-glance signal; the recommendation
-    tells the user what to do about it. Both rows come before the raw
-    enum values so a skim reader sees the verdict first.
+    The fallback headline is a plain-English at-a-glance signal; the
+    recommendation tells the user what to do about it.
     """
     readiness = result.summary.readiness
     failure = result.summary.failure_category

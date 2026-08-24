@@ -34,6 +34,7 @@ from qureddy.output.console._verdict import (
     _classically_weak_with_pqc_recommendation,
     _compose_headline,
 )
+from qureddy.scanners.common.posture import build_interpretation
 
 ANSI_ESCAPE = re.compile(r"\x1b\[")
 
@@ -173,6 +174,22 @@ def _render_to_string(result: ScanResult) -> str:
     buf = io.StringIO()
     render_rich(result, buf)
     return buf.getvalue()
+
+
+def test_hndl_first_summary_is_rendered_from_canonical_interpretation() -> None:
+    result = _build_result()
+    interpretation = build_interpretation(result.findings, result.evidence, None)
+    result = result.model_copy(
+        update={"summary": result.summary.model_copy(update={"interpretation": interpretation})}
+    )
+
+    out = _render_to_string(result)
+
+    assert "Future Harvest-Now, Decrypt-Later Risk (HNDL):" in out
+    assert "Protected today, but a classical downgrade path remains" in out
+    assert "Quantum protection observed: Hybrid PQC key exchange observed" in out
+    assert "Current security hardening:   Protocol hardening is required" in out
+    assert "Overall assessment:           Hybrid PQC protection with hardening required" in out
 
 
 def test_failed_hybrid_probe_headline_does_not_claim_classical_only() -> None:

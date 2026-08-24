@@ -44,10 +44,10 @@ def render_rich(
 
     Layout:
       1. The QuReddy header line.
-      2. A bordered verdict panel (READY / NOT READY / FAIL / UNKNOWN +
-         recommendation) so the at-a-glance signal is the dominant
+      2. A bordered HNDL-first verdict panel with CISO-facing risk,
+         protection, hardening, and recommendation so the at-a-glance signal is the dominant
          visual element, not a row in the middle of a table.
-      3. The summary table (raw enum values + per-probe status).
+      3. The summary table (CISO display plus technical enum values and probe status).
       4. The findings table (rule-by-rule).
       5. The dependencies table.
       6. (`verbosity >= 3` only) A "Commands run" panel listing the
