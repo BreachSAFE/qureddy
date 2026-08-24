@@ -165,7 +165,7 @@
     "completed_at": "2026-04-26T00:00:00Z",
     "scan_id": "scan-1",
     "scanner_name": "tls",
-    "scanner_version": "0.2.53",
+    "scanner_version": "0.2.54",
     "started_at": "2026-04-26T00:00:00Z",
     "status": "completed",
     "total_attempts": 2
