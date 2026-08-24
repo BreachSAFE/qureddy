@@ -303,7 +303,7 @@ def _scan_ssh(target: ScanTarget, *, timeout_seconds: int = 8) -> ScanResult:
     weak_kex_result = weak_kex_observation(asset, offer.kex_algorithms)
     if weak_kex_result is not None:
         weak_kex_evidence, weak_kex_finding = weak_kex_result
-        evidence.append(weak_kex_evidence)
+        evidence.extend(weak_kex_evidence)
         findings.append(weak_kex_finding)
     host_key_evidence, weak_host_key_finding = _host_key_observations(
         asset, offer.host_key_algorithms

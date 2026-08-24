@@ -65,16 +65,21 @@ def ssh_weak_finding(
 
 def weak_kex_observation(
     asset: Asset, algorithms: tuple[str, ...]
-) -> tuple[Evidence, Finding] | None:
-    """Build the weak-KEX result pair, if a deprecated exchange is offered."""
+) -> tuple[list[Evidence], Finding] | None:
+    """Build named evidence for each deprecated KEX algorithm offered."""
     weak = classify.weak_kex(algorithms)
     if not weak:
         return None
-    evidence = ssh_offered_evidence(
-        asset,
-        evidence_type="ssh.kex.weak",
-        notes=classify.weak_kex_reasons(algorithms),
-    )
+    reasons = classify.weak_kex_reasons(algorithms)
+    evidence = [
+        ssh_offered_evidence(
+            asset,
+            evidence_type="ssh.kex.weak",
+            name=algorithm,
+            notes=(reason,),
+        )
+        for algorithm, reason in zip(weak, reasons, strict=True)
+    ]
     finding = ssh_weak_finding(
         asset,
         rule_id="ssh.kex.weak",
@@ -84,7 +89,7 @@ def weak_kex_observation(
             "Deprecated key-exchange algorithms offered. Small (1024-bit) MODP groups "
             "and SHA-1 key-exchange hashes are disabled by default in modern OpenSSH."
         ),
-        evidence_ids=(evidence.id,),
+        evidence_ids=tuple(record.id for record in evidence),
     )
     return evidence, finding
 

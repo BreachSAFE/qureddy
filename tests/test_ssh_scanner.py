@@ -387,3 +387,16 @@ def test_ssh_rich_output_has_no_tls_cert_recommendation() -> None:
     assert "cipher_suite" not in out
     assert "key_exchange" in out
     assert "host_keys" in out
+
+
+def test_weak_ssh_kex_algorithm_is_visible_in_ciso_evaluation() -> None:
+    result = _run(
+        ("diffie-hellman-group1-sha1", "curve25519-sha256"),
+        ("rsa-sha2-256",),
+    )
+    interpretation = result.summary.interpretation
+    assert interpretation is not None
+    evaluation = interpretation.display.evaluation
+    assert interpretation.hygiene_status.value == "weak"
+    assert evaluation.hardening == "Protocol hardening is required"
+    assert "SSH weak algorithm offered: diffie-hellman-group1-sha1" in evaluation.observed_facts
