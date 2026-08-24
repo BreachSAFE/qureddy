@@ -28,7 +28,7 @@ from qureddy.scanners.tls._legacy_findings import FINDING_TYPE_LEGACY_PROTOCOL_O
 from qureddy.scanners.tls.cert_sig import pqc_signature_standard
 
 if TYPE_CHECKING:
-    from qureddy.core.models import ScanResult
+    from qureddy.core.models import ScanInterpretation, ScanResult
 
 _CERT_FINDING_TYPES = frozenset({FINDING_TYPE_PQ_SIGNATURE, FINDING_TYPE_CLASSICAL_SIGNATURE})
 
@@ -68,7 +68,35 @@ def _verdict_panel(result: ScanResult) -> Panel:
 
 
 def _summary_headline_and_recommendation(result: ScanResult) -> tuple[Text, Text]:
-    """Return (headline, recommendation) for the top of the summary block.
+    """Render the canonical HNDL-first CISO summary.
+
+    The structured interpretation is the single source of wording for the
+    first screen. The legacy path remains only for incomplete/old fixtures.
+    """
+    interpretation = result.summary.interpretation
+    if interpretation is not None:
+        return _ciso_summary(interpretation)
+    return _legacy_summary_headline_and_recommendation(result)
+
+
+def _ciso_summary(interpretation: ScanInterpretation) -> tuple[Text, Text]:
+    """Put future-quantum risk before implementation-level detail."""
+    display = interpretation.display
+    headline = Text(
+        "\n".join(
+            (
+                f"Future Harvest-Now, Decrypt-Later Risk (HNDL): {display.future_quantum_risk}",
+                f"Quantum protection observed: {display.quantum_protection}",
+                f"Current security hardening:   {display.current_hygiene}",
+                f"Overall assessment:           {display.overall_status}",
+            )
+        )
+    )
+    return headline, Text(f"Action: {interpretation.recommended_action}")
+
+
+def _legacy_summary_headline_and_recommendation(result: ScanResult) -> tuple[Text, Text]:
+    """Return the pre-0.2.56 summary for incomplete/legacy results.
 
     The headline is a plain-English at-a-glance signal; the recommendation
     tells the user what to do about it. Both rows come before the raw
