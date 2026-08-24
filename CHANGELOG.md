@@ -1,7 +1,7 @@
 # Changelog
 
 [![Status: Alpha](https://img.shields.io/badge/status-alpha-blue?style=flat-square)](https://github.com/breachsafe/qureddy)
-[![Version](https://img.shields.io/badge/version-0.2.54-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.55-blue?style=flat-square)](CHANGELOG.md)
 [![Keep a Changelog](https://img.shields.io/badge/keep%20a%20changelog-1.1.0-orange?style=flat-square)](https://keepachangelog.com/en/1.1.0/)
 [![SemVer](https://img.shields.io/badge/SemVer-2.0.0-blue?style=flat-square)](https://semver.org/spec/v2.0.0.html)
 
@@ -16,6 +16,15 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Distribution policy is explicitly TestPyPI-only for now**: release automation,
   packaging checks, and installation guidance no longer imply that the public PyPI
   package exists or should be probed before an explicit authorization.
+
+## [0.2.55] - 2026-08-24
+
+### Fixed
+
+- Standardized unexpected CLI error diagnostics through the structured logger
+  while preserving the detailed operator message and exit code 70 (`#447`).
+- Added opt-in traceback output for `-vvv`; machine-readable stdout remains
+  uncontaminated.
 
 ## [0.2.54] - 2026-08-24
 
