@@ -28,6 +28,7 @@ class PostureFacts(BaseModel):
     negotiated_algorithm: str | None = None
     classical_alternative: str | None = None
     certificate_chain_signature: str | None = None
+    weak_algorithms: tuple[str, ...] = ()
 
 
 def normalize_facts(
@@ -48,6 +49,7 @@ def normalize_facts(
         negotiated_algorithm=_negotiated_algorithm(findings, evidence),
         classical_alternative=_classical_alternative(findings, evidence),
         certificate_chain_signature=_certificate_signature(findings),
+        weak_algorithms=_weak_algorithms(findings, evidence),
     )
 
 
@@ -95,4 +97,21 @@ def _certificate_signature(findings: list[Finding]) -> str | None:
             if finding.finding_type == "tls.cert.classical_signature" and finding.algorithm
         ),
         None,
+    )
+
+
+def _weak_algorithms(findings: list[Finding], evidence: list[Evidence]) -> tuple[str, ...]:
+    """Return algorithm names attached to explicit weak-algorithm findings."""
+    weak_evidence_ids = {
+        evidence_id
+        for finding in findings
+        if ".weak" in finding.finding_type or ".weak" in finding.rule_id
+        for evidence_id in finding.evidence_ids
+    }
+    return tuple(
+        dict.fromkeys(
+            item.negotiated_group
+            for item in evidence
+            if item.id in weak_evidence_ids and item.negotiated_group
+        )
     )

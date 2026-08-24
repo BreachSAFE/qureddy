@@ -38,6 +38,21 @@ def test_hybrid_evaluation_reports_observed_fallback() -> None:
     assert any("Classical alternative accepted: X25519" in fact for fact in result.observed_facts)
 
 
+def test_weak_hygiene_requires_hardening_and_names_algorithm() -> None:
+    result = build_evaluation(
+        PostureFacts(
+            protocol="ssh",
+            support=PqcSupport.HYBRID_OBSERVED,
+            hndl_exposure=HndlExposure.PROTECTED,
+            hygiene_status=HygieneStatus.WEAK,
+            negotiated_algorithm="sntrup761x25519-sha512",
+            weak_algorithms=("ssh-rsa",),
+        )
+    )
+    assert result.hardening == "Protocol hardening is required"
+    assert "SSH weak algorithm offered: ssh-rsa" in result.observed_facts
+
+
 def test_evaluator_is_protocol_neutral() -> None:
     for protocol in ("ssh", "certificate", "sftp", "ike"):
         result = build_evaluation(
@@ -63,6 +78,7 @@ def test_unknown_evaluation_does_not_fabricate_observations() -> None:
         )
     )
     assert result.summary == "TLS post-quantum protection could not be confirmed."
+    assert result.hardening == "Hardening posture could not be assessed"
     assert result.observed_facts == ()
 
 

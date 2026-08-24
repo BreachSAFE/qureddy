@@ -72,6 +72,14 @@ def test_scanner_name_and_scheme() -> None:
     assert r.dependencies == ()  # SSH has no openssl dependency
 
 
+def test_weak_ssh_algorithm_is_visible_in_ciso_evaluation() -> None:
+    result = _run(("mlkem768x25519-sha256",), ("ssh-rsa",))
+    evaluation = result.summary.interpretation.display.evaluation
+    assert result.summary.interpretation.hygiene_status.value == "weak"
+    assert evaluation.hardening == "Protocol hardening is required"
+    assert "SSH weak algorithm offered: ssh-rsa" in evaluation.observed_facts
+
+
 def test_server_identity_is_typed_evidence_and_cbom_endpoint_property() -> None:
     result = _run(
         ("curve25519-sha256",),

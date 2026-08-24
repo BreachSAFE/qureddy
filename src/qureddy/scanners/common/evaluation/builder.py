@@ -60,6 +60,14 @@ def _action(facts: PostureFacts) -> str:
     return "Resolve probe limitations and re-run the assessment."
 
 
+def _hardening(status: HygieneStatus) -> str:
+    if status in {HygieneStatus.ACTION_NEEDED, HygieneStatus.WEAK}:
+        return "Protocol hardening is required"
+    if status is HygieneStatus.UNKNOWN:
+        return "Hardening posture could not be assessed"
+    return "No immediate hardening issue identified"
+
+
 def build_evaluation(facts: PostureFacts) -> PostureEvaluation:
     """Build CISO language without protocol-specific branching."""
     protocol = facts.protocol.upper()
@@ -72,15 +80,14 @@ def build_evaluation(facts: PostureFacts) -> PostureEvaluation:
         observed.append(
             f"Classical certificate-chain issuer signature: {facts.certificate_chain_signature}"
         )
+    observed.extend(
+        f"{protocol} weak algorithm offered: {algorithm}" for algorithm in facts.weak_algorithms
+    )
     return PostureEvaluation(
         summary=_summary(facts),
         hndl_risk=_hndl_risk(facts.hndl_exposure),
         protection=_protection(facts.support),
-        hardening=(
-            "Protocol hardening is required"
-            if facts.hygiene_status is HygieneStatus.ACTION_NEEDED
-            else "No immediate hardening issue identified"
-        ),
+        hardening=_hardening(facts.hygiene_status),
         recommended_action=_action(facts),
         observed_facts=tuple(observed),
     )
