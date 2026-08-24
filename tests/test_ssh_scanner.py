@@ -64,6 +64,21 @@ def test_pq_hybrid_with_classical_fallback_is_defeasible() -> None:
     assert "ssh.kex.classical_alternative" in rules
     assert result.summary.interpretation.hndl_exposure is HndlExposure.PROTECTED_DEFEASIBLE
     assert "classical_kex_negotiated" in result.summary.interpretation.reason_codes
+    assert "Classical alternative accepted: curve25519-sha256" in (
+        result.summary.interpretation.display.evaluation.observed_facts
+    )
+
+
+def test_unknown_kex_is_not_reported_as_classical_downgrade() -> None:
+    result = _run(
+        ("mlkem768x25519-sha256", "future-kex@vendor"),
+        ("ssh-ed25519",),
+    )
+
+    rules = {finding.rule_id for finding in result.findings}
+    assert "ssh.kex.hybrid_offered" in rules
+    assert "ssh.kex.classical_alternative" not in rules
+    assert result.summary.interpretation.hndl_exposure is HndlExposure.PROTECTED
 
 
 def test_classical_only_is_quantum_vulnerable() -> None:

@@ -182,6 +182,12 @@ def classify_kex(name: str) -> KexClass | None:
     return None
 
 
+def is_classical_kex(name: str) -> bool:
+    """Return whether ``name`` is a recognized classical key-exchange profile."""
+    spec = classify_kex(name)
+    return spec is not None and spec.primitive in {"key-agree", "pke"}
+
+
 def weak_host_keys(offer_host_keys: tuple[str, ...]) -> tuple[str, ...]:
     """Deprecated/weak host-key algorithms offered (e.g. ssh-dss, ssh-rsa)."""
     return tuple(a for a in offer_host_keys if a in _WEAK_HOST_KEYS)

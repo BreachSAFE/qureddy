@@ -182,7 +182,11 @@ def _hybrid_kex_findings(
     """Return hybrid readiness plus any classical downgrade-path finding."""
     pq = tuple(group for group in evidence_by_group if group in pq_names)
     findings = [_hybrid_kex_finding(asset, pq, tuple(evidence_by_group[group].id for group in pq))]
-    classical = tuple(group for group in evidence_by_group if group not in pq_names)
+    classical = tuple(
+        group
+        for group in evidence_by_group
+        if group not in pq_names and classify.is_classical_kex(group)
+    )
     if classical:
         findings.append(
             _classical_alternative_finding(

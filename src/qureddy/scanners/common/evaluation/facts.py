@@ -167,12 +167,18 @@ def _classical_alternative(findings: list[Finding], evidence: list[Evidence]) ->
             *(
                 finding.negotiated_group
                 for finding in findings
-                if "classical.negotiated" in finding.rule_id
+                if (
+                    "classical.negotiated" in finding.rule_id
+                    or _has_suffix({finding.rule_id}, "kex.classical_alternative")
+                )
             ),
             *(
                 finding.algorithm
                 for finding in findings
-                if "classical.negotiated" in finding.rule_id
+                if (
+                    "classical.negotiated" in finding.rule_id
+                    or _has_suffix({finding.rule_id}, "kex.classical_alternative")
+                )
             ),
         )
     )
