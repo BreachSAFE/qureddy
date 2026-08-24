@@ -10,6 +10,8 @@ from qureddy.core.models import (
     Evidence,
     FailureCategory,
     Finding,
+    HndlExposure,
+    HygieneStatus,
     ObservationType,
     PqcSupport,
     Readiness,
@@ -122,11 +124,32 @@ def test_interpretation_covers_positive_and_classical_paths() -> None:
     assert hybrid_legacy.axes.key_exchange is AxisStatus.HYBRID
     assert "deprecated_protocol_observed" in hybrid_legacy.reason_codes
     assert "legacy protocol" in hybrid_legacy.headline
+    assert hybrid_legacy.hndl_exposure is HndlExposure.PROTECTED
+    assert hybrid_legacy.hygiene_status is HygieneStatus.ACTION_NEEDED
 
     pure = build_interpretation(
         [_finding("tls.pq.negotiated_pure", "tls.kex.pq", Readiness.QUANTUM_SAFE)], [], None
     )
     assert pure.headline.startswith("Pure post-quantum")
+    assert pure.hndl_exposure is HndlExposure.PROTECTED
+    assert pure.hygiene_status is HygieneStatus.OK
+
+
+def test_classical_only_is_at_risk_and_action_needed() -> None:
+    interpretation = build_interpretation(
+        [
+            _finding(
+                "tls.classical.negotiated_x25519",
+                "tls.kex.classical",
+                Readiness.QUANTUM_VULNERABLE,
+            )
+        ],
+        [],
+        None,
+    )
+
+    assert interpretation.hndl_exposure is HndlExposure.AT_RISK
+    assert interpretation.hygiene_status is HygieneStatus.ACTION_NEEDED
 
     classical = build_interpretation(
         [

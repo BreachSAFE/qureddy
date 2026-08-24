@@ -9,6 +9,8 @@ from qureddy.core.models import (
     Evidence,
     FailureCategory,
     Finding,
+    HndlExposure,
+    HygieneStatus,
     PostureAxes,
     PqcSupport,
     Readiness,
@@ -164,6 +166,48 @@ def _protocol_axis(types: set[str], *, has_findings: bool, not_testable: bool) -
     )
 
 
+def _hndl_exposure(
+    *,
+    classical: bool,
+    hybrid: bool,
+    pure_pq: bool,
+    not_testable: bool,
+) -> HndlExposure:
+    """Classify future-quantum exposure without ranking present-day hygiene."""
+    if not_testable:
+        return HndlExposure.UNKNOWN
+    if hybrid:
+        return HndlExposure.PROTECTED_DEFEASIBLE if classical else HndlExposure.PROTECTED
+    if pure_pq:
+        return HndlExposure.PROTECTED
+    if classical:
+        return HndlExposure.AT_RISK
+    return HndlExposure.UNKNOWN
+
+
+def _hygiene_status(
+    types: set[str],
+    *,
+    classical: bool,
+    not_testable: bool,
+    has_findings: bool,
+) -> HygieneStatus:
+    """Classify present-day hygiene independently of HNDL exposure."""
+    if not_testable:
+        return HygieneStatus.UNKNOWN
+    if bool({"ssh.kex.weak", "ssh.hostkey.weak", "ssh.transport.weak"} & types):
+        return HygieneStatus.WEAK
+    if (
+        classical
+        or "tls.cert.classical_signature" in types
+        or "tls.legacy.protocol_offered" in types
+        or "tls.classical.protocol_offered" in types
+        or "ssh.terrapin.posture" in types
+    ):
+        return HygieneStatus.ACTION_NEEDED
+    return HygieneStatus.OK if has_findings else HygieneStatus.UNKNOWN
+
+
 def _build_axes(
     findings: list[Finding],
     evidence: list[Evidence],
@@ -233,11 +277,25 @@ def build_interpretation(
     """Build stable posture axes and provenance from observed findings."""
     axes = _build_axes(findings, evidence, failure_category)
     reason_codes = _reason_codes(findings, failure_category)
+    types, _rules, hybrid, pure_pq, classical, _hybrid_failed = _signals(findings)
+    not_testable = _is_not_testable(failure_category)
     headline, recommended_action = _ciso_text(axes, reason_codes)
     return ScanInterpretation(
         effective=scan_readiness(findings),
         headline=headline,
         recommended_action=recommended_action,
+        hndl_exposure=_hndl_exposure(
+            classical=classical,
+            hybrid=hybrid,
+            pure_pq=pure_pq,
+            not_testable=not_testable,
+        ),
+        hygiene_status=_hygiene_status(
+            types,
+            classical=classical,
+            not_testable=not_testable,
+            has_findings=bool(findings),
+        ),
         axes=axes,
         reason_codes=reason_codes,
         evidence_refs=tuple(ev.id for ev in evidence),

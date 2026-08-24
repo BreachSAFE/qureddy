@@ -222,6 +222,11 @@ per-run are omitted under `--deterministic` so the document is content-addressab
 | `qureddy:scan.scanner_name` | always | `tls` or `ssh` |
 | `qureddy:scan.status` | always | `completed` or the top-level failure category (see [scan status](#9-scan-status)) |
 | `qureddy:scan.readiness` | always | run-level readiness verdict |
+| `qureddy:scan.effective_readiness` | when interpretation is present | legacy interpretation readiness |
+| `qureddy:scan.hndl_exposure` | when interpretation is present | `protected`, `protected_defeasible`, `at_risk`, or `unknown` |
+| `qureddy:scan.hygiene_status` | when interpretation is present | `ok`, `action_needed`, `weak`, or `unknown` |
+| `qureddy:scan.headline` | when interpretation is present | human-readable evidence-derived interpretation |
+| `qureddy:scan.recommended_action` | when interpretation is present | advisory next action for operators |
 | `qureddy:scan.finding_count` | always | number of findings in the scan (#309) |
 | `qureddy:scan.highest_severity` | when at least one finding has a severity | the highest finding severity in the scan (#309) |
 | `qureddy:scan.failure_category` | on typed failure | canonical failure category |

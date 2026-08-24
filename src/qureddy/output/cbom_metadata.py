@@ -91,6 +91,8 @@ def _add_interpretation_properties(bom: Bom, result: ScanResult) -> None:
             ("qureddy:scan.effective_readiness", interpretation.effective.value),
             ("qureddy:scan.headline", interpretation.headline),
             ("qureddy:scan.recommended_action", interpretation.recommended_action),
+            ("qureddy:scan.hndl_exposure", interpretation.hndl_exposure.value),
+            ("qureddy:scan.hygiene_status", interpretation.hygiene_status.value),
             ("qureddy:scan.pqc_support", axes.pqc_support.value),
             ("qureddy:scan.axis.key_exchange", axes.key_exchange.value),
             ("qureddy:scan.axis.downgrade_resistance", axes.downgrade_resistance.value),

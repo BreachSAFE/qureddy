@@ -27,6 +27,8 @@ from rich.text import Text
 from qureddy.core.models import (
     LOCAL_CAPABILITY_CATEGORIES,
     FailureCategory,
+    HndlExposure,
+    HygieneStatus,
     OpenSSLDependency,
     Readiness,
     Severity,
@@ -82,6 +84,20 @@ VERDICT_BORDER: dict[Readiness, str] = {
     Readiness.NOT_APPLICABLE: "dim",
 }
 
+HNDL_STYLE: dict[HndlExposure, str] = {
+    HndlExposure.PROTECTED: "bold green",
+    HndlExposure.PROTECTED_DEFEASIBLE: "bold yellow",
+    HndlExposure.AT_RISK: "bold red",
+    HndlExposure.UNKNOWN: "dim",
+}
+
+HYGIENE_STYLE: dict[HygieneStatus, str] = {
+    HygieneStatus.OK: "bold green",
+    HygieneStatus.ACTION_NEEDED: "bold yellow",
+    HygieneStatus.WEAK: "bold red",
+    HygieneStatus.UNKNOWN: "dim",
+}
+
 # Static recommendation text per readiness category. Recommendation copy
 # is intentionally opinionated — that is the entire purpose of the row
 # from a user perspective. Vendor names are deliberately avoided; the
@@ -125,6 +141,16 @@ def style_readiness(readiness: Readiness) -> Text:
 def style_severity(severity: Severity) -> Text:
     """Render `severity` as a colored Text per the severity palette."""
     return Text(severity.value, style=SEVERITY_STYLE.get(severity, ""))
+
+
+def style_hndl(exposure: HndlExposure) -> Text:
+    """Render HNDL exposure with a separate future-risk palette."""
+    return Text(exposure.value, style=HNDL_STYLE.get(exposure, "dim"))
+
+
+def style_hygiene(status: HygieneStatus) -> Text:
+    """Render present-day hygiene with a separate current-risk palette."""
+    return Text(status.value, style=HYGIENE_STYLE.get(status, "dim"))
 
 
 def style_group(group: str | None) -> Text:

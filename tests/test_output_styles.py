@@ -4,8 +4,19 @@
 
 from __future__ import annotations
 
-from qureddy.core.models import FailureCategory, Readiness, Severity
-from qureddy.output._styles import unknown_headline, unknown_recommendation
+from qureddy.core.models import (
+    FailureCategory,
+    HndlExposure,
+    HygieneStatus,
+    Readiness,
+    Severity,
+)
+from qureddy.output._styles import (
+    style_hndl,
+    style_hygiene,
+    unknown_headline,
+    unknown_recommendation,
+)
 from qureddy.output.console import _style_group, _style_readiness, _style_severity
 
 
@@ -50,6 +61,12 @@ class TestColorStyleRules:
 
     def test_severity_info_is_dim(self) -> None:
         assert _style_severity(Severity.INFO).style == "dim"
+
+    def test_hndl_defeasible_is_amber(self) -> None:
+        assert style_hndl(HndlExposure.PROTECTED_DEFEASIBLE).style == "bold yellow"
+
+    def test_hygiene_weak_is_red(self) -> None:
+        assert style_hygiene(HygieneStatus.WEAK).style == "bold red"
 
 
 class TestUnknownRecommendationLibreSSL:

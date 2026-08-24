@@ -136,7 +136,7 @@ jobs:
   reusable-canary:
     name: Reusable gate canary
     if: github.event_name == 'workflow_dispatch'
-    uses: paul007ex/breachsafe-golden-python/.github/workflows/quality-gates-python.yml@v1
+    uses: paul007ex/breachsafe-golden-python/.github/workflows/quality-gates-python.yml@68dcc8285da81cd925952c8118df05aeb2b3b088 # v1
     with:
       module: qureddy
       coverage_min: 90

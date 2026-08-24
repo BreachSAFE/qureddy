@@ -14,6 +14,8 @@ from qureddy.output._styles import (
     BODY_TEXT,
     style_capability,
     style_group,
+    style_hndl,
+    style_hygiene,
     style_path,
     style_readiness,
     style_severity,
@@ -63,6 +65,8 @@ def _summary_table(result: ScanResult) -> Table:
     if summary.interpretation is not None:
         table.add_row("interpretation", Text(summary.interpretation.headline))
         table.add_row("recommended_action", Text(summary.interpretation.recommended_action))
+        table.add_row("hndl_exposure", style_hndl(summary.interpretation.hndl_exposure))
+        table.add_row("hygiene_status", style_hygiene(summary.interpretation.hygiene_status))
         axes = summary.interpretation.axes
         table.add_row("pqc_support", Text(axes.pqc_support.value))
         table.add_row("key_exchange_posture", Text(axes.key_exchange.value))

@@ -196,6 +196,19 @@ The parser's internal input field is excluded from serialized JSON.
 | `highest_severity` | enum or null | Highest finding severity |
 | `readiness` | enum | Rolled-up readiness |
 | `failure_category` | string or null | Canonical top-level failure reason |
+| `interpretation` | object or null | Evidence-derived posture interpretation |
+
+`summary.interpretation` contains the legacy `effective` readiness plus two
+independent risk windows:
+
+| Field | Values | Meaning |
+| --- | --- | --- |
+| `hndl_exposure` | `protected`, `protected_defeasible`, `at_risk`, `unknown` | Harvest-now-decrypt-later exposure |
+| `hygiene_status` | `ok`, `action_needed`, `weak`, `unknown` | Present-day protocol and primitive hygiene |
+
+The existing `effective` field remains unchanged for compatibility. The two
+additional fields prevent a present-day hygiene finding from hiding a
+post-quantum negotiation, or vice versa.
 
 ## 11. Enumerated values
 

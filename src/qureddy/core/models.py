@@ -123,6 +123,24 @@ class AxisStatus(str, Enum):
     NOT_APPLICABLE = "not_applicable"
 
 
+class HndlExposure(str, Enum):
+    """Harvest-now-decrypt-later exposure independent of present-day hygiene."""
+
+    PROTECTED = "protected"
+    PROTECTED_DEFEASIBLE = "protected_defeasible"
+    AT_RISK = "at_risk"
+    UNKNOWN = "unknown"
+
+
+class HygieneStatus(str, Enum):
+    """Present-day protocol and primitive hygiene independent of HNDL exposure."""
+
+    OK = "ok"
+    ACTION_NEEDED = "action_needed"
+    WEAK = "weak"
+    UNKNOWN = "unknown"
+
+
 class PostureAxes(BaseModel):
     """Independent posture dimensions derived from observed evidence."""
 
@@ -143,6 +161,8 @@ class ScanInterpretation(BaseModel):
     effective: Readiness
     headline: str
     recommended_action: str
+    hndl_exposure: HndlExposure
+    hygiene_status: HygieneStatus
     axes: PostureAxes
     reason_codes: tuple[str, ...] = Field(default_factory=tuple)
     evidence_refs: tuple[str, ...] = Field(default_factory=tuple)
