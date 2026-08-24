@@ -28,6 +28,21 @@ if TYPE_CHECKING:
 _SEVERITY_ORDER: dict[Severity, int] = {sev: -rank for sev, rank in SEVERITY_ORDER.items()}
 
 
+def _attempt_rank(evidence: Evidence) -> int:
+    """Return the retry rank; offered evidence has no probe attempt."""
+    if evidence.probe_result is None:
+        return -1
+    return evidence.probe_result.attempt_number
+
+
+def _role_evidence(result: ScanResult, role: ProbeRole) -> list[Evidence]:
+    """Return role evidence, falling back to pre-role group classification."""
+    matches = [ev for ev in result.evidence if ev.probe_role is role]
+    if matches:
+        return matches
+    return [ev for ev in result.evidence if _legacy_role_match(ev, role)]
+
+
 def _pick_evidence(result: ScanResult, *, role: ProbeRole) -> Evidence | None:
     """Find the latest evidence record produced for a probe role.
 
@@ -41,20 +56,13 @@ def _pick_evidence(result: ScanResult, *, role: ProbeRole) -> Evidence | None:
     #241's fix in `_summary.py` — a later successful retry must
     supersede an earlier failed attempt's evidence, not the reverse.
     """
-    matches = [ev for ev in result.evidence if ev.probe_role is role]
-    if not matches:
-        # Archived/pre-role fixtures use the neutral group classifier as a
-        # compatibility bridge; new scans always take the role path above.
-        matches = [ev for ev in result.evidence if _legacy_role_match(ev, role)]
+    matches = _role_evidence(result, role)
     if not matches:
         return None
     # Offered evidence is intentionally probe-free, so it has no attempt
     # number.  Treat it as the oldest record rather than crashing the rich
     # renderer while selecting a role summary.
-    return max(
-        matches,
-        key=lambda ev: ev.probe_result.attempt_number if ev.probe_result is not None else -1,
-    )
+    return max(matches, key=_attempt_rank)
 
 
 def _legacy_role_match(evidence: Evidence, role: ProbeRole) -> bool:
