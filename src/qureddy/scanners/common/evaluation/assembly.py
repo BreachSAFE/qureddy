@@ -14,17 +14,11 @@ if TYPE_CHECKING:
     from qureddy.core.models import Evidence, Finding, HndlExposure, HygieneStatus, PqcSupport
 
 
-def evaluate_posture(
-    findings: list[Finding],
-    evidence: list[Evidence],
-    *,
-    protocol: str | None,
-    support: PqcSupport,
-    hndl_exposure: HndlExposure,
-    hygiene_status: HygieneStatus,
-) -> PostureEvaluation:
-    """Build one evaluation from adapter records and stable posture axes."""
-    protocol_name = (
+def _resolve_protocol(
+    findings: list[Finding], evidence: list[Evidence], protocol: str | None
+) -> str:
+    """Pick the protocol name from explicit input or observed records."""
+    return (
         protocol
         or next(
             (item.protocol for item in evidence if item.protocol),
@@ -35,6 +29,19 @@ def evaluate_posture(
             "unknown",
         )
     )
+
+
+def evaluate_posture(
+    findings: list[Finding],
+    evidence: list[Evidence],
+    *,
+    protocol: str | None,
+    support: PqcSupport,
+    hndl_exposure: HndlExposure,
+    hygiene_status: HygieneStatus,
+) -> PostureEvaluation:
+    """Build one evaluation from adapter records and stable posture axes."""
+    protocol_name = _resolve_protocol(findings, evidence, protocol)
     return build_evaluation(
         normalize_facts(
             findings,
