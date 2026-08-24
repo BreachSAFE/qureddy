@@ -9,7 +9,8 @@
 
 1. [Instruction hierarchy](#instruction-hierarchy)
 2. [Deliberate QuReddy divergences](#deliberate-qureddy-divergences)
-3. [Change procedure](#change-procedure)
+3. [Temporary workspace policy](#temporary-workspace-policy)
+4. [Change procedure](#change-procedure)
 
 ## Instruction hierarchy
 
@@ -22,7 +23,10 @@ Read and apply these sources in order:
    for cross-repo and safety rules; record any deliberate repo exception below.
 2. **This file (QuReddy guidance).** These are rules specific to this repository.
    They refine, but do not silently weaken, the platform contract.
-3. **Task-scoped skills under `.claude/skills/` and the installed BreachSAFE skill
+3. **`AGENTS.md` (QuReddy operating card).** This records the numbered ten-step
+   development process and fast command path. Follow it in order and mark skipped
+   steps `NOT RUN` with a reason.
+4. **Task-scoped skills under `.claude/skills/` and the installed BreachSAFE skill
    library.** Use the narrowest applicable skill and follow its audit/implementation
    boundary. If a skill conflicts with platform or repository guidance, stop and
    resolve the conflict explicitly.
@@ -43,6 +47,22 @@ Read and apply these sources in order:
   OpenSSL validation uses the pinned 3.5.7 LTS contract.
 - **SSH scope:** the SSH acquisition redesign and `ssh-audit` work remain parked in
   the 0.5.0 backlog unless a maintainer explicitly changes that scope.
+
+## Temporary workspace policy
+
+All QuReddy temporary worktrees, pressure-test outputs, build artifacts, and disposable
+logs MUST use the RAM-backed workspace when it is mounted:
+
+```bash
+export TMPDIR=/Volumes/ramlogs/tmp/qureddy
+mkdir -p "$TMPDIR"
+chmod 700 "$TMPDIR"
+```
+
+Check free space before large runs. Keep the canonical checkout, Git history, credentials,
+virtual environments, and irreplaceable artifacts on persistent storage. Do not replace,
+symlink, or globally redirect macOS `/tmp`. If the RAM volume is absent or too small, use
+system `/tmp` only as a documented exception and report it in the handoff.
 
 ## Change procedure
 

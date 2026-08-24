@@ -8,6 +8,13 @@ SPDX-License-Identifier: Apache-2.0
 This file is the compact operating card for coding agents. Read `CLAUDE.md` for
 the complete policy; this file intentionally avoids restating it.
 
+## Contents
+
+1. [Non-negotiable context](#non-negotiable-context)
+2. [Ten-step change loop](#ten-step-change-loop)
+3. [Fast command card](#fast-command-card)
+4. [Handoff format](#handoff-format)
+
 ## Non-negotiable context
 
 - Canonical repository: `github.com/BreachSAFE/qureddy`.
