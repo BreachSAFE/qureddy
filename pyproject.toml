@@ -166,11 +166,11 @@ include = [
 # ============================================================================
 [tool.ruff]
 line-length = 100
-# Runtime + requires-python are 3.14, but the ruff FORMATTER target is held at
-# py313 on purpose: py314 makes ruff rewrite `except (A, B):` to the PEP 758
-# unparenthesized `except A, B:`, which pylint/astroid cannot yet parse and
-# which is a SyntaxError on any pre-3.14 tool (e.g. an ambient Python CI step).
-# Raise to py314 once astroid ships PEP 758 support (#327 follow-up).
+# Compatibility exception (2026-08-23, #452): runtime + requires-python are
+# 3.14, but the Ruff formatter target remains py313. py314 makes Ruff rewrite
+# `except (A, B):` to PEP 758's `except A, B:`, which current pylint/astroid
+# cannot parse and which is a SyntaxError on pre-3.14 tools. Raise this to
+# py314 once astroid ships PEP 758 support (#327 follow-up).
 target-version = "py313"
 src = ["src", "tests"]
 
