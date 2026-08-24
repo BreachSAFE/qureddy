@@ -1,7 +1,7 @@
 # Changelog
 
 [![Status: Alpha](https://img.shields.io/badge/status-alpha-blue?style=flat-square)](https://github.com/breachsafe/qureddy)
-[![Version](https://img.shields.io/badge/version-0.2.60-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.61-blue?style=flat-square)](CHANGELOG.md)
 [![Keep a Changelog](https://img.shields.io/badge/keep%20a%20changelog-1.1.0-orange?style=flat-square)](https://keepachangelog.com/en/1.1.0/)
 [![SemVer](https://img.shields.io/badge/SemVer-2.0.0-blue?style=flat-square)](https://semver.org/spec/v2.0.0.html)
 
@@ -16,6 +16,15 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Distribution policy is explicitly TestPyPI-only for now**: release automation,
   packaging checks, and installation guidance no longer imply that the public PyPI
   package exists or should be probed before an explicit authorization.
+
+## [0.2.61] - 2026-08-24
+
+### Fixed
+
+- SSH evaluations now surface weak offered algorithms and correctly require
+  hardening when `hygiene_status=weak`.
+- Failed probes now report that hardening posture could not be assessed instead
+  of implying that no hardening issue exists.
 
 ## [0.2.60] - 2026-08-24
 
@@ -575,23 +584,24 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Docker's default build argument and container-publication workflow now use the current
   release version instead of stale 0.2.x defaults.
-
+ 
 ## Contents
 
-1. [0.2.60](#0260---2026-08-24)
-2. [0.2.59](#0259---2026-08-24)
-3. [0.2.58](#0258---2026-08-24)
-4. [0.2.57](#0257---2026-08-24)
-5. [0.2.56](#0256---2026-08-24)
-6. [0.2.55](#0255---2026-08-24)
-7. [0.2.53](#0253---2026-08-23)
-8. [0.2.52](#0252---2026-08-23)
-9. [0.2.51](#0251---2026-08-23)
-10. [0.2.50](#0250---2026-08-23)
-11. [0.2.49](#0249---2026-08-23)
-12. [0.2.48](#0248---2026-08-23)
-13. [0.2.46](#0246---2026-08-23)
-14. [0.2.45](#0245---2026-08-22)
+1. [0.2.61](#0261---2026-08-24)
+2. [0.2.60](#0260---2026-08-24)
+3. [0.2.59](#0259---2026-08-24)
+4. [0.2.58](#0258---2026-08-24)
+5. [0.2.57](#0257---2026-08-24)
+6. [0.2.56](#0256---2026-08-24)
+7. [0.2.55](#0255---2026-08-24)
+8. [0.2.53](#0253---2026-08-23)
+9. [0.2.52](#0252---2026-08-23)
+10. [0.2.51](#0251---2026-08-23)
+11. [0.2.50](#0250---2026-08-23)
+12. [0.2.49](#0249---2026-08-23)
+13. [0.2.48](#0248---2026-08-23)
+14. [0.2.46](#0246---2026-08-23)
+15. [0.2.45](#0245---2026-08-22)
 15. [0.2.44](#0244---2026-08-22)
 16. [0.2.43](#0243---2026-08-23)
 17. [0.2.42](#0242---2026-08-22)
