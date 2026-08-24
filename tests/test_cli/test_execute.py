@@ -190,6 +190,30 @@ def test_main_exits_70_on_internal_error(
     assert "simulated internal qureddy bug" in captured.err
 
 
+def test_main_internal_error_vvv_includes_traceback_and_keeps_stdout_clean(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """#447: -vvv opts into traceback detail without contaminating stdout."""
+
+    def _boom(*_args: object, **_kwargs: object) -> object:
+        raise RuntimeError("simulated internal qureddy bug")
+
+    monkeypatch.setattr("qureddy.cli.scan.parse_target", _boom)
+    monkeypatch.setattr(
+        "sys.argv",
+        ["qureddy", "scan", "tls", "example.com", "--format", "json", "-vvv"],
+    )
+    with pytest.raises(SystemExit) as exit_info:
+        main()
+    assert exit_info.value.code == 70
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "qureddy: unexpected error: simulated internal qureddy bug" in captured.err
+    assert "Traceback (most recent call last)" in captured.err
+    assert "RuntimeError: simulated internal qureddy bug" in captured.err
+
+
 def test_main_exits_3_on_capability_failure(monkeypatch: pytest.MonkeyPatch) -> None:
     fake = fake_openssl("openssl_too_old")
     monkeypatch.setattr(

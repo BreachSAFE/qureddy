@@ -10,6 +10,7 @@ the package `__init__` imports them.
 from __future__ import annotations
 
 import sys
+import traceback
 
 import click
 import typer
@@ -27,6 +28,10 @@ from qureddy.cli._errors import (
 )
 from qureddy.cli._help import _NO_WRAP_CONTEXT_SETTINGS, _colorize_help_text
 from qureddy.cli._options import VersionOpt
+from qureddy.core.logging import get_logger
+
+_LOG = get_logger(__name__)
+_TRACEBACK_VERBOSITY = 3
 
 # Issue #266: root `qureddy --help` previously said only "Commands: scan
 # Run scans." — zero actionable guidance for a first-time user, who'd have
@@ -192,6 +197,25 @@ def show_help(ctx: typer.Context) -> None:
     raise typer.Exit(code=EXIT_OK)
 
 
+def _argv_verbosity() -> int:
+    """Return the count-style verbosity requested on the raw command line.
+
+    The top-level exception boundary runs outside Typer's callback context, so
+    it cannot receive the parsed ``verbose`` value.  Re-reading only the
+    count-style flags preserves the ``-v``/``-vv``/``-vvv`` contract without
+    introducing a second option parser or changing normal command dispatch.
+    """
+    count = 0
+    for argument in sys.argv[1:]:
+        if argument == "--verbose":
+            count += 1
+        elif argument.startswith("-") and not argument.startswith("--"):
+            short_flags = argument[1:]
+            if short_flags and set(short_flags) == {"v"}:
+                count += len(short_flags)
+    return count
+
+
 def main() -> None:
     """Entry point that maps Click usage errors to project exit code 4.
 
@@ -239,6 +263,13 @@ def main() -> None:
         # Internal qureddy bugs route to EX_SOFTWARE (70), not exit 2.
         # CI scripts branching on `$? == 2` must be able to trust that
         # 2 means "target scan failed", not "qureddy itself crashed".
+        _LOG.exception(
+            "cli.internal_error",
+            error_type=type(exc).__name__,
+            exc_info=True,
+        )
         sys.stderr.write(f"qureddy: unexpected error: {exc}\n")
+        if _argv_verbosity() >= _TRACEBACK_VERBOSITY:
+            traceback.print_exception(exc, file=sys.stderr)
         sys.exit(EXIT_INTERNAL_ERROR)
     sys.exit(EXIT_OK if exit_code is None else exit_code)
