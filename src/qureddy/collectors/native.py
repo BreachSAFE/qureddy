@@ -14,6 +14,7 @@ from qureddy.core.contracts import (
     ScanSource,
     SourceKind,
 )
+from qureddy.core.errors import QureddyError
 from qureddy.core.targets import parse_ssh_target, parse_target
 
 if TYPE_CHECKING:
@@ -64,7 +65,7 @@ class _NativeEndpointCollector:
                     kind=CollectionFailureKind.TIMEOUT, message=str(exc), retryable=True
                 ),
             )
-        except Exception as exc:  # noqa: BLE001 - adapter boundary normalization
+        except (QureddyError, OSError, ValueError) as exc:
             return CollectionResult(
                 collector=self.collector_name,
                 collector_version=self.collector_version,
