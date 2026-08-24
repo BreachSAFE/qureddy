@@ -182,10 +182,18 @@ def classify_kex(name: str) -> KexClass | None:
     return None
 
 
+_PSEUDO_KEX_MARKERS = ("ext-info-", "kex-strict-")
+
+
 def is_classical_kex(name: str) -> bool:
-    """Return whether ``name`` is a recognized classical key-exchange profile."""
-    spec = classify_kex(name)
-    return spec is not None and spec.primitive in {"key-agree", "pke"}
+    """Return whether ``name`` is a classical KEX alternative (fail-safe).
+
+    SSH KEX name-lists also carry extension/strict-KEX markers. Everything
+    else that is not a recognized PQ hybrid is treated as classical for
+    downgrade posture; CBOM profiling remains conservative in ``classify_kex``.
+    """
+    lowered = name.lower()
+    return not (is_pq_hybrid_kex(name) or lowered.startswith(_PSEUDO_KEX_MARKERS))
 
 
 def weak_host_keys(offer_host_keys: tuple[str, ...]) -> tuple[str, ...]:

@@ -69,9 +69,10 @@ def test_pq_hybrid_with_classical_fallback_is_defeasible() -> None:
     )
 
 
-def test_unknown_kex_is_not_reported_as_classical_downgrade() -> None:
+@pytest.mark.parametrize("marker", ["ext-info-c", "kex-strict-c-v00@openssh.com"])
+def test_kex_pseudo_marker_is_not_reported_as_classical_downgrade(marker: str) -> None:
     result = _run(
-        ("mlkem768x25519-sha256", "future-kex@vendor"),
+        ("mlkem768x25519-sha256", marker),
         ("ssh-ed25519",),
     )
 
@@ -79,6 +80,18 @@ def test_unknown_kex_is_not_reported_as_classical_downgrade() -> None:
     assert "ssh.kex.hybrid_offered" in rules
     assert "ssh.kex.classical_alternative" not in rules
     assert result.summary.interpretation.hndl_exposure is HndlExposure.PROTECTED
+
+
+@pytest.mark.parametrize(
+    "classical_kex", ["gss-group14-sha256-", "gss-group14-sha1-", "curve448-sha512"]
+)
+def test_unrecognized_classical_kex_is_reported_as_downgrade(classical_kex: str) -> None:
+    result = _run(("mlkem768x25519-sha256", classical_kex), ("ssh-ed25519",))
+
+    rules = {finding.rule_id for finding in result.findings}
+    assert "ssh.kex.hybrid_offered" in rules
+    assert "ssh.kex.classical_alternative" in rules
+    assert result.summary.interpretation.hndl_exposure is HndlExposure.PROTECTED_DEFEASIBLE
 
 
 def test_classical_only_is_quantum_vulnerable() -> None:
