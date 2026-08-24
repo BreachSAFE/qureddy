@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import os
 import re
-from typing import cast
 
 import typer
 
@@ -41,7 +40,7 @@ from qureddy.cli._options import (
 from qureddy.cli._render import _open_output_file, _prepare_output_dir, _render
 from qureddy.cli.main import scan_app
 from qureddy.collectors import NativeSSHCollector
-from qureddy.core.contracts import Scanner, ScanSource, SourceKind
+from qureddy.core.contracts import ScanCollector, ScanSource, SourceKind
 from qureddy.core.errors import CbomError, SSHProbeError, TargetParseError
 from qureddy.core.logging import start_run_logging
 from qureddy.core.models import OutputFormat, ScanResult, ScanTarget
@@ -194,7 +193,7 @@ def scan_ssh_cmd(
 
 
 def _run_ssh_probe(
-    scanner: Scanner[ScanTarget],
+    scanner: ScanCollector,
     scan_target: ScanTarget,
     timeout: int,
     *,
@@ -228,9 +227,8 @@ def _parse_ssh_scan_target(target: str) -> ScanTarget:
         _fail(f"invalid target: {exc}", EXIT_USAGE)
 
 
-def _select_ssh_scanner(target: ScanTarget) -> Scanner[ScanTarget]:
+def _select_ssh_scanner(target: ScanTarget) -> ScanCollector:
     """Select the native SSH collector through the protocol registry."""
-    selected = CollectorRegistry([NativeSSHCollector(SSHScanner())]).select(
+    return CollectorRegistry([NativeSSHCollector(SSHScanner())]).select_scanner(
         ScanSource(kind=SourceKind.ENDPOINT, protocol="ssh", locator=target.locator)
     )
-    return cast("Scanner[ScanTarget]", selected)

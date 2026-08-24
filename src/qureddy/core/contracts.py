@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING, Protocol, TypeVar, runtime_checkable
 from pydantic import BaseModel, ConfigDict, Field
 
 if TYPE_CHECKING:
-    from qureddy.core.models import Evidence, Finding, ScanProvenance, ScanResult
+    from qureddy.core.models import Evidence, Finding, ScanProvenance, ScanResult, ScanTarget
 
 SubjectT_contra = TypeVar("SubjectT_contra", contravariant=True)
 
@@ -132,3 +132,13 @@ class Scanner(Protocol[SubjectT_contra]):
 
     def scan(self, subject: SubjectT_contra, *, timeout_seconds: int) -> ScanResult:
         """Collect protocol evidence and return the canonical scan result."""
+
+
+@runtime_checkable
+class ScanCollector(Collector, Protocol):
+    """Collector that can return the canonical endpoint result for CLI execution."""
+
+    scanner_name: str
+
+    def scan(self, subject: ScanTarget, *, timeout_seconds: int) -> ScanResult:
+        """Run the collector's native scan path."""

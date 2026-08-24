@@ -11,7 +11,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from qureddy.core.contracts import Capability, Collector, ScanSource, SourceKind, ToolPolicy
+from qureddy.core.contracts import (
+    Capability,
+    Collector,
+    ScanCollector,
+    ScanSource,
+    SourceKind,
+    ToolPolicy,
+)
 
 
 class CollectorSelectionError(ValueError):
@@ -43,6 +50,17 @@ class CollectorRegistry:
                 f"tool_policy={policy!r}"
             )
         return candidates[0]
+
+    def select_scanner(
+        self, source: ScanSource, *, tool_policy: ToolPolicy = ToolPolicy.AUTO
+    ) -> ScanCollector:
+        """Select a collector that is safe to use as a live scanner."""
+        selected = self.select(source, tool_policy=tool_policy)
+        if not isinstance(selected, ScanCollector):
+            raise CollectorSelectionError(
+                f"collector {selected.collector_name!r} cannot execute a scan"
+            )
+        return selected
 
 
 def _capability_for(source: ScanSource) -> Capability:

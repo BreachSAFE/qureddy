@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import IO, TextIO, cast
+from typing import IO, TextIO
 
 import structlog
 import typer
@@ -53,7 +53,7 @@ from qureddy.cli._options import (
 from qureddy.cli._render import _open_output_file, _prepare_output_dir, _render
 from qureddy.cli.main import scan_app
 from qureddy.collectors import NativeTLSCollector
-from qureddy.core.contracts import Scanner, ScanSource, SourceKind
+from qureddy.core.contracts import ScanCollector, ScanSource, SourceKind
 from qureddy.core.errors import CbomError, RetryConfigError, TargetParseError
 from qureddy.core.logging import start_run_logging
 from qureddy.core.models import FailureCategory, OutputFormat, ScanTarget, Severity
@@ -314,12 +314,11 @@ def _build_tls_scanner(
     )
 
 
-def _select_tls_scanner(scanner: TLSScanner, target: ScanTarget) -> Scanner[ScanTarget]:
+def _select_tls_scanner(scanner: TLSScanner, target: ScanTarget) -> ScanCollector:
     """Select the native TLS collector through the protocol registry."""
-    selected = CollectorRegistry([NativeTLSCollector(scanner)]).select(
+    return CollectorRegistry([NativeTLSCollector(scanner)]).select_scanner(
         ScanSource(kind=SourceKind.ENDPOINT, protocol="tls", locator=target.locator)
     )
-    return cast("Scanner[ScanTarget]", selected)
 
 
 def _close_output_stream(stream: IO[str] | None) -> None:

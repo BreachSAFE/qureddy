@@ -29,6 +29,7 @@ class _NativeEndpointCollector:
     ) -> None:
         self._scanner = scanner
         self._protocol = protocol
+        self.scanner_name = protocol
         self.collector_name = f"native-{protocol}"
         self.collector_version = "1"
         self.capabilities = frozenset({capability})
