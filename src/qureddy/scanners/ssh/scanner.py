@@ -7,6 +7,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
+from qureddy.core.contracts import Scanner
 from qureddy.core.ids import new_id
 from qureddy.core.models import (
     Asset,
@@ -291,7 +292,7 @@ def _build_ssh_success_result(
     )
 
 
-def scan_ssh(target: ScanTarget, *, timeout_seconds: int = 8) -> ScanResult:
+def _scan_ssh(target: ScanTarget, *, timeout_seconds: int = 8) -> ScanResult:
     """Scan an SSH endpoint for post-quantum readiness. Raises SSHProbeError on probe failure."""
     started = datetime.now(UTC)
     offer = read_kexinit_offer(target.host, target.port, timeout_seconds=timeout_seconds)
@@ -325,3 +326,18 @@ def scan_ssh(target: ScanTarget, *, timeout_seconds: int = 8) -> ScanResult:
     evidence.append(terrapin_evidence)
     findings.append(terrapin_finding)
     return _build_ssh_success_result(target, asset, evidence, findings, started)
+
+
+class SSHScanner(Scanner[ScanTarget]):
+    """Contract adapter for the existing SSH function-based scanner."""
+
+    scanner_name = "ssh"
+
+    def scan(self, target: ScanTarget, *, timeout_seconds: int = 8) -> ScanResult:
+        """Collect SSH evidence through the existing function implementation."""
+        return _scan_ssh(target, timeout_seconds=timeout_seconds)
+
+
+def scan_ssh(target: ScanTarget, *, timeout_seconds: int = 8) -> ScanResult:
+    """Backward-compatible function entry point for SSH scans."""
+    return SSHScanner().scan(target, timeout_seconds=timeout_seconds)

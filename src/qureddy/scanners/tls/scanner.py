@@ -15,6 +15,7 @@ from datetime import UTC, datetime
 
 import structlog
 
+from qureddy.core.contracts import Scanner
 from qureddy.core.errors import LocalOpenSSLMissing
 from qureddy.core.ids import new_id
 from qureddy.core.logging import get_logger
@@ -193,8 +194,10 @@ def _run_tls_scan(
     )
 
 
-class TLSScanner:
+class TLSScanner(Scanner[ScanTarget]):
     """Orchestrate one TLS scan from capability check through classification."""
+
+    scanner_name = "tls"
 
     def __init__(
         self,
