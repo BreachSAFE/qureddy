@@ -342,7 +342,7 @@ def _scan_ssh(target: ScanTarget, *, timeout_seconds: int = 8) -> ScanResult:
     offer = read_kexinit_offer(target.host, target.port, timeout_seconds=timeout_seconds)
     asset = build_endpoint_asset(target, asset_type="ssh.endpoint", protocol="ssh")
     kex_evidence, kex_findings = _kex_observations(asset, offer.kex_algorithms)
-    evidence, findings = kex_evidence.copy(), list(kex_findings)
+    evidence, findings = kex_evidence.copy(), kex_findings.copy()
     evidence.extend(server_identity_observations(asset, offer.server_identity))
     weak_kex_result = weak_kex_observation(asset, offer.kex_algorithms)
     if weak_kex_result is not None:
