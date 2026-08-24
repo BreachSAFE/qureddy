@@ -75,10 +75,14 @@ def test_output_dir_emits_correlated_json_and_cbom_from_one_scan(tmp_path: Path)
         cbom_time = datetime.fromisoformat(properties[f"qureddy:scan.{field}"])
         assert json_time == cbom_time
     jsonl_lines = (run_dir / "scan.jsonl").read_text(encoding="utf-8").splitlines()
+    records = [json.loads(line) for line in jsonl_lines]
+    finding_records = [record for record in records if record.get("type") != "scan_summary"]
     assert all(
-        json.loads(line)["info"]["metadata"]["scan_id"] == json_payload["scan"]["scan_id"]
-        for line in jsonl_lines
+        record["info"]["metadata"]["scan_id"] == json_payload["scan"]["scan_id"]
+        for record in finding_records
     )
+    assert records[-1]["type"] == "scan_summary"
+    assert records[-1]["scan_id"] == json_payload["scan"]["scan_id"]
     assert (run_dir / "scan.rich.txt").read_text(encoding="utf-8").startswith("QuReddy")
 
 
@@ -99,8 +103,10 @@ def test_jsonl_format_emits_one_machine_record_per_finding() -> None:
     lines = result.stdout.splitlines()
     assert lines
     records = [json.loads(line) for line in lines]
-    assert len(records) == len({record["finding_hash"] for record in records})
-    for record in records:
+    findings = [record for record in records if record.get("type") != "scan_summary"]
+    assert len(findings) == len({record["finding_hash"] for record in findings})
+    assert records[-1]["type"] == "scan_summary"
+    for record in findings:
         assert record["type"] == "ssl"
         assert record["info"]["metadata"]["scan_id"]
         assert record["info"]["metadata"]["scanner_version"]

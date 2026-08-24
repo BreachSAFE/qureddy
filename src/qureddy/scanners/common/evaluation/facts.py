@@ -16,6 +16,7 @@ from qureddy.core.models import (
     PqcSupport,
     ProbeRole,
 )
+from qureddy.core.signals import SemanticSignal
 
 
 class PostureFacts(BaseModel):
@@ -49,6 +50,7 @@ class PostureSignals:
     weak_algorithm: bool
     protocol_action_needed: bool
     hygiene_weak: bool
+    semantic: frozenset[SemanticSignal]
 
 
 def derive_signals(findings: list[Finding], evidence: list[Evidence]) -> PostureSignals:
@@ -56,63 +58,78 @@ def derive_signals(findings: list[Finding], evidence: list[Evidence]) -> Posture
     types = {finding.finding_type for finding in findings}
     rules = {finding.rule_id for finding in findings}
     evidence_types = {item.evidence_type for item in evidence}
-    hybrid, classical_kex, hybrid_failed = _kex_signals(findings, types, rules)
-    authentication_classical, authentication_pq, classical_certificate = _authentication_signals(
-        types, evidence_types
-    )
-    legacy_protocol = _has_suffix(types, "legacy.protocol_offered")
-    weak_algorithm = any(
-        _has_suffix(types, suffix) for suffix in ("kex.weak", "hostkey.weak", "transport.weak")
-    )
+    semantic = _semantic_signals(findings, types, rules, evidence_types)
+    hybrid = SemanticSignal.HYBRID_PQC in semantic
+    classical_kex = SemanticSignal.CLASSICAL_KEX in semantic
+    hybrid_failed = SemanticSignal.HYBRID_PROBE_FAILED in semantic
+    legacy_protocol = SemanticSignal.LEGACY_PROTOCOL in semantic
+    weak_algorithm = SemanticSignal.WEAK_ALGORITHM in semantic
     return PostureSignals(
         hybrid=hybrid,
-        pure_pq=any(finding.readiness.value == "quantum_safe" for finding in findings),
+        pure_pq=SemanticSignal.PURE_PQC in semantic,
         classical_kex=classical_kex,
         hybrid_failed=hybrid_failed,
-        downgrade_action_needed=legacy_protocol
-        or _has_suffix(rules, "classical.protocol_offered")
-        or weak_algorithm,
-        authentication_classical=authentication_classical,
-        authentication_pq=authentication_pq,
-        classical_certificate=classical_certificate,
+        downgrade_action_needed=SemanticSignal.DOWNGRADE_ACTION_NEEDED in semantic,
+        authentication_classical=SemanticSignal.AUTHENTICATION_CLASSICAL in semantic,
+        authentication_pq=SemanticSignal.AUTHENTICATION_PQ in semantic,
+        classical_certificate=SemanticSignal.CLASSICAL_CERTIFICATE in semantic,
         legacy_protocol=legacy_protocol,
         weak_algorithm=weak_algorithm,
-        protocol_action_needed=legacy_protocol
-        or any(_has_suffix(types, suffix) for suffix in ("transport.weak", "terrapin.posture")),
+        protocol_action_needed=SemanticSignal.PROTOCOL_ACTION_NEEDED in semantic,
         hygiene_weak=weak_algorithm,
+        semantic=frozenset(semantic),
     )
 
 
-def _kex_signals(
-    findings: list[Finding], types: set[str], rules: set[str]
-) -> tuple[bool, bool, bool]:
-    return (
-        any(
-            finding.readiness.value == "transitional_hybrid"
-            and (
-                _has_suffix({finding.finding_type}, "kex.hybrid")
-                or _has_suffix({finding.rule_id}, "kex.hybrid")
-            )
-            for finding in findings
-        ),
+def _semantic_signals(
+    findings: list[Finding],
+    types: set[str],
+    rules: set[str],
+    evidence_types: set[str],
+) -> set[SemanticSignal]:
+    """Map legacy protocol identifiers to the stable signal taxonomy once."""
+    signals: set[SemanticSignal] = set()
+    if any(
+        finding.readiness.value == "transitional_hybrid"
+        and (
+            _has_suffix({finding.finding_type}, "kex.hybrid")
+            or _has_suffix({finding.rule_id}, "kex.hybrid")
+        )
+        for finding in findings
+    ):
+        signals.add(SemanticSignal.HYBRID_PQC)
+    if any(finding.readiness.value == "quantum_safe" for finding in findings):
+        signals.add(SemanticSignal.PURE_PQC)
+    if (
         _has_suffix(types, "kex.classical")
         or _has_suffix(rules, "classical.negotiated_x25519")
         or _has_suffix(rules, "kex.classical_only")
-        or _has_suffix(rules, "kex.classical_alternative"),
-        _has_suffix(rules, "hybrid.probe_failed"),
-    )
-
-
-def _authentication_signals(types: set[str], evidence_types: set[str]) -> tuple[bool, bool, bool]:
-    return (
-        bool(
-            _has_suffix(types, "cert.classical_signature")
-            or _has_suffix(evidence_types, "hostkey")
-            or _has_suffix(types, "hostkey.weak")
-        ),
-        _has_suffix(types, "cert.pq_signature"),
-        _has_suffix(types, "cert.classical_signature"),
-    )
+        or _has_suffix(rules, "kex.classical_alternative")
+    ):
+        signals.add(SemanticSignal.CLASSICAL_KEX)
+    if _has_suffix(rules, "hybrid.probe_failed"):
+        signals.add(SemanticSignal.HYBRID_PROBE_FAILED)
+    if _has_suffix(types, "legacy.protocol_offered"):
+        signals.add(SemanticSignal.LEGACY_PROTOCOL)
+    if _has_suffix(rules, "classical.protocol_offered"):
+        signals.add(SemanticSignal.DOWNGRADE_ACTION_NEEDED)
+    if any(_has_suffix(types, suffix) for suffix in ("kex.weak", "hostkey.weak", "transport.weak")):
+        signals.update({SemanticSignal.WEAK_ALGORITHM, SemanticSignal.DOWNGRADE_ACTION_NEEDED})
+    if _has_suffix(types, "transport.weak") or _has_suffix(types, "terrapin.posture"):
+        signals.add(SemanticSignal.PROTOCOL_ACTION_NEEDED)
+    if (
+        _has_suffix(types, "cert.classical_signature")
+        or _has_suffix(evidence_types, "hostkey")
+        or _has_suffix(types, "hostkey.weak")
+    ):
+        signals.add(SemanticSignal.AUTHENTICATION_CLASSICAL)
+    if _has_suffix(types, "cert.pq_signature"):
+        signals.add(SemanticSignal.AUTHENTICATION_PQ)
+    if _has_suffix(types, "cert.classical_signature"):
+        signals.add(SemanticSignal.CLASSICAL_CERTIFICATE)
+    if SemanticSignal.WEAK_ALGORITHM in signals:
+        signals.add(SemanticSignal.HYGIENE_WEAK)
+    return signals
 
 
 def _has_suffix(values: set[str], suffix: str) -> bool:

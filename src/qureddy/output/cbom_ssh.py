@@ -20,10 +20,10 @@ from cyclonedx.model.crypto import (
     CryptoPrimitive,
 )
 
+from qureddy.core import ssh_algorithms
 from qureddy.output.cbom_assets import add_algorithm_assets, select_by_evidence_type
 from qureddy.output.cbom_cipher import cipher_classical_bits, cipher_primitive
 from qureddy.output.cbom_components import signature_algorithm_properties
-from qureddy.scanners.ssh import classify
 
 if TYPE_CHECKING:
     from cyclonedx.model.bom import Bom
@@ -69,7 +69,7 @@ def ssh_kex_algorithm_properties(name: str) -> AlgorithmProperties | None:
     fabricated primitive/level. Classification (name -> primitive/level) lives in the SSH
     ``classify`` module; this only maps it onto the CycloneDX model.
     """
-    spec = classify.classify_kex(name)
+    spec = ssh_algorithms.classify_kex(name)
     if spec is None:
         return None
     return AlgorithmProperties(

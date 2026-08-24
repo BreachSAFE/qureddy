@@ -81,6 +81,59 @@ def finding_record(result: ScanResult, finding: Finding) -> dict[str, Any]:
     }
 
 
+def summary_record(result: ScanResult) -> dict[str, Any]:
+    """Project the canonical CISO interpretation into the final JSONL record."""
+    interpretation = result.summary.interpretation
+    display = interpretation.display if interpretation is not None else None
+    evaluation = display.evaluation if display is not None else None
+    return {
+        "type": "scan_summary",
+        "schema_version": result.schema_version,
+        "scan_id": result.scan.scan_id,
+        "scanner": result.scan.scanner_name,
+        "scanner_version": result.scan.scanner_version,
+        "target": result.target.locator,
+        "readiness": result.summary.readiness.value,
+        "highest_severity": (
+            result.summary.highest_severity.value
+            if result.summary.highest_severity is not None
+            else None
+        ),
+        "finding_count": result.summary.finding_count,
+        "failure_category": (
+            result.summary.failure_category.value
+            if result.summary.failure_category is not None
+            else None
+        ),
+        "interpretation": (
+            {
+                "overall_status": display.overall_status,
+                "quantum_protection": display.quantum_protection,
+                "future_quantum_risk": display.future_quantum_risk,
+                "current_hygiene": display.current_hygiene,
+                "evaluation": {
+                    "summary": evaluation.summary,
+                    "hndl_risk": evaluation.hndl_risk,
+                    "protection": evaluation.protection,
+                    "hardening": evaluation.hardening,
+                    "recommended_action": evaluation.recommended_action,
+                    "observed_facts": list(evaluation.observed_facts),
+                },
+                "hndl_exposure": interpretation.hndl_exposure.value,
+                "hygiene_status": interpretation.hygiene_status.value,
+                "axes": {
+                    name: value.value for name, value in interpretation.axes.model_dump().items()
+                },
+                "reason_codes": list(interpretation.reason_codes),
+                "policy_id": interpretation.policy_id,
+                "policy_version": interpretation.policy_version,
+            }
+            if display is not None and evaluation is not None and interpretation is not None
+            else None
+        ),
+    }
+
+
 def render_jsonl(result: ScanResult, stream: IO[str] | None = None) -> None:
     """Emit one compact, deterministic JSON object per finding."""
     target = stream if stream is not None else sys.stdout
@@ -88,3 +141,5 @@ def render_jsonl(result: ScanResult, stream: IO[str] | None = None) -> None:
     for record in sorted(records, key=operator.itemgetter("finding_hash")):
         json.dump(record, target, ensure_ascii=True, separators=(",", ":"))
         target.write("\n")
+    json.dump(summary_record(result), target, ensure_ascii=True, separators=(",", ":"))
+    target.write("\n")
