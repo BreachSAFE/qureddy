@@ -231,6 +231,12 @@ per-run are omitted under `--deterministic` so the document is content-addressab
 | `qureddy:scan.display.quantum_protection` | when interpretation is present | CISO-facing PQC protection summary |
 | `qureddy:scan.display.future_quantum_risk` | when interpretation is present | CISO-facing HNDL/downgrade summary |
 | `qureddy:scan.display.current_hygiene` | when interpretation is present | CISO-facing hardening summary |
+| `qureddy:scan.display.evaluation` | when interpretation is present | Canonical protocol-neutral CISO assessment |
+| `qureddy:scan.display.evaluation.hndl_risk` | when interpretation is present | Explicit HNDL risk statement |
+| `qureddy:scan.display.evaluation.protection` | when interpretation is present | Observed PQC protection level |
+| `qureddy:scan.display.evaluation.hardening` | when interpretation is present | Present-day hardening conclusion |
+| `qureddy:scan.display.evaluation.recommended_action` | when interpretation is present | Evidence-backed next action |
+| `qureddy:scan.display.evaluation.observed_facts` | when observations exist | Adapter facts joined with ` | ` |
 | `qureddy:scan.finding_count` | always | number of findings in the scan (#309) |
 | `qureddy:scan.highest_severity` | when at least one finding has a severity | the highest finding severity in the scan (#309) |
 | `qureddy:scan.failure_category` | on typed failure | canonical failure category |

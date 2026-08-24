@@ -22,6 +22,7 @@ from qureddy.output.cbom_assets import (
     protocol_ref,
     verdict_pairs,
 )
+from qureddy.output.cbom_interpretation import add_interpretation_properties
 
 if TYPE_CHECKING:
     from cyclonedx.model.bom import Bom
@@ -77,48 +78,10 @@ def add_scan_status_properties(bom: Bom, result: ScanResult) -> None:
     bom.metadata.properties.add(
         Property(name="qureddy:scan.readiness", value=result.summary.readiness.value)
     )
-    _add_interpretation_properties(bom, result)
+    if result.summary.interpretation is not None:
+        add_interpretation_properties(bom, result.summary.interpretation)
     _add_provenance_properties(bom, result)
     _add_rollup_properties(bom, result)
-
-
-def _add_interpretation_properties(bom: Bom, result: ScanResult) -> None:
-    """Add structured posture interpretation to CBOM metadata."""
-    if result.summary.interpretation is not None:
-        interpretation = result.summary.interpretation
-        axes = interpretation.axes
-        for name, value in (
-            ("qureddy:scan.effective_readiness", interpretation.effective.value),
-            ("qureddy:scan.headline", interpretation.headline),
-            ("qureddy:scan.recommended_action", interpretation.recommended_action),
-            ("qureddy:scan.display.overall_status", interpretation.display.overall_status),
-            (
-                "qureddy:scan.display.quantum_protection",
-                interpretation.display.quantum_protection,
-            ),
-            (
-                "qureddy:scan.display.future_quantum_risk",
-                interpretation.display.future_quantum_risk,
-            ),
-            ("qureddy:scan.display.current_hygiene", interpretation.display.current_hygiene),
-            ("qureddy:scan.hndl_exposure", interpretation.hndl_exposure.value),
-            ("qureddy:scan.hygiene_status", interpretation.hygiene_status.value),
-            ("qureddy:scan.pqc_support", axes.pqc_support.value),
-            ("qureddy:scan.axis.key_exchange", axes.key_exchange.value),
-            ("qureddy:scan.axis.downgrade_resistance", axes.downgrade_resistance.value),
-            ("qureddy:scan.axis.authentication", axes.authentication.value),
-            ("qureddy:scan.axis.protocol_hygiene", axes.protocol_hygiene.value),
-            ("qureddy:scan.policy_id", interpretation.policy_id),
-            ("qureddy:scan.policy_version", interpretation.policy_version),
-        ):
-            bom.metadata.properties.add(Property(name=name, value=value))
-        if interpretation.reason_codes:
-            bom.metadata.properties.add(
-                Property(
-                    name="qureddy:scan.reason_codes",
-                    value=",".join(interpretation.reason_codes),
-                )
-            )
 
 
 def _add_provenance_properties(bom: Bom, result: ScanResult) -> None:

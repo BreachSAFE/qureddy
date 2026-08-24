@@ -17,6 +17,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from qureddy import __version__ as _version
 from qureddy.core.certificate import CertificateObservation  # noqa: TC001
+from qureddy.core.evaluation import InterpretationDisplay, PostureEvaluation  # noqa: F401, TC001
 
 FROZEN = ConfigDict(frozen=True, extra="forbid")
 
@@ -139,17 +140,6 @@ class HygieneStatus(str, Enum):
     ACTION_NEEDED = "action_needed"
     WEAK = "weak"
     UNKNOWN = "unknown"
-
-
-class InterpretationDisplay(BaseModel):
-    """CISO-facing interpretation text derived from the stable status axes."""
-
-    model_config = FROZEN
-
-    overall_status: str
-    quantum_protection: str
-    future_quantum_risk: str
-    current_hygiene: str
 
 
 class PostureAxes(BaseModel):

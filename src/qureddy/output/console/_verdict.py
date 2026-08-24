@@ -81,18 +81,18 @@ def _summary_headline_and_recommendation(result: ScanResult) -> tuple[Text, Text
 
 def _ciso_summary(interpretation: ScanInterpretation) -> tuple[Text, Text]:
     """Put future-quantum risk before implementation-level detail."""
-    display = interpretation.display
-    headline = Text(
-        "\n".join(
-            (
-                f"Future Harvest-Now, Decrypt-Later Risk (HNDL):\n  {display.future_quantum_risk}",
-                f"Quantum protection observed: {display.quantum_protection}",
-                f"Current security hardening:   {display.current_hygiene}",
-                f"Overall assessment:           {display.overall_status}",
-            )
-        )
-    )
-    return headline, Text(f"Action: {interpretation.recommended_action}")
+    evaluation = interpretation.display.evaluation
+    lines = [
+        "Future Harvest-Now, Decrypt-Later Risk (HNDL):",
+        f"  {evaluation.hndl_risk}",
+        "",
+        f"Evaluation: {evaluation.summary}",
+        f"Protection: {evaluation.protection}",
+        f"Hardening:  {evaluation.hardening}",
+    ]
+    if evaluation.observed_facts:
+        lines.extend(("", "Observed:", *(f"  - {fact}" for fact in evaluation.observed_facts)))
+    return Text("\n".join(lines)), Text(f"Action: {evaluation.recommended_action}")
 
 
 def _legacy_summary_headline_and_recommendation(result: ScanResult) -> tuple[Text, Text]:

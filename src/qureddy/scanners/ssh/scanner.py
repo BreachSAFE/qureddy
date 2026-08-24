@@ -84,7 +84,7 @@ def build_ssh_failure_result(
             highest_severity=None,
             readiness=Readiness.UNKNOWN,
             failure_category=failure_category,
-            interpretation=build_interpretation([], [evidence], failure_category),
+            interpretation=build_interpretation([], [evidence], failure_category, protocol="ssh"),
         ),
     )
 
@@ -286,7 +286,7 @@ def _build_ssh_success_result(
             highest_severity=highest,
             readiness=readiness,
             failure_category=None,
-            interpretation=build_interpretation(findings, evidence, None),
+            interpretation=build_interpretation(findings, evidence, None, protocol="ssh"),
         ),
     )
 

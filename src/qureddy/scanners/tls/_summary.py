@@ -40,7 +40,7 @@ def build_summary(
         highest_severity=highest_severity(findings),
         readiness=scan_readiness(findings),
         failure_category=failure_category,
-        interpretation=build_interpretation(findings, evidence, failure_category),
+        interpretation=build_interpretation(findings, evidence, failure_category, protocol="tls"),
     )
 
 

@@ -220,6 +220,13 @@ need stable filtering should continue to use the enum fields above.
 | `display.quantum_protection` | What PQC key-exchange evidence was observed |
 | `display.future_quantum_risk` | HNDL/downgrade interpretation in plain language |
 | `display.current_hygiene` | Present-day protocol hardening interpretation |
+| `display.evaluation` | Evidence-backed, protocol-neutral CISO evaluation object |
+| `display.evaluation.summary` | Plain-language endpoint assessment |
+| `display.evaluation.hndl_risk` | Explicit future Harvest-Now, Decrypt-Later risk statement |
+| `display.evaluation.protection` | Observed post-quantum protection level |
+| `display.evaluation.hardening` | Present-day hardening conclusion |
+| `display.evaluation.recommended_action` | Evidence-backed next action |
+| `display.evaluation.observed_facts` | Flat list of algorithms and certificate facts observed by the adapter |
 
 ## 11. Enumerated values
 
@@ -261,7 +268,7 @@ not a captured current posture for the target.
     "started_at": "2026-07-27T00:00:00Z",
     "completed_at": "2026-07-27T00:00:01Z",
     "scanner_name": "ssh",
-    "scanner_version": "0.2.57",
+    "scanner_version": "0.2.58",
     "status": "completed",
     "total_attempts": 1
   },

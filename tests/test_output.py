@@ -187,9 +187,9 @@ def test_hndl_first_summary_is_rendered_from_canonical_interpretation() -> None:
 
     assert "Future Harvest-Now, Decrypt-Later Risk (HNDL):" in out
     assert "Protected today, but a classical downgrade path remains" in out
-    assert "Quantum protection observed: Hybrid PQC key exchange observed" in out
-    assert "Current security hardening:   Protocol hardening is required" in out
-    assert "Overall assessment:           Hybrid PQC protection with hardening required" in out
+    assert "Evaluation: TLS hybrid post-quantum protection" in out
+    assert "Protection: Hybrid post-quantum protection observed" in out
+    assert "Hardening:  Protocol hardening is required" in out
 
 
 def test_failed_hybrid_probe_headline_does_not_claim_classical_only() -> None:

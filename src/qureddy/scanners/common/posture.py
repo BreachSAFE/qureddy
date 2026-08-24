@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from qureddy.core.evaluation import InterpretationDisplay, PostureEvaluation
 from qureddy.core.models import (
     AxisStatus,
     Evidence,
@@ -11,12 +12,15 @@ from qureddy.core.models import (
     Finding,
     HndlExposure,
     HygieneStatus,
-    InterpretationDisplay,
     PostureAxes,
     PqcSupport,
     Readiness,
     ScanInterpretation,
 )
+from qureddy.scanners.common.evaluation import (
+    evaluate_posture,
+)
+from qureddy.scanners.common.evaluation import reason_codes as build_reason_codes
 from qureddy.scanners.common.rollup import scan_readiness
 
 POLICY_ID = "qureddy-readiness"
@@ -232,6 +236,7 @@ def _display(
     hndl_exposure: HndlExposure,
     hygiene_status: HygieneStatus,
     not_testable: bool,
+    evaluation: PostureEvaluation,
 ) -> InterpretationDisplay:
     """Translate stable machine statuses into concise CISO-facing language."""
     if not_testable:
@@ -240,6 +245,7 @@ def _display(
             quantum_protection="PQC capability could not be tested",
             future_quantum_risk="Exposure is unknown",
             current_hygiene="Security hygiene could not be assessed",
+            evaluation=evaluation,
         )
 
     quantum_protection = {
@@ -268,6 +274,7 @@ def _display(
         quantum_protection=quantum_protection,
         future_quantum_risk=future_quantum_risk,
         current_hygiene=current_hygiene,
+        evaluation=evaluation,
     )
 
 
@@ -307,39 +314,15 @@ def _build_axes(
     )
 
 
-def _reason_codes(
-    findings: list[Finding], failure_category: FailureCategory | None
-) -> tuple[str, ...]:
-    types, _rules, hybrid, pure_pq, classical, hybrid_failed = _signals(findings)
-    candidates = (
-        (hybrid, "hybrid_pqc_observed"),
-        (pure_pq, "pure_pq_observed"),
-        (hybrid_failed, "hybrid_probe_failed"),
-        (classical, "classical_kex_negotiated"),
-        ("tls.cert.classical_signature" in types, "classical_certificate_signature"),
-        (
-            "tls.legacy.protocol_offered" in types,
-            "deprecated_protocol_observed",
-        ),
-        (
-            bool({"ssh.kex.weak", "ssh.hostkey.weak", "ssh.transport.weak"} & types),
-            "weak_classical_algorithm_observed",
-        ),
-    )
-    codes = [code for present, code in candidates if present]
-    if failure_category is not None:
-        codes.append(failure_category.value)
-    return tuple(dict.fromkeys(codes))
-
-
 def build_interpretation(
     findings: list[Finding],
     evidence: list[Evidence],
     failure_category: FailureCategory | None,
+    protocol: str | None = None,
 ) -> ScanInterpretation:
     """Build stable posture axes and provenance from observed findings."""
     axes = _build_axes(findings, evidence, failure_category)
-    reason_codes = _reason_codes(findings, failure_category)
+    reason_codes = build_reason_codes(findings, failure_category)
     types, _rules, hybrid, pure_pq, classical, _hybrid_failed = _signals(findings)
     not_testable = _is_not_testable(failure_category)
     headline, recommended_action = _ciso_text(axes, reason_codes)
@@ -355,6 +338,14 @@ def build_interpretation(
         not_testable=not_testable,
         has_findings=bool(findings),
     )
+    evaluation = evaluate_posture(
+        findings,
+        evidence,
+        protocol=protocol,
+        support=axes.pqc_support,
+        hndl_exposure=hndl_exposure,
+        hygiene_status=hygiene_status,
+    )
     return ScanInterpretation(
         effective=scan_readiness(findings),
         headline=headline,
@@ -364,6 +355,7 @@ def build_interpretation(
             hndl_exposure=hndl_exposure,
             hygiene_status=hygiene_status,
             not_testable=not_testable,
+            evaluation=evaluation,
         ),
         hndl_exposure=hndl_exposure,
         hygiene_status=hygiene_status,
