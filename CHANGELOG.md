@@ -17,6 +17,14 @@ versions follow [PEP 440](https://peps.python.org/pep-0440/).
   packaging checks, and installation guidance no longer imply that the public PyPI
   package exists or should be probed before an explicit authorization.
 
+## [0.9.0.2] - 2026-08-25
+
+### Changed
+
+- Removed personal-owner links and wording from public documentation and
+  integration guidance. The pinned golden CI workflow remains unchanged until
+  its repository is transferred to the BreachSAFE organization.
+
 ## [0.9.0.1] - 2026-08-24
 
 ### Fixed
@@ -758,6 +766,7 @@ versions follow [PEP 440](https://peps.python.org/pep-0440/).
 69. [0.2.72](#0272---2026-08-24)
 70. [0.9.0.0](#0900---2026-08-24)
 71. [0.9.0.1](#0901---2026-08-24)
+72. [0.9.0.2](#0902---2026-08-25)
 
 ## [0.2.12] - 2026-07-28
 
