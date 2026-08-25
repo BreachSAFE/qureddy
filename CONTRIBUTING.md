@@ -22,6 +22,7 @@ Thanks for considering a contribution. This document covers what you need to kno
 9. [Commits](#9-commits)
 10. [License](#10-license)
 11. [Code of Conduct](#11-code-of-conduct)
+12. [Maintainers](#12-maintainers)
 
 ## 1. Before you contribute
 
@@ -31,6 +32,7 @@ Read these in order:
 2. [`docs/explanation/architecture.md`](docs/explanation/architecture.md); project orientation and settled architecture.
 3. [`docs/contributors/coding-rules.md`](docs/contributors/coding-rules.md); engineering standards. **Source of truth.** Read fully before writing code.
 4. [`docs/contributors/examples.md`](docs/contributors/examples.md); good-vs-bad code patterns. Read before writing the first file in a new module.
+5. [`MAINTAINERS.md`](MAINTAINERS.md); review and release authority.
 
 ## 2. Project state
 
@@ -176,3 +178,13 @@ By contributing, you confirm that you have authority to contribute the material 
 ## 11. Code of Conduct
 
 See [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md). The short version: be respectful, assume good faith, focus on the code.
+
+## 12. Maintainers
+
+[`MAINTAINERS.md`](MAINTAINERS.md) identifies the current project maintainer and the
+review and release responsibilities that require maintainer approval. The repository's
+[`CODEOWNERS`](.github/CODEOWNERS) file routes changes to the maintainer automatically.
+
+Contributors do not need package-publishing credentials. Releases are built and published
+by the protected GitHub Actions release workflow after review and the repository release
+gate pass.

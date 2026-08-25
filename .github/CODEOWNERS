@@ -1,0 +1,12 @@
+# QuReddy review routing. The project maintainer is the default owner until
+# additional maintainers are explicitly recorded in MAINTAINERS.md.
+* @paul007ex
+
+# High-impact surfaces require maintainer review even when ownership expands.
+/pyproject.toml @paul007ex
+/uv.lock @paul007ex
+/CHANGELOG.md @paul007ex
+/.github/ @paul007ex
+/.github/workflows/ @paul007ex
+/.github/CODEOWNERS @paul007ex
+/.github/PULL_REQUEST_TEMPLATE.md @paul007ex
