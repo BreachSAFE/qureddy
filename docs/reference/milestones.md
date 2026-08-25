@@ -48,16 +48,9 @@ proof, the repository-owned local release gate, documentation truth-up, and the
 TestPyPI rehearsal) is complete. QuReddy ships its current releases to TestPyPI
 and publishes a container image to GHCR.
 
-Active work is tracked in GitHub milestones. As of 2026-08-22 the open milestones
-are:
-
-| Milestone | Focus | State |
-| --- | --- | --- |
-| `0.2.28 - hygiene, docs & deps` | Documentation truth-up, dependency and packaging hygiene | In progress |
-| `0.2.29 - PQC & CBOM correctness` | Post-quantum posture and CycloneDX CBOM correctness | In progress |
-| `0.3.0 - OSS Web UI` | Open-source web UI edition; the largest body of open work | In progress |
-| `Tech debt - code de-duplication` | Removing duplicated code paths | In progress |
-| `Future - SSH scanning` | Deeper SSH and SFTP scanning scope | Planned |
+Active work is tracked in GitHub milestones. This page intentionally does not
+copy a versioned milestone table that would drift from the tracker; use the
+linked milestones list for current names, owners, and state.
 
 The always-current view is the
 [milestones list](https://github.com/breachsafe/qureddy/milestones) and the
