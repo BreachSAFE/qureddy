@@ -8,38 +8,44 @@
 
 ## 1. Current collection contract
 
-QuReddy currently has TLS and SSH scanners behind a typed collection seam:
+QuReddy currently routes TLS and SSH through a capability-based collector registry:
 
 ```text
-CLI -> Scanner[ScanTarget]
-      ├── TLSScanner -> ScanResult
-      └── SSHScanner -> ScanResult
-                         |
-                         v
-                 Rich / JSON / CBOM / JSONL
-                         |
-                 Qurum / mint-oscal -> OSCAL
+CLI -> ScanSource -> CollectorRegistry
+                       ├── NativeTLSCollector -> TLSScanner
+                       └── NativeSSHCollector -> SSHScanner
+                                      |
+                                      v
+                              CollectionResult
+                                      |
+                              semantic evaluation
+                                      |
+                         Rich / JSON / CBOM / JSONL
+                                      |
+                         Qurum / mint-oscal -> OSCAL
 ```
 
 ```mermaid
 flowchart LR
-    cli["CLI"] --> registry["Current scanner selection"]
-    registry --> tls["TLS adapter"]
-    registry --> ssh["SSH adapter"]
-    tls --> result["Canonical ScanResult"]
-    ssh --> result
-    result --> rich["Rich"]
-    result --> json["JSON / JSONL"]
-    result --> cbom["CycloneDX CBOM"]
+    cli["CLI"] --> source["ScanSource"]
+    source --> registry["CollectorRegistry"]
+    registry --> tls["NativeTLSCollector"]
+    registry --> ssh["NativeSSHCollector"]
+    tls --> tls_scan["TLSScanner"]
+    ssh --> ssh_scan["SSHScanner"]
+    tls_scan --> result["CollectionResult"]
+    ssh_scan --> result
+    result --> evaluation["Semantic evaluation"]
+    evaluation --> rich["Rich"]
+    evaluation --> json["JSON / JSONL"]
+    evaluation --> cbom["CycloneDX CBOM"]
 ```
 
-`Scanner` owns only collection: a typed subject enters and the existing
-`ScanResult` leaves. Renderers and OSCAL conversion stay downstream, where they
-have format-specific responsibilities. This is the intended boundary for a
-future PKI scanner; the current implementation still has a small amount of
-legacy output coupling to TLS helpers, tracked in #462. New output code must
-consume canonical core models and neutral semantic facts rather than importing
-protocol-private scanner modules.
+`Collector` owns acquisition: a validated `ScanSource` enters and a
+`CollectionResult` leaves. The result carries findings, evidence, provenance,
+and a typed failure state. Semantic evaluation and output rendering stay
+downstream. New output code must consume canonical core models and neutral
+semantic facts rather than importing protocol-private scanner modules.
 
 ## 2. Dependency boundary
 
@@ -56,10 +62,12 @@ not open sockets, invoke OpenSSL, or import protocol-private scanner modules.
 
 ## 3. Deferred extension
 
-The future extension point is deliberately deferred: do not add a general
-scanner registry or replace `ScanTarget` until a third scanner source is
-approved. TLS/OpenSSL group names remain TLS-owned, SSH algorithm names remain
-SSH-owned, and only protocol-neutral facts belong in the shared layer.
+The registry is already the extension point. Add a collector only when a third
+source is approved. TLS/OpenSSL group names remain TLS-owned, SSH algorithm names
+remain SSH-owned, and only protocol-neutral facts belong in the shared layer.
+
+External tools belong behind a collector-owned adapter. They do not introduce a
+new output path or a second posture model.
 
 `scan_ssh` remains as a compatibility function.  `SSHScanner` is a thin adapter
 over that implementation, while `TLSScanner` implements the same seam directly.

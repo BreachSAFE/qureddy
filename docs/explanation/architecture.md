@@ -33,6 +33,8 @@ flowchart TB
     end
 
     subgraph core ["src/qureddy/core/"]
+        contracts["contracts.py"]
+        registry["registry.py"]
         models["models.py"]
         targets["targets.py"]
         policy["policy.py"]
@@ -48,6 +50,10 @@ flowchart TB
         cert_probe["cert_probe.py"]
         tls_parse["parse.py"]
         tls_summary["_summary.py"]
+    end
+
+    subgraph collectors ["src/qureddy/collectors/"]
+        native["native.py"]
     end
 
     subgraph ssh ["src/qureddy/scanners/ssh/"]
@@ -73,8 +79,12 @@ flowchart TB
     main --> ssh_cli
     tls_cli --> execute
     ssh_cli --> execute
-    execute --> tls_scanner
-    execute --> ssh_scanner
+    tls_cli --> contracts
+    ssh_cli --> contracts
+    execute --> registry
+    registry --> native
+    native --> tls_scanner
+    native --> ssh_scanner
     execute --> render
 
     tls_scanner --> openssl_probe
