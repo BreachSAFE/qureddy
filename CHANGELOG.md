@@ -238,7 +238,7 @@ versions follow [PEP 440](https://peps.python.org/pep-0440/).
 
 - **MAX quality gates remain executable in GitHub Actions** (`#360`, `#414`):
   the local fail-closed gate is restored while the private common workflow is
-  unavailable across the `breachsafe`/`paul007ex` organization boundary.
+  unavailable across the repository-ownership boundary.
 - **Release identity is consistent**: package metadata, Docker banners, golden
   fixtures, and lock data all report `0.2.48`.
 

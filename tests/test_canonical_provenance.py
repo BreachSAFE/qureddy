@@ -24,7 +24,7 @@ def test_sibling_product_reference_is_not_treated_as_legacy_repository(
     """The UX image name shares a prefix but is a different product/repository."""
     candidate = tmp_path / "candidate.md"
     candidate.write_text(
-        "ghcr.io/paul007ex/qureddy-ux:latest\n",
+        "ghcr.io/legacy-owner/qureddy-ux:latest\n",
         encoding="utf-8",
     )
     monkeypatch.setattr(provenance, "tracked_files", lambda _root: [candidate])

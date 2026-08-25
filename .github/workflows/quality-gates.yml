@@ -5,13 +5,12 @@
 # INTERIM WIRING. This runs the same tools specified by breachsafe-common's
 # reusable `quality-gates-python.yml` directly on Python 3.14, so the gate is
 # live now without waiting on its prerequisites. Once breachsafe-common is
-# tagged `v1` and `ghcr.io/paul007ex/breachsafe-container:3.14-openssl3.5` is
-# published, this whole file collapses to a 4-line caller job that invokes the
-# reusable workflow at:
-#   paul007ex/breachsafe-common/.github/workflows/quality-gates-python.yml (tag v1)
+# tagged `v1` and the golden container is published, this whole file collapses
+# to a 4-line caller job that invokes the reusable workflow at the golden
+# Python workflow (tag v1)
 #   with: module: qureddy, coverage_min: 90, container_tag: 3.14-openssl3.5
 # The reusable caller was tested at v1.1.1, but GitHub rejects private
-# cross-owner reusable workflows before job creation (breachsafe -> paul007ex).
+# cross-owner reusable workflows before job creation.
 # Keep this fail-closed local implementation until the common workflow is hosted
 # under the breachsafe organization; tracked in #360.
 #

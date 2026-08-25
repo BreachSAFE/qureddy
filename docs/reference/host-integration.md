@@ -5,9 +5,8 @@
 
 [![Diátaxis reference](https://img.shields.io/badge/Di%C3%A1taxis-reference-1f6feb?style=flat-square)](https://diataxis.fr/reference/)
 
-This page documents the contract used by a host such as
-[`breachsafe-ux`](https://github.com/paul007ex/breachsafe-ux) to run QuReddy and
-consume its machine-readable result.
+This page documents the contract used by a BreachSAFE EnXemble host to run
+QuReddy and consume its machine-readable result.
 
 ## Contents
 
@@ -26,9 +25,8 @@ host to call. A packaged installation places `qureddy` on `PATH`; a container
 deployment can use the descriptor's Docker fallback image
 `ghcr.io/breachsafe/qureddy:<tag>`.
 
-The canonical descriptors are `tools/qureddy/qureddy.yaml` for TLS and
-`tools/qureddy-ssh/qureddy-ssh.yaml` for SSH in the
-[`breachsafe-ux` repository](https://github.com/paul007ex/breachsafe-ux).
+The host's canonical descriptors are `tools/qureddy/qureddy.yaml` for TLS and
+`tools/qureddy-ssh/qureddy-ssh.yaml` for SSH.
 
 ## 2. Command shape
 

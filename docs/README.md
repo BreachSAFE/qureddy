@@ -7,7 +7,7 @@
 [![CISA quantum guidance](https://img.shields.io/badge/CISA-quantum%20guidance-1a4480?style=flat-square)](https://www.cisa.gov/topics/cyber-threats-and-advisories/quantum)
 [![OWASP crypto guidance](https://img.shields.io/badge/OWASP-crypto%20guidance-000000?style=flat-square&logo=owasp)](https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html)
 [![CycloneDX 1.7 CBOM](https://img.shields.io/badge/CycloneDX-1.7%20CBOM-2f6690?style=flat-square)](https://cyclonedx.org/docs/1.7/)
-[![SCF Quantum Security mapping](https://img.shields.io/badge/SCF-Quantum%20Security%20mapping-4b5563?style=flat-square)](https://github.com/paul007ex/breachsafe-mint-oscal)
+[![SCF Quantum Security mapping](https://img.shields.io/badge/SCF-Quantum%20Security%20mapping-4b5563?style=flat-square)](https://github.com/BreachSAFE)
 
 This directory follows **[Diátaxis](https://diataxis.fr)**. Each documentation page belongs to one of four quadrants, and each page has one job.
 
