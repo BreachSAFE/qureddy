@@ -353,13 +353,18 @@ artifact checks.
 
 ## Open-source stack
 
-<p>
-  <a href="https://www.python.org/"><img src="https://cdn.simpleicons.org/python/3776AB" alt="Python" width="40" height="40"></a>
-  <a href="https://click.palletsprojects.com/"><img src="https://cdn.simpleicons.org/click/1F6FEB" alt="Click" width="40" height="40"></a>
-  <a href="https://github.com/Textualize/rich"><img src="https://img.shields.io/badge/Rich-terminal-8b5cf6?style=flat-square" alt="Rich terminal output"></a>
-  <a href="https://www.openssl.org/"><img src="https://cdn.simpleicons.org/openssl/721412" alt="OpenSSL" width="40" height="40"></a>
-  <a href="https://cyclonedx.org/"><img src="https://img.shields.io/badge/CycloneDX-CBOM-2f6690?style=flat-square" alt="CycloneDX CBOM"></a>
-  <a href="https://docs.astral.sh/uv/"><img src="https://img.shields.io/badge/uv-tooling-6f42c1?style=flat-square" alt="uv tooling"></a>
+<p align="center">
+  <a href="https://www.python.org/"><img src="https://cdn.simpleicons.org/python/3776AB" alt="Python" width="48" height="48"></a>&nbsp;&nbsp;
+  <a href="https://www.openssl.org/"><img src="https://cdn.simpleicons.org/openssl/00D4FF" alt="OpenSSL" width="48" height="48"></a>&nbsp;&nbsp;
+  <a href="https://www.docker.com/"><img src="https://cdn.simpleicons.org/docker/2496ED" alt="Docker" width="48" height="48"></a>&nbsp;&nbsp;
+  <a href="https://test.pypi.org/project/breachsafe-qureddy/"><img src="https://cdn.simpleicons.org/pypi/3775A9" alt="TestPyPI" width="48" height="48"></a>
+</p>
+
+<p align="center">
+  CLI: <a href="https://click.palletsprojects.com/">Click</a> ·
+  <a href="https://github.com/Textualize/rich">Rich</a>
+  &nbsp;|&nbsp; Artifacts: <a href="https://cyclonedx.org/">CycloneDX CBOM</a>
+  &nbsp;|&nbsp; Tooling: <a href="https://docs.astral.sh/uv/">uv</a>
 </p>
 
 ## 13. License
