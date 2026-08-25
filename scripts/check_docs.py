@@ -30,7 +30,10 @@ def tracked_markdown_files() -> list[Path]:
     if git is None:
         raise RuntimeError("git is required to enumerate tracked documentation")
     result = subprocess.run(  # noqa: S603 - resolved Git executable; fixed arguments
-        [git, "ls-files", "*.md"],
+        # Containerized CI can check out the workspace under a different UID.
+        # Scope Git's trust exception to this resolved repository only; never
+        # use the global wildcard form.
+        [git, "-c", f"safe.directory={REPOSITORY_ROOT}", "ls-files", "*.md"],
         cwd=REPOSITORY_ROOT,
         check=True,
         capture_output=True,
