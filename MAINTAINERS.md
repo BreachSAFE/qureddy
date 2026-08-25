@@ -6,6 +6,12 @@
 This file records the people responsible for project decisions and release operations.
 It is intentionally small: contribution does not require maintainer access.
 
+## Contents
+
+1. [Current maintainer](#current-maintainer)
+2. [Review and release authority](#review-and-release-authority)
+3. [Contributors](#contributors)
+
 ## Current maintainer
 
 | GitHub account | Responsibilities |
