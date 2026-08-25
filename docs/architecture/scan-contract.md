@@ -5,6 +5,8 @@
 1. [Current collection contract](#1-current-collection-contract)
 2. [Dependency boundary](#2-dependency-boundary)
 3. [Deferred extension](#3-deferred-extension)
+4. [Result lifecycle](#4-result-lifecycle)
+5. [Extension checklist](#5-extension-checklist)
 
 ## 1. Current collection contract
 
@@ -72,3 +74,42 @@ new output path or a second posture model.
 `scan_ssh` remains as a compatibility function.  `SSHScanner` is a thin adapter
 over that implementation, while `TLSScanner` implements the same seam directly.
 The adapter is intentionally small and contains no scanning logic.
+
+## 4. Result lifecycle
+
+```mermaid
+sequenceDiagram
+    participant CLI
+    participant R as Registry
+    participant C as Collector
+    participant S as Scanner or tool adapter
+    participant E as Evaluator
+    participant O as Output projection
+
+    CLI->>R: select(ScanSource)
+    R-->>CLI: Collector
+    CLI->>C: collect(source)
+    C->>S: execute acquisition
+    S-->>C: observations or typed failure
+    C-->>CLI: CollectionResult
+    CLI->>E: evaluate(result)
+    E-->>CLI: canonical ScanResult
+    CLI->>O: render(scan_result)
+    O-->>CLI: Rich, JSON, JSONL, or CBOM
+```
+
+The lifecycle has one canonical result. `--output-dir` invokes the projections
+against that result; it does not repeat the network scan.
+
+## 5. Extension checklist
+
+| Change | Required location | Required proof |
+| --- | --- | --- |
+| New source kind | `core/contracts.py`, registry registration | deterministic selection and unsupported-source tests |
+| New native collector | `collectors/` | typed failures, provenance, real CLI test |
+| External tool | collector-owned adapter | version/timeout/exit-status capture and parser fixtures |
+| New output format | `output/` and CLI format registry | parity with canonical findings and stream contract |
+| New policy fact | protocol policy module | unit tests plus Rich/JSON/CBOM parity |
+
+Do not add a source-specific output path. Do not make renderers import scanner
+modules. Do not make a collector mutate another collector's result.

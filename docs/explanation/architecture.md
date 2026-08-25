@@ -18,6 +18,11 @@ supported projections.
 6. [Evidence boundary](#6-evidence-boundary)
 7. [Failure routing](#7-failure-routing)
 8. [Related documentation](#8-related-documentation)
+9. [Runtime topology](#9-runtime-topology)
+10. [Canonical result model](#10-canonical-result-model)
+11. [Collector and tool-adapter boundary](#11-collector-and-tool-adapter-boundary)
+12. [Partial-failure state machine](#12-partial-failure-state-machine)
+13. [Test coverage architecture](#13-test-coverage-architecture)
 
 ## 1. Component map
 
@@ -259,3 +264,156 @@ The exact categories and retry state machine are documented in the
 - [CycloneDX CBOM output](../reference/cbom.md)
 - [CLI reference](../reference/cli.md)
 - [Contributor coding rules](../contributors/coding-rules.md)
+
+## 9. Runtime topology
+
+The process has one orchestration path. Format selection changes serialization,
+not collection or policy evaluation.
+
+```mermaid
+flowchart TB
+    user["Operator or CI"] --> cli["qureddy scan tls|ssh"]
+    cli --> parse["Target and option validation"]
+    parse --> request["ScanSource\n(kind, endpoint, policy, retry)"]
+    request --> registry["CollectorRegistry\n(deterministic selection)"]
+
+    subgraph acquisition["Acquisition boundary"]
+        registry --> collector["Collector"]
+        collector --> tlsprobe["OpenSSL probe set"]
+        collector --> sshprobe["Native SSH socket probe"]
+        collector --> future["Future tool adapter\n(ssh-audit, nmap, PKI)"]
+    end
+
+    acquisition --> result["CollectionResult\nobservations + findings + failures + provenance"]
+    result --> policy["Semantic policy\nseverity, readiness, HNDL"]
+    policy --> canonical["Canonical ScanResult"]
+    canonical --> fanout["Output fan-out"]
+    fanout --> rich["Rich terminal"]
+    fanout --> json["JSON"]
+    fanout --> jsonl["JSONL records"]
+    fanout --> cbom["CycloneDX CBOM"]
+    fanout --> bundle["--output-dir bundle"]
+```
+
+The acquisition boundary is the only layer allowed to open a socket or execute
+a native tool. Policy has no transport dependency. Renderers have no scanner
+dependency. This keeps a new source or output from multiplying scan paths.
+
+## 10. Canonical result model
+
+```mermaid
+classDiagram
+    class ScanSource {
+        +SourceKind kind
+        +str endpoint
+        +str display_name
+        +ToolPolicy policy
+        +RetryPolicy retry
+    }
+    class CollectionResult {
+        +tuple observations
+        +tuple findings
+        +tuple failures
+        +Provenance provenance
+        +bool complete
+    }
+    class ScanResult {
+        +ScanTarget target
+        +ScanSummary summary
+        +tuple findings
+        +tuple evidence
+        +tuple failures
+        +Provenance provenance
+    }
+    class OutputProjection {
+        +render(ScanResult)
+    }
+    ScanSource --> CollectionResult : collector returns
+    CollectionResult --> ScanResult : semantic evaluation
+    ScanResult --> OutputProjection : every renderer consumes
+```
+
+| Model | Owns | Does not own |
+| --- | --- | --- |
+| `ScanSource` | validated source kind, endpoint, policy, retry options | sockets, subprocesses, rendered text |
+| `CollectionResult` | raw observations, typed failures, acquisition provenance | final wording, output formatting |
+| `ScanResult` | normalized findings, summary, evidence references | network calls, tool invocation |
+| output projection | serialization and presentation | protocol classification or retries |
+
+The same finding identity and evidence reference flow through Rich, JSON,
+JSONL, and CBOM. A projection may omit presentation-only fields, but it must
+not invent a new readiness or severity calculation.
+
+## 11. Collector and tool-adapter boundary
+
+```mermaid
+flowchart LR
+    registry["CollectorRegistry"] --> native["NativeTLSCollector"]
+    registry --> ssh["NativeSSHCollector"]
+    registry -. future .-> adapter["ExternalToolCollector"]
+
+    native --> tls["TLSScanner"]
+    ssh --> sshscan["SSHScanner"]
+    adapter --> port["ToolAdapter protocol"]
+    port --> openssl["OpenSSL"]
+    port --> sshaudit["ssh-audit"]
+    port --> nmap["nmap"]
+
+    tls --> normalize["Normalize observations"]
+    sshscan --> normalize
+    port --> normalize
+    normalize --> contract["CollectionResult"]
+```
+
+An external tool is an acquisition implementation, not a second scanner
+contract. The adapter records command identity, version, arguments policy,
+exit status, timeout, and parsed observations in provenance. Tool output is
+untrusted input and crosses the same parser boundary as native probe output.
+
+Adding a tool therefore changes one collector and its tests. It does not add a
+new CLI command, policy engine, or renderer.
+
+## 12. Partial-failure state machine
+
+```mermaid
+stateDiagram-v2
+    [*] --> Validated
+    Validated --> Collecting
+    Collecting --> EvidenceAdded: probe succeeds
+    Collecting --> RetryableFailure: typed retry category
+    RetryableFailure --> Collecting: retry budget remains
+    RetryableFailure --> Partial: budget exhausted
+    Collecting --> Partial: independent probe fails
+    EvidenceAdded --> Collecting: probes remain
+    EvidenceAdded --> Complete: all required probes finish
+    Partial --> Evaluated
+    Complete --> Evaluated
+    Evaluated --> Rendered
+    Rendered --> [*]
+```
+
+`Partial` is a valid result state. It preserves successful evidence and the
+typed failures that explain missing evidence. A failed optional probe cannot
+erase an earlier observation, and a successful probe cannot imply that an
+unrun probe passed. Exit status, summary wording, and machine output derive
+from the same failure records.
+
+## 13. Test coverage architecture
+
+```mermaid
+flowchart TB
+    contracts["Contract tests\nregistry, models, failure typing"] --> unit["Unit tests"]
+    scanners["Scanner tests\nreal parsers and probe fixtures"] --> unit
+    cli["CLI subprocess tests\nreal executable, exit codes, streams"] --> integration["Integration tests"]
+    endpoints["Live endpoint probes\nTLS + SSH corpus"] --> integration
+    projections["JSON / JSONL / CBOM parity"] --> integration
+    integration --> gates["Quality gates"]
+    unit --> gates
+    gates --> release["Release gate\nwheel, image, attestation"]
+```
+
+The minimum acceptance path for a new collector is: contract tests, parser
+fixtures, a real CLI subprocess test, output parity checks, and a live endpoint
+pressure test where network access is available. A renderer-only change still
+runs the canonical result and projection tests; it does not duplicate scanner
+fixtures.
