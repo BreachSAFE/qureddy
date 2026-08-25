@@ -10,6 +10,10 @@
 [![TestPyPI package](https://img.shields.io/badge/TestPyPI-breachsafe--qureddy-blue?style=flat-square&logo=pypi)](https://test.pypi.org/project/breachsafe-qureddy/)
 [![OpenSSL 3.5.7 LTS](https://img.shields.io/badge/OpenSSL-3.5.7%20LTS-721412?style=flat-square&logo=openssl)](https://github.com/openssl/openssl/releases/tag/openssl-3.5.7)
 [![CycloneDX 1.7 CBOM](https://img.shields.io/badge/CycloneDX-1.7%20CBOM-2f6690?style=flat-square)](https://cyclonedx.org/docs/1.7/)
+[![NIST PQC references](https://img.shields.io/badge/NIST-PQC%20references-005ea8?style=flat-square)](https://csrc.nist.gov/projects/post-quantum-cryptography)
+[![CISA quantum guidance](https://img.shields.io/badge/CISA-quantum%20guidance-1a4480?style=flat-square)](https://www.cisa.gov/topics/cyber-threats-and-advisories/quantum)
+[![OWASP crypto guidance](https://img.shields.io/badge/OWASP-crypto%20guidance-000000?style=flat-square&logo=owasp)](https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html)
+[![PQC evidence](https://img.shields.io/badge/QuReddy-PQC%20evidence-6f42c1?style=flat-square)](docs/explanation/hndl.md)
 [![EnXemble integration](https://img.shields.io/badge/BreachSAFE-EnXemble-6f42c1?style=flat-square&logo=github)](https://github.com/BreachSAFE)
 
 QuReddy is an open-source command line scanner for post-quantum readiness at
