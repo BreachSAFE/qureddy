@@ -7,12 +7,15 @@
 [![Type Checked: mypy strict](https://img.shields.io/badge/type%20check-mypy%20strict-blue?style=flat-square)](https://mypy-lang.org/)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/breachsafe/qureddy/badge)](https://securityscorecards.dev/viewer/?uri=github.com/breachsafe/qureddy)
 [![GHCR image](https://img.shields.io/badge/GHCR-qureddy-blue?style=flat-square&logo=docker)](https://github.com/BreachSAFE/qureddy/pkgs/container/qureddy)
+[![TestPyPI package](https://img.shields.io/badge/TestPyPI-breachsafe--qureddy-blue?style=flat-square&logo=pypi)](https://test.pypi.org/project/breachsafe-qureddy/)
 
 QuReddy is an open-source command line scanner for post-quantum readiness at
 TLS and SSH endpoints. It records the protocol and cryptographic evidence that
 the endpoint exposes to a client, then reports the observed readiness posture.
 
 Container image: [`ghcr.io/breachsafe/qureddy:latest`](https://github.com/BreachSAFE/qureddy/pkgs/container/qureddy)
+
+Python package: [`breachsafe-qureddy` on TestPyPI](https://test.pypi.org/project/breachsafe-qureddy/)
 
 TLS scans use a local OpenSSL 3.5.7 LTS binary. SSH scans read the server's
 cleartext KEXINIT offer directly and do not require OpenSSL.
