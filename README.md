@@ -7,6 +7,9 @@
 # BreachSAFE QuReddy
 
 [![Latest release](https://img.shields.io/github/v/release/BreachSAFE/qureddy?display_name=tag&style=flat-square)](https://github.com/BreachSAFE/qureddy/releases/latest)
+[![CI](https://github.com/BreachSAFE/qureddy/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/BreachSAFE/qureddy/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/BreachSAFE/qureddy/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/BreachSAFE/qureddy/actions/workflows/codeql.yml)
+[![Container](https://github.com/BreachSAFE/qureddy/actions/workflows/container.yml/badge.svg?branch=main)](https://github.com/BreachSAFE/qureddy/actions/workflows/container.yml)
 [![Python](https://img.shields.io/badge/python-3.14%2B-blue?style=flat-square&logo=python&logoColor=white)](https://www.python.org/downloads/)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue?style=flat-square)](LICENSE)
 [![Code Style: Ruff](https://img.shields.io/badge/code%20style-ruff-D7FF64?style=flat-square&logo=ruff&logoColor=black)](https://docs.astral.sh/ruff/)
