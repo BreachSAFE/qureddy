@@ -89,7 +89,15 @@ Homebrew can install Python and pipx:
 ```bash
 brew install python@3.14 pipx
 pipx ensurepath
-pipx install --python "$(brew --prefix python@3.14)/bin/python3.14" breachsafe-qureddy
+```
+
+For the current TestPyPI-only release, use both indexes:
+
+```bash
+pipx install --python "$(brew --prefix python@3.14)/bin/python3.14" \
+  --index-url https://test.pypi.org/simple/ \
+  --pip-args '--extra-index-url https://pypi.org/simple/' \
+  breachsafe-qureddy
 ```
 
 Do not select `/usr/bin/openssl`; current macOS systems expose LibreSSL at that
@@ -124,7 +132,10 @@ Then run:
 
 ```bash
 pipx ensurepath
-pipx install --python python3.14 breachsafe-qureddy
+pipx install --python python3.14 \
+  --index-url https://test.pypi.org/simple/ \
+  --pip-args '--extra-index-url https://pypi.org/simple/' \
+  breachsafe-qureddy
 ```
 
 Distribution OpenSSL versions vary. Check the installed binary:
@@ -186,7 +197,10 @@ Use this path when an application or CI job already manages an environment:
 ```bash
 python3.14 -m venv .venv
 . .venv/bin/activate
-python -m pip install breachsafe-qureddy
+python -m pip install \
+  --index-url https://test.pypi.org/simple/ \
+  --extra-index-url https://pypi.org/simple/ \
+  breachsafe-qureddy
 qureddy --version
 ```
 
@@ -195,7 +209,10 @@ On Windows PowerShell, activate with:
 ```powershell
 py -3.14 -m venv .venv
 .\.venv\Scripts\Activate.ps1
-python -m pip install breachsafe-qureddy
+python -m pip install `
+  --index-url https://test.pypi.org/simple/ `
+  --extra-index-url https://pypi.org/simple/ `
+  breachsafe-qureddy
 qureddy --version
 ```
 
@@ -254,14 +271,20 @@ Get-Content github-ssh.json | ConvertFrom-Json | Out-Null
 For a pipx installation:
 
 ```bash
-pipx upgrade breachsafe-qureddy
+pipx upgrade \
+  --index-url https://test.pypi.org/simple/ \
+  --pip-args '--extra-index-url https://pypi.org/simple/' \
+  breachsafe-qureddy
 pipx uninstall breachsafe-qureddy
 ```
 
 For a virtual environment:
 
 ```bash
-python -m pip install --upgrade breachsafe-qureddy
+python -m pip install --upgrade \
+  --index-url https://test.pypi.org/simple/ \
+  --extra-index-url https://pypi.org/simple/ \
+  breachsafe-qureddy
 python -m pip uninstall breachsafe-qureddy
 ```
 
@@ -281,7 +304,10 @@ The release metadata requires Python `>=3.14`. Point pipx at Python
 3.14 explicitly:
 
 ```bash
-pipx install --python python3.14 breachsafe-qureddy
+pipx install --python python3.14 \
+  --index-url https://test.pypi.org/simple/ \
+  --pip-args '--extra-index-url https://pypi.org/simple/' \
+  breachsafe-qureddy
 ```
 
 ### TLS scan exits 3

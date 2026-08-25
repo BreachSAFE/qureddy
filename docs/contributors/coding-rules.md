@@ -485,7 +485,7 @@ QuReddy is open source under the Apache License 2.0. Dependencies must be review
 
 QuReddy ships as a native Python package. A container image is tracked separately in issue #72 and must pass its own reproducibility, SBOM, vulnerability, and multi-architecture gates before publication.
 
-1. Native Python package via `pipx install breachsafe-qureddy`. macOS 14+, modern Linux distributions, Windows 10 22H2+.
+1. Native Python package via the documented TestPyPI two-index `pipx install breachsafe-qureddy` command. macOS 14+, modern Linux distributions, Windows 10 22H2+.
 2. Container image published at an immutable release tag and digest after issue #72 passes.
 
 Both paths target the same modern platforms. Neither runs on EOL operating systems (Windows XP/7/8.1, RHEL 6, Ubuntu 16.04 and earlier).
