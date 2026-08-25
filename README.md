@@ -13,10 +13,6 @@ QuReddy is an open-source command line scanner for post-quantum readiness at
 TLS and SSH endpoints. It records the protocol and cryptographic evidence that
 the endpoint exposes to a client, then reports the observed readiness posture.
 
-Container image: [`ghcr.io/breachsafe/qureddy:latest`](https://github.com/BreachSAFE/qureddy/pkgs/container/qureddy)
-
-Python package: [`breachsafe-qureddy` on TestPyPI](https://test.pypi.org/project/breachsafe-qureddy/)
-
 Primary integration: [BreachSAFE EnXemble](https://github.com/BreachSAFE) runs QuReddy
 in its scan engine and imports the JSONL findings, JSON evidence, and CycloneDX CBOM
 artifacts. The EnXemble repository is moving into the BreachSAFE organization; the
