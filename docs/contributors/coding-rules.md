@@ -912,9 +912,10 @@ GitHub branch protection:
 - Restrict deletions
 - Require linear history
 
-The repository ruleset `Pull-request protection` is the source of truth. It has no
-bypass actors: administrator credentials do not permit a direct push to `main` or a
-merge that skips the required checks.
+The repository's GitHub ruleset/branch-protection settings are the source of truth and
+must be verified after every repository-settings change. If the settings API reports no
+active protection, direct pushes and administrator merges are not considered acceptable;
+restore protection before the next release. A workflow file alone is not enforcement.
 
 Public-network live probes, Semgrep auto rules, and ecosystem scoring are advisory
 scheduled/manual signals. They are never required merge checks. The repository-owned local
@@ -929,13 +930,13 @@ Feature branches accumulate WIP commits. Squash to a single, well-described comm
 **Rule 27.4 — No merging without review.**
 At least one approving review on every PR. Self-merging is allowed for solo work but the PR record is non-negotiable. When a second contributor joins, self-merging is forbidden.
 
-**Rule 27.5 — Administrator bypass is disabled.**
-The active repository ruleset has no bypass actors. During an active security incident or
-hosted-platform outage, the maintainer may temporarily change the ruleset only after the
-same candidate commit passes the complete local release gate; the reason, evidence-manifest
-digest, and follow-up action must be recorded in a public issue or security advisory. A
-temporarily bypassed commit is not eligible for a package release until the normal protected
-checks pass and the ruleset is restored.
+**Rule 27.5 — Administrator bypass is disabled when protection is active.**
+During an active security incident or hosted-platform outage, the maintainer may temporarily
+change the ruleset only after the same candidate commit passes the complete local release
+gate; the reason, evidence-manifest digest, and follow-up action must be recorded in a public
+issue or security advisory. A temporarily bypassed commit is not eligible for a package
+release until the normal protected checks pass and the ruleset is restored. If protection is
+absent, this rule is not satisfied and the release gate must stop.
 
 **Rule 27.6 — Sensitive approvals become stale after changes.**
 New commits dismiss approvals on workflow, packaging, release-script, dependency-lock, or

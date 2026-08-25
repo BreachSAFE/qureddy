@@ -172,11 +172,11 @@ For everything else — bug fixes, feature work, architecture changes — the fu
 
 ### On enforcement
 
-The repository is public and `main` is mechanically protected by the active GitHub
-`Pull-request protection` ruleset. Direct pushes, force-pushes, deletion, and merges that
-skip the required PR review or status checks are rejected. The ruleset requires the local
-release gate on Linux/macOS, the PR CI matrix, MAX code-quality, changed-line coverage,
-and CodeQL. It has no bypass actors; any emergency ruleset change must be recorded and
-reverted before a package release.
+The repository is public, but mechanical protection must be verified in GitHub settings;
+the workflow files alone do not enforce it. Before merging or releasing, confirm that
+`main` requires a pull request, an independent approval, the local release gates, the PR
+CI matrix, MAX code-quality, changed-line coverage, and CodeQL, with no bypass actors. If
+the settings check fails, stop the release and restore protection. Any emergency ruleset
+change must be recorded and reverted before a package release.
 
 Until then: the rules above are followed because they are written down, and PRs that violate them are flagged in retrospective audit (e.g., issue #48). The cost of following them — one `## Review:` comment per docs PR — is small enough that the absence of CI enforcement is not a license to skip.
