@@ -9,6 +9,7 @@
     "**/tests/**",
     "**/*.golden",
     "**/conformance/fixtures/**",
-    "**/subprocess_inject/**"
+    "**/subprocess_inject/**",
+    "**/.github/workflows/**"
   ]
 }
