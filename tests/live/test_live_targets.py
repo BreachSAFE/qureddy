@@ -42,7 +42,7 @@ def _openssl_path() -> str:
                 continue
             try:
                 dep = probe_capability(resolved)
-            except (LocalOpenSSLMissing, OSError):
+            except LocalOpenSSLMissing, OSError:
                 continue
             if dep.failure_category is None and dep.supports_x25519mlkem768:
                 return resolved

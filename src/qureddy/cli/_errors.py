@@ -64,7 +64,7 @@ def _stderr_merged_into_stdout(*, default_when_undetermined: bool = False) -> bo
     try:
         stdout_fd = sys.stdout.fileno()
         stderr_fd = sys.stderr.fileno()
-    except (AttributeError, OSError, ValueError):
+    except AttributeError, OSError, ValueError:
         # No real file descriptor: provably not an fd-level `2>&1`. Fail open.
         return False
     try:
@@ -76,7 +76,7 @@ def _stderr_merged_into_stdout(*, default_when_undetermined: bool = False) -> bo
             return _windows_standard_handles_match()
         stdout_stat = os.fstat(stdout_fd)
         stderr_stat = os.fstat(stderr_fd)
-    except (AttributeError, OSError, ValueError):
+    except AttributeError, OSError, ValueError:
         # We hold real fds but cannot tell whether they are merged.
         return default_when_undetermined
     return (stdout_stat.st_dev, stdout_stat.st_ino) == (stderr_stat.st_dev, stderr_stat.st_ino)
