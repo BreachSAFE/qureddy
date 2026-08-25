@@ -268,7 +268,7 @@ not a captured current posture for the target.
     "started_at": "2026-07-27T00:00:00Z",
     "completed_at": "2026-07-27T00:00:01Z",
     "scanner_name": "ssh",
-    "scanner_version": "0.2.72",
+    "scanner_version": "<installed-version>",
     "status": "completed",
     "total_attempts": 1
   },

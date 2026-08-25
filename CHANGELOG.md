@@ -1,13 +1,13 @@
 # Changelog
 
 [![Status: Alpha](https://img.shields.io/badge/status-alpha-blue?style=flat-square)](https://github.com/breachsafe/qureddy)
-[![Version](https://img.shields.io/badge/version-0.2.72-blue?style=flat-square)](CHANGELOG.md)
+[![Latest release](https://img.shields.io/github/v/release/BreachSAFE/qureddy?display_name=tag&style=flat-square)](https://github.com/BreachSAFE/qureddy/releases/latest)
 [![Keep a Changelog](https://img.shields.io/badge/keep%20a%20changelog-1.1.0-orange?style=flat-square)](https://keepachangelog.com/en/1.1.0/)
-[![SemVer](https://img.shields.io/badge/SemVer-2.0.0-blue?style=flat-square)](https://semver.org/spec/v2.0.0.html)
+[![PEP 440](https://img.shields.io/badge/versioning-PEP%20440-blue?style=flat-square)](https://peps.python.org/pep-0440/)
 
 All notable user-visible changes to QuReddy are recorded here. The format
-follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and version
-numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and package
+versions follow [PEP 440](https://peps.python.org/pep-0440/).
 
 ## [Unreleased]
 
@@ -16,6 +16,13 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Distribution policy is explicitly TestPyPI-only for now**: release automation,
   packaging checks, and installation guidance no longer imply that the public PyPI
   package exists or should be probed before an explicit authorization.
+
+## [0.9.0.0] - 2026-08-24
+
+### Changed
+
+- Consolidated the public release metadata and integration documentation for the
+  EnXemble consumer, OpenSSL runtime, and CycloneDX CBOM output contract.
 
 ## [0.2.72] - 2026-08-24
 
@@ -742,6 +749,7 @@ numbers follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 67. [0.2.70](#0270---2026-08-24)
 68. [0.2.71](#0271---2026-08-25)
 69. [0.2.72](#0272---2026-08-24)
+70. [0.9.0.0](#0900---2026-08-24)
 
 ## [0.2.12] - 2026-07-28
 

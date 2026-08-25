@@ -1,8 +1,8 @@
 # CLI reference
 
-This page records the installed `qureddy 0.2.72` command surface. Option names,
+This page records the installed `qureddy` command surface. Option names,
 defaults, accepted values, exit codes, and environment variables match the
-release candidate help output.
+installed help output.
 
 ## Contents
 
@@ -36,7 +36,7 @@ qureddy [OPTIONS] COMMAND [ARGS]...
 The version line is:
 
 ```text
-BreachSAFE QuReddy 0.2.72 -- https://www.breachsafe.ai
+BreachSAFE QuReddy <version> -- https://www.breachsafe.ai
 ```
 
 ## 2. `qureddy scan`

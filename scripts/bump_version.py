@@ -10,18 +10,13 @@ Covered single-sources (a bump stamps all of them; ``--check`` verifies they
 already agree):
 
 * ``pyproject.toml`` ``[project] version`` (the source of truth itself)
-* the README version badge
-* the CHANGELOG version badge
 * the ``Dockerfile`` ``ARG QUREDDY_VERSION`` default (feeds the OCI
   ``image.version`` label and selects the wheel to install)
 * the ``uv.lock`` entry for this package
 * the golden output contracts (``tests/golden/*.golden``)
-* the version-bearing prose in the docs that must quote a concrete release:
-  ``docs/reference/cli.md`` (intro sentence + version-line example),
-  ``docs/BADGE.md`` (the pyproject literal and the example release tag it
-  evidences), and ``docs/reference/json-schema.md`` (the sample
-  ``scanner_version``). These previously drifted because the bump did not
-  target them (see breachsafe/qureddy#340).
+* The general documentation is intentionally version-agnostic. Release-specific
+  version evidence belongs in ``CHANGELOG.md``, package metadata, and generated
+  test contracts rather than in usage examples.
 
 ``--check`` additionally verifies the CHANGELOG documents the current version:
 a ``## [<version>] - <date>`` heading and a matching Contents entry must exist.
@@ -50,31 +45,14 @@ CHANGELOG = ROOT / "CHANGELOG.md"
 DOCKERFILE = ROOT / "Dockerfile"
 UVLOCK = ROOT / "uv.lock"
 GOLDEN = ROOT / "tests" / "golden"
-CLI_DOC = ROOT / "docs" / "reference" / "cli.md"
-BADGE_DOC = ROOT / "docs" / "BADGE.md"
-JSON_SCHEMA_DOC = ROOT / "docs" / "reference" / "json-schema.md"
 
 _PYPROJECT_VERSION = re.compile(r'^version = "(?P<v>[^"]+)"', re.MULTILINE)
-# shields.io badge: version-<v>-blue (dots and dashes are URL-escaped by shields, but
-# a simple SemVer with dots renders fine unescaped). Present in both README and CHANGELOG.
-_BADGE = re.compile(r"badge/version-(?P<v>[0-9][^-\s]*)-blue")
 # Dockerfile default that stamps the OCI image.version label and picks the wheel.
-_DOCKER_ARG = re.compile(r"^ARG QUREDDY_VERSION=(?P<v>\d+\.\d+\.\d+[^\s]*)$", re.MULTILINE)
+_DOCKER_ARG = re.compile(r"^ARG QUREDDY_VERSION=(?P<v>\d+(?:\.\d+){2,3}[^\s]*)$", re.MULTILINE)
 # The editable entry for this package in the resolved lockfile.
 _UVLOCK_VERSION = re.compile(
     r'(?P<pre>name = "breachsafe-qureddy"\nversion = ")(?P<v>[^"]+)(?P<post>")'
 )
-# docs/reference/cli.md quotes the release twice: the intro sentence's
-# ``qureddy <v>`` and the §1 version-line example ``BreachSAFE QuReddy <v> --``.
-_CLI_INTRO = re.compile(r"`qureddy (?P<v>\d+\.\d+\.\d+)`")
-_CLI_VERSION_LINE = re.compile(r"QuReddy (?P<v>\d+\.\d+\.\d+) --")
-# docs/BADGE.md cites the pyproject literal and an example release tag as the
-# evidence for the OpenSSF ``version_unique`` and ``version_tags`` criteria.
-_BADGE_PYPROJECT = re.compile(r'`version = "(?P<v>\d+\.\d+\.\d+)"`')
-_BADGE_TAG = re.compile(r"\(e\.g\. `v(?P<v>\d+\.\d+\.\d+)`\)")
-# docs/reference/json-schema.md sample output's ``scanner_version`` value (the
-# table row that merely names the field carries no version, so it is not matched).
-_JSON_SCHEMA_SCANNER = re.compile(r'"scanner_version": "(?P<v>\d+\.\d+\.\d+)"')
 
 
 def _simple_targets() -> list[tuple[Path, re.Pattern[str]]]:
@@ -85,15 +63,8 @@ def _simple_targets() -> list[tuple[Path, re.Pattern[str]]]:
     carries exactly one occurrence of the version through its pattern.
     """
     return [
-        (README, _BADGE),
-        (CHANGELOG, _BADGE),
         (DOCKERFILE, _DOCKER_ARG),
         (UVLOCK, _UVLOCK_VERSION),
-        (CLI_DOC, _CLI_INTRO),
-        (CLI_DOC, _CLI_VERSION_LINE),
-        (BADGE_DOC, _BADGE_PYPROJECT),
-        (BADGE_DOC, _BADGE_TAG),
-        (JSON_SCHEMA_DOC, _JSON_SCHEMA_SCANNER),
     ]
 
 
@@ -101,23 +72,23 @@ def _simple_targets() -> list[tuple[Path, re.Pattern[str]]]:
 # ONLY version-bearing spots there, so a bump must update them or test_golden_output fails.
 _GOLDEN_PATTERNS: dict[str, list[re.Pattern[str]]] = {
     "rich.golden": [
-        re.compile(r"(?P<pre>QuReddy )(?P<v>\d+\.\d+\.\d+)(?P<post> by)"),
-        re.compile(r"(?P<pre>^ version +)(?P<v>\d+\.\d+\.\d+)(?P<post>)", re.MULTILINE),
+        re.compile(r"(?P<pre>QuReddy )(?P<v>\d+(?:\.\d+){2,3})(?P<post> by)"),
+        re.compile(r"(?P<pre>^ version +)(?P<v>\d+(?:\.\d+){2,3})(?P<post>)", re.MULTILINE),
     ],
     "json.golden": [
-        re.compile(r'(?P<pre>"scanner_version": ")(?P<v>\d+\.\d+\.\d+)(?P<post>")'),
+        re.compile(r'(?P<pre>"scanner_version": ")(?P<v>\d+(?:\.\d+){2,3})(?P<post>")'),
     ],
     # anchor on the qureddy tool component so we don't touch OpenSSL's version etc.
     # (CBOM is emitted with sorted keys, so name → type → version order is stable).
     "cbom.golden": [
         re.compile(
             r'(?P<pre>"name": "qureddy",\s*"type": "application",\s*"version": ")'
-            r'(?P<v>\d+\.\d+\.\d+)(?P<post>")'
+            r'(?P<v>\d+(?:\.\d+){2,3})(?P<post>")'
         ),
     ],
 }
 
-_SEMVER = re.compile(r"^\d+\.\d+\.\d+([-+][0-9A-Za-z.-]+)?$")
+_SEMVER = re.compile(r"^\d+(?:\.\d+){2,3}([-+][0-9A-Za-z.-]+)?$")
 
 
 def _read_pyproject_version() -> str:
@@ -192,7 +163,7 @@ def check() -> int:
 def bump(new_version: str) -> int:
     """Set pyproject version and propagate it to every stampable single-source."""
     if not _SEMVER.match(new_version):
-        sys.exit(f"bump_version: {new_version!r} is not a SemVer string")
+        sys.exit(f"bump_version: {new_version!r} is not a supported PEP 440 release version")
     PYPROJECT.write_text(_set(PYPROJECT.read_text(), _PYPROJECT_VERSION, new_version)[0])
     simple_updates = 0
     for path, pattern in _simple_targets():
