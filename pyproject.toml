@@ -5,7 +5,7 @@
 
 [project]
 name = "breachsafe-qureddy"
-version = "0.9.0.0"
+version = "0.9.0.1"
 description = "Open-source post-quantum readiness scanner for TLS and SSH endpoints."
 readme = "README.md"
 requires-python = ">=3.14"
@@ -448,7 +448,7 @@ known_first_party = ["qureddy", "release_support"]
 # Distribution name (`breachsafe-qureddy`) differs from import name
 # (`qureddy`); declare the mapping so deptry doesn't flag the dist as
 # missing-an-import.
-package_module_name_map = { "breachsafe-qureddy" = "qureddy" }
+package_module_name_map = { "breachsafe-qureddy" = "qureddy", "cyclonedx-python-lib" = "cyclonedx" }
 # `scripts/` is intentionally INCLUDED in the deptry scan so that
 # imports from CI utilities (e.g. defusedxml in scripts/audit_phase.py)
 # count toward dependency-usage analysis. Excluding scripts/ would

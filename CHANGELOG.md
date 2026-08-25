@@ -17,6 +17,13 @@ versions follow [PEP 440](https://peps.python.org/pep-0440/).
   packaging checks, and installation guidance no longer imply that the public PyPI
   package exists or should be probed before an explicit authorization.
 
+## [0.9.0.1] - 2026-08-24
+
+### Fixed
+
+- Corrected the dependency-to-import mapping for `cyclonedx-python-lib` so the
+  enforced `deptry` gate recognizes the package's `cyclonedx` Python module.
+
 ## [0.9.0.0] - 2026-08-24
 
 ### Changed
@@ -750,6 +757,7 @@ versions follow [PEP 440](https://peps.python.org/pep-0440/).
 68. [0.2.71](#0271---2026-08-25)
 69. [0.2.72](#0272---2026-08-24)
 70. [0.9.0.0](#0900---2026-08-24)
+71. [0.9.0.1](#0901---2026-08-24)
 
 ## [0.2.12] - 2026-07-28
 
