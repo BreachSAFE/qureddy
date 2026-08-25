@@ -61,15 +61,6 @@ JSONL record per finding for CI, EnXemble, or another downstream consumer.
 
 </details>
 
-### Open-source stack
-
-[![Python](https://img.shields.io/badge/Python-3.14%2B-3776ab?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
-[![Click](https://img.shields.io/badge/CLI-Click-1f6feb?style=flat-square)](https://click.palletsprojects.com/)
-[![Rich](https://img.shields.io/badge/terminal-Rich-8b5cf6?style=flat-square)](https://github.com/Textualize/rich)
-[![OpenSSL](https://img.shields.io/badge/TLS-OpenSSL%203.5.7-721412?style=flat-square&logo=openssl)](https://github.com/openssl/openssl/releases/tag/openssl-3.5.7)
-[![CycloneDX](https://img.shields.io/badge/CBOM-CycloneDX%201.7-2f6690?style=flat-square)](https://cyclonedx.org/docs/1.7/)
-[![uv](https://img.shields.io/badge/tooling-uv-6f42c1?style=flat-square)](https://docs.astral.sh/uv/)
-
 ## Contents
 
 1. [At a glance](#at-a-glance)
@@ -85,7 +76,8 @@ JSONL record per finding for CI, EnXemble, or another downstream consumer.
 11. [Requirements](#10-requirements)
 12. [Documentation and support](#11-documentation-and-support)
 13. [Contributing](#12-contributing)
-14. [License](#13-license)
+14. [Open-source stack](#open-source-stack)
+15. [License](#13-license)
 
 ## 1. Quickstart with Docker
 
@@ -358,6 +350,17 @@ The repository enforces
 formatting, lint, strict type checking, tests, security scans, dependency
 audits, license metadata, file size policy, CBOM conformance, and release
 artifact checks.
+
+## Open-source stack
+
+<p>
+  <a href="https://www.python.org/"><img src="https://cdn.simpleicons.org/python/3776AB" alt="Python" width="40" height="40"></a>
+  <a href="https://click.palletsprojects.com/"><img src="https://cdn.simpleicons.org/click/1F6FEB" alt="Click" width="40" height="40"></a>
+  <a href="https://github.com/Textualize/rich"><img src="https://img.shields.io/badge/Rich-terminal-8b5cf6?style=flat-square" alt="Rich terminal output"></a>
+  <a href="https://www.openssl.org/"><img src="https://cdn.simpleicons.org/openssl/721412" alt="OpenSSL" width="40" height="40"></a>
+  <a href="https://cyclonedx.org/"><img src="https://img.shields.io/badge/CycloneDX-CBOM-2f6690?style=flat-square" alt="CycloneDX CBOM"></a>
+  <a href="https://docs.astral.sh/uv/"><img src="https://img.shields.io/badge/uv-tooling-6f42c1?style=flat-square" alt="uv tooling"></a>
+</p>
 
 ## 13. License
 
