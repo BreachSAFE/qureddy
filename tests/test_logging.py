@@ -183,6 +183,18 @@ def test_start_run_logging_captures_to_file(tmp_path) -> None:
     assert "scan.start" in logfile.read_text(), "diagnostics were not captured to the --log file"
 
 
+def test_quiet_does_not_empty_explicit_log_file(tmp_path) -> None:
+    """An explicit log destination keeps INFO records even with ``--quiet``."""
+    logfile = tmp_path / "quiet.log"
+    stream = start_run_logging(verbosity=0, json_logs=False, quiet=True, log=logfile)
+    try:
+        get_logger("qureddy.cli").info("scan.start", target="tls://example.com:443")
+    finally:
+        assert stream is not None
+        stream.close()
+    assert "scan.start" in logfile.read_text()
+
+
 def test_start_run_logging_returns_none_without_log() -> None:
     """No `--log` path: logs go to stderr and there is no file stream to manage."""
     assert start_run_logging(verbosity=0, json_logs=False, quiet=False, log=None) is None

@@ -154,12 +154,13 @@ def _open_run_log(
 
     With ``--log`` set, machine-format auto-quiet does not apply and the level is floored at
     INFO so a clean run still records its story (otherwise a successful machine-format scan
-    writes an empty WARNING-level log). A ``--log`` path that cannot be opened is a usage
-    error (exit 4), reported before any scan work.
+    writes an empty WARNING-level log). The log file is an explicit diagnostic destination,
+    so ``--quiet`` does not suppress its INFO records. A ``--log`` path that cannot be opened
+    is a usage error (exit 4), reported before any scan work.
     """
     if log is not None:
-        effective_quiet = quiet
-        log_verbosity = verbose if quiet else max(verbose, 1)
+        effective_quiet = False
+        log_verbosity = max(verbose, 1)
     else:
         # JSON/CBOM stdout is a single machine-parsed document. The #15 fd-snapshot
         # fix only guards in-process stream rebinding (CliRunner, etc.); it cannot

@@ -17,7 +17,7 @@ import typer
 from qureddy._branding import VERSION_BANNER
 from qureddy.cli._errors import EXIT_OK
 from qureddy.core.models import OutputFormat, Severity
-from qureddy.core.retry import MAX_RETRIES, MAX_RETRY_DELAY_SECONDS
+from qureddy.core.retry import MAX_RETRIES, MAX_RETRY_DELAY_SECONDS, RETRYABLE_CATEGORY_VALUES
 
 _MAX_TIMEOUT_SECONDS = 300
 
@@ -101,7 +101,16 @@ TimeoutOpt = Annotated[
     ),
 ]
 RetryOnOpt = Annotated[
-    str | None, typer.Option("--retry-on", help="Comma-separated retryable failure categories.")
+    str | None,
+    typer.Option(
+        "--retry-on",
+        metavar="CATEGORY[,CATEGORY...]",
+        help=(
+            "Comma-separated retryable failure categories. Choices: "
+            + ", ".join(RETRYABLE_CATEGORY_VALUES)
+            + "."
+        ),
+    ),
 ]
 RetriesOpt = Annotated[
     int,
@@ -126,7 +135,8 @@ LogOpt = Annotated[
     typer.Option(
         "--log",
         help="Capture this run's logs to a file (INFO and above; honors --json-logs). "
-        "Default: logs go to stderr.",
+        "-q only affects stderr; the file always captures INFO and above. Default: logs go "
+        "to stderr.",
     ),
 ]
 OutputOpt = Annotated[

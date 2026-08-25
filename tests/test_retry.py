@@ -54,7 +54,10 @@ class TestParseRetryOn:
         assert FailureCategory.TLS_HANDSHAKE_FAILED in result
 
     def test_unknown_category_raises(self) -> None:
-        with pytest.raises(RetryConfigError, match="unknown failure category"):
+        with pytest.raises(
+            RetryConfigError,
+            match=r"unknown failure category.*allowed:.*target_connect_failed",
+        ):
             parse_retry_on("nonsense_category")
 
     def test_non_retryable_category_raises(self) -> None:

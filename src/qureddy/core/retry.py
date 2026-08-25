@@ -18,6 +18,9 @@ RETRYABLE_CATEGORIES: frozenset[FailureCategory] = frozenset(
         FailureCategory.PARSE_NO_GROUP,
     },
 )
+RETRYABLE_CATEGORY_VALUES: tuple[str, ...] = tuple(
+    sorted(category.value for category in RETRYABLE_CATEGORIES)
+)
 MAX_RETRIES = 3
 MAX_RETRY_DELAY_SECONDS = 10.0
 
@@ -27,10 +30,11 @@ def _parse_retry_category(token: str) -> FailureCategory:
     try:
         category = FailureCategory(token)
     except ValueError as exc:
-        msg = f"unknown failure category: {token!r}"
+        allowed = ", ".join(RETRYABLE_CATEGORY_VALUES)
+        msg = f"unknown failure category: {token!r}; allowed: {allowed}"
         raise RetryConfigError(msg) from exc
     if category not in RETRYABLE_CATEGORIES:
-        allowed = ", ".join(sorted(c.value for c in RETRYABLE_CATEGORIES))
+        allowed = ", ".join(RETRYABLE_CATEGORY_VALUES)
         msg = f"failure category {category.value!r} is not retryable; allowed: {allowed}"
         raise RetryConfigError(msg)
     return category

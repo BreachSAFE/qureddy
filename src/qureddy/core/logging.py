@@ -91,7 +91,16 @@ def start_run_logging(
     stderr. Shared by the scan subcommands so the log-capture wiring lives in one place.
     """
     stream = _open_log_file(log) if log is not None else None
-    configure_logging(verbosity=verbosity, json_logs=json_logs, quiet=quiet, log_stream=stream)
+    # An explicit file is a diagnostic record, not the terminal. Preserve its INFO
+    # contract even when ``-q`` was supplied; quiet remains meaningful for the default
+    # stderr destination. Keeping this policy here makes all CLI callers consistent.
+    file_logging = log is not None
+    configure_logging(
+        verbosity=max(verbosity, 1) if file_logging else verbosity,
+        json_logs=json_logs,
+        quiet=False if file_logging else quiet,
+        log_stream=stream,
+    )
     return stream
 
 

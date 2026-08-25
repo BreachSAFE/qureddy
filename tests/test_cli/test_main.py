@@ -28,6 +28,8 @@ def test_scan_help_lists_documented_options() -> None:
     assert "--sni" in result.stdout
     assert "--openssl" in result.stdout
     assert "--retry-on" in result.stdout
+    assert "CATEGORY[,CATEGORY...]" in result.stdout
+    assert "target_connect_failed" in result.stdout
     assert "--retries" in result.stdout
     assert "--retry-delay" in result.stdout
     assert "--json-logs" in result.stdout
