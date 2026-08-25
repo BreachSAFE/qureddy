@@ -18,7 +18,7 @@ on:
       version:
         description: Image version to publish
         required: true
-        default: 0.2.13
+        default: 0.9.0.2
       publish:
         description: Push the multi-architecture image to GHCR
         required: true
@@ -47,8 +47,9 @@ jobs:
           python-version: "3.14"
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
       # Single source of truth: [project] version in pyproject.toml. The Dockerfile
-      # COPYs dist/breachsafe_qureddy-<version>-*.whl and its ARG QUREDDY_VERSION
-      # default is intentionally stale, so the build MUST be told the real version.
+      # COPYs dist/breachsafe_qureddy-<version>-*.whl and its ARG QUREDDY_VERSION.
+      # The workflow still resolves the version from package metadata so manual
+      # dispatches cannot publish an image with a mismatched package version.
       # Export via $GITHUB_ENV (not inline ${{ }}) so it can't break out of the shell.
       - name: Resolve version from pyproject.toml
         run: |

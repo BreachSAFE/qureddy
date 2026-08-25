@@ -34,7 +34,7 @@ planned milestone, open issue, or accepted design as a delivered artifact.
 | MVP 0.4 | Shipped | SSH and SFTP endpoint scanner with key exchange and host key observations | Public PR #22, 2026-07-23 |
 | MVP 0.5 | Planned | Local cryptographic configuration scanner | No shipped artifact or tracking milestone |
 | MVP 0.6 | Planned | Source-code scanner | No shipped artifact or tracking milestone |
-| Packaging and distribution | Shipped | Installable wheel and source distribution, local and CI release gates, published GHCR container image, TestPyPI distribution | TestPyPI `0.2.x`; GHCR `ghcr.io/breachsafe/qureddy`. Publication to the public PyPI index is still pending |
+| Packaging and distribution | Shipped | Installable wheel and source distribution, local and CI release gates, published GHCR container image, TestPyPI distribution | Current release on TestPyPI and `ghcr.io/breachsafe/qureddy`. Publication to the public PyPI index is still pending |
 | Enterprise P2 | Planned | Operated fleet, persistence, integrations, tenancy, and support | No shipped product in this repository |
 
 The MVP labels above record the capability history. Current work is tracked in
@@ -45,8 +45,8 @@ GitHub milestones, listed in [§3](#3-current-release-program).
 The initial release sequence (issues #30 through #36: truthful green main, the
 CycloneDX 1.7 observation contract, independent CBOM conformance, package artifact
 proof, the repository-owned local release gate, documentation truth-up, and the
-TestPyPI rehearsal) is complete. QuReddy ships `0.2.x` releases to TestPyPI and
-publishes a container image to GHCR.
+TestPyPI rehearsal) is complete. QuReddy ships its current releases to TestPyPI
+and publishes a container image to GHCR.
 
 Active work is tracked in GitHub milestones. As of 2026-08-22 the open milestones
 are:
