@@ -109,13 +109,13 @@ qureddy scan tls [OPTIONS] TARGET
 | `--compact` | flag | off | Minify `--format json` or `cbom` to a single line; no effect on `rich` |
 | `--min-severity` | `critical`, `high`, `medium`, `low`, or `info` | none | Rich output only: hide findings below this severity; machine formats stay complete |
 | `--timeout` | integer `1..300` | `30` | Timeout for each probe in seconds |
-| `--retry-on` | comma separated categories | none | Retry only the named allowlisted failure categories |
+| `--retry-on` | `CATEGORY[,CATEGORY...]` | none | Retry only the named allowlisted categories: `middlebox_or_mtu_failure`, `parse_no_group`, `target_connect_failed`, or `tls_handshake_failed` |
 | `--retries` | integer `0..3` | `0` | Additional attempts; requires `--retry-on` |
 | `--retry-delay` | float `0.0..10.0` | `1.0` | Delay between attempts in seconds |
 | `-v`, `--verbose` | count | `0` | `-v` INFO; `-vv` DEBUG; `-vvv` DEBUG plus command traceability |
 | `--json-logs` | flag | off | Write structured diagnostic logs to standard error |
 | `-q`, `--quiet` | flag | off | Suppress non-error diagnostic logs |
-| `--log` | path | standard error | Capture the run's structured logs to a file at INFO and above; honors `--json-logs`; standard output stays the `--format` data channel; a bad path exits `4` |
+| `--log` | path | standard error | Capture the run's structured logs to a file at INFO and above; honors `--json-logs`; `-q` only quiets stderr and does not empty the explicit log; standard output stays the `--format` data channel; a bad path exits `4` |
 | `--deterministic` | flag | off | Omit per-run identity (serial, timestamps, scan id and timing) so the CBOM or JSON is byte-identical across runs for content addressing |
 | `-h`, `--help` | flag | n/a | Print TLS help and exit |
 
