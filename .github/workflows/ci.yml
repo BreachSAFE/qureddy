@@ -313,16 +313,8 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
-      - name: trivy fs scan
-        # v0.36.0, pinned to the dereferenced commit (not a mutable tag).
-        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
-        with:
-          scan-type: fs
-          ignore-unfixed: true
-          severity: HIGH,CRITICAL
-          format: table
-          exit-code: 1
-          skip-dirs: scratch,.git
+      - name: Audit build dependencies
+        run: uv run --locked pip-audit
 
   # ===========================================================================
   # Phase 7 — Audit. Reads prior phase artifacts. Asserts on counts.

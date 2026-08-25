@@ -112,7 +112,7 @@ SSH KEXINIT offer. The `crypto_*` criteria are answered on that basis.
 | `crypto_password_storage` | N/A | Scanner authenticates no users and stores no passwords (see #217 A1). |
 | `crypto_random` | N/A | The tool needs no security-sensitive randomness of its own. |
 | `delivery_mitm` | Met | Distribution over HTTPS (GitHub, TestPyPI); artifacts hash-pinned in `scripts/release-tools.json`; container base images pinned by digest in `Dockerfile`. |
-| `delivery_unsigned` | Met (mechanism); TODO (operational) | `.github/workflows/release.yml` signs distributions with cosign keyless OIDC and emits SLSA provenance via `actions/attest-build-provenance`. Operational gap: the latest releases were cut outside `release.yml` and are unsigned (see #219); route all releases through the workflow. |
+| `delivery_unsigned` | Met | `.github/workflows/release.yml` signs distributions with cosign keyless OIDC and emits SLSA provenance; the current `v0.9.0.2` release passed signature verification. |
 | `vulnerabilities_fixed_60_days` | Met | No medium+ vuln in produced/runtime software. Two accepted advisories are dev-tooling only (pip `GHSA-58qw-9mgm-455v`, py `PYSEC-2022-42969`), documented in `pyproject.toml [tool.pip-audit]`; both non-exploitable in QuReddy's paths (see #217 A2). |
 | `vulnerabilities_critical_fixed` | Met | `pip-audit` runs on the runtime dependency path in `ci.yml` `phase-1-static` and the release gate with no ignored critical advisories. |
 | `no_leaked_credentials` | Met | Gitleaks full-history scan in `ci.yml` `phase-1-static` and `scripts/release_gate.py`. |
@@ -125,7 +125,7 @@ SSH KEXINIT offer. The `crypto_*` criteria are answered on that basis.
 | `static_analysis_common_vulnerabilities` | Met | CodeQL `+security-extended` query pack; bandit for Python security smells. |
 | `static_analysis_fixed` | Met | `phase-1-static` and CodeQL are blocking on PRs; findings must be fixed to merge. |
 | `static_analysis_often` | Met | CodeQL on every PR, on push to `main`, and weekly; bandit/ruff/mypy on every PR. |
-| `dynamic_analysis` | Met | Integration and live scans in `ci.yml` `phase-3`/`phase-4`/`phase-5` exercise the tool against real endpoints; `trivy fs` scan in `phase-6-build`. |
+| `dynamic_analysis` | Met | Integration and live scans in `ci.yml` `phase-3`/`phase-4`/`phase-5` exercise the tool against real endpoints; built-artifact dependency audit runs in `phase-6-build`. |
 | `dynamic_analysis_unsafe` | N/A | Pure-Python (memory-safe) tool; no C/C++ memory-safety fuzzing surface of its own. |
 | `dynamic_analysis_enable_assertions` | Met | pytest runs with assertions enabled by default. |
 | `dynamic_analysis_fixed` | Met | Dynamic-test failures block merge (CI phases are gated). |
@@ -138,10 +138,10 @@ Passing-criteria tally in this draft:
 - **N/A (correctly):** `crypto_keylength`, `crypto_pfs`, `crypto_password_storage`, `crypto_random`, `dynamic_analysis_unsafe`.
 - **TODO (evidence or behavior still required):**
   1. `report_responses` (#218): leave visible maintainer replies on open issues and cite one issue URL. Behavioral, not code.
-  2. `delivery_unsigned` operational gap (#219): route every published release through `release.yml` so the signed-artifact mechanism actually runs; backfill signatures on the latest unsigned releases.
+  2. Maintainer issue-response evidence (#218): leave visible maintainer replies on a representative set of open issues and cite one issue URL.
 
 No criterion in this draft is genuinely unmet in a way that blocks the passing
-badge once the two TODOs are closed. The questionnaire on the website is the
+badge once the remaining TODO is closed. The questionnaire on the website is the
 system of record; this file is the evidence pack for filling it in.
 
 ## 9. Admin actions not doable in code

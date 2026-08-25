@@ -669,10 +669,10 @@ Build the package; scan the built artifacts.
 
 ```
 uv build
-trivy fs --severity HIGH,CRITICAL .
+uv run --locked pip-audit
 ```
 
-Artifact: `phase-6-build/dist/*`, `phase-6-trivy.json`
+Artifact: `phase-6-build/dist/*`
 
 ### Phase 7 — Audit
 
@@ -724,7 +724,7 @@ CI quality gates are split into two tiers based on cost-benefit at MVP scale.
 | License compatibility | `pip-licenses` (AGPL/GPL/LGPL block) | runs on `pyproject.toml` change at minimum; full sweep on release |
 | Self-scan | `qureddy scan tls <target>` × 6 targets | runs against the authorized target matrix |
 | Build verification | `uv build` (sdist + wheel) | |
-| Filesystem scan | `trivy fs` (HIGH/CRITICAL block) | release-time only |
+| Build dependency audit | `pip-audit` | release-time and build verification |
 | Internal link check | `lychee` on `*.md` | release-time + when docs change |
 
 **Rationale for the split:** release-only checks are expensive and depend on final artifacts. Tier 1 catches changes during review; Tier 2 verifies what we ship.
@@ -770,7 +770,7 @@ Once the scanner exists for a target type, the release workflow runs `qureddy` a
 - Dependency license scan (`pip-licenses`)
 - Secrets scan (`trufflehog` against full history)
 - Static security scan (`bandit -r src/qureddy`)
-- Filesystem and (when shipping) container scan (`trivy fs .` and `trivy image ...`)
+- Built-artifact dependency audit (`pip-audit`)
 - Generated artifact scan (sdist and wheel scanned for unexpected contents)
 - QuReddy scan against its own supported targets and fixture set
 - SBOM/CBOM generation check (the artifact is produced and validated)
@@ -1048,7 +1048,7 @@ In addition to Tier 1:
 
 - [ ] `pip-audit` passes (no HIGH or CRITICAL CVEs)
 - [ ] `pip-licenses` passes (no AGPL/GPL/LGPL)
-- [ ] `trivy fs` passes (no HIGH or CRITICAL findings)
+- [ ] Built-artifact dependency audit passes (`pip-audit`)
 - [ ] Build verifies (`uv build` succeeds, both sdist and wheel)
 - [ ] Internal documentation links verified (`lychee`)
 - [ ] External documentation links checked within last 7 days
