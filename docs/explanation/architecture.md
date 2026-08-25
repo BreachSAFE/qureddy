@@ -23,6 +23,7 @@ supported projections.
 11. [Collector and tool-adapter boundary](#11-collector-and-tool-adapter-boundary)
 12. [Partial-failure state machine](#12-partial-failure-state-machine)
 13. [Test coverage architecture](#13-test-coverage-architecture)
+14. [EnXemble integration](#14-enxemble-integration)
 
 ## 1. Component map
 
@@ -417,3 +418,41 @@ fixtures, a real CLI subprocess test, output parity checks, and a live endpoint
 pressure test where network access is available. A renderer-only change still
 runs the canonical result and projection tests; it does not duplicate scanner
 fixtures.
+
+## 14. EnXemble integration
+
+[BreachSAFE EnXemble](https://github.com/BreachSAFE) is the primary product consumer
+of QuReddy. It runs the released container as a subprocess and imports the declared
+artifact bundle. QuReddy remains responsible for endpoint collection, evidence, and
+CycloneDX CBOM generation; EnXemble owns orchestration, persistence, and user-facing
+workflow state.
+
+```mermaid
+sequenceDiagram
+    participant E as EnXemble scan engine
+    participant I as GHCR QuReddy image
+    participant Q as QuReddy CLI
+    participant T as TLS or SSH endpoint
+    participant DB as EnXemble evidence store
+
+    E->>I: pull pinned release image
+    E->>Q: scan tls|ssh --output-dir bundle target
+    Q->>T: collect protocol evidence
+    T-->>Q: observations, findings, failures
+    Q-->>E: scan.jsonl + scan.json + scan.cdx.json
+    E->>DB: persist findings and CBOM evidence
+```
+
+The integration contract is file-based and process-isolated:
+
+| Artifact | EnXemble use |
+| --- | --- |
+| `scan.jsonl` | stream findings into the ingestion pipeline |
+| `scan.json` | retain complete scan evidence and summary |
+| `scan.cdx.json` | pass the CycloneDX CBOM to downstream inventory and OSCAL tooling |
+| `scan.rich.txt` | retain an operator-readable report for troubleshooting |
+
+EnXemble accepts exit code `0` for a complete scan and `2` for a target-level
+failure when the bundle is still present. Exit codes `3`, `4`, and `70` remain
+hard failures. This preserves QuReddy's failure contract at the integration
+boundary.

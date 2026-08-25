@@ -17,6 +17,11 @@ Container image: [`ghcr.io/breachsafe/qureddy:latest`](https://github.com/Breach
 
 Python package: [`breachsafe-qureddy` on TestPyPI](https://test.pypi.org/project/breachsafe-qureddy/)
 
+Primary integration: [BreachSAFE EnXemble](https://github.com/BreachSAFE) runs QuReddy
+in its scan engine and imports the JSONL findings, JSON evidence, and CycloneDX CBOM
+artifacts. The EnXemble repository is moving into the BreachSAFE organization; the
+organization link remains stable during that transition.
+
 TLS scans use a local OpenSSL 3.5.7 LTS binary. SSH scans read the server's
 cleartext KEXINIT offer directly and do not require OpenSSL.
 
