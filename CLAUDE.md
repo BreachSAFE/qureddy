@@ -16,7 +16,7 @@
 
 Read and apply these sources in order:
 
-1. **`~/claude/CLAUDE.md` (platform guidance).** This is the BQP-wide contract for
+1. **Platform guidance from the parent checkout.** This is the BQP-wide contract for
    licensing, canonical repositories, Python/OpenSSL baselines, worktree and PR
    procedure, and cross-repository architecture. It is auto-loaded because Claude
    Code walks up from the working directory. Platform policy remains authoritative

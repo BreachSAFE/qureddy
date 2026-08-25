@@ -44,7 +44,7 @@ reproduction with a patched-state test.
 ## Fast command card
 
 ```bash
-cd /Users/paul/claude/qureddy
+cd <repo-root>
 uv sync --locked --extra dev
 uv run --locked pytest tests/test_<area>.py -q
 just gates
