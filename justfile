@@ -57,10 +57,7 @@ bandit:
 
 # Known vulnerable dependency scan.
 pip-audit:
-    uv run --locked pip-audit \
-        --ignore-vuln PYSEC-2026-3481 \
-        --ignore-vuln PYSEC-2026-3482 \
-        --ignore-vuln PYSEC-2026-3483
+    uv run --locked pip-audit -r <(uv export --locked --no-dev --no-emit-project --format requirements.txt)
 
 # Catch unused / missing dependencies.
 deptry:

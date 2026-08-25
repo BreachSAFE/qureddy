@@ -74,7 +74,7 @@ jobs:
         run: uv run --locked bandit -r -ll src/qureddy scripts/
 
       - name: pip-audit
-        run: uv run --locked pip-audit
+        run: uv run --locked pip-audit -r <(uv export --locked --no-dev --no-emit-project --format requirements.txt)
 
       - name: deptry
         run: uv run --locked deptry .
@@ -314,7 +314,7 @@ jobs:
           retention-days: 90
 
       - name: Audit build dependencies
-        run: uv run --locked pip-audit
+        run: uv run --locked pip-audit -r <(uv export --locked --no-dev --no-emit-project --format requirements.txt)
 
   # ===========================================================================
   # Phase 7 — Audit. Reads prior phase artifacts. Asserts on counts.
