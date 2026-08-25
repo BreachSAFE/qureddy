@@ -1,3 +1,9 @@
+<p align="center">
+  <a href="https://www.breachsafe.io/">
+    <img src="https://static.wixstatic.com/media/393c0f_0ca31d6cc7df47f9838c96483a49dd4f~mv2.png" alt="BreachSAFE" width="112">
+  </a>
+</p>
+
 # BreachSAFE QuReddy
 
 [![Latest release](https://img.shields.io/github/v/release/BreachSAFE/qureddy?display_name=tag&style=flat-square)](https://github.com/BreachSAFE/qureddy/releases/latest)
