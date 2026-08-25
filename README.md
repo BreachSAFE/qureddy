@@ -8,6 +8,7 @@
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/breachsafe/qureddy/badge)](https://securityscorecards.dev/viewer/?uri=github.com/breachsafe/qureddy)
 [![GHCR image](https://img.shields.io/badge/GHCR-qureddy-blue?style=flat-square&logo=docker)](https://github.com/BreachSAFE/qureddy/pkgs/container/qureddy)
 [![TestPyPI package](https://img.shields.io/badge/TestPyPI-breachsafe--qureddy-blue?style=flat-square&logo=pypi)](https://test.pypi.org/project/breachsafe-qureddy/)
+[![EnXemble integration](https://img.shields.io/badge/BreachSAFE-EnXemble-6f42c1?style=flat-square&logo=github)](https://github.com/BreachSAFE)
 
 QuReddy is an open-source command line scanner for post-quantum readiness at
 TLS and SSH endpoints. It records the protocol and cryptographic evidence that
