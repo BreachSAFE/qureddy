@@ -1,5 +1,7 @@
 # CycloneDX 1.7 CBOM reference
 
+[![Diátaxis reference](https://img.shields.io/badge/Di%C3%A1taxis-reference-1f6feb?style=flat-square)](https://diataxis.fr/reference/)
+
 `--format cbom` emits a CycloneDX 1.7 JSON Cryptography Bill of Materials
 (CBOM). The document contains cryptographic assets that QuReddy positively
 observed, scanner and collector provenance, scan status, and an endpoint

@@ -1,5 +1,7 @@
 # Scanner contract
 
+[![Architecture contract](https://img.shields.io/badge/QuReddy-architecture%20contract-8250df?style=flat-square)](https://github.com/BreachSAFE/qureddy/blob/main/docs/architecture/scan-contract.md)
+
 ## Contents
 
 1. [Current collection contract](#1-current-collection-contract)

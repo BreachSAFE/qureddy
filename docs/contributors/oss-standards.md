@@ -1,5 +1,7 @@
 # OSS Standards for BreachSAFE QuReddy
 
+[![Contributor guide](https://img.shields.io/badge/QuReddy-contributor%20guide-6e7781?style=flat-square)](../README.md#3-contributor-documentation)
+
 This project commits to the following standards. Pull requests that violate them will be revised before merge.
 
 ## Contents

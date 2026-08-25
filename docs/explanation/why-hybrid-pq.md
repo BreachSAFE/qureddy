@@ -1,5 +1,7 @@
 # Why hybrid post-quantum key exchange
 
+[![Diátaxis explanation](https://img.shields.io/badge/Di%C3%A1taxis-explanation-8250df?style=flat-square)](https://diataxis.fr/explanation/)
+
 QuReddy's TLS readiness probe requests `X25519MLKEM768`, which combines
 classical X25519 with ML-KEM-768. The SSH scanner recognizes offered hybrid
 families containing `mlkem768x25519` or `sntrup761x25519`. Hybrid deployment

@@ -1,5 +1,7 @@
 # Capture machine-readable output for CI
 
+[![Diátaxis how-to](https://img.shields.io/badge/Di%C3%A1taxis-how--to-2ea44f?style=flat-square)](https://diataxis.fr/how-to-guides/)
+
 This guide covers using `--format json` to capture scan results in a way CI pipelines, dashboards, or scripts can consume. Use it when you're wiring QuReddy into nightly scans, alerting, or compliance dashboards.
 
 ## Contents

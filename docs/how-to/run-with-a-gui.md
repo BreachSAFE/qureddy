@@ -3,6 +3,8 @@
 
 # Run QuReddy with a GUI
 
+[![Diátaxis how-to](https://img.shields.io/badge/Di%C3%A1taxis-how--to-2ea44f?style=flat-square)](https://diataxis.fr/how-to-guides/)
+
 Use the shipped `breachsafe-ux` reference host when you want a browser UI for
 QuReddy's TLS and SSH scans. The host captures the CLI's CycloneDX CBOM and
 displays evidence validity separately from readiness posture.

@@ -1,5 +1,9 @@
 # Harvest now, decrypt later
 
+[![Diátaxis explanation](https://img.shields.io/badge/Di%C3%A1taxis-explanation-8250df?style=flat-square)](https://diataxis.fr/explanation/)
+[![SCF Quantum Security](https://img.shields.io/badge/SCF-QTS%20domain-4b5563?style=flat-square)](https://securecontrolsframework.com/faqs/scf-qts-domain-quantum-security)
+[![NIST PQC](https://img.shields.io/badge/NIST-PQC%20project-005ea8?style=flat-square)](https://csrc.nist.gov/projects/post-quantum-cryptography)
+
 Harvest now, decrypt later (HNDL) is the confidentiality risk that gives
 post-quantum key exchange migration its present-day timeline. An adversary can
 retain encrypted traffic now and attempt decryption when a later capability

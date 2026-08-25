@@ -1,5 +1,7 @@
 # Reference: Exit codes
 
+[![Diátaxis reference](https://img.shields.io/badge/Di%C3%A1taxis-reference-1f6feb?style=flat-square)](https://diataxis.fr/reference/)
+
 The `qureddy` CLI uses POSIX exit codes to signal what happened. Scripts and CI pipelines should branch on the exit code, not on parsing stdout.
 
 ## Contents

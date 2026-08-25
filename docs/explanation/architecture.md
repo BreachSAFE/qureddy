@@ -2,6 +2,8 @@
 
 # Architecture
 
+[![Diátaxis explanation](https://img.shields.io/badge/Di%C3%A1taxis-explanation-8250df?style=flat-square)](https://diataxis.fr/explanation/)
+
 QuReddy has two endpoint scanners behind one typed result model. The TLS path
 uses local OpenSSL subprocesses. The SSH path uses a direct socket. Rich, JSON,
 JSONL, and CycloneDX renderers consume the same `ScanResult` and do not perform

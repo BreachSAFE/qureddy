@@ -1,5 +1,7 @@
 # How to scan an SSH / SFTP endpoint
 
+[![Diátaxis how-to](https://img.shields.io/badge/Di%C3%A1taxis-how--to-2ea44f?style=flat-square)](https://diataxis.fr/how-to-guides/)
+
 `qureddy scan ssh` checks an SSH endpoint's post-quantum readiness. This is the
 scanner for SFTP file-transfer endpoints; the harvest-now-decrypt-later
 exposure for data moving over SSH.

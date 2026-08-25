@@ -1,5 +1,7 @@
 # Your first post-quantum readiness scan
 
+[![Diátaxis tutorial](https://img.shields.io/badge/Di%C3%A1taxis-tutorial-2ea44f?style=flat-square)](https://diataxis.fr/tutorials/)
+
 This tutorial starts with an SSH endpoint because that path has no OpenSSL
 prerequisite. It then adds the local OpenSSL collector and runs a TLS scan.
 You will finish with one human report and one parseable JSON result.

@@ -1,5 +1,7 @@
 # Code Examples — Good vs Bad
 
+[![Contributor guide](https://img.shields.io/badge/QuReddy-contributor%20guide-6e7781?style=flat-square)](../README.md#3-contributor-documentation)
+
 Side-by-side examples for the highest-frequency QuReddy code patterns. Read this **before writing the first file in a new module**. The first 5 files in any module set the precedent for everything that follows; this doc anchors that precedent.
 
 This is companion material to `docs/contributors/coding-rules.md`. The rules document tells you *what* the standard is; this document shows you *what it looks like*.

@@ -1,5 +1,7 @@
 # CLI reference
 
+[![Diátaxis reference](https://img.shields.io/badge/Di%C3%A1taxis-reference-1f6feb?style=flat-square)](https://diataxis.fr/reference/)
+
 This page records the installed `qureddy` command surface. Option names,
 defaults, accepted values, exit codes, and environment variables match the
 installed help output.

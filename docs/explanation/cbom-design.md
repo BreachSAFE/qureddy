@@ -1,5 +1,7 @@
 # CBOM design and CycloneDX interoperability
 
+[![Diátaxis explanation](https://img.shields.io/badge/Di%C3%A1taxis-explanation-8250df?style=flat-square)](https://diataxis.fr/explanation/)
+
 Why `--format cbom` is shaped the way it is, and what a consumer can rely on.
 
 ## Contents

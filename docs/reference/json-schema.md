@@ -1,5 +1,7 @@
 # JSON output reference
 
+[![Diátaxis reference](https://img.shields.io/badge/Di%C3%A1taxis-reference-1f6feb?style=flat-square)](https://diataxis.fr/reference/)
+
 `qureddy scan tls TARGET --format json` and
 `qureddy scan ssh TARGET --format json` emit the same top-level
 `qureddy.scan.v1` contract. TLS and SSH populate different evidence,

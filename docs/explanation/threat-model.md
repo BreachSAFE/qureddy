@@ -1,5 +1,7 @@
 # Threat model and scope
 
+[![Diátaxis explanation](https://img.shields.io/badge/Di%C3%A1taxis-explanation-8250df?style=flat-square)](https://diataxis.fr/explanation/)
+
 QuReddy is a read-only endpoint measurement tool. It assumes an authorized
 operator and a trustworthy scanner host. It reports what its TLS and SSH
 probes observe; it is not a penetration test, trust validator, or defensive

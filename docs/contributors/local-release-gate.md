@@ -1,5 +1,7 @@
 # Local release gate
 
+[![Contributor guide](https://img.shields.io/badge/QuReddy-contributor%20guide-6e7781?style=flat-square)](../README.md#3-contributor-documentation)
+
 The repository-owned release gate is the authority for candidate artifacts. Run it from a
 clean checkout with Python 3.14:
 

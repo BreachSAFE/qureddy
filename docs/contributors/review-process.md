@@ -2,6 +2,8 @@
 
 # Review process
 
+[![Contributor guide](https://img.shields.io/badge/QuReddy-contributor%20guide-6e7781?style=flat-square)](../README.md#3-contributor-documentation)
+
 How a bug fix lands in QuReddy. This is the operational form of the multi-tier reviewer/arbiter pattern.
 
 For *why* the project uses three label tiers (Reviewer / Arbiter / Decision), see [§3, Why three tiers](#3-why-three-tiers). This document is the diagram and the cookbook.

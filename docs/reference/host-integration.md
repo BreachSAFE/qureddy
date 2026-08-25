@@ -3,6 +3,8 @@
 
 # Host integration reference
 
+[![Diátaxis reference](https://img.shields.io/badge/Di%C3%A1taxis-reference-1f6feb?style=flat-square)](https://diataxis.fr/reference/)
+
 This page documents the contract used by a host such as
 [`breachsafe-ux`](https://github.com/paul007ex/breachsafe-ux) to run QuReddy and
 consume its machine-readable result.

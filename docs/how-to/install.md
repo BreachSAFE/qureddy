@@ -1,5 +1,7 @@
 # Install and troubleshoot QuReddy
 
+[![Diátaxis how-to](https://img.shields.io/badge/Di%C3%A1taxis-how--to-2ea44f?style=flat-square)](https://diataxis.fr/how-to-guides/)
+
 Install the `breachsafe-qureddy` distribution with Python 3.14 or newer. Use `pipx` for
 the command line application or install into a managed virtual environment.
 SSH scanning works without OpenSSL. TLS scanning requires a separate OpenSSL

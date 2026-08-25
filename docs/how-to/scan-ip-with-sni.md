@@ -1,5 +1,7 @@
 # Scan an IP target with a custom SNI
 
+[![Diátaxis how-to](https://img.shields.io/badge/Di%C3%A1taxis-how--to-2ea44f?style=flat-square)](https://diataxis.fr/how-to-guides/)
+
 This guide covers scanning a TLS endpoint by IP address when you need to address a specific virtual host. Use it when you're scanning behind a load balancer, testing a non-default vhost, or auditing infrastructure where DNS doesn't resolve to the IP you want to hit.
 
 ## Contents

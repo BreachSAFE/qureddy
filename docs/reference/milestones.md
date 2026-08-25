@@ -1,5 +1,7 @@
 # Project milestone reference
 
+[![Diátaxis reference](https://img.shields.io/badge/Di%C3%A1taxis-reference-1f6feb?style=flat-square)](https://diataxis.fr/reference/)
+
 This page records shipped, verified, and planned scope. It does not treat a
 planned milestone, open issue, or accepted design as a delivered artifact.
 

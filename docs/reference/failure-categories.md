@@ -1,5 +1,7 @@
 # Failure category reference
 
+[![Diátaxis reference](https://img.shields.io/badge/Di%C3%A1taxis-reference-1f6feb?style=flat-square)](https://diataxis.fr/reference/)
+
 `FailureCategory` is the typed reason that a scan or probe did not produce a
 clean observation. It appears in JSON and CBOM status metadata and determines
 the process exit code. TLS retries accept a strict subset.

@@ -1,5 +1,7 @@
 # CycloneDX conformance gate
 
+[![Contributor guide](https://img.shields.io/badge/QuReddy-contributor%20guide-6e7781?style=flat-square)](../README.md#3-contributor-documentation)
+
 QuReddy validates the final JSON bytes emitted by an installed `qureddy`
 console command. The gate is deliberately downstream of
 `cyclonedx-python-lib` serialization and QuReddy's narrow final-byte patches.

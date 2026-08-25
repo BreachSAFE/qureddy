@@ -1,5 +1,7 @@
 # Run QuReddy with Docker
 
+[![Diátaxis how-to](https://img.shields.io/badge/Di%C3%A1taxis-how--to-2ea44f?style=flat-square)](https://diataxis.fr/how-to-guides/)
+
 The QuReddy container packages the release wheel with a checksum-verified
 OpenSSL 3.5.7 runtime. It runs as an unprivileged user and is published to the
 BreachSAFE GitHub Container Registry (GHCR).

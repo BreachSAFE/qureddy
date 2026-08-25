@@ -1,5 +1,7 @@
 # Coding Rules — BreachSAFE QuReddy
 
+[![Contributor guide](https://img.shields.io/badge/QuReddy-contributor%20guide-6e7781?style=flat-square)](../README.md#3-contributor-documentation)
+
 These are the engineering standards for QuReddy. They apply to every contributor: humans, AI agents, and reviewers. They are not aspirational.
 
 This document is concrete enough to be a checklist. The default is: when your code disagrees with this document, change the code. But this document is sometimes wrong (engineering rules age, projects evolve, edge cases exist). When you genuinely believe a rule is wrong for the situation in front of you, surface the conflict per Section 20 ("When You Disagree With This Document") rather than silently violating or silently following.

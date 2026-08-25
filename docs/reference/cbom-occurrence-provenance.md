@@ -1,5 +1,7 @@
 # CBOM occurrence provenance grammar
 
+[![Diátaxis reference](https://img.shields.io/badge/Di%C3%A1taxis-reference-1f6feb?style=flat-square)](https://diataxis.fr/reference/)
+
 Each CycloneDX crypto-asset component in a QuReddy CBOM attaches its observations as
 `component.evidence.occurrences` (#287). Every occurrence carries an `additionalContext`
 string that records how that observation was made. Since CycloneDX 1.7 gives an occurrence

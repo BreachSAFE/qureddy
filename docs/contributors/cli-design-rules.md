@@ -2,6 +2,8 @@
 
 # CLI Design Rules — BreachSAFE QuReddy
 
+[![Contributor guide](https://img.shields.io/badge/QuReddy-contributor%20guide-6e7781?style=flat-square)](../README.md#3-contributor-documentation)
+
 These are the conventions every QuReddy CLI surface follows: root command, every subcommand, every flag, every exit code. They apply to humans, AI agents, and reviewers. They are the operational form of the canonical CLI design literature ([clig.dev](https://clig.dev), [POSIX `getopt(3)`](https://pubs.opengroup.org/onlinepubs/9699919799/functions/getopt.html), [GNU Coding Standards §4.7](https://www.gnu.org/prep/standards/html_node/Command_002dLine-Interfaces.html), [no-color.org](https://no-color.org)).
 
 Where a rule below carries no citation, it is a **QuReddy-specific decision** with the rationale stated inline.

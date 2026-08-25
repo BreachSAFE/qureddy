@@ -1,5 +1,7 @@
 # How to generate a CBOM
 
+[![Diátaxis how-to](https://img.shields.io/badge/Di%C3%A1taxis-how--to-2ea44f?style=flat-square)](https://diataxis.fr/how-to-guides/)
+
 Use `--format cbom` with either scanner to write a CycloneDX Cryptography
 Bill of Materials to standard output.
 
