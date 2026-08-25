@@ -37,21 +37,55 @@ organization link remains stable during that transition.
 TLS scans use a local OpenSSL 3.5.7 LTS binary. SSH scans read the server's
 cleartext KEXINIT offer directly and do not require OpenSSL.
 
+> **Tip:** Start with the [Docker quickstart](#1-quickstart-with-docker). It includes
+> the pinned OpenSSL runtime and keeps the host setup small.
+
+## At a glance
+
+| Target | QuReddy observes | Useful outputs |
+| --- | --- | --- |
+| TLS endpoint | handshake, certificate, key exchange, protocol hygiene | Rich, JSON, JSONL, CBOM |
+| SSH endpoint | banner, KEXINIT algorithms, host-key and authentication evidence | Rich, JSON, JSONL, CBOM |
+| EnXemble host | scan bundle and CISO evaluation | JSONL, JSON, CBOM |
+
+<details>
+<summary>Try a real scan</summary>
+
+```console
+docker run --rm ghcr.io/breachsafe/qureddy:latest scan tls example.com
+docker run --rm ghcr.io/breachsafe/qureddy:latest scan ssh github.com --format jsonl
+```
+
+The first command renders the human report. The second emits one deterministic
+JSONL record per finding for CI, EnXemble, or another downstream consumer.
+
+</details>
+
+### Open-source stack
+
+[![Python](https://img.shields.io/badge/Python-3.14%2B-3776ab?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
+[![Click](https://img.shields.io/badge/CLI-Click-1f6feb?style=flat-square)](https://click.palletsprojects.com/)
+[![Rich](https://img.shields.io/badge/terminal-Rich-8b5cf6?style=flat-square)](https://github.com/Textualize/rich)
+[![OpenSSL](https://img.shields.io/badge/TLS-OpenSSL%203.5.7-721412?style=flat-square&logo=openssl)](https://github.com/openssl/openssl/releases/tag/openssl-3.5.7)
+[![CycloneDX](https://img.shields.io/badge/CBOM-CycloneDX%201.7-2f6690?style=flat-square)](https://cyclonedx.org/docs/1.7/)
+[![uv](https://img.shields.io/badge/tooling-uv-6f42c1?style=flat-square)](https://docs.astral.sh/uv/)
+
 ## Contents
 
-1. [Quickstart with Docker](#1-quickstart-with-docker)
-2. [Install locally with pipx](#2-install-locally-with-pipx)
-3. [Run the first SSH scan](#3-run-the-first-ssh-scan)
-4. [Prepare OpenSSL for TLS](#4-prepare-openssl-for-tls)
-5. [Run the first TLS scan](#5-run-the-first-tls-scan)
-6. [Write JSON, JSONL, CBOM, or a bundle](#6-write-json-jsonl-cbom-or-a-bundle)
-7. [Interpret the evidence](#7-interpret-the-evidence)
-8. [Exit codes](#8-exit-codes)
-9. [Network and privacy scope](#9-network-and-privacy-scope)
-10. [Requirements](#10-requirements)
-11. [Documentation and support](#11-documentation-and-support)
-12. [Contributing](#12-contributing)
-13. [License](#13-license)
+1. [At a glance](#at-a-glance)
+2. [Quickstart with Docker](#1-quickstart-with-docker)
+3. [Install locally with pipx](#2-install-locally-with-pipx)
+4. [Run the first SSH scan](#3-run-the-first-ssh-scan)
+5. [Prepare OpenSSL for TLS](#4-prepare-openssl-for-tls)
+6. [Run the first TLS scan](#5-run-the-first-tls-scan)
+7. [Write JSON, JSONL, CBOM, or a bundle](#6-write-json-jsonl-cbom-or-a-bundle)
+8. [Interpret the evidence](#7-interpret-the-evidence)
+9. [Exit codes](#8-exit-codes)
+10. [Network and privacy scope](#9-network-and-privacy-scope)
+11. [Requirements](#10-requirements)
+12. [Documentation and support](#11-documentation-and-support)
+13. [Contributing](#12-contributing)
+14. [License](#13-license)
 
 ## 1. Quickstart with Docker
 
