@@ -135,7 +135,9 @@ jobs:
   reusable-canary:
     name: Reusable gate canary
     if: github.event_name == 'workflow_dispatch'
-    uses: paul007ex/breachsafe-golden-python/.github/workflows/quality-gates-python.yml@146bee18be9f1a9674c0471523212154c6c50904 # v1
+    # Pin the current reusable gate revision. The previous pin referenced a
+    # retired scanner binary and failed during the canary (#519).
+    uses: paul007ex/breachsafe-golden-python/.github/workflows/quality-gates-python.yml@8cb20e182307847f67b3daf5bbe2be1b4195f465 # v1
     with:
       module: qureddy
       coverage_min: 90
