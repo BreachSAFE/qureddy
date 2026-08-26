@@ -12,15 +12,24 @@ versions follow [PEP 440](https://peps.python.org/pep-0440/).
 ## Contents
 
 1. [Unreleased](#unreleased)
-2. [0.9.0.2](#0902---2026-08-25)
-3. [0.9.0.1](#0901---2026-08-24)
-4. [0.9.0.0](#0900---2026-08-24)
+2. [0.9.0.3](#0903---2026-08-25)
+3. [0.9.0.2](#0902---2026-08-25)
+4. [0.9.0.1](#0901---2026-08-24)
+5. [0.9.0.0](#0900---2026-08-24)
 
 ## Unreleased
 
 ### Changed
 
 - Future changes will be recorded here until the next release is cut.
+
+## [0.9.0.3] - 2026-08-25
+
+### Fixed
+
+- The release-signing verification job now installs the pinned Cosign version used
+  by the build job and fails closed when cryptographic verification cannot run.
+  This closes #502.
 
 ## [0.9.0.2] - 2026-08-25
 
