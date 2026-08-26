@@ -208,7 +208,7 @@ def test_version_banner_includes_breachsafe_name_and_url() -> None:
     assert name_and_version == f"BreachSAFE QuReddy {__version__}"
     parsed_url = urlsplit(url)
     assert parsed_url.scheme == "https"
-    assert parsed_url.hostname == "www.breachsafe.ai"
+    assert parsed_url.hostname == "www.breachsafe.io"
     assert parsed_url.path in ("", "/")
 
 

@@ -35,7 +35,8 @@ from __future__ import annotations
 from qureddy import __version__ as _qureddy_version
 
 PROJECT_NAME = "BreachSAFE QuReddy"
-PROJECT_URL = "https://www.breachsafe.ai"
+PUBLIC_DOMAIN = "breachsafe.io"
+PROJECT_URL = f"https://www.{PUBLIC_DOMAIN}"
 SOURCE_URL = "https://github.com/breachsafe/qureddy"
 LICENSE_NAME = "Apache-2.0"
 PROJECT_VERSION = _qureddy_version

@@ -135,7 +135,7 @@ def finding_from_legacy_result(
 
     TLS 1.2 is *not* deprecated (NIST SP 800-52 Rev. 2 still allows it
     as the floor) and coexists with TLS 1.3 on most real servers by
-    design (confirmed live: breachsafe.ai, this project's own target,
+    design (confirmed live: breachsafe.io, this project's own target,
     offers TLS 1.2 alongside a clean PQC-hybrid TLS 1.3 config) — a
     naive "any legacy protocol = classically_weak" rule made that
     ordinary, common case look identical to a genuinely deprecated

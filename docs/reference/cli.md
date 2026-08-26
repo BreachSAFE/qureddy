@@ -38,7 +38,7 @@ qureddy [OPTIONS] COMMAND [ARGS]...
 The version line is:
 
 ```text
-BreachSAFE QuReddy <version> -- https://www.breachsafe.ai
+BreachSAFE QuReddy <version> -- https://www.breachsafe.io
 ```
 
 ## 2. `qureddy scan`
