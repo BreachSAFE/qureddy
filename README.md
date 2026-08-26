@@ -153,7 +153,7 @@ qureddy --version
 The expected version line is:
 
 ```text
-BreachSAFE QuReddy <version> -- https://www.breachsafe.ai
+BreachSAFE QuReddy <version> -- https://www.breachsafe.io
 ```
 
 QuReddy targets Python `>=3.14`. `pipx`

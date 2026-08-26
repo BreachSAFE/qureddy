@@ -21,6 +21,7 @@ from qureddy._branding import (
     LICENSE_NAME,
     PROJECT_NAME,
     PROJECT_URL,
+    PUBLIC_DOMAIN,
     SOURCE_URL,
     VERSION_BANNER,
 )
@@ -30,8 +31,9 @@ def test_project_name_is_breachsafe_qureddy() -> None:
     assert PROJECT_NAME == "BreachSAFE QuReddy"
 
 
-def test_project_url_is_breachsafe_dot_ai() -> None:
-    assert PROJECT_URL == "https://www.breachsafe.ai"
+def test_public_domain_is_canonical_branding_source() -> None:
+    assert PUBLIC_DOMAIN == "breachsafe.io"
+    assert PROJECT_URL == "https://www.breachsafe.io"
 
 
 def test_source_url_is_breachsafe_qureddy() -> None:
