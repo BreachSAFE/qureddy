@@ -12,19 +12,27 @@ versions follow [PEP 440](https://peps.python.org/pep-0440/).
 ## Contents
 
 1. [Unreleased](#unreleased)
-2. [0.9.0.6](#0906---2026-08-26)
-3. [0.9.0.5](#0905---2026-08-26)
-4. [0.9.0.4](#0904---2026-08-26)
-5. [0.9.0.3](#0903---2026-08-25)
-6. [0.9.0.2](#0902---2026-08-25)
-7. [0.9.0.1](#0901---2026-08-24)
-8. [0.9.0.0](#0900---2026-08-24)
+2. [0.9.0.7](#0907---2026-08-26)
+3. [0.9.0.6](#0906---2026-08-26)
+4. [0.9.0.5](#0905---2026-08-26)
+5. [0.9.0.4](#0904---2026-08-26)
+6. [0.9.0.3](#0903---2026-08-25)
+7. [0.9.0.2](#0902---2026-08-25)
+8. [0.9.0.1](#0901---2026-08-24)
+9. [0.9.0.0](#0900---2026-08-24)
 
 ## Unreleased
 
 ### Changed
 
 - Future changes will be recorded here until the next release is cut.
+
+## [0.9.0.7] - 2026-08-26
+
+### Fixed
+
+- Stage the multi-architecture container manifest, sign and verify its digest,
+  then promote only the verified digest to the version and `latest` tags (#512).
 
 ## [0.9.0.6] - 2026-08-26
 
