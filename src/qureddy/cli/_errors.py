@@ -64,7 +64,7 @@ def _stderr_merged_into_stdout(*, default_when_undetermined: bool = False) -> bo
     try:
         stdout_fd = sys.stdout.fileno()
         stderr_fd = sys.stderr.fileno()
-    except AttributeError, OSError, ValueError:
+    except (AttributeError, OSError, ValueError):
         # No real file descriptor: provably not an fd-level `2>&1`. Fail open.
         return False
     try:
