@@ -30,6 +30,8 @@ versions follow [PEP 440](https://peps.python.org/pep-0440/).
 - The release-signing verification job now installs the pinned Cosign version used
   by the build job and fails closed when cryptographic verification cannot run.
   This closes #502.
+- Corrected two Python 3.14 exception handlers so the duplicate-code CI parser
+  accepts the source on every runner.
 
 ## [0.9.0.2] - 2026-08-25
 
