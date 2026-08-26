@@ -76,7 +76,7 @@ def _stderr_merged_into_stdout(*, default_when_undetermined: bool = False) -> bo
             return _windows_standard_handles_match()
         stdout_stat = os.fstat(stdout_fd)
         stderr_stat = os.fstat(stderr_fd)
-    except AttributeError, OSError, ValueError:
+    except (AttributeError, OSError, ValueError):  # fmt: skip
         # We hold real fds but cannot tell whether they are merged.
         return default_when_undetermined
     return (stdout_stat.st_dev, stdout_stat.st_ino) == (stderr_stat.st_dev, stderr_stat.st_ino)
