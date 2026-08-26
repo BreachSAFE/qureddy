@@ -12,17 +12,24 @@ versions follow [PEP 440](https://peps.python.org/pep-0440/).
 ## Contents
 
 1. [Unreleased](#unreleased)
-2. [0.9.0.4](#0904---2026-08-26)
-3. [0.9.0.3](#0903---2026-08-25)
-4. [0.9.0.2](#0902---2026-08-25)
-5. [0.9.0.1](#0901---2026-08-24)
-6. [0.9.0.0](#0900---2026-08-24)
+2. [0.9.0.5](#0905---2026-08-26)
+3. [0.9.0.4](#0904---2026-08-26)
+4. [0.9.0.3](#0903---2026-08-25)
+5. [0.9.0.2](#0902---2026-08-25)
+6. [0.9.0.1](#0901---2026-08-24)
+7. [0.9.0.0](#0900---2026-08-24)
 
 ## Unreleased
 
 ### Changed
 
 - Future changes will be recorded here until the next release is cut.
+
+## [0.9.0.5] - 2026-08-26
+
+### Fixed
+
+- Corrected GHCR manifest digest extraction so the container signing step consumes the published digest format returned by Buildx.
 
 ## [0.9.0.4] - 2026-08-26
 
