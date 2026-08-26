@@ -12,6 +12,23 @@ version: 2
 
 updates:
 
+  # Digest-pinned container bases need a regular update proposal so security
+  # fixes do not age out silently. Each PR runs the container smoke gate.
+  - package-ecosystem: docker
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Etc/UTC
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - docker
+    commit-message:
+      prefix: "build"
+      include: scope
+
   # ---------------------------------------------------------------------------
   # Python runtime + dev dependencies (pyproject.toml)
   # ---------------------------------------------------------------------------
