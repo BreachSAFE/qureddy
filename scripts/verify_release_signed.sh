@@ -19,10 +19,10 @@
 #      <name>.sigstore signature-bundle asset, AND
 #   4. the sdist  (breachsafe_qureddy-<v>.tar.gz)            has a sibling
 #      <name>.sigstore signature-bundle asset.
-# If cosign and/or `gh attestation` are available it ALSO verifies the bundle /
-# SLSA build-provenance cryptographically; when that verification runs and
-# fails, the gate fails. Missing verifier tools degrade to the asset-presence
-# check (still un-bypassable for "signing never ran") rather than a false pass.
+# Cosign is required for this gate and is installed by release.yml. The gate
+# fails closed if it is unavailable, so an asset-presence check can never be
+# mistaken for signature verification. `gh attestation` remains an optional
+# additional provenance check.
 #
 # The confirmed-good shape (from the genuinely signed v0.2.17 release):
 #   breachsafe_qureddy-0.2.17-py3-none-any.whl   + .whl.sigstore
@@ -33,7 +33,7 @@
 # instead of being caught days later by an OpenSSF Scorecard drop.
 #
 # Read-only except a temp download of the release artifacts (cleaned up).
-# Deps: gh (authenticated), jq. Optional: cosign, `gh attestation`.
+# Deps: gh (authenticated), jq, cosign. Optional: `gh attestation`.
 # bash 3.2 safe (macOS default bash).
 #
 # Usage:
@@ -129,16 +129,17 @@ check_signed() {
 check_signed "wheel" "$WHEEL"
 check_signed "sdist" "$SDIST"
 
-# --- 5. (optional) cryptographic verification -------------------------------
-# Best-effort strengthening: if a verifier is available, actually verify. When
-# verification RUNS and fails, that is a hard failure. When no verifier is
-# available we say so rather than claiming a pass we did not earn.
+# --- 5. cryptographic verification ------------------------------------------
+# Cosign is mandatory. When verification runs and fails, the gate fails.
 if [ "$DO_VERIFY" -eq 1 ] && [ "$SIMULATE_UNSIGNED" -eq 0 ] && [ -n "$WHEEL" ]; then
-  VERIFIER=""
-  command -v cosign >/dev/null 2>&1 && VERIFIER="cosign"
+  if ! command -v cosign >/dev/null 2>&1; then
+    echo "  [FAIL] cosign is required for cryptographic verification but is not installed"
+    FAIL=1
+  fi
+  VERIFIER="cosign"
   ATTEST_OK=0
   gh attestation --help >/dev/null 2>&1 && ATTEST_OK=1
-  if [ -n "$VERIFIER" ] || [ "$ATTEST_OK" -eq 1 ]; then
+  if [ "$FAIL" -eq 0 ]; then
     TMP="$(mktemp -d)"
     if gh release download "$TAG" -R "$REPO" -p "$WHEEL" -D "$TMP" >/dev/null 2>&1; then
       # cosign verify-blob against the keyless GitHub-Actions OIDC identity.
@@ -169,9 +170,6 @@ if [ "$DO_VERIFY" -eq 1 ] && [ "$SIMULATE_UNSIGNED" -eq 0 ] && [ -n "$WHEEL" ]; 
       echo "  [note] could not download ${WHEEL} for cryptographic verification"
     fi
     rm -rf "$TMP"
-  else
-    echo "  [note] no cosign / gh-attestation verifier available; the asset-presence"
-    echo "         check above still enforces that signing ran"
   fi
 fi
 

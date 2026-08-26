@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 import pytest
 
 import qureddy.scanners.tls.scanner as scanner_module
+from qureddy.core.errors import LocalOpenSSLMissing
 from qureddy.core.models import (
     Asset,
     Confidence,
@@ -157,6 +158,19 @@ class TestTLSScannerOrchestration:
         )
         assert evidence.observation_type is ObservationType.OBSERVED
         assert finding is not None
+
+        def missing_openssl(*_args: object, **_kwargs: object) -> str:
+            raise LocalOpenSSLMissing("fixture openssl missing")
+
+        monkeypatch.setattr(scanner_module, "fetch_certificate_pem", missing_openssl)
+        evidence, finding = TLSScanner._collect_cert_evidence(  # noqa: SLF001
+            target=target,
+            asset=asset,
+            openssl_path="/fixture/openssl",
+            timeout_seconds=1,
+        )
+        assert finding is None
+        assert evidence.observation_type is ObservationType.NOT_TESTABLE
 
 
 class TestSummaryFailureCategoryPreservation:

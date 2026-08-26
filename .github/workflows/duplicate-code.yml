@@ -51,7 +51,7 @@ jobs:
         run: npx --yes jscpd@4 src/ --config .jscpd.json --reporters consoleFull,html
 
       - name: Structural clones (pylint duplicate-code / R0801)
-        run: pipx run pylint src/qureddy/
+        run: pipx run --spec 'pylint==4.0.7' pylint src/qureddy/
 
       - name: Upload jscpd HTML report
         if: always()
