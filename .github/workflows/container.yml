@@ -209,8 +209,8 @@ jobs:
           IMAGE: ghcr.io/breachsafe/qureddy
         run: |
           set -euo pipefail
-          digest="$(docker buildx imagetools inspect "$IMAGE:$QUREDDY_VERSION" \
-            | awk '$1 == "Digest:" {print $2; exit}')"
+          raw_manifest="$(docker buildx imagetools inspect --raw "$IMAGE:$QUREDDY_VERSION")"
+          digest="sha256:$(printf '%s' "$raw_manifest" | sha256sum | cut -d' ' -f1)"
           test -n "$digest" && case "$digest" in sha256:*) ;; *) exit 1 ;; esac
           cosign sign --yes "$IMAGE@$digest"
           cosign verify "$IMAGE@$digest" \
