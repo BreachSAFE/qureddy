@@ -210,7 +210,7 @@ jobs:
         run: |
           set -euo pipefail
           digest="$(docker buildx imagetools inspect "$IMAGE:$QUREDDY_VERSION" \
-            | awk '$1 == "Digest:" {print $2; exit}')"
+            --format '{{.Digest}}')"
           test -n "$digest" && case "$digest" in sha256:*) ;; *) exit 1 ;; esac
           cosign sign --yes "$IMAGE@$digest"
           cosign verify "$IMAGE@$digest" \
