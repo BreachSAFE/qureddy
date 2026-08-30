@@ -10,6 +10,8 @@ A "hybrid" group carries a PQ KEM plus a classical half; a "pure PQ" group is th
 
 from __future__ import annotations
 
+import re
+
 _PQ_KEM_TOKENS = ("mlkem", "ml-kem", "sntrup", "kyber")
 
 # (token, canonical name, NIST post-quantum category). Longer/more-specific tokens first so
@@ -47,25 +49,31 @@ _CLASSICAL_HALF = (
 )
 
 
+# Match a token only at a name-component boundary, so a token embedded inside a
+# larger alphabetic run does not match (#532). Left boundary: not preceded by a
+# letter (digits like the "9" in x25519 are fine). A PQ KEM name always carries a
+# size, so the token is followed by an optional hyphen and a digit.
+_PQ_KEM_RE = re.compile(r"(?<![a-z])(?:" + "|".join(_PQ_KEM_TOKENS) + r")-?\d")
+_CLASSICAL_RE = re.compile(r"(?<![a-z])(?:" + "|".join(_CLASSICAL_HALF) + r")")
+
+
 def is_pq_kem(name: str) -> bool:
     """True if the group/KEX name carries any post-quantum KEM."""
-    lowered = name.lower()
-    return any(token in lowered for token in _PQ_KEM_TOKENS)
+    return _PQ_KEM_RE.search(name.lower()) is not None
 
 
 def pq_kem_category(name: str) -> tuple[str, int] | None:
     """Return ``(canonical KEM name, NIST category)`` for a PQ group, or None if not PQ."""
     lowered = name.lower()
     for token, canonical, level in _PQ_KEM_CATEGORY:
-        if token in lowered:
+        if re.search(r"(?<![a-z])" + re.escape(token) + r"(?![0-9])", lowered):
             return canonical, level
     return None
 
 
 def has_classical_half(name: str) -> bool:
     """True if the name carries a classical (ECDH/X25519/NIST-curve) component."""
-    lowered = name.lower()
-    return any(token in lowered for token in _CLASSICAL_HALF)
+    return _CLASSICAL_RE.search(name.lower()) is not None
 
 
 def is_hybrid_pq(name: str) -> bool:

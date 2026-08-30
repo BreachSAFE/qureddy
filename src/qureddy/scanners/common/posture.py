@@ -148,7 +148,10 @@ def _hndl_exposure(
     if hybrid:
         return HndlExposure.PROTECTED_DEFEASIBLE if classical else HndlExposure.PROTECTED
     if pure_pq:
-        return HndlExposure.PROTECTED
+        # A pure-PQ group with an observed classical downgrade is not fully
+        # protected: an attacker can force the classical path (#530). Mirror the
+        # hybrid branch instead of over-claiming PROTECTED.
+        return HndlExposure.PROTECTED_DEFEASIBLE if classical else HndlExposure.PROTECTED
     if classical:
         return HndlExposure.AT_RISK
     return HndlExposure.UNKNOWN

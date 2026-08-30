@@ -27,9 +27,11 @@ if TYPE_CHECKING:
     from cyclonedx.model.bom_ref import BomRef
 
 # NIST SP 800-57 Part 1 Rev.5, Table 2: classical security strength (bits) by asymmetric
-# key size. Only the standard sizes are listed; an off-table size yields no claimed strength.
+# key size. Only the sizes that Table 2 actually lists appear here; an off-table size
+# (e.g. 1024 or 4096) yields no claimed strength rather than an interpolation falsely
+# attributed to the table (#531).
 _RSA_CLASSICAL_STRENGTH: MappingProxyType[int, int] = MappingProxyType(
-    {1024: 80, 2048: 112, 3072: 128, 4096: 152, 7680: 192, 15360: 256}
+    {2048: 112, 3072: 128, 7680: 192, 15360: 256}
 )
 _EC_CLASSICAL_STRENGTH: MappingProxyType[int, int] = MappingProxyType(
     {255: 128, 256: 128, 384: 192, 448: 224, 521: 256}
