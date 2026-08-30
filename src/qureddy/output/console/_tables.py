@@ -11,6 +11,7 @@ from rich.table import Table
 from rich.text import Text
 
 from qureddy.core.models import ProbeRole
+from qureddy.core.pqc import is_pq_kem
 from qureddy.output._styles import (
     BODY_TEXT,
     style_capability,
@@ -133,9 +134,14 @@ def _style_ssh_kex(result: ScanResult) -> Text:
     """Summarize the SSH key-exchange evidence for the scan-details table."""
     for ev in result.evidence:
         if ev.evidence_type == "ssh.kex" and ev.negotiated_group:
-            out = Text("PQ hybrid ", style="green")
-            out.append(style_group(ev.negotiated_group))
-            return out
+            # Only label the group PQ when it actually carries a post-quantum KEM
+            # (#534). A classical group (curve25519-sha256, ecdh-*) gets no prefix;
+            # style_group already colours it correctly.
+            if is_pq_kem(ev.negotiated_group):
+                out = Text("PQ hybrid ", style="green")
+                out.append(style_group(ev.negotiated_group))
+                return out
+            return style_group(ev.negotiated_group)
     return Text("classical only", style="yellow")
 
 
