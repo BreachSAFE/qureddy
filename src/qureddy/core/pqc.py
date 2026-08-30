@@ -2,13 +2,19 @@
 # SPDX-License-Identifier: Apache-2.0
 """Shared structural PQC classification (#330) — one source for TLS + SSH + future callers.
 
-Structural (case-insensitive substring), not an allowlist, so a new ML-KEM/Kyber group
-spelling classifies without a code change — this is what the TLS path was missing (it matched
-only the literal ``X25519MLKEM768``, a false negative on every other standardized PQ hybrid).
+Structural rather than an allowlist, so a new ML-KEM/Kyber group spelling classifies without
+a code change. The TLS path once matched only the literal ``X25519MLKEM768``, a false negative
+on every other standardized PQ hybrid (#330).
+
+Matching is anchored: a token must start a name component and a KEM token must be followed by
+its parameter set. Plain substring containment classified any name merely holding a token, so a
+server-chosen SSH KEX name such as ``xkyber999x25519-sha256`` read as post-quantum (#532).
 A "hybrid" group carries a PQ KEM plus a classical half; a "pure PQ" group is the KEM alone.
 """
 
 from __future__ import annotations
+
+import re
 
 _PQ_KEM_TOKENS = ("mlkem", "ml-kem", "sntrup", "kyber")
 
@@ -47,25 +53,43 @@ _CLASSICAL_HALF = (
 )
 
 
+def _anchored(tokens: tuple[str, ...], suffix: str = "") -> re.Pattern[str]:
+    """Compile ``tokens`` so each may only match at the start of a name component.
+
+    ``re.escape`` is applied per token: the token tuples above read as plain strings, so a
+    later edit adding ``ml.kem`` would otherwise become a silent wildcard.
+    """
+    alternation = "|".join(re.escape(token) for token in tokens)
+    return re.compile(r"(?<![a-z])(?:" + alternation + r")" + suffix)
+
+
+# A KEM token must carry its parameter set, so "kyberdyne" is not a KEM.
+_PQ_KEM_RE = _anchored(_PQ_KEM_TOKENS, r"-?\d")
+_CLASSICAL_RE = _anchored(_CLASSICAL_HALF)
+# Exact parameter tokens, so "kyber512" does not match inside "kyber5120".
+_PQ_KEM_CATEGORY_RE: tuple[tuple[re.Pattern[str], str, int], ...] = tuple(
+    (_anchored((token,), r"(?![0-9])"), canonical, level)
+    for token, canonical, level in _PQ_KEM_CATEGORY
+)
+
+
 def is_pq_kem(name: str) -> bool:
     """True if the group/KEX name carries any post-quantum KEM."""
-    lowered = name.lower()
-    return any(token in lowered for token in _PQ_KEM_TOKENS)
+    return _PQ_KEM_RE.search(name.lower()) is not None
 
 
 def pq_kem_category(name: str) -> tuple[str, int] | None:
     """Return ``(canonical KEM name, NIST category)`` for a PQ group, or None if not PQ."""
     lowered = name.lower()
-    for token, canonical, level in _PQ_KEM_CATEGORY:
-        if token in lowered:
+    for pattern, canonical, level in _PQ_KEM_CATEGORY_RE:
+        if pattern.search(lowered):
             return canonical, level
     return None
 
 
 def has_classical_half(name: str) -> bool:
     """True if the name carries a classical (ECDH/X25519/NIST-curve) component."""
-    lowered = name.lower()
-    return any(token in lowered for token in _CLASSICAL_HALF)
+    return _CLASSICAL_RE.search(name.lower()) is not None
 
 
 def is_hybrid_pq(name: str) -> bool:
