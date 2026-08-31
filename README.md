@@ -24,6 +24,7 @@
 [![NIST OSCAL downstream](https://img.shields.io/badge/NIST-OSCAL%20downstream-005ea8?style=flat-square)](https://pages.nist.gov/OSCAL/)
 [![NIST SP 800-53 mapping](https://img.shields.io/badge/NIST-SP%20800--53%20mapping-005ea8?style=flat-square)](https://csrc.nist.gov/publications/detail/sp/800-53/rev-5/final)
 [![CISA quantum guidance](https://img.shields.io/badge/CISA-quantum%20guidance-1a4480?style=flat-square)](https://www.cisa.gov/topics/cyber-threats-and-advisories/quantum)
+[![Is it Q-Day?](https://img.shields.io/badge/Is%20it-Q--Day%3F-8a2be2?style=flat-square)](https://isitqday.com/)
 [![OWASP crypto guidance](https://img.shields.io/badge/OWASP-crypto%20guidance-000000?style=flat-square&logo=owasp)](https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html)
 [![SCF Quantum Security mapping](https://img.shields.io/badge/SCF-Quantum%20Security%20mapping-4b5563?style=flat-square)](https://github.com/BreachSAFE)
 [![PQC evidence](https://img.shields.io/badge/QuReddy-PQC%20evidence-6f42c1?style=flat-square)](https://github.com/BreachSAFE/qureddy/blob/main/docs/explanation/hndl.md)

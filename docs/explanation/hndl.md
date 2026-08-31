@@ -3,6 +3,7 @@
 [![Diátaxis explanation](https://img.shields.io/badge/Di%C3%A1taxis-explanation-8250df?style=flat-square)](https://diataxis.fr/explanation/)
 [![SCF Quantum Security](https://img.shields.io/badge/SCF-QTS%20domain-4b5563?style=flat-square)](https://securecontrolsframework.com/faqs/scf-qts-domain-quantum-security)
 [![NIST PQC](https://img.shields.io/badge/NIST-PQC%20project-005ea8?style=flat-square)](https://csrc.nist.gov/projects/post-quantum-cryptography)
+[![Is it Q-Day?](https://img.shields.io/badge/Is%20it-Q--Day%3F-8a2be2?style=flat-square)](https://isitqday.com/)
 
 Harvest now, decrypt later (HNDL) is the confidentiality risk that gives
 post-quantum key exchange migration its present-day timeline. An adversary can
@@ -18,6 +19,7 @@ breaks the original key exchange.
 5. [What it does not protect](#5-what-it-does-not-protect)
 6. [How QuReddy uses this model](#6-how-qureddy-uses-this-model)
 7. [Related documentation](#7-related-documentation)
+8. [Further viewing](#8-further-viewing)
 
 ## 1. Threat sequence
 
@@ -95,3 +97,10 @@ perform remediation.
 - [Why hybrid post-quantum](why-hybrid-pq.md)
 - [Threat model](threat-model.md)
 - [NIST post-quantum cryptography project](https://csrc.nist.gov/projects/post-quantum-cryptography)
+
+## 8. Further viewing
+
+[![Your Encryption Isn't Quantum Safe, IBM Technology](https://img.youtube.com/vi/ecvCfTPRBrI/hqdefault.jpg)](https://www.youtube.com/watch?v=ecvCfTPRBrI)
+
+- [Your Encryption Isn't Quantum Safe](https://www.youtube.com/watch?v=ecvCfTPRBrI) (IBM Technology): a short explainer of the harvest-now-decrypt-later threat.
+- [Is it Q-Day?](https://isitqday.com/): a running estimate of when a cryptographically relevant quantum computer arrives.
