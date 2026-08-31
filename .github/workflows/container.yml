@@ -259,8 +259,10 @@ jobs:
             echo "Docker Hub manifest digest mismatch: expected $digest, got $destination_digest" >&2
             exit 1
           }
-          # Transfer the source signature, attestations, and SBOM to the same digest.
-          cosign copy --only=sig,att,sbom "$SOURCE_IMAGE@$digest" "$DEST_IMAGE@$destination_digest"
+          # Transfer the signed image reference and its signature to the same digest.
+          # The default copy mode targets the signed index; --only on an index can
+          # incorrectly resolve platform children that do not carry the signature.
+          cosign copy "$SOURCE_IMAGE@$digest" "$DEST_IMAGE@$destination_digest"
           cosign verify "$DEST_IMAGE@$destination_digest" \
             --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
             --certificate-identity-regexp '^https://github.com/BreachSAFE/qureddy/\.github/workflows/'
