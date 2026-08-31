@@ -1,6 +1,6 @@
 # Scanner contract
 
-[![Architecture contract](https://img.shields.io/badge/QuReddy-architecture%20contract-8250df?style=flat-square)](https://github.com/BreachSAFE/qureddy/blob/main/docs/architecture/scan-contract.md)
+[![Architecture contract](https://img.shields.io/badge/QuReddy-architecture%20contract-8250df?style=flat-square)](https://github.com/BreachSAFE/qureddy/blob/main/docs/reference/scan-contract.md)
 
 ## Contents
 
