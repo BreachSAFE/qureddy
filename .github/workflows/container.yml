@@ -20,7 +20,7 @@ on:
         required: true
         default: 0.9.0.2
       publish:
-        description: Push the multi-architecture image to GHCR
+        description: Push the multi-architecture image to GHCR and Docker Hub
         required: true
         type: boolean
         default: false
@@ -232,3 +232,34 @@ jobs:
               --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
               --certificate-identity-regexp '^https://github.com/BreachSAFE/qureddy/\.github/workflows/'
           done
+      - name: Log in to Docker Hub
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          test -n "$DOCKERHUB_USERNAME" || { echo 'DOCKERHUB_USERNAME is not configured' >&2; exit 1; }
+          test -n "$DOCKERHUB_TOKEN" || { echo 'DOCKERHUB_TOKEN is not configured' >&2; exit 1; }
+          printf '%s' "$DOCKERHUB_TOKEN" | docker login docker.io \
+            --username "$DOCKERHUB_USERNAME" --password-stdin
+      - name: Promote the signed digest to Docker Hub
+        env:
+          QUREDDY_VERSION: ${{ needs.version.outputs.version }}
+          SOURCE_IMAGE: ghcr.io/breachsafe/qureddy
+          DEST_IMAGE: docker.io/breachsafe/qureddy
+        run: |
+          set -euo pipefail
+          digest="sha256:$(docker buildx imagetools inspect --raw "$SOURCE_IMAGE:sha-${GITHUB_SHA::12}" | sha256sum | cut -d' ' -f1)"
+          # Copy the manifest and its signature/attestation references; do not rebuild per registry.
+          cosign copy --recursive "$SOURCE_IMAGE@$digest" "$DEST_IMAGE@$digest"
+          for tag in "$QUREDDY_VERSION" latest; do
+            docker buildx imagetools create --tag "$DEST_IMAGE:$tag" "$DEST_IMAGE@$digest"
+          done
+          destination_digest="sha256:$(docker buildx imagetools inspect --raw "$DEST_IMAGE:$QUREDDY_VERSION" | sha256sum | cut -d' ' -f1)"
+          test "$destination_digest" = "$digest" || {
+            echo "Docker Hub manifest digest mismatch: expected $digest, got $destination_digest" >&2
+            exit 1
+          }
+          cosign verify "$DEST_IMAGE@$digest" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+            --certificate-identity-regexp '^https://github.com/BreachSAFE/qureddy/\.github/workflows/'
