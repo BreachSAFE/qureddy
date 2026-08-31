@@ -65,23 +65,35 @@ JSONL record per finding for CI, EnXemble, or another downstream consumer.
 
 </details>
 
+## Understand the threat: harvest now, decrypt later
+
+Attackers record encrypted traffic today and decrypt it once a quantum computer can break the
+key exchange. Long-lived secrets sent now over classical TLS or SSH are already exposed.
+
+[![Your Encryption Isn't Quantum Safe, IBM Technology](https://img.youtube.com/vi/ecvCfTPRBrI/maxresdefault.jpg)](https://www.youtube.com/watch?v=ecvCfTPRBrI)
+
+Watch **[Your Encryption Isn't Quantum Safe](https://www.youtube.com/watch?v=ecvCfTPRBrI)**
+(IBM Technology), then track the clock at **[Is it Q-Day?](https://isitqday.com/)**. QuReddy
+shows which of your TLS and SSH endpoints are exposed today.
+
 ## Contents
 
 1. [At a glance](#at-a-glance)
-2. [Quickstart with Docker](#1-quickstart-with-docker)
-3. [Install locally with pipx](#2-install-locally-with-pipx)
-4. [Run the first SSH scan](#3-run-the-first-ssh-scan)
-5. [Prepare OpenSSL for TLS](#4-prepare-openssl-for-tls)
-6. [Run the first TLS scan](#5-run-the-first-tls-scan)
-7. [Write JSON, JSONL, CBOM, or a bundle](#6-write-json-jsonl-cbom-or-a-bundle)
-8. [Interpret the evidence](#7-interpret-the-evidence)
-9. [Exit codes](#8-exit-codes)
-10. [Network and privacy scope](#9-network-and-privacy-scope)
-11. [Requirements](#10-requirements)
-12. [Documentation and support](#11-documentation-and-support)
-13. [Contributing](#12-contributing)
-14. [Open-source stack](#open-source-stack)
-15. [License](#13-license)
+2. [Understand the threat: harvest now, decrypt later](#understand-the-threat-harvest-now-decrypt-later)
+3. [Quickstart with Docker](#1-quickstart-with-docker)
+4. [Install locally with pipx](#2-install-locally-with-pipx)
+5. [Run the first SSH scan](#3-run-the-first-ssh-scan)
+6. [Prepare OpenSSL for TLS](#4-prepare-openssl-for-tls)
+7. [Run the first TLS scan](#5-run-the-first-tls-scan)
+8. [Write JSON, JSONL, CBOM, or a bundle](#6-write-json-jsonl-cbom-or-a-bundle)
+9. [Interpret the evidence](#7-interpret-the-evidence)
+10. [Exit codes](#8-exit-codes)
+11. [Network and privacy scope](#9-network-and-privacy-scope)
+12. [Requirements](#10-requirements)
+13. [Documentation and support](#11-documentation-and-support)
+14. [Contributing](#12-contributing)
+15. [Open-source stack](#open-source-stack)
+16. [License](#13-license)
 
 ## 1. Quickstart with Docker
 
