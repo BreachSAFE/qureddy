@@ -4,56 +4,103 @@
 
 [![Architecture decision](https://img.shields.io/badge/QuReddy-architecture%20decision-8250df?style=flat-square)](https://github.com/BreachSAFE/qureddy/blob/main/docs/architecture/ike-scanner-adr.md)
 
-**Tag:** `[codex-1]`
+**Tag:** `[546]`
 **Status:** Proposed for maintainer review
-**Scope:** QuReddy native IKE observation, canonical output integration, and EnXemble validation
-**Issue:** [#547](https://github.com/BreachSAFE/qureddy/issues/547)
+**Scope:** QuReddy native IKE observation and canonical output integration
+**Issue:** [#546](https://github.com/BreachSAFE/qureddy/issues/546)
+
+Until PR #564 merges, this Proposed ADR mirrors the normative working contract in #546. If the
+two differ before that merge, #546 controls and this file must be corrected. The merge commit is
+the atomic authority handoff: after merge, this version-controlled ADR is the normative durable
+architecture, and #546 tracks delivery and links the governing commit. Later architectural
+changes require a reviewed ADR update; an issue edit or comment cannot silently override it.
+Earlier draft issues are historical material only and are not implementation authorities.
 
 ## Contents
 
 1. [Decision summary](#1-decision-summary)
+   1. [Capability matrix](#11-capability-matrix)
 2. [Problem and non-goals](#2-problem-and-non-goals)
+   1. [Problem](#21-problem)
+   2. [In scope](#22-in-scope)
+   3. [Out of scope for the first release](#23-out-of-scope-for-the-first-release)
 3. [Architecture](#3-architecture)
+   1. [Component topology](#31-component-topology)
+   2. [Dependency direction](#32-dependency-direction)
+   3. [One acquisition, one canonical result](#33-one-acquisition-one-canonical-result)
 4. [Canonical data contract](#4-canonical-data-contract)
+   1. [Canonical model ownership](#41-canonical-model-ownership)
+   2. [Protocol-private boundary](#42-protocol-private-boundary)
+   3. [Result integration](#43-result-integration)
+   4. [Contract closure gates](#44-contract-closure-gates)
 5. [IKE protocol contract](#5-ike-protocol-contract)
+   1. [Probe behavior](#51-probe-behavior)
+   2. [Evidence ladder](#52-evidence-ladder)
+   3. [Response binding requirements](#53-response-binding-requirements)
 6. [CLI contract](#6-cli-contract)
+   1. [Command](#61-command)
+   2. [Proposed options](#62-proposed-options)
+   3. [Exit codes](#63-exit-codes)
 7. [Evidence and HNDL evaluation](#7-evidence-and-hndl-evaluation)
+   1. [Policy inputs](#71-policy-inputs)
+      1. [Scoped HNDL assessment](#711-scoped-hndl-assessment)
+      2. [Semantic-signal naming contract](#712-semantic-signal-naming-contract)
+   2. [Required semantic rules](#72-required-semantic-rules)
+   3. [Output parity](#73-output-parity)
 8. [External validator contract](#8-external-validator-contract)
+   1. [EnXemble role](#81-enxemble-role)
+   2. [Provenance and disagreement](#82-provenance-and-disagreement)
 9. [File-level implementation plan](#9-file-level-implementation-plan)
+   1. [QuReddy files to change](#91-qureddy-files-to-change)
+   2. [Tests and fixtures to add](#92-tests-and-fixtures-to-add)
+   3. [EnXemble files](#93-enxemble-files-separate-repositoryfollow-up)
 10. [Test and pressure-test plan](#10-test-and-pressure-test-plan)
+    1. [Required lab matrix](#101-required-lab-matrix)
+    2. [Real CLI commands](#102-real-cli-commands)
 11. [Security and safety controls](#11-security-and-safety-controls)
 12. [Alternatives and trade-offs](#12-alternatives-and-trade-offs)
 13. [Acceptance criteria](#13-acceptance-criteria)
 14. [Rollout and compatibility](#14-rollout-and-compatibility)
 15. [Open decisions](#15-open-decisions)
 16. [Implementation handoff and ownership](#16-implementation-handoff-and-ownership)
+    1. [File and component map](#161-file-and-component-map)
+    2. [Single-owner data model](#162-single-owner-data-model)
+    3. [Per-issue working agreement](#163-per-issue-working-agreement)
+    4. [Milestone exit contract](#164-milestone-exit-contract)
 17. [Implementation quality bar](#17-implementation-quality-bar)
+    1. [References](#171-references)
 
 ## 1. Decision summary
 
 QuReddy will add a native, observation-only IKE scanner behind the existing
-collector and canonical-result seams. The first production slice is bounded to
-unauthenticated IKEv2 `IKE_SA_INIT` observation and IKEv1 discovery evidence. It
-does not establish a tunnel, authenticate, recover a PSK, or claim completed PQ
+collector and canonical-result seams. The first production slices are bounded to
+unauthenticated IKEv1 discovery and IKEv2 `IKE_SA_INIT` observation. They do not
+establish a tunnel, authenticate, recover a PSK, or claim completed PQ
 protection.
 
 ```text
 qureddy scan ike TARGET
         |
         v
-    IkeRequest
+    IKEProbeRequest
         |
         v
-    NativeIkeCollector
+    NativeIKECollector
         |
         v
-    IkeParser + response binding
+    IKEParser + response binding
         |
         v
-    IkeObservation(s) + typed failure
+    bound IKEProposalObservation(s) + typed failure
         |
         v
-    existing evaluator -> ScanResult
+    shared evaluator -> interpretation/findings
+        |
+        v
+    IKEScanner constructs one immutable ScanResult
+        |
+        v
+    NativeIKECollector wraps the same result in CollectionResult
         |
         +--> rich
         +--> json
@@ -66,18 +113,57 @@ validator/corroborator for IKEv1 transform and legacy-mode evidence. It is not a
 QuReddy runtime dependency, is not the authoritative PQ scanner, and does not
 write CBOM directly.
 
-The implementation is intentionally staged:
+The implementation is intentionally staged under the delivery sequence in #546:
 
-1. make the existing collector lifecycle executable for all scanner commands;
-2. add validated native IKEv2 observation;
-3. add IKEv1 discovery evidence;
-4. add cross-format output and CBOM mapping;
-5. add EnXemble `ike-scan` corroboration;
-6. only then evaluate completed ML-KEM exchange support through a separately
-   approved cryptographic provider.
+1. #549 target parsing/capability registration, then #550 catalog and exact identity;
+2. #551 bounded UDP/codec and the observation-scoped provider boundary;
+3. #552 IKEv1 Main/Aggressive observation and Historic plus authentication-method-specific
+   identity/credential findings;
+4. #553 IKEv2 binding, unchanged attributes, and inconsistent-selection termination;
+5. #554 canonical findings and Rich/JSON/JSONL/CBOM parity;
+6. #476 canonical semantic/output conformance;
+7. #477 installed CLI flags, exit codes, and deterministic output;
+8. #556 package/image/docs release verification, consuming #561 pinned-lab evidence.
 
-No stage may label an endpoint `PROTECTED` from an advertised or selected PQ
-transform alone.
+Post-MVP milestone `0.14.0 - IKE PQC and Discovery Parity`: #555 live ML-KEM-768/1024 and legal
+ADDKE selection, #562 completion, and #563 discovery parity.
+
+Protected `IKE_INTERMEDIATE`/ADDKE completion is planned in the `0.14.0 - IKE PQC and Discovery Parity`
+milestone and owned by
+[#562](https://github.com/BreachSAFE/qureddy/issues/562). EnXemble validation is owned by
+the separate [EnXemble issue #51](https://github.com/BreachSAFE/enxemble/issues/51).
+
+No stage may label an endpoint `PROTECTED` from an IKE capability notification
+or unauthenticated proposal observation.
+
+### 1.1 Capability matrix
+
+This matrix is the acceptance boundary, not a promise that the current branch already implements
+the feature. `0.13` is the pre-PQC release; `0.14` adds the explicitly deferred parity work.
+
+| Capability | 0.13 pre-PQC | 0.14 parity | Evidence/output |
+|---|---|---|---|
+| IKEv1 Main Mode | required | retained | exact offered/selected Phase-1 tuples |
+| IKEv1 Aggressive Mode | required | retained | Historic; identity exposure except public-key-encryption authentication; PSK offline-guessing finding |
+| IKEv2 `IKE_SA_INIT` | required | retained | exact ENCR/PRF/INTEG/KE tuples and notifications |
+| IKEv2 `IKE_INTERMEDIATE` | not tested | planned | protected completion only after #562 gates |
+| ADDKE1--ADDKE7 | catalog only | planned #555 | slot, wire ID, tuple, coverage |
+| ML-KEM-512 / ID 35 | catalog-only `not_tested` | unchanged | never scheduled or attempted |
+| ML-KEM-768 / ID 36 | catalog-only `not_tested` | planned #555 | live ADDKE/IKE_INTERMEDIATE selection evidence when supported |
+| ML-KEM-1024 / ID 37 | catalog-only `not_tested` | planned #555 | live ADDKE/IKE_INTERMEDIATE selection evidence when supported |
+| NAT-T Vendor-ID / NAT-D / UDP 4500 | required | retained | bounded metadata and framing evidence |
+| COOKIE / INVALID_KE_PAYLOAD / NO_PROPOSAL_CHOSEN | required | retained | typed retry/rejection/unknown outcomes |
+| Retransmission/backoff fingerprinting | bounded timing only | planned #563 | no GPL database; digest/timing provenance only |
+| Rich / JSON / JSONL / CBOM / `--output-dir` | required | retained | one canonical `ScanResult` |
+| Overall authenticated IPsec posture | always `UNKNOWN` | always `UNKNOWN` | IKE-SA scope may be classified separately |
+
+ML-KEM-768/1024 selection is not scheduled in the initial unauthenticated `IKE_SA_INIT` profile;
+the 0.14 path is legal ADDKE/IKE_INTERMEDIATE negotiation with the matching capability
+notification and peer-specific MTU/fragmentation proof. ML-KEM-512 remains catalog-only,
+`not_tested`, and outside active probing. TLS and SSH remain existing compatibility baselines;
+this ADR does not change their acquisition
+or serialized output. IKE_AUTH, credentials/XAUTH, Child-SA, ESP/AH, traffic selectors, tunnel
+establishment, PSK recovery, and raw packet/secret retention are not extractable by this design.
 
 ## 2. Problem and non-goals
 
@@ -97,11 +183,13 @@ for a CISO.
 - IKEv2 `IKE_SA_INIT` proposal and notify observation.
 - Protocol version, exchange type, mode, encryption, integrity/PRF, DH/KE group,
   NAT-T behavior, response state, and provenance.
-- Explicit evidence levels: `observed`, `advertised`, `selected`, `completed`.
-- ML-KEM-512 is out of scope for this plan. No provider, catalog, fixture, CLI
-  profile, or readiness claim may imply ML-KEM-512 support.
+- Explicit outcomes: `accepted`, `rejected`, `unknown`, and `not_tested` coverage.
+- ML-KEM-512/ID 35 may be retained as lossless catalog metadata only. It is never
+  scheduled, attempted, or used in a readiness claim. ML-KEM-768/1024 are the
+  only in-scope PQ parameter sets.
 - Canonical Rich, JSON, JSONL, and later CBOM projections.
-- EnXemble-side optional `ike-scan` independent validation.
+- EnXemble-side `ike-scan` validation is a separate consumer concern; it never
+  writes CBOM and never replaces QuReddy evidence.
 
 ### 2.3 Out of scope for the first release
 
@@ -120,15 +208,15 @@ for a CISO.
 ```text
 CLI: scan ike
     -> IKE target parser
-    -> IkeRequest
+    -> IKEProbeRequest
     -> CollectorRegistry
-    -> NativeIkeCollector
+    -> NativeIKECollector
     -> bounded UDP transport
     -> IKE parser and response binder
-    -> IkeObservation
-    -> CollectionResult
-    -> shared evaluator
-    -> canonical ScanResult
+    -> bound IKEProposalObservation
+    -> shared evaluator builds interpretation/findings
+    -> IKEScanner constructs one immutable ScanResult
+    -> NativeIKECollector wraps it in CollectionResult
          +--> Rich
          +--> JSON
          +--> JSONL
@@ -162,15 +250,16 @@ socket or parse IKE bytes. EnXemble validation never replaces QuReddy evidence.
 ### 3.3 One acquisition, one canonical result
 
 ```text
-CLI -> Registry: select IKE collector
-Registry -> NativeIkeCollector
-Collector -> UDP transport: send bounded probe
-UDP transport -> Collector: datagram or timeout
-Collector -> Parser/binder: parse and bind response
-Parser/binder -> Collector: observation or typed failure
-Collector -> Evaluator: CollectionResult
-Evaluator -> CLI: canonical ScanResult
-CLI -> Output projections: render once
+CLI -> Registry: select NativeIKECollector
+NativeIKECollector.collect() -> NativeIKECollector.scan()
+NativeIKECollector.scan() -> IKEScanner.scan()
+IKEScanner -> UDP transport/codec/binder: bounded acquisition
+Transport/codec/binder -> IKEScanner: bound observation or typed failure
+IKEScanner -> shared evaluator: neutral facts
+Shared evaluator -> IKEScanner: interpretation and findings
+IKEScanner -> NativeIKECollector: one immutable ScanResult
+NativeIKECollector -> CLI: CollectionResult carrying that same ScanResult
+CLI -> Output projections: read CollectionResult.scan_result and render once
 Output projections -> caller: Rich / JSON / JSONL / CBOM / bundle
 ```
 
@@ -179,141 +268,85 @@ the network operation.
 
 ## 4. Canonical data contract
 
-### 4.1 Request types
+### 4.1 Canonical model ownership
 
-The following are the proposed protocol-private models. They are immutable,
-strict, and validated at the CLI boundary.
+Before PR #564 merges, the complete public and private model contract is defined in the #546
+issue body. The merge transfers that authority to this ADR. This document does not repeat a
+second model graph. Implementers MUST use the exact names and ownership in the currently
+authoritative artifact: `NetworkTransport`, `IKEVersion`, `IKEExchange`, `IKESlot`, `IKENatT`,
+`AlgorithmObservation`, `IKEProposalObservation`, `CoverageReceipt`,
+`CryptoProviderDependency`, `ScopedHndlAssessment`, and the private codec/transport/provider
+types. All are immutable and strictly validated at the CLI boundary.
 
-```python
-class IkeVersion(StrEnum):
-    V1 = "ikev1"
-    V2 = "ikev2"
+The current QuReddy result seam is authoritative: `CollectionResult` is the collector wrapper,
+`ScanResult` contains the evaluator output and is the renderer input, and the scoped HNDL tuple is
+owned by `ScanResult.summary.interpretation.scoped_hndl_assessments`. No second
+`IKEProposalObservation` graph,
+renderer field, or protocol-specific result may be introduced.
 
-class IkeExchange(StrEnum):
-    MAIN = "main"
-    AGGRESSIVE = "aggressive"
-    SA_INIT = "sa_init"
+`ScanTarget.transport` carries the explicit UDP/IKE representation while retaining TCP as the
+default and omitting that default from existing TLS/SSH serialization. Target parsing rejects
+invalid ports, unsupported schemes, bracket corruption, control characters, and ambiguous
+host/port input before opening a socket.
 
-class IkeTransport(StrEnum):
-    UDP = "udp"
+Raw packet bytes, Vendor-ID bytes, secrets, credentials, PSK material, authentication hashes,
+nonces, KE values, and keys never cross the bounded parser/redaction boundary. Only typed
+metadata, bounded timing/counts, and one-way digests may enter the canonical result.
 
-class IkeNatTraversal(StrEnum):
-    NOT_TESTED = "not_tested"
-    NOT_OBSERVED = "not_observed"
-    DETECTED = "detected"
-    REQUIRED = "required"
+### 4.2 Protocol-private boundary
 
-class IkeProbeMode(StrEnum):
-    DISCOVERY = "discovery"
-    OBSERVATION = "observation"
-
-class IkeRequest(BaseModel):
-    model_config = FROZEN
-
-    target: ScanTarget
-    version: IkeVersion
-    exchanges: tuple[IkeExchange, ...]
-    ports: tuple[int, ...] = (500, 4500)
-    nat_traversal: IkeNatTraversal = IkeNatTraversal.NOT_TESTED
-    mode: IkeProbeMode = IkeProbeMode.OBSERVATION
-    timeout_seconds: int = Field(ge=1, le=300)
-    retries: int = Field(ge=0, le=5)
-    request_id: str
-```
-
-`ScanTarget` must gain an explicit UDP/IKE representation rather than encoding
-transport only in a lossy `locator` string. A target parser must reject ports
-outside 1–65535, unsupported schemes, bracket corruption, control characters,
-and ambiguous host/port input before any socket is opened.
-
-### 4.2 Algorithm and response types
-
-```python
-class IkeResponseState(StrEnum):
-    OBSERVED = "observed"
-    NO_RESPONSE = "no_response"
-    NOTIFY = "notify"
-    NO_PROPOSAL = "no_proposal"
-    INVALID_KE = "invalid_ke"
-    MALFORMED = "malformed"
-    FILTERED = "filtered"
-    UNSUPPORTED = "unsupported"
-
-class IkeEvidenceLevel(StrEnum):
-    OBSERVED = "observed"
-    ADVERTISED = "advertised"
-    SELECTED = "selected"
-    COMPLETED = "completed"
-
-class IkeCollectorRole(StrEnum):
-    AUTHORITATIVE = "authoritative"
-    CORROBORATING = "corroborating"
-
-class IkeAlgorithmSet(BaseModel):
-    model_config = FROZEN
-
-    encryption: tuple[str, ...] = ()
-    integrity: tuple[str, ...] = ()
-    prf: tuple[str, ...] = ()
-    dh_groups: tuple[str, ...] = ()
-    kem_groups: tuple[str, ...] = ()
-    signatures: tuple[str, ...] = ()
-    raw_attribute_ids: tuple[int, ...] = ()
-
-class IkeObservation(BaseModel):
-    model_config = FROZEN
-
-    request_id: str
-    collector: str
-    collector_version: str
-    collector_role: IkeCollectorRole
-    source: ScanTarget
-    version: IkeVersion
-    exchange: IkeExchange
-    transport: IkeTransport
-    destination_port: int
-    address_family: str
-    response_state: IkeResponseState
-    evidence_level: IkeEvidenceLevel
-    offered: IkeAlgorithmSet
-    selected: IkeAlgorithmSet | None = None
-    nat_traversal: IkeNatTraversal
-    vendor_ids: tuple[str, ...] = ()
-    notify_types: tuple[str, ...] = ()
-    spi_i: str | None = None
-    spi_r: str | None = None
-    message_id: int | None = None
-    raw_digest: str | None = None
-    evidence_refs: tuple[str, ...] = ()
-```
-
-Raw packet bytes are retained only as a bounded, content-addressed artifact
-reference. They must not be placed in default stdout or embedded unboundedly in
-JSON/CBOM. Secrets, credentials, PSK material, and authentication hashes are
-never model fields.
+The codec, transport, sweep, and provider types are private implementation boundaries named by
+the #546 contract. They may carry bounded wire data internally, but they cannot be imported by evaluators,
+renderers, CBOM mappers, or EnXemble. The only public handoff is an
+`IKEProposalObservation` plus `CoverageReceipt` inside the canonical result. A selected tuple is
+valid only after source/destination, IKEv1 initiator/responder cookie or IKEv2 SPI, version,
+exchange, flags, message ID, retry state, and exact offered-proposal binding pass. IKEv2
+`COOKIE`, `INVALID_KE_PAYLOAD`, and `NO_PROPOSAL_CHOSEN` are typed outcomes; they never become
+implicit success or unsupported claims.
 
 ### 4.3 Result integration
 
-`CollectionResult` remains the acquisition boundary. The implementation must
-choose one canonical representation for the scanner result and avoid populating
-parallel, contradictory fields. The preferred shape is:
+`CollectionResult` remains the collector boundary, and its `scan_result` field carries
+the single canonical result produced by `IKEScanner.scan()`. The existing `evidence`,
+`findings`, and `provenance` members are compatibility projections of that result;
+they must be populated only from it, never independently calculated. The IKE shape is:
 
 ```python
 CollectionResult(
     collector="native-ike",
     collector_version="<package-version>",
-    evidence=(ike_observation_as_evidence,),
-    findings=ike_findings,
-    provenance=provenance,
+    evidence=result.evidence,
+    findings=result.findings,
+    provenance=result.scan.provenance,
     failure=typed_failure_or_none,
-    scan_result=None,  # evaluator fills the one canonical ScanResult downstream
+    scan_result=result,  # the IKEScanner-created canonical ScanResult
 )
 ```
 
-The evaluator derives `ScanResult` exactly once. If the existing lifecycle is
-changed so collectors return `ScanResult` directly, remove `scan_result` from
-`CollectionResult` in the same compatibility change; do not add an IKE-specific
-third result shape.
+`IKEScanner.scan()` gathers bound observations, passes neutral facts to the shared evaluator,
+receives interpretation and findings, and then constructs `ScanResult` exactly once. The native
+collector delegates to that scanner and wraps the returned immutable object. No evaluator runs
+after construction, and no orchestrator creates a second `ScanResult` from `CollectionResult`
+members. Tests must assert that the compatibility fields equal their corresponding values in
+`collection.scan_result` and have no independent calculation path.
+If the compatibility projections are eventually removed, that is a repository-wide
+contract change; IKE must not introduce a third lifecycle.
+
+The owning result field is additive and singular on the existing interpretation model:
+
+```python
+class ScanResult(BaseModel):
+    # existing fields remain unchanged; interpretation remains under ScanSummary
+    summary: ScanSummary
+
+class ScanInterpretation(BaseModel):
+    scoped_hndl_assessments: tuple[ScopedHndlAssessment, ...] = ()
+```
+
+The tuple contains at most one assessment per `HndlScope` and is reached as
+`ScanResult.summary.interpretation.scoped_hndl_assessments`. It is the only source for IKE HNDL
+scope in every output format. A convenience alias on `ScanResult`, if ever added, must be
+read-only and non-serialized; no renderer may compute a second verdict.
 
 ### 4.4 Contract closure gates
 
@@ -339,15 +372,15 @@ objects remain private.
 
 The first implementation sends bounded, unauthenticated discovery/observation
 requests. It may use IKEv1 Main/Aggressive discovery and IKEv2 `IKE_SA_INIT`, but
-it never proceeds to authentication or tunnel setup. Each request has a unique
-SPI and request fingerprint.
+it never proceeds to authentication or tunnel setup. Each request has a unique IKEv1 initiator
+cookie or IKEv2 initiator SPI, retry state, and exact offered-proposal identity.
 
 ```text
 construct request
   -> send UDP/500 or UDP/4500
   -> accept only expected source and destination
-  -> validate version, exchange, flags, SPI, message ID, declared length
-  -> validate request fingerprint and payload bounds
+  -> validate version, exchange, flags, IKEv1 cookies or IKEv2 SPIs, message ID, declared length
+  -> validate retry state, offered-proposal identity, and payload bounds
   -> validate response against the offered proposal set
   -> classify response state
   -> preserve raw digest and typed observation
@@ -355,31 +388,63 @@ construct request
 
 ### 5.2 Evidence ladder
 
-| Level | Meaning | HNDL consequence |
+| State | Meaning | HNDL consequence |
 |---|---|---|
-| `observed` | Packet/notify behavior was parsed and bound to this request | Evidence only |
-| `advertised` | Peer advertised a capability or transform | Never `PROTECTED` |
-| `selected` | Peer selected an offered transform | Still not completed PQ protection |
-| `completed` | Applicable exchange completed with transcript validation | Candidate for protection evaluation |
+| `accepted` | A bound response selected one exact offered proposal tuple | IKE-SA facts may be classified |
+| `rejected` | A bound response explicitly rejected the offered batch | No algorithm-support claim |
+| `unknown` | Silence, filtering, malformed data, or incomplete coverage | Overall posture remains `UNKNOWN` |
+| `not_tested` | A catalog/profile row was not scheduled | Coverage accounting only |
 
-An accepted classical transform is useful HNDL/downgrade evidence. A selected
-ADDKE or ML-KEM transform is not proof of a completed KEM exchange. UDP silence,
-filtered traffic, malformed data, and unsupported local capabilities remain
-explicit non-positive/unknown states.
+An accepted classical key-exchange method is HNDL evidence under QuReddy's versioned policy.
+Accepted deprecated or weak-classical transforms are separate hygiene/downgrade evidence; an
+encryption transform alone does not establish HNDL exposure. ADDKE or ML-KEM selection is outside
+the pre-PQC release and is not proof of a completed KEM exchange. UDP silence, filtered traffic,
+malformed data, and unsupported local capabilities remain explicit non-positive/unknown states.
+
+Every reviewed profile is tied to the versioned algorithm catalog and emits per-row coverage:
+planned, attempted, accepted, explicitly rejected, unknown, or `not_tested`. The bounded default
+profile claims only its declared covering set. The legacy profile must cover the catalog entries
+selected by the reviewed IKE policy for Historic, weak-classical, and HNDL-relevant assessment;
+any catalog row outside the scheduled budget remains explicit `not_tested`. Custom caller tuples
+may be added only through the same strict catalog, binding, budget, and coverage path; they do not
+create an unbounded Cartesian sweep.
 
 ### 5.3 Response binding requirements
 
-The parser must reject or classify as non-positive:
+Positive evidence requires one selected transform subset from exactly one offered proposal, with
+returned transform attributes preserved unchanged, including key length. The parser/binder must
+reject or classify as non-positive:
 
 - wrong source address or destination port;
-- wrong IKE version, exchange type, response flag, SPI, or message ID;
-- a response that cannot be bound to the unique request SPI, exchange, message ID,
-  source, and offered-proposal fingerprint; IKEv2 does not echo the initiator nonce
+- wrong IKE version, exchange type, response flag, IKEv1 cookie or IKEv2 SPI, or message ID;
+- a response that cannot be bound to the unique request initiator cookie/SPI, exchange, message ID,
+  source, retry state, and offered-proposal fingerprint; IKEv2 does not echo the initiator nonce
   in `IKE_SA_INIT`, so nonce equality is never used as a binding requirement;
 - duplicate, replayed, truncated, oversized, or length-inconsistent datagrams;
 - payload chains that exceed declared bounds or contain unknown critical payloads;
 - selected transforms not present in the offered proposal set;
 - forged SA selections and incomplete intermediate exchanges.
+
+The transport and binder also enforce these typed paths:
+
+- QuReddy permits at most one protocol-conformant `COOKIE` retry per probe; the retry is bound to
+  the original probe and echoes the cookie unchanged;
+- `INVALID_KE_PAYLOAD` names a preferred key exchange method and creates a separately identified
+  retry whose response is evidence only for that second probe;
+- `NO_PROPOSAL_CHOSEN` rejects only the exact offered batch;
+- IKEv1 NAT-T Vendor-ID negotiation on UDP/500 remains separate from IKEv2 NAT detection;
+- UDP/4500 requires the four-octet non-ESP marker; and
+- duplicate or retransmitted datagrams cannot create duplicate observations.
+
+Pre-PQC retry evidence records the configured retry policy, bounded attempt count, elapsed timing
+metadata, and the terminal typed outcome. Exhausting the budget leaves affected rows incomplete
+or unknown. Timing and silence never identify a vendor or prove an algorithm unsupported. Full
+retransmission/backoff fingerprint parity remains #563.
+
+Vendor-ID payloads are recognized only where the pinned protocol contract requires it, such as
+IKEv1 NAT-T. Public evidence may retain a bounded length, SHA-256 digest, observation reference,
+and catalog/provenance version. It never retains raw Vendor-ID bytes or assigns a vendor name from
+an unreviewed fingerprint database. Broader fingerprint interpretation remains #563.
 
 The known forged-response fixture that previously produced `HNDL: PROTECTED` is a
 release blocker until it remains non-`PROTECTED` through the real CLI and every
@@ -396,7 +461,7 @@ qureddy scan ike TARGET[:PORT]
 Examples:
 
 ```console
-# Probe both standard IKE ports with the default IKEv2 observation profile.
+# Probe both protocol families with the default observation profile.
 qureddy scan ike vpn.example.com
 
 # Explicit port and IPv6 literal.
@@ -404,7 +469,7 @@ qureddy scan ike 203.0.113.10:500 --port 500
 qureddy scan ike '[2001:db8::10]:4500' --port 4500
 
 # Request both protocol families and verbose packet-stage diagnostics.
-qureddy scan ike vpn.example.com --ike-version auto --exchange sa-init --ikev1 --vvv
+qureddy scan ike vpn.example.com --ike-version all --v1-mode all -vvv
 
 # Machine-readable output and a complete one-scan bundle.
 qureddy scan ike vpn.example.com --format json
@@ -417,16 +482,25 @@ The exact option spelling must follow the existing Typer option conventions; the
 implementation must not introduce aliases that collide with global verbosity or
 output options. `--output-dir` writes the same bundle contract used by TLS/SSH.
 
+The 0.13 pre-PQC release exposes no completion-mode CLI option and no `pqc` profile. Those
+additions belong to the 0.14 work in #555 and #562 and cannot be implied by `--profile`,
+`--ike-version`, or a selected ADDKE/ML-KEM transform. No alternate version spellings are
+accepted because aliases would create incompatible scripts and documentation.
+
 ### 6.2 Proposed options
 
 | Option | Default | Contract |
 |---|---:|---|
-| `--ike-version` | `ikev2` | `ikev1`, `ikev2`, or `auto`; `auto` never upgrades unknown to secure |
-| `--exchange` | `sa-init` | `sa-init`, `main`, `aggressive`, or `auto` |
+| `--ike-version` | `all` | `1`, `2`, or `all`; `all` probes both and never upgrades unknown to secure |
+| `--v1-mode` | `all` | `main`, `aggressive`, or `all` (only with version `1`/`all`) |
+| `--profile` | `default` | pre-PQC reviewed covering profile; not a Cartesian sweep and no PQ selection |
 | `--port` | `500`/profile | UDP 500 or 4500 only for the first release |
 | `--nat-t` | `auto` | probe/require/disable NAT-T behavior |
 | `--timeout` | existing default | per-datagram timeout, bounded by existing limits |
 | `--retries` | existing default | bounded retransmission, no unbounded loop |
+| `--retry-delay` | existing default | bounded delay between attempts |
+| `--max-probes` / `--batch-size` | profile defaults | explicit work budget and scheduling bounds |
+| `--deadline` | existing default | whole-scan deadline |
 | `--format` | `rich` | `rich`, `json`, `jsonl`, `cbom` |
 | `--output` | none | one selected output file |
 | `--output-dir` | none | all supported projections from one result |
@@ -435,6 +509,11 @@ output options. `--output-dir` writes the same bundle contract used by TLS/SSH.
 
 No CLI option accepts a PSK, XAUTH username/password, `HASH_R`, or a tunnel
 configuration. Those features are explicitly rejected as out of scope.
+
+The planned 0.14 CLI adds `--profile pqc` and
+`--completion selection|pre-auth|required-pre-auth` only after #555/#562 acceptance. These
+options are not placeholders in the 0.13 parser, help output, configuration model, or provider
+protocol.
 
 ### 6.3 Exit codes
 
@@ -458,15 +537,15 @@ from those constants rather than duplicate numbers.
 The shared evaluator consumes neutral facts:
 
 ```python
-IkePolicyFacts(
-    version=IkeVersion.V2,
-    response_state=IkeResponseState.OBSERVED,
-    evidence_level=IkeEvidenceLevel.SELECTED,
+IKEPolicyFacts(
+    version=IKEVersion.V2,
+    outcome=NegotiationOutcome.ACCEPTED,
+    evidence_level=EvidenceLevel.SELECTED,
     classical_algorithms=("AES-CBC", "HMAC-SHA1", "MODP-1536"),
-    pq_algorithms=("ML-KEM-768",),
+    pq_algorithms=(),
     downgrade_observed=True,
-    nat_t=IkeNatTraversal.DETECTED,
-    authenticated=False,
+    nat_t=IKENatT.AUTO,
+    authentication_status="unknown",
 )
 ```
 
@@ -490,19 +569,80 @@ evidence_refs
 policy_id / policy_version
 ```
 
+### 7.1.1 Scoped HNDL assessment
+
+The canonical result carries HNDL scope explicitly. Renderers and CBOM consume
+this object; they must not flatten it into a renderer-specific global verdict.
+
+```python
+class HndlScope(str, Enum):
+    IKE_SA_KEY_ESTABLISHMENT = "ike_sa_key_establishment"
+    OVERALL_IPSEC = "overall_ipsec"
+
+class HndlDisposition(str, Enum):
+    AT_RISK = "at_risk"
+    UNKNOWN = "unknown"
+    NOT_TESTED = "not_tested"
+
+@dataclass(frozen=True, slots=True)
+class ScopedHndlAssessment:
+    scope: HndlScope
+    disposition: HndlDisposition
+    reason_codes: tuple[str, ...]
+    evidence_refs: tuple[str, ...]
+```
+
+The pre-PQC unauthenticated release may report
+`IKE_SA_KEY_ESTABLISHMENT / AT_RISK` for an accepted classical tuple, while it
+must report `OVERALL_IPSEC / UNKNOWN`. The scan has not observed IKE_AUTH,
+Child-SA, ESP/AH, traffic selectors, or PFS behavior. If the legacy global
+`hndl_exposure` field remains for compatibility, it stays `unknown` here and is
+not authoritative. Future authenticated or Child-SA evidence requires a
+separate contract revision.
+
+### 7.1.2 Semantic-signal naming contract
+
+IKE findings use the existing protocol-neutral key-establishment suffix contract. The
+`finding_type` and `readiness` pair is structural input to the shared evaluator:
+
+| IKE finding type | Readiness | Neutral signal |
+|---|---|---|
+| `ike.kex.classical` | `quantum_vulnerable` | `kex.classical` |
+| `ike.kex.hybrid` | `transitional_hybrid` | `kex.hybrid_pqc` |
+| `ike.kex.pure_pq` | `quantum_safe` | `kex.pure_pqc` |
+
+The evaluator must require both members of the pair. A bare readiness value, a generic
+`ike.proposal.selected` identifier, an unknown suffix, or a mismatched pair produces an
+evaluation gap and never a favorable signal. Rule identifiers may give a more specific reason,
+but they do not replace the canonical finding-type suffix.
+
+These signals classify only the evidenced IKE key-establishment axis. The IKE scope guard keeps
+the legacy global `hndl_exposure` field `unknown`; no IKE-only semantic signal may produce global
+`protected` or `protected_defeasible`. Issue #598 owns enforcement and regression tests for this
+contract before #554 emits IKE findings.
+
 ### 7.2 Required semantic rules
 
-1. A classical-only accepted proposal can produce HNDL `AT_RISK` or
-   `PROTECTED_DEFEASIBLE` according to the existing policy, with named
-   algorithms and evidence references.
+1. A classical-only accepted proposal produces scoped IKE-SA HNDL `AT_RISK`
+   with named algorithms and evidence references. Overall unauthenticated IPsec
+   posture remains `UNKNOWN`; `PROTECTED_DEFEASIBLE` is not valid for this scope.
 2. IKEv1 discovery never implies PQ support.
-3. `advertised` or `selected` PQ evidence never implies completed protection.
-4. `completed` may affect protection only after transcript validation and an
-   approved provider gate.
+3. Capability notifications and proposal selection never imply completed protection.
+4. `completed` is not part of the observation release. Protected
+   `IKE_INTERMEDIATE`/ADDKE completion requires the separate #562
+   decision and provider/security/conformance gates.
 5. No response, filtering, malformed packets, and unsupported local capability
    produce `UNKNOWN`/`NOT_TESTABLE`, not a favorable posture.
 6. A corroborator disagreement is preserved as evidence and cannot silently
    improve the posture.
+
+The observation provider exposes only capability reporting, randomness, valid
+KE-share generation, and bounded disposal. It does not expose shared-secret
+derivation, IKE KDFs, encryption/decryption, integrity, `derive`, `protect`,
+`verify`, or transcript completion. Those completion-only methods belong to #562
+and are absent from every 0.10 through 0.13 provider interface. ML-KEM/ADDKE capability and
+completion types remain in the 0.14 design section until #555/#562 implement and verify them;
+they are not selectable pre-PQC provider methods, profiles, or CLI options.
 
 ### 7.3 Output parity
 
@@ -519,35 +659,12 @@ The same observation and interpretation must appear consistently in:
 
 ### 8.1 EnXemble role
 
-EnXemble’s descriptor can run QuReddy as the primary tool and `ike-scan` as an
-optional independent validator/corroborator. The validator checks the primary
-result’s IKEv1 claims; it does not decide PQ readiness.
-
-```yaml
-id: qureddy-ike
-title: "HNDL Audit (IKE/IPsec)"
-run:
-  base: [qureddy, scan, ike]
-  image: ghcr.io/breachsafe/qureddy:latest
-  positional_from: "{host}:{port}"
-  output_dir_flag: "--output-dir"
-  artifacts:
-    - { name: json, file: scan.json, primary: true }
-    - { name: jsonl, file: scan.jsonl }
-    - { name: cbom, file: scan.cdx.json }
-validate:
-  argv: ["ike-scan", "--retry=1", "{host}"]
-  role: corroborating
-  scope: [ikev1, transform, vendor_id, nat_t]
-  badge_rule:
-    pass_if: { exit: 0, parsed_handshake: true }
-    fail_if: { exit: 0, parsed_conflict: true }
-    otherwise: unavailable
-```
-
-The exact descriptor field name (`role`/`scope` or a schema-approved equivalent)
-must be implemented in EnXemble before this example is shipped. An exit code of
-zero with no parsed handshake is unavailable/indeterminate, never a pass.
+EnXemble may run QuReddy as the primary tool and `ike-scan` as an optional independent
+validator/corroborator. The descriptor schema, image reference, artifact names, and validator
+state model belong exclusively to EnXemble issue #51; this ADR defines no example descriptor.
+The validator checks native IKEv1 claims, never decides PQ readiness, never writes CBOM, and
+must distinguish `pass`, `conflict`, `unavailable`, and `no_result`. Absence of the validator is
+not a QuReddy 0.12/0.13 release blocker.
 
 ### 8.2 Provenance and disagreement
 
@@ -557,44 +674,24 @@ ValidatorObservation(
     version="1.9.5",
     role="corroborating",
     target="vpn.example.com:500",
-    status="pass|conflict|unavailable",
+    status="pass|conflict|unavailable|no_result",
     parsed_facts={...},
     evidence_refs=(...),
 )
 ```
 
-The validator result is attached to provenance/evidence. It cannot replace the
-native `IkeObservation`, change the authoritative collector role, or upgrade
+The validator result is attached to provenance/evidence. It cannot replace the native
+`IKEProposalObservation`, change the authoritative collector role, or upgrade
 `hndl_exposure` by itself.
 
 ## 9. File-level implementation plan
 
 ### 9.1 QuReddy files to change
 
-| File | Change | Must not do |
-|---|---|---|
-| `src/qureddy/core/contracts.py` | Add IKE source/capability/policy enums and typed adapter seam | Put packet parsing here |
-| `src/qureddy/core/models.py` | Add supported IKE scheme/target fields only if shared target model can remain lossless | Re-declare hostname/port validation |
-| `src/qureddy/core/targets.py` | Parse and normalize UDP IKE targets | Open sockets or infer posture |
-| `src/qureddy/core/registry.py` | Map IKE source to native collector deterministically | Select by renderer or output format |
-| `src/qureddy/collectors/native.py` | Register `NativeIkeCollector` and preserve lifecycle | Duplicate scanner logic |
-| `src/qureddy/scanners/ike/__init__.py` | Public protocol-private package boundary | Export renderer internals |
-| `src/qureddy/scanners/ike/models.py` | `IkeRequest`, enums, `IkeAlgorithmSet`, `IkeObservation` | Store secrets or unbounded packets |
-| `src/qureddy/scanners/ike/packet.py` | Bounded encoder/decoder and payload-chain validation | Implement cryptographic primitives |
-| `src/qureddy/scanners/ike/probe.py` | UDP transport, timeout, retry, source binding, packet capture digest | Authenticate or establish a tunnel |
-| `src/qureddy/scanners/ike/parser.py` | Parse IKEv1/v2 headers, SA/KE/Notify/NAT-T evidence | Decide HNDL posture |
-| `src/qureddy/scanners/ike/bind.py` | Request/response correlation and anti-forgery checks | Accept unsolicited selection |
-| `src/qureddy/scanners/ike/classify.py` | Map observations to neutral policy facts | Render user-facing text |
-| `src/qureddy/scanners/common/finding_types.py` | Add protocol-neutral IKE finding identifiers | Add IKE-specific output code |
-| `src/qureddy/scanners/common/posture.py` | Apply shared readiness/HNDL rules to IKE facts | Reimplement TLS/SSH policy |
-| `src/qureddy/cli/ike.py` | Typer command, shared options, one execute/render path | Bypass `CollectorRegistry` |
-| `src/qureddy/cli/main.py` | Register `scan ike` and help text | Duplicate exit-code constants |
-| `src/qureddy/output/*` | Only generic enum/field projection updates | Import `scanners/ike/*` parsers |
-| `src/qureddy/output/cbom_*` | Add validated IKE component/provenance mapping after schema gate | Emit unsupported PQ claims |
-| `docs/reference/cli.md` | Document the stable command/options/exit behavior | Promise completion before it exists |
-| `docs/architecture/scan-contract.md` | Add IKE to the generic collector contract | Create a source-specific output path |
-| `docs/explanation/architecture.md` | Add IKE flow and boundary diagrams | Describe unimplemented features as shipped |
-| `CHANGELOG.md` | Add entries only at release time | Put future claims in an old release |
+The single authoritative file/component map is in section 16.1 below. This section
+intentionally does not repeat it; child issues own their exact file deltas. No child may
+introduce the superseded `packet.py`/`probe.py`/`parser.py`/`bind.py`/`classify.py` graph or
+duplicate the generic registry, evaluator, renderer, or CBOM path.
 
 ### 9.2 Tests and fixtures to add
 
@@ -605,7 +702,7 @@ native `IkeObservation`, change the authoritative collector role, or upgrade
 | `tests/test_ike_packet.py` | length, payload-chain, critical-payload, truncation cases |
 | `tests/test_ike_parser.py` | parser-negative byte corpus and notify classification; positive negotiation is live-only |
 | `tests/test_ike_binding.py` | wrong SPI/source/version/message ID/proposal/duplicates; no echoed-nonce assumption |
-| `tests/test_ike_probe.py` | timeout/retry/NAT-T/filtered behavior with a real UDP fixture |
+| `tests/test_ike_probe.py` | timeout/retry/NAT-T/filtered behavior with an authorized live UDP peer |
 | `tests/test_ike_scanner.py` | canonical `CollectionResult` and typed failures |
 | `tests/test_ike_policy.py` | evidence ladder and HNDL semantics |
 | `tests/test_ike_cli.py` | real installed CLI parsing, help, exit codes, output flags |
@@ -634,17 +731,16 @@ The EnXemble issue must depend on the QuReddy release that first ships `scan ike
 
 All implementation work follows the repository ten-step loop:
 
-1. Read current contracts, issues, ADRs, and skills; record source-of-truth paths.
-2. Write the failing test or deterministic fixture before implementation.
-3. Reproduce the failure in an isolated `/tmp` workstream.
-4. Steelman two designs and record the kill-shot for the rejected design.
+1. Inventory the issue, current tree, local guidance, skills, and overlapping work.
+2. Steelman the problem and the smallest defensible slice; record the rejected alternative.
+3. Reproduce current behavior in an isolated `/tmp` workstream before patching.
+4. Pressure-test malformed input, compatibility, regressions, and the named falsifier.
 5. Implement the smallest seam-preserving change.
-6. Run unit, property, parser-fuzz, and architecture-boundary tests.
-7. Run real installed CLI commands for every option and output format.
-8. Run the container CLI and the private strongSwan/veepin interoperability lab.
-9. Run quality, anti-pattern, supply-chain, documentation, and release gates.
-10. Review the diff, update issue/ADR/changelog, then commit/release only after
-    all required evidence is recorded.
+6. Add regression tests that fail before and pass after the change.
+7. Run locked unit, quality, documentation, supply-chain, and release gates.
+8. Perform architecture and anti-pattern review, including duplication and boundaries.
+9. Record issue, commit, review, and artifact evidence.
+10. Verify built wheel/container and real-lab behavior separately; unrun items are `NOT RUN`.
 
 ### 10.1 Required lab matrix
 
@@ -653,7 +749,7 @@ All implementation work follows the repository ten-step loop:
 | Classical IKEv1 responder | version/mode/transform evidence; HNDL risk named |
 | IKEv1 Aggressive responder | discovery only; no PSK/hash capture |
 | Classical IKEv2 responder | classical proposal selected; no PQ claim |
-| PQ-capable strongSwan/veepin responder | advertised/selected state; completion claim gated |
+| PQ-capable strongSwan/veepin responder | 0.14.0 parity work; not a 0.13.0 release gate |
 | `NO_PROPOSAL_CHOSEN` | typed notify, no success inference |
 | COOKIE retry | bounded retry and correct correlation |
 | filtered UDP | `filtered`/unknown, not secure |
@@ -683,8 +779,8 @@ recorded. A command that is not run is reported `NOT RUN`, never assumed passing
 - Use `subprocess` nowhere in native IKE collection; use a bounded UDP socket
   with explicit address and timeout handling.
 - Never accept a response solely because it has a parseable SA payload.
-- Bind response to request SPI, request fingerprint, source, exchange, flags, and
-  message ID before classifying any selected algorithm. Do not require an echoed
+- Bind response to the IKEv1 initiator cookie or IKEv2 initiator SPI, retry state, exact offered
+  tuple, source, exchange, flags, and message ID before classifying any selected algorithm. Do not require an echoed
   initiator nonce that the protocol does not provide.
 - Cap datagram length, payload count, recursion, retries, and retained raw bytes.
 - Never log PSKs, XAUTH credentials, authentication hashes, or full sensitive
@@ -718,18 +814,38 @@ be called 10/10 only after the acceptance criteria below are demonstrated.
 - [ ] Target/request models are strict, immutable, and lossless for UDP/500/4500.
 - [ ] Parser-negative fixtures parse deterministically; every positive negotiation
       and readiness claim comes from a live authorized IPsec peer.
-- [ ] Source/SPI/version/exchange/flags/message-ID/request-fingerprint/proposal binding rejects
-      forged and replayed responses.
-- [ ] Advertised, selected, and completed are distinct; first release never emits
-      `PROTECTED` for advertised/selected-only evidence.
+- [ ] Source/port/IKEv1-cookie/IKEv2-SPI/version/exchange/flags/message-ID/retry-state/proposal
+      binding rejects forged and replayed responses; accepted transforms are a subset of one
+      exact offered proposal and returned attributes remain unchanged.
+- [ ] `COOKIE`, `INVALID_KE_PAYLOAD`, and `NO_PROPOSAL_CHOSEN` follow their typed retry or
+      exact-batch semantics without widening a support or rejection claim.
+- [ ] IKEv1 Vendor-ID NAT-T negotiation, IKEv2 NAT detection, and UDP/4500 non-ESP framing are
+      exercised independently against authorized live peers.
+- [ ] Accepted, rejected, unknown, and not-tested states are distinct; first release
+      never emits `PROTECTED` for unauthenticated IKE evidence.
 - [ ] IKEv1 evidence never becomes PQ support.
+- [ ] A bound IKEv1 result emits a Historic finding. Bound Aggressive Mode emits identity exposure
+      unless public-key-encryption authentication protects identity. When PSK authentication is
+      selected, it emits the separate offline-guessing exposure finding. That credential/classical
+      finding remains separate from the HNDL finding, which is driven by the selected key-exchange
+      tuple. Identity and authentication hash material never enter public output.
+- [ ] Every profile emits catalog-linked planned/attempted/accepted/rejected/unknown/not-tested
+      coverage; bounded or unscheduled legacy rows remain explicit rather than disappearing.
+- [ ] Pre-PQC retry evidence preserves bounded attempts, configured policy, timing metadata, and
+      incomplete coverage without inferring vendor identity or unsupported algorithms.
+- [ ] Vendor-ID evidence is digest-only and provenance-linked; raw bytes and unreviewed vendor
+      attribution never cross the public boundary.
 - [ ] No response/filtering/malformed/unsupported states remain explicit.
-- [ ] Rich, JSON, JSONL, CBOM, and `--output-dir` have parity from one result.
+- [ ] Rich, JSON, JSONL, CBOM, and `--output-dir` have evidence-ID and interpretation parity
+      from one acquisition and one `ScanResult`; CBOM contains no raw packet, nonce, KE,
+      identity, PSK, authentication-hash, or secret material.
 - [ ] Built wheel and container commands pass the lab matrix with recorded output.
 - [ ] Parser fuzzing, mutation/negative fixtures, architecture-boundary checks, and
       real CLI tests pass.
-- [ ] EnXemble `ike-scan` validator reports pass/conflict/unavailable correctly;
-      exit-0/no-handshake is not pass.
+- [ ] If the optional EnXemble `ike-scan` validator is present, it reports
+      `pass`, `conflict`, `unavailable`, and `no_result` correctly; exit-0/no-handshake is
+      `no_result`, not `pass`.
+      Validator absence does not block 0.12.0 or 0.13.0.
 - [ ] TLS and SSH golden outputs, exit codes, package, and image remain unchanged.
 - [ ] Documentation, changelog, provenance, license, and release gates pass.
 
@@ -746,21 +862,18 @@ transitive package dependency.
 
 ## 15. Open decisions
 
-1. Which maintained provider, if any, is approved for a future completed ML-KEM
-   exchange claim?
-2. Does the first IKE release include IKEv1 discovery, or ship IKEv2 observation
-   first and add IKEv1 in a follow-up?
-3. Should EnXemble call the field `validator` with `role: corroborating`, or add a
-   schema-native `corroborator` field?
-4. Which CycloneDX 1.7 component/protocol mapping is accepted by Qurum and
+1. Which CycloneDX 1.7 component/protocol mapping is accepted by Qurum and
    mint-oscal before CBOM admission?
-5. Which real FortiGate/strongSwan interoperability endpoints can be used under
+2. Which real FortiGate/strongSwan interoperability endpoints can be used under
    the approved test authorization?
+Provider selection, IKEv1/IKEv2 sequencing, validator ownership, and completion
+scope are decided by #546 and its child issues; they are not open decisions here.
 
 ## 16. Implementation handoff and ownership
 
-This section is normative for the child issues in milestones `0.10.0` through
-`0.14.0`.
+This section mirrors the child-issue ownership in #546 for milestones `0.10.0`
+through `0.14.0`. #546 remains normative only until PR #564 merges; the merged ADR then governs
+architecture while the issue tracks delivery.
 
 ### 16.1 File and component map
 
@@ -774,16 +887,19 @@ CLI -> target parser -> CollectorRegistry -> NativeIKECollector -> IKEScanner
                            +--------> codec/binding <-----------------------+
                                           |
                                           v
-                                public IKE observation
+                                bound IKE observation
                                           |
                                           +--> coverage receipt
                                           +--> neutral policy facts
                                           |
                                           v
-                                    CollectionResult
+                                    shared evaluator
                                           |
                                           v
-                                      ScanResult
+                           one immutable ScanResult (IKEScanner)
+                                          |
+                                          v
+                           CollectionResult.scan_result (same object)
                                /          |          \
                             Rich        JSON/JSONL     CBOM
 ```
@@ -802,7 +918,7 @@ src/qureddy/scanners/ike/catalog.py          pinned IANA IDs and profiles
 src/qureddy/scanners/ike/codec.py            bounded encode/parse/bind
 src/qureddy/scanners/ike/transport.py        UDP 500/4500 and NAT-T
 src/qureddy/scanners/ike/sweep.py            proposal scheduling/coverage
-src/qureddy/scanners/ike/provider.py         approved crypto-provider port
+src/qureddy/scanners/ike/provider.py         observation-scoped provider port
 src/qureddy/scanners/ike/findings.py         observation-to-neutral-facts mapping
 src/qureddy/scanners/ike/scanner.py          orchestration only
 src/qureddy/output/cbom_ike.py               public-model CBOM projection only
@@ -815,18 +931,18 @@ validator/oracle and never enters this tree as a runtime dependency.
 ### 16.2 Single-owner data model
 
 ```text
-IkeScanConfig                 CLI/profile defaults; one owner
-IkeProbeRequest               one concrete wire attempt; private
-ParsedIkeResponse             syntactically parsed, still untrusted; private
-ValidatedIkeResponse          request-bound response; private constructor
-IkeProposalObservation        public positive/negative observation; one output input
+IKEScanConfig                 CLI/profile defaults; one owner
+IKEProbeRequest               one concrete wire attempt; private
+ParsedIKEResponse             syntactically parsed, still untrusted; private
+ValidatedIKEResponse          request-bound response; private constructor
+IKEProposalObservation        public positive/negative observation; one output input
 CoverageReceipt               planned/attempted/accepted/rejected/unknown/not-tested
-CollectionResult              acquisition boundary
-ScanResult                    evaluator boundary and renderer input
+ScanResult                    constructed once by IKEScanner; renderer input
+CollectionResult              collector wrapper carrying the same ScanResult
 ValidatorObservation          EnXemble corroborator provenance, separate from evidence
 ```
 
-Do not create parallel `IkeVersion`, `IkeExchange`, `EvidenceLevel`, transport,
+Do not create parallel `IKEVersion`, `IKEExchange`, `EvidenceLevel`, transport,
 coverage, dependency, or completion types. Generic concepts have one neutral
 owner; wire-specific concepts remain private to `scanners/ike`.
 
@@ -849,11 +965,11 @@ For every child issue:
 ### 16.4 Milestone exit contract
 
 ```text
-0.10.0  contracts, catalog, identity, provider port, prerequisites
+0.10.0  contracts, catalog, identity, Phase-0 prerequisites
 0.11.0  real IKEv1/IKEv2 classical observations and strict binding
-0.12.0  canonical findings, all outputs, coverage, EnXemble validator
-0.13.0  real ADDKE/ML-KEM selection evidence
-0.14.0  optional completion, package/image/docs/release proof
+0.12.0  canonical findings, all outputs, coverage; optional EnXemble provenance
+0.13.0  pre-PQC package/image/docs/release verification
+0.14.0  IKE PQC and Discovery Parity: #555, #562, #563
 ```
 
 Each milestone exit requires the real installed CLI and, where applicable, the
@@ -885,9 +1001,37 @@ Every production slice must meet the following bar before review:
 - a failed, skipped, unavailable, partial, or unrun gate remains explicit and
   cannot be converted into a clean or protected result.
 
-### References
+### 17.1 References
 
-- [RFC 5996 — IKEv2](https://www.rfc-editor.org/info/rfc5996)
+The normative claims in this ADR are grounded in the corpus vendored by the private
+`paul007ex/breachsafe-common` knowledge repository, whose local checkout is named
+`breachsafe-standards`. Repository-qualified paths below are not QuReddy paths:
+
+| Claim | Vendored source and line |
+|---|---|
+| IKEv2 responder selects one offered suite | `breachsafe-common:standards/rfc/rfc7296/rfc7296.txt:1970` |
+| IKEv1 is Historic | `breachsafe-common:standards/rfc/rfc9395/rfc9395.txt:18` |
+| Aggressive identity behavior depends on authentication method | `breachsafe-common:standards/rfc/rfc2409/rfc2409.txt:309-314` |
+| Aggressive Mode with PSK returns responder identity and `HASH_R` before initiator authentication | `breachsafe-common:standards/rfc/rfc2409/rfc2409.txt:514-540,865-871` |
+| NAT-T Vendor-ID appears in the first two Phase 1 messages | `breachsafe-common:standards/rfc/rfc3947/rfc3947.txt:178-181` |
+| IKEv1 NAT-D detects address/port translation | `breachsafe-common:standards/rfc/rfc3947/rfc3947.txt:192-216` |
+| IKEv2 uses `NAT_DETECTION_SOURCE_IP` and `NAT_DETECTION_DESTINATION_IP` | `breachsafe-common:standards/rfc/rfc7296/rfc7296.txt:3560-3614` |
+| UDP/4500 uses the non-ESP marker | `breachsafe-common:standards/rfc/rfc3947/rfc3947.txt:323-328` |
+| IKE_INTERMEDIATE exchange definition and protection | `breachsafe-common:standards/rfc/rfc9242/rfc9242.txt:190-249,524` |
+| ADDKE1 through ADDKE7 use transform types 6 through 12 | `breachsafe-common:standards/rfc/rfc9370/rfc9370.txt:329-338` |
+| RFC 8247 `MUST NOT` ENCR/PRF/INTEG/KE rows | `breachsafe-common:standards/rfc/rfc8247/rfc8247.txt:294-296,377,430,518` |
+| IKEv2 `INVALID_KE_PAYLOAD` retry semantics | `breachsafe-common:standards/rfc/rfc7296/rfc7296.txt:662-675` |
+| IKEv2 `NO_PROPOSAL_CHOSEN` rejects the offered proposals | `breachsafe-common:standards/rfc/rfc7296/rfc7296.txt:1973-1976,5675-5681` |
+| IKEv2 `COOKIE` retry echoes unchanged data and otherwise unchanged payloads | `breachsafe-common:standards/rfc/rfc7296/rfc7296.txt:1799-1807` |
+
+The corpus provenance is checked from this checkout with
+`.agents/skills/breachsafe-ipsec-conformance/scripts/verify_corpus.sh`. The current result is
+144 files, integrity PASS, registry closure 95/95, and ML-KEM draft revision `-09`.
+
+- [RFC 7296 — Internet Key Exchange Protocol Version 2 (IKEv2)](https://www.rfc-editor.org/info/rfc7296)
+- [RFC 2409 — The Internet Key Exchange (IKE)](https://www.rfc-editor.org/info/rfc2409)
+- [RFC 3947 — Negotiation of NAT-Traversal in the IKE](https://www.rfc-editor.org/info/rfc3947)
+- [RFC 9395 — IKEv1 Historic Status](https://www.rfc-editor.org/info/rfc9395)
 - [RFC 9242 — IKE_INTERMEDIATE](https://www.rfc-editor.org/info/rfc9242)
 - [RFC 9370 — Additional Diffie-Hellman exchanges](https://www.rfc-editor.org/info/rfc9370)
 - [ike-scan project](https://github.com/royhills/ike-scan)
