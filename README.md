@@ -8,26 +8,14 @@
 
 [![Latest release](https://img.shields.io/github/v/release/BreachSAFE/qureddy?display_name=tag&style=flat-square)](https://github.com/BreachSAFE/qureddy/releases/latest)
 [![CI](https://github.com/BreachSAFE/qureddy/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/BreachSAFE/qureddy/actions/workflows/ci.yml)
-[![CodeQL](https://github.com/BreachSAFE/qureddy/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/BreachSAFE/qureddy/actions/workflows/codeql.yml)
-[![Container](https://github.com/BreachSAFE/qureddy/actions/workflows/container.yml/badge.svg?branch=main)](https://github.com/BreachSAFE/qureddy/actions/workflows/container.yml)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/breachsafe/qureddy/badge)](https://securityscorecards.dev/viewer/?uri=github.com/breachsafe/qureddy)
 [![Python](https://img.shields.io/badge/python-3.14%2B-blue?style=flat-square&logo=python&logoColor=white)](https://www.python.org/downloads/)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue?style=flat-square)](LICENSE)
-[![Code Style: Ruff](https://img.shields.io/badge/code%20style-ruff-D7FF64?style=flat-square&logo=ruff&logoColor=black)](https://docs.astral.sh/ruff/)
-[![Type Checked: mypy strict](https://img.shields.io/badge/type%20check-mypy%20strict-blue?style=flat-square)](https://mypy-lang.org/)
-[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/breachsafe/qureddy/badge)](https://securityscorecards.dev/viewer/?uri=github.com/breachsafe/qureddy)
+[![OpenSSL 3.5.7 LTS](https://img.shields.io/badge/OpenSSL-3.5.7%20LTS-721412?style=flat-square&logo=openssl)](https://github.com/openssl/openssl/releases/tag/openssl-3.5.7)
+[![CycloneDX 1.7 CBOM](https://img.shields.io/badge/CycloneDX-1.7%20CBOM-2f6690?style=flat-square)](https://cyclonedx.org/docs/1.7/)
 [![GHCR image](https://img.shields.io/badge/GHCR-qureddy-blue?style=flat-square&logo=docker)](https://github.com/BreachSAFE/qureddy/pkgs/container/qureddy)
 [![Docker Hub image](https://img.shields.io/badge/Docker%20Hub-qureddy-blue?style=flat-square&logo=docker)](https://hub.docker.com/r/breachsafe/qureddy)
 [![TestPyPI package](https://img.shields.io/badge/TestPyPI-breachsafe--qureddy-blue?style=flat-square&logo=pypi)](https://test.pypi.org/project/breachsafe-qureddy/)
-[![OpenSSL 3.5.7 LTS](https://img.shields.io/badge/OpenSSL-3.5.7%20LTS-721412?style=flat-square&logo=openssl)](https://github.com/openssl/openssl/releases/tag/openssl-3.5.7)
-[![CycloneDX 1.7 CBOM](https://img.shields.io/badge/CycloneDX-1.7%20CBOM-2f6690?style=flat-square)](https://cyclonedx.org/docs/1.7/)
-[![NIST PQC references](https://img.shields.io/badge/NIST-PQC%20references-005ea8?style=flat-square)](https://csrc.nist.gov/projects/post-quantum-cryptography)
-[![NIST OSCAL downstream](https://img.shields.io/badge/NIST-OSCAL%20downstream-005ea8?style=flat-square)](https://pages.nist.gov/OSCAL/)
-[![NIST SP 800-53 mapping](https://img.shields.io/badge/NIST-SP%20800--53%20mapping-005ea8?style=flat-square)](https://csrc.nist.gov/publications/detail/sp/800-53/rev-5/final)
-[![CISA quantum guidance](https://img.shields.io/badge/CISA-quantum%20guidance-1a4480?style=flat-square)](https://www.cisa.gov/topics/cyber-threats-and-advisories/quantum)
-[![OWASP crypto guidance](https://img.shields.io/badge/OWASP-crypto%20guidance-000000?style=flat-square&logo=owasp)](https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html)
-[![SCF Quantum Security mapping](https://img.shields.io/badge/SCF-Quantum%20Security%20mapping-4b5563?style=flat-square)](https://github.com/BreachSAFE)
-[![PQC evidence](https://img.shields.io/badge/QuReddy-PQC%20evidence-6f42c1?style=flat-square)](https://github.com/BreachSAFE/qureddy/blob/main/docs/explanation/hndl.md)
-[![EnXemble integration](https://img.shields.io/badge/BreachSAFE-EnXemble-6f42c1?style=flat-square&logo=github)](https://github.com/BreachSAFE)
 
 QuReddy is an open-source command line scanner for post-quantum readiness at
 TLS and SSH endpoints. It records the protocol and cryptographic evidence that
@@ -65,23 +53,35 @@ JSONL record per finding for CI, EnXemble, or another downstream consumer.
 
 </details>
 
+## Understand the threat: harvest now, decrypt later
+
+Attackers record encrypted traffic today and decrypt it once a quantum computer can break the
+key exchange. Long-lived secrets sent now over classical TLS or SSH are already exposed.
+
+[![Your Encryption Isn't Quantum Safe, IBM Technology](https://img.youtube.com/vi/ecvCfTPRBrI/maxresdefault.jpg)](https://www.youtube.com/watch?v=ecvCfTPRBrI)
+
+Watch **[Your Encryption Isn't Quantum Safe](https://www.youtube.com/watch?v=ecvCfTPRBrI)**
+(IBM Technology), then track the clock at **[Is it Q-Day?](https://isitqday.com/)**. QuReddy
+shows which of your TLS and SSH endpoints are exposed today.
+
 ## Contents
 
 1. [At a glance](#at-a-glance)
-2. [Quickstart with Docker](#1-quickstart-with-docker)
-3. [Install locally with pipx](#2-install-locally-with-pipx)
-4. [Run the first SSH scan](#3-run-the-first-ssh-scan)
-5. [Prepare OpenSSL for TLS](#4-prepare-openssl-for-tls)
-6. [Run the first TLS scan](#5-run-the-first-tls-scan)
-7. [Write JSON, JSONL, CBOM, or a bundle](#6-write-json-jsonl-cbom-or-a-bundle)
-8. [Interpret the evidence](#7-interpret-the-evidence)
-9. [Exit codes](#8-exit-codes)
-10. [Network and privacy scope](#9-network-and-privacy-scope)
-11. [Requirements](#10-requirements)
-12. [Documentation and support](#11-documentation-and-support)
-13. [Contributing](#12-contributing)
-14. [Open-source stack](#open-source-stack)
-15. [License](#13-license)
+2. [Understand the threat: harvest now, decrypt later](#understand-the-threat-harvest-now-decrypt-later)
+3. [Quickstart with Docker](#1-quickstart-with-docker)
+4. [Install locally with pipx](#2-install-locally-with-pipx)
+5. [Run the first SSH scan](#3-run-the-first-ssh-scan)
+6. [Prepare OpenSSL for TLS](#4-prepare-openssl-for-tls)
+7. [Run the first TLS scan](#5-run-the-first-tls-scan)
+8. [Write JSON, JSONL, CBOM, or a bundle](#6-write-json-jsonl-cbom-or-a-bundle)
+9. [Interpret the evidence](#7-interpret-the-evidence)
+10. [Exit codes](#8-exit-codes)
+11. [Network and privacy scope](#9-network-and-privacy-scope)
+12. [Requirements](#10-requirements)
+13. [Documentation and support](#11-documentation-and-support)
+14. [Contributing](#12-contributing)
+15. [Open-source stack](#open-source-stack)
+16. [License](#13-license)
 
 ## 1. Quickstart with Docker
 
@@ -146,6 +146,23 @@ Python application instead, see [section 2](#2-install-locally-with-pipx).
 
 For a browser-based TLS/SSH host that consumes QuReddy CBOM output, see
 [Run QuReddy with a GUI](docs/how-to/run-with-a-gui.md).
+
+### Guided scan (interactive)
+
+Prefer to be prompted? [`examples/guided-scan.sh`](examples/guided-scan.sh) asks for the scan
+type, target, and an authorization confirmation, then runs the scan in Docker. Every prompt has
+a default, so pressing Enter through them scans `mozilla.org` over TLS and `github.com` over SSH:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/BreachSAFE/qureddy/main/examples/guided-scan.sh -o guided-scan.sh
+bash guided-scan.sh
+# Scan TLS, SSH, or both? [tls/ssh/both] (default: both):   <Enter>
+# Authorized to scan mozilla.org:443 over tls? [Y/n]:       <Enter>
+# Authorized to scan github.com:22 over ssh? [Y/n]:         <Enter>
+```
+
+Only scan targets you are authorized to test. Set `DRY_RUN=1` to print the commands without
+running them. IKE support is planned; the guided script covers TLS and SSH today.
 
 ## 2. Install locally with pipx
 
