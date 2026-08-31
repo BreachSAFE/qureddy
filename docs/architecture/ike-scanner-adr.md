@@ -322,6 +322,24 @@ changed so collectors return `ScanResult` directly, remove `scan_result` from
 `CollectionResult` in the same compatibility change; do not add an IKE-specific
 third result shape.
 
+### 4.4 Contract closure gates
+
+The model inventory above is necessary but not sufficient for implementation. The
+following gaps are release-blocking design work:
+
+| Gap | Required closure |
+|---|---|
+| Duplicate IKE enum vocabulary | One canonical owner for version, exchange, NAT-T, transport, and evidence-level types |
+| TLS-shaped dependency field | Replace protocol-specific unions with one neutral tool/provenance dependency model |
+| Completion truth | Store coverage completion once; derive aggregate sweep status from receipts |
+| Validator result | Define a versioned status/provenance model for EnXemble `ike-scan` corroboration |
+| Evaluation mapping | Specify exact neutral facts, reason codes, and IKE-axis rules before renderer work |
+| Current `ScanResult` seam | Reconcile the proposed additive fields with the actual model and preserve TLS/SSH bytes |
+
+No implementation issue may introduce a second type for any row above. The public
+observation is the only IKE object consumed by evaluation or output; wire/parser
+objects remain private.
+
 ## 5. IKE protocol contract
 
 ### 5.1 Probe behavior
