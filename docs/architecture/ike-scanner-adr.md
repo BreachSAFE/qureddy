@@ -27,6 +27,7 @@
 14. [Rollout and compatibility](#14-rollout-and-compatibility)
 15. [Open decisions](#15-open-decisions)
 16. [Implementation handoff and ownership](#16-implementation-handoff-and-ownership)
+17. [Implementation quality bar](#17-implementation-quality-bar)
 
 ## 1. Decision summary
 
@@ -97,6 +98,8 @@ for a CISO.
 - Protocol version, exchange type, mode, encryption, integrity/PRF, DH/KE group,
   NAT-T behavior, response state, and provenance.
 - Explicit evidence levels: `observed`, `advertised`, `selected`, `completed`.
+- ML-KEM-512 is out of scope for this plan. No provider, catalog, fixture, CLI
+  profile, or readiness claim may imply ML-KEM-512 support.
 - Canonical Rich, JSON, JSONL, and later CBOM projections.
 - EnXemble-side optional `ike-scan` independent validation.
 
@@ -114,25 +117,25 @@ for a CISO.
 
 ### 3.1 Component topology
 
-```mermaid
-flowchart TB
-    cli["CLI: scan ike"] --> target["IkeTarget parser"]
-    target --> request["IkeRequest"]
-    request --> registry["CollectorRegistry"]
-    registry --> collector["NativeIkeCollector"]
-    collector --> transport["Bounded UDP transport"]
-    transport --> parser["IKE parser + response binder"]
-    parser --> observation["IkeObservation"]
-    observation --> collection["CollectionResult"]
-    collection --> evaluator["Shared evaluator"]
-    evaluator --> result["Canonical ScanResult"]
-    result --> rich["Rich"]
-    result --> json["JSON"]
-    result --> jsonl["JSONL"]
-    result --> cbom["CycloneDX CBOM"]
-    result --> bundle["--output-dir bundle"]
-    validator["EnXemble: ike-scan"] -. independent corroboration .-> validator_result["Validator result"]
-    validator_result -. merged as provenance only .-> evaluator
+```text
+CLI: scan ike
+    -> IKE target parser
+    -> IkeRequest
+    -> CollectorRegistry
+    -> NativeIkeCollector
+    -> bounded UDP transport
+    -> IKE parser and response binder
+    -> IkeObservation
+    -> CollectionResult
+    -> shared evaluator
+    -> canonical ScanResult
+         +--> Rich
+         +--> JSON
+         +--> JSONL
+         +--> CycloneDX CBOM
+         +--> --output-dir bundle
+
+EnXemble ike-scan validator -- corroboration/provenance only --> evaluator
 ```
 
 ### 3.2 Dependency direction
@@ -158,28 +161,17 @@ socket or parse IKE bytes. EnXemble validation never replaces QuReddy evidence.
 
 ### 3.3 One acquisition, one canonical result
 
-```mermaid
-sequenceDiagram
-    participant C as CLI
-    participant R as Registry
-    participant I as NativeIkeCollector
-    participant U as UDP transport
-    participant P as Parser/binder
-    participant E as Evaluator
-    participant O as Output projections
-
-    C->>R: select(Ike ScanSource)
-    R-->>C: NativeIkeCollector
-    C->>I: collect(source, timeout)
-    I->>U: send bounded probe
-    U-->>I: datagram / timeout
-    I->>P: parse and bind response
-    P-->>I: observation or typed failure
-    I-->>C: CollectionResult
-    C->>E: evaluate(collection)
-    E-->>C: ScanResult
-    C->>O: render once
-    O-->>C: rich/json/jsonl/cbom/bundle
+```text
+CLI -> Registry: select IKE collector
+Registry -> NativeIkeCollector
+Collector -> UDP transport: send bounded probe
+UDP transport -> Collector: datagram or timeout
+Collector -> Parser/binder: parse and bind response
+Parser/binder -> Collector: observation or typed failure
+Collector -> Evaluator: CollectionResult
+Evaluator -> CLI: canonical ScanResult
+CLI -> Output projections: render once
+Output projections -> caller: Rich / JSON / JSONL / CBOM / bundle
 ```
 
 `--output-dir` fans out projections from the same `ScanResult`; it never repeats
@@ -355,7 +347,7 @@ construct request
   -> send UDP/500 or UDP/4500
   -> accept only expected source and destination
   -> validate version, exchange, flags, SPI, message ID, declared length
-  -> validate nonce/request fingerprint and payload bounds
+  -> validate request fingerprint and payload bounds
   -> validate response against the offered proposal set
   -> classify response state
   -> preserve raw digest and typed observation
@@ -381,7 +373,9 @@ The parser must reject or classify as non-positive:
 
 - wrong source address or destination port;
 - wrong IKE version, exchange type, response flag, SPI, or message ID;
-- mismatched request nonce or proposal fingerprint;
+- a response that cannot be bound to the unique request SPI, exchange, message ID,
+  source, and offered-proposal fingerprint; IKEv2 does not echo the initiator nonce
+  in `IKE_SA_INIT`, so nonce equality is never used as a binding requirement;
 - duplicate, replayed, truncated, oversized, or length-inconsistent datagrams;
 - payload chains that exceed declared bounds or contain unknown critical payloads;
 - selected transforms not present in the offered proposal set;
@@ -609,15 +603,15 @@ native `IkeObservation`, change the authoritative collector role, or upgrade
 | `tests/test_ike_models.py` | strict model validation, ports, enums, immutability |
 | `tests/test_ike_targets.py` | hostname/IP/IPv6/port/control-character cases |
 | `tests/test_ike_packet.py` | length, payload-chain, critical-payload, truncation cases |
-| `tests/test_ike_parser.py` | deterministic IKEv1/v2 fixtures and notify classification |
-| `tests/test_ike_binding.py` | wrong SPI/source/version/message ID/nonce/proposal/duplicates |
+| `tests/test_ike_parser.py` | parser-negative byte corpus and notify classification; positive negotiation is live-only |
+| `tests/test_ike_binding.py` | wrong SPI/source/version/message ID/proposal/duplicates; no echoed-nonce assumption |
 | `tests/test_ike_probe.py` | timeout/retry/NAT-T/filtered behavior with a real UDP fixture |
 | `tests/test_ike_scanner.py` | canonical `CollectionResult` and typed failures |
 | `tests/test_ike_policy.py` | evidence ladder and HNDL semantics |
 | `tests/test_ike_cli.py` | real installed CLI parsing, help, exit codes, output flags |
 | `tests/test_ike_output.py` | Rich/JSON/JSONL parity and output-dir single acquisition |
 | `tests/test_ike_cbom.py` | CycloneDX validation and consumer compatibility |
-| `tests/fixtures/ike/*.bin` | captured, redacted, content-addressed packet fixtures |
+| `tests/fixtures/ike/*.bin` | malformed/forged parser-safety inputs only; never positive negotiation evidence |
 | `tests/live/test_live_ike.py` | opt-in strongSwan/veepin lab interoperability |
 | `tests/fuzz/fuzz_ike_packet.py` | parser non-crash and bounded-resource properties |
 
@@ -689,8 +683,9 @@ recorded. A command that is not run is reported `NOT RUN`, never assumed passing
 - Use `subprocess` nowhere in native IKE collection; use a bounded UDP socket
   with explicit address and timeout handling.
 - Never accept a response solely because it has a parseable SA payload.
-- Bind response to request SPI, nonce/fingerprint, source, exchange, flags, and
-  message ID before classifying any selected algorithm.
+- Bind response to request SPI, request fingerprint, source, exchange, flags, and
+  message ID before classifying any selected algorithm. Do not require an echoed
+  initiator nonce that the protocol does not provide.
 - Cap datagram length, payload count, recursion, retries, and retained raw bytes.
 - Never log PSKs, XAUTH credentials, authentication hashes, or full sensitive
   payloads. `-vvv` exposes packet-stage metadata and digests only.
@@ -721,8 +716,9 @@ be called 10/10 only after the acceptance criteria below are demonstrated.
 - [ ] Existing collector lifecycle is live for the IKE CLI; no direct scanner
       bypass remains.
 - [ ] Target/request models are strict, immutable, and lossless for UDP/500/4500.
-- [ ] IKEv1 Main/Aggressive and IKEv2 `IKE_SA_INIT` fixtures parse deterministically.
-- [ ] Source/SPI/version/exchange/flags/message-ID/nonce/proposal binding rejects
+- [ ] Parser-negative fixtures parse deterministically; every positive negotiation
+      and readiness claim comes from a live authorized IPsec peer.
+- [ ] Source/SPI/version/exchange/flags/message-ID/request-fingerprint/proposal binding rejects
       forged and replayed responses.
 - [ ] Advertised, selected, and completed are distinct; first release never emits
       `PROTECTED` for advertised/selected-only evidence.
@@ -864,6 +860,30 @@ Each milestone exit requires the real installed CLI and, where applicable, the
 built container against the local IPsec harness. Public endpoint silence is not
 an acceptance result. Existing TLS/SSH output compatibility remains a gate for
 every milestone.
+
+## 17. Implementation quality bar
+
+The architecture is not permission to lower the repository's coding standards.
+Every production slice must meet the following bar before review:
+
+- Python 3.14+, locked environment, strict typing, formatter/linter clean, and
+  repository quality gates run with recorded exit codes;
+- files target 300 lines or fewer and must not exceed 400 without an issue-backed
+  exception; functions target 30 lines or fewer and must not exceed 50;
+- no `Any`, broad exception swallowing, mutable global registries, hidden retries,
+  duplicated defaults, protocol-specific renderer branches, or dead/TODO code;
+- no shell invocation for native IKE collection; all network work is bounded and
+  cancellable;
+- no monkeypatching of production wiring to make tests pass;
+- every new test must have a real-path counterpart where the feature touches the
+  CLI, provider, container, or network;
+- positive negotiation, downgrade, PQ, and interoperability evidence is live-only
+  from the authorized local IPsec harness; byte fixtures and fuzz inputs prove
+  parser safety only;
+- Codex reviews its own diff for architecture and anti-pattern violations at each
+  check-in; Claude owns the test implementation and evidence record;
+- a failed, skipped, unavailable, partial, or unrun gate remains explicit and
+  cannot be converted into a clean or protected result.
 
 ### References
 
