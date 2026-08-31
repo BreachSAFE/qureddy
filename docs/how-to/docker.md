@@ -57,6 +57,10 @@ docker pull docker.io/breachsafe/qureddy:latest
 GHCR is the canonical image registry. Both registries are promoted from the same
 verified multi-architecture manifest.
 
+Docker Hub applies limits to unauthenticated pulls. Authenticate with
+`docker login` for automation, or use the GHCR copy when Docker Hub access is
+limited.
+
 The image includes the TLS collector. A host OpenSSL installation and
 `QUREDDY_OPENSSL` setting are unnecessary inside the container.
 

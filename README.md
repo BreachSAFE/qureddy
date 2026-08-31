@@ -114,6 +114,9 @@ docker run --rm ghcr.io/breachsafe/qureddy:latest scan tls mozilla.org
 docker run --rm ghcr.io/breachsafe/qureddy:latest scan ssh github.com
 ```
 
+For automated pulls, authenticate to Docker Hub or use GHCR. Docker Hub applies
+limits to unauthenticated pulls.
+
 Each command needs outbound network access to the named target: TCP port 443 for
 the TLS example, TCP port 22 for the SSH example. Add `--format json`,
 `--format jsonl`, or `--format cbom` for machine output, as shown in
