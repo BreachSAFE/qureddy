@@ -160,6 +160,23 @@ Python application instead, see [section 2](#2-install-locally-with-pipx).
 For a browser-based TLS/SSH host that consumes QuReddy CBOM output, see
 [Run QuReddy with a GUI](docs/how-to/run-with-a-gui.md).
 
+### Guided scan (interactive)
+
+Prefer to be prompted? [`examples/guided-scan.sh`](examples/guided-scan.sh) asks for the scan
+type, target, and an authorization confirmation, then runs the scan in Docker. Every prompt has
+a default, so pressing Enter through them scans `mozilla.org` over TLS and `github.com` over SSH:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/BreachSAFE/qureddy/main/examples/guided-scan.sh -o guided-scan.sh
+bash guided-scan.sh
+# Scan TLS, SSH, or both? [tls/ssh/both] (default: both):   <Enter>
+# Authorized to scan mozilla.org:443 over tls? [Y/n]:       <Enter>
+# Authorized to scan github.com:22 over ssh? [Y/n]:         <Enter>
+```
+
+Only scan targets you are authorized to test. Set `DRY_RUN=1` to print the commands without
+running them. IKE support is planned; the guided script covers TLS and SSH today.
+
 ## 2. Install locally with pipx
 
 > **TestPyPI-only distribution.** QuReddy is intentionally published to **TestPyPI**

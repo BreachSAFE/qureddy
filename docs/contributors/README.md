@@ -3,6 +3,12 @@
 Process and engineering standards for people changing QuReddy. Separate from the
 [Diátaxis](https://diataxis.fr) product docs. Return to [the documentation index](../README.md).
 
+## Contents
+
+1. [Documents](#documents)
+
+## Documents
+
 1. [QuReddy application deep dive](application-deep-dive.md)
 2. [Coding rules](coding-rules.md)
 3. [CLI design rules](cli-design-rules.md)
