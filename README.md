@@ -16,6 +16,7 @@
 [![Type Checked: mypy strict](https://img.shields.io/badge/type%20check-mypy%20strict-blue?style=flat-square)](https://mypy-lang.org/)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/breachsafe/qureddy/badge)](https://securityscorecards.dev/viewer/?uri=github.com/breachsafe/qureddy)
 [![GHCR image](https://img.shields.io/badge/GHCR-qureddy-blue?style=flat-square&logo=docker)](https://github.com/BreachSAFE/qureddy/pkgs/container/qureddy)
+[![Docker Hub image](https://img.shields.io/badge/Docker%20Hub-qureddy-blue?style=flat-square&logo=docker)](https://hub.docker.com/r/breachsafe/qureddy)
 [![TestPyPI package](https://img.shields.io/badge/TestPyPI-breachsafe--qureddy-blue?style=flat-square&logo=pypi)](https://test.pypi.org/project/breachsafe-qureddy/)
 [![OpenSSL 3.5.7 LTS](https://img.shields.io/badge/OpenSSL-3.5.7%20LTS-721412?style=flat-square&logo=openssl)](https://github.com/openssl/openssl/releases/tag/openssl-3.5.7)
 [![CycloneDX 1.7 CBOM](https://img.shields.io/badge/CycloneDX-1.7%20CBOM-2f6690?style=flat-square)](https://cyclonedx.org/docs/1.7/)
@@ -86,7 +87,9 @@ JSONL record per finding for CI, EnXemble, or another downstream consumer.
 
 Docker is the primary supported way to run QuReddy and the fastest path to a
 result. The image bundles the verified OpenSSL 3.5.7 LTS runtime, so TLS scanning
-needs no local setup, and it runs as an unprivileged user. The image entrypoint is
+needs no local setup, and it runs as an unprivileged user. GHCR is the canonical
+image registry; Docker Hub provides a mirror for environments that restrict GitHub
+package access. The image entrypoint is
 the `qureddy` command, so any argument you would pass to the CLI you pass to
 `docker run` unchanged:
 

@@ -48,7 +48,7 @@ Learning-oriented walkthroughs for someone new to the tool.
 
 Task-oriented recipes for someone who already knows the basics.
 
-- [Run with Docker and GHCR](how-to/docker.md)
+- [Run with Docker and container registries](how-to/docker.md)
 - [Install and troubleshoot QuReddy](how-to/install.md)
 - [Scan an IP target with a custom SNI](how-to/scan-ip-with-sni.md)
 - [Scan an SSH or SFTP endpoint](how-to/scan-ssh.md)

@@ -4,7 +4,7 @@
 
 The QuReddy container packages the release wheel with a checksum-verified
 OpenSSL 3.5.7 runtime. It runs as an unprivileged user and is published to the
-BreachSAFE GitHub Container Registry (GHCR).
+BreachSAFE GitHub Container Registry (GHCR) and Docker Hub mirror.
 
 ## Contents
 
@@ -21,6 +21,15 @@ BreachSAFE GitHub Container Registry (GHCR).
 ```bash
 docker pull ghcr.io/breachsafe/qureddy:latest
 ```
+
+Docker Hub mirror:
+
+```bash
+docker pull docker.io/breachsafe/qureddy:latest
+```
+
+GHCR is the canonical image registry. Both registries are promoted from the same
+verified multi-architecture manifest.
 
 The image includes the TLS collector. A host OpenSSL installation and
 `QUREDDY_OPENSSL` setting are unnecessary inside the container.
@@ -93,14 +102,15 @@ final image.
 The repository workflow at `.github/workflows/container.yml` publishes when a
 GitHub Release is published, and on demand through a manual dispatch with
 `publish=true`. It authenticates to GHCR with the repository token, builds
-`linux/amd64` and `linux/arm64` on native runners, and emits the version tag,
-`latest`, and a commit (`sha-`) tag. Pull requests run the smoke gate but never
-publish.
+`linux/amd64` and `linux/arm64` on native runners, promotes the same manifest to
+Docker Hub, and emits the version tag, `latest`, and a commit (`sha-`) tag. Pull
+requests run the smoke gate but never publish.
 
 Publishing requires the GHCR package to grant this repository write access under
-the package's "Manage Actions access" settings. Without it the push fails with
-`denied: permission_denied: write_package` even though the workflow already holds
-`packages: write`.
+the package's "Manage Actions access" settings. Docker Hub publication additionally
+requires the repository secrets `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN`. The
+workflow fails closed when either registry authentication or digest verification
+fails.
 
 See [installation and troubleshooting](install.md), [CBOM reference](../reference/cbom.md),
 and [exit codes](../reference/exit-codes.md) for the surrounding contracts.

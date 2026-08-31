@@ -432,7 +432,7 @@ workflow state.
 ```mermaid
 sequenceDiagram
     participant E as EnXemble scan engine
-    participant I as GHCR QuReddy image
+    participant I as GHCR QuReddy image (canonical)
     participant Q as QuReddy CLI
     participant T as TLS or SSH endpoint
     participant DB as EnXemble evidence store
