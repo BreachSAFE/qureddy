@@ -77,8 +77,10 @@ The implementation is intentionally staged under the delivery sequence in #546:
 3. #552 IKEv1 Main/Aggressive observation and mandatory Historic/identity/credential findings;
 4. #553 IKEv2 binding, unchanged attributes, and inconsistent-selection termination;
 5. #554 canonical findings and Rich/JSON/JSONL/CBOM parity;
-6. #555 live ML-KEM-768/1024 and legal ADDKE selection;
-7. #556 package/image/docs/release verification.
+6. #556 package/image/docs/release verification for the pre-PQC MVP.
+
+Post-MVP milestone `0.14.0 - IKE PQC Parity`: #555 live ML-KEM-768/1024 and legal
+ADDKE selection, #562 completion, and #563 discovery parity.
 
 Protected `IKE_INTERMEDIATE`/ADDKE completion is optional, unscheduled, and owned by
 [#562](https://github.com/BreachSAFE/qureddy/issues/562). EnXemble validation is owned by
