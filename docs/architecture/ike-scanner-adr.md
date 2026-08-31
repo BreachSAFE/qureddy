@@ -506,6 +506,37 @@ evidence_refs
 policy_id / policy_version
 ```
 
+### 7.1.1 Scoped HNDL assessment
+
+The canonical result carries HNDL scope explicitly. Renderers and CBOM consume
+this object; they must not flatten it into a renderer-specific global verdict.
+
+```python
+class HndlScope(str, Enum):
+    IKE_SA_KEY_ESTABLISHMENT = "ike_sa_key_establishment"
+    OVERALL_IPSEC = "overall_ipsec"
+
+class HndlDisposition(str, Enum):
+    AT_RISK = "at_risk"
+    UNKNOWN = "unknown"
+    NOT_TESTED = "not_tested"
+
+@dataclass(frozen=True, slots=True)
+class ScopedHndlAssessment:
+    scope: HndlScope
+    disposition: HndlDisposition
+    reason_codes: tuple[str, ...]
+    evidence_refs: tuple[str, ...]
+```
+
+The pre-PQC unauthenticated release may report
+`IKE_SA_KEY_ESTABLISHMENT / AT_RISK` for an accepted classical tuple, while it
+must report `OVERALL_IPSEC / UNKNOWN`. The scan has not observed IKE_AUTH,
+Child-SA, ESP/AH, traffic selectors, or PFS behavior. If the legacy global
+`hndl_exposure` field remains for compatibility, it stays `unknown` here and is
+not authoritative. Future authenticated or Child-SA evidence requires a
+separate contract revision.
+
 ### 7.2 Required semantic rules
 
 1. A classical-only accepted proposal can produce HNDL `AT_RISK` or
