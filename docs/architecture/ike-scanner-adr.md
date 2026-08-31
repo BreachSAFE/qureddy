@@ -4,10 +4,14 @@
 
 [![Architecture decision](https://img.shields.io/badge/QuReddy-architecture%20decision-8250df?style=flat-square)](https://github.com/BreachSAFE/qureddy/blob/main/docs/architecture/ike-scanner-adr.md)
 
-**Tag:** `[codex-1]`
+**Tag:** `[546]`
 **Status:** Proposed for maintainer review
-**Scope:** QuReddy native IKE observation, canonical output integration, and EnXemble validation
-**Issue:** [#547](https://github.com/BreachSAFE/qureddy/issues/547)
+**Scope:** QuReddy native IKE observation and canonical output integration
+**Issue:** [#546](https://github.com/BreachSAFE/qureddy/issues/546)
+
+This document mirrors the normative contract in #546. If this file and #546 differ,
+`#546` controls until this document is corrected. Earlier draft issues are historical
+material only and are not authorities for implementation.
 
 ## Contents
 
@@ -32,9 +36,9 @@
 ## 1. Decision summary
 
 QuReddy will add a native, observation-only IKE scanner behind the existing
-collector and canonical-result seams. The first production slice is bounded to
-unauthenticated IKEv2 `IKE_SA_INIT` observation and IKEv1 discovery evidence. It
-does not establish a tunnel, authenticate, recover a PSK, or claim completed PQ
+collector and canonical-result seams. The first production slices are bounded to
+unauthenticated IKEv1 discovery and IKEv2 `IKE_SA_INIT` observation. They do not
+establish a tunnel, authenticate, recover a PSK, or claim completed PQ
 protection.
 
 ```text
@@ -66,15 +70,19 @@ validator/corroborator for IKEv1 transform and legacy-mode evidence. It is not a
 QuReddy runtime dependency, is not the authoritative PQ scanner, and does not
 write CBOM directly.
 
-The implementation is intentionally staged:
+The implementation is intentionally staged under the delivery sequence in #546:
 
-1. make the existing collector lifecycle executable for all scanner commands;
-2. add validated native IKEv2 observation;
-3. add IKEv1 discovery evidence;
-4. add cross-format output and CBOM mapping;
-5. add EnXemble `ike-scan` corroboration;
-6. only then evaluate completed ML-KEM exchange support through a separately
-   approved cryptographic provider.
+1. #549 target parsing/capability registration, then #550 catalog and exact identity;
+2. #551 bounded UDP/codec and the observation-scoped provider boundary;
+3. #552 IKEv1 Main/Aggressive observation and mandatory Historic/identity/credential findings;
+4. #553 IKEv2 binding, unchanged attributes, and inconsistent-selection termination;
+5. #554 canonical findings and Rich/JSON/JSONL/CBOM parity;
+6. #555 live ML-KEM-768/1024 and legal ADDKE selection;
+7. #556 package/image/docs/release verification.
+
+Protected `IKE_INTERMEDIATE`/ADDKE completion is optional, unscheduled, and owned by
+[#562](https://github.com/BreachSAFE/qureddy/issues/562). EnXemble validation is owned by
+the separate [EnXemble issue #51](https://github.com/BreachSAFE/enxemble/issues/51).
 
 No stage may label an endpoint `PROTECTED` from an advertised or selected PQ
 transform alone.
@@ -98,10 +106,12 @@ for a CISO.
 - Protocol version, exchange type, mode, encryption, integrity/PRF, DH/KE group,
   NAT-T behavior, response state, and provenance.
 - Explicit evidence levels: `observed`, `advertised`, `selected`, `completed`.
-- ML-KEM-512 is out of scope for this plan. No provider, catalog, fixture, CLI
-  profile, or readiness claim may imply ML-KEM-512 support.
+- ML-KEM-512/ID 35 may be retained as lossless catalog metadata only. It is never
+  scheduled, attempted, or used in a readiness claim. ML-KEM-768/1024 are the
+  only in-scope PQ parameter sets.
 - Canonical Rich, JSON, JSONL, and later CBOM projections.
-- EnXemble-side optional `ike-scan` independent validation.
+- EnXemble-side `ike-scan` validation is a separate consumer concern; it never
+  writes CBOM and never replaces QuReddy evidence.
 
 ### 2.3 Out of scope for the first release
 
@@ -374,7 +384,7 @@ The parser must reject or classify as non-positive:
 - wrong source address or destination port;
 - wrong IKE version, exchange type, response flag, SPI, or message ID;
 - a response that cannot be bound to the unique request SPI, exchange, message ID,
-  source, and offered-proposal fingerprint; IKEv2 does not echo the initiator nonce
+  source, retry state, and offered-proposal fingerprint; IKEv2 does not echo the initiator nonce
   in `IKE_SA_INIT`, so nonce equality is never used as a binding requirement;
 - duplicate, replayed, truncated, oversized, or length-inconsistent datagrams;
 - payload chains that exceed declared bounds or contain unknown critical payloads;
@@ -416,6 +426,10 @@ qureddy scan ike vpn.example.com --output-dir run/
 The exact option spelling must follow the existing Typer option conventions; the
 implementation must not introduce aliases that collide with global verbosity or
 output options. `--output-dir` writes the same bundle contract used by TLS/SSH.
+
+The first release exposes no completion-mode CLI option. A future completion
+option belongs to #562 and cannot be implied by `--exchange`, `--ike-version`,
+or a selected ADDKE/ML-KEM transform.
 
 ### 6.2 Proposed options
 
@@ -497,12 +511,19 @@ policy_id / policy_version
    algorithms and evidence references.
 2. IKEv1 discovery never implies PQ support.
 3. `advertised` or `selected` PQ evidence never implies completed protection.
-4. `completed` may affect protection only after transcript validation and an
-   approved provider gate.
+4. `completed` is not part of the observation release. Protected
+   `IKE_INTERMEDIATE`/ADDKE completion requires the separate, unscheduled #562
+   decision and provider/security/conformance gates.
 5. No response, filtering, malformed packets, and unsupported local capability
    produce `UNKNOWN`/`NOT_TESTABLE`, not a favorable posture.
 6. A corroborator disagreement is preserved as evidence and cannot silently
    improve the posture.
+
+The observation provider exposes only capability reporting, randomness, valid
+KE-share generation, and bounded disposal. It does not expose shared-secret
+derivation, IKE KDFs, encryption/decryption, integrity, `derive`, `protect`,
+`verify`, or transcript completion. Those completion-only methods belong to #562
+and are not required by #551--#555.
 
 ### 7.3 Output parity
 
@@ -718,7 +739,7 @@ be called 10/10 only after the acceptance criteria below are demonstrated.
 - [ ] Target/request models are strict, immutable, and lossless for UDP/500/4500.
 - [ ] Parser-negative fixtures parse deterministically; every positive negotiation
       and readiness claim comes from a live authorized IPsec peer.
-- [ ] Source/SPI/version/exchange/flags/message-ID/request-fingerprint/proposal binding rejects
+- [ ] Source/SPI/version/exchange/flags/message-ID/retry-state/proposal binding rejects
       forged and replayed responses.
 - [ ] Advertised, selected, and completed are distinct; first release never emits
       `PROTECTED` for advertised/selected-only evidence.
@@ -746,21 +767,18 @@ transitive package dependency.
 
 ## 15. Open decisions
 
-1. Which maintained provider, if any, is approved for a future completed ML-KEM
-   exchange claim?
-2. Does the first IKE release include IKEv1 discovery, or ship IKEv2 observation
-   first and add IKEv1 in a follow-up?
-3. Should EnXemble call the field `validator` with `role: corroborating`, or add a
-   schema-native `corroborator` field?
-4. Which CycloneDX 1.7 component/protocol mapping is accepted by Qurum and
+1. Which CycloneDX 1.7 component/protocol mapping is accepted by Qurum and
    mint-oscal before CBOM admission?
-5. Which real FortiGate/strongSwan interoperability endpoints can be used under
+2. Which real FortiGate/strongSwan interoperability endpoints can be used under
    the approved test authorization?
+
+Provider selection, IKEv1/IKEv2 sequencing, validator ownership, and completion
+scope are decided by #546 and its child issues; they are not open decisions here.
 
 ## 16. Implementation handoff and ownership
 
-This section is normative for the child issues in milestones `0.10.0` through
-`0.14.0`.
+This section mirrors the child-issue ownership in #546 for milestones `0.10.0`
+through `0.14.0`; #546 remains the normative contract.
 
 ### 16.1 File and component map
 
@@ -802,7 +820,7 @@ src/qureddy/scanners/ike/catalog.py          pinned IANA IDs and profiles
 src/qureddy/scanners/ike/codec.py            bounded encode/parse/bind
 src/qureddy/scanners/ike/transport.py        UDP 500/4500 and NAT-T
 src/qureddy/scanners/ike/sweep.py            proposal scheduling/coverage
-src/qureddy/scanners/ike/provider.py         approved crypto-provider port
+src/qureddy/scanners/ike/provider.py         observation-scoped provider port
 src/qureddy/scanners/ike/findings.py         observation-to-neutral-facts mapping
 src/qureddy/scanners/ike/scanner.py          orchestration only
 src/qureddy/output/cbom_ike.py               public-model CBOM projection only
@@ -849,11 +867,12 @@ For every child issue:
 ### 16.4 Milestone exit contract
 
 ```text
-0.10.0  contracts, catalog, identity, provider port, prerequisites
+0.10.0  contracts, catalog, identity, Phase-0 prerequisites
 0.11.0  real IKEv1/IKEv2 classical observations and strict binding
 0.12.0  canonical findings, all outputs, coverage, EnXemble validator
 0.13.0  real ADDKE/ML-KEM selection evidence
-0.14.0  optional completion, package/image/docs/release proof
+0.14.0  package/image/docs/release verification
+        optional completion is unscheduled in #562
 ```
 
 Each milestone exit requires the real installed CLI and, where applicable, the
