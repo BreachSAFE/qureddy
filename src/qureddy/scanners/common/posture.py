@@ -137,12 +137,15 @@ def _protocol_axis(
 
 def _hndl_exposure(
     *,
+    protocol: str | None,
     classical: bool,
     hybrid: bool,
     pure_pq: bool,
     not_testable: bool,
 ) -> HndlExposure:
     """Classify future-quantum exposure without ranking present-day hygiene."""
+    if protocol == "ike":
+        return HndlExposure.UNKNOWN
     if not_testable:
         return HndlExposure.UNKNOWN
     if hybrid:
@@ -280,6 +283,7 @@ def build_interpretation(
     not_testable = _is_not_testable(failure_category)
     headline, recommended_action = _ciso_text(axes, reason_codes)
     hndl_exposure = _hndl_exposure(
+        protocol=protocol,
         classical=signals.classical_kex,
         hybrid=signals.hybrid,
         pure_pq=signals.pure_pq,
