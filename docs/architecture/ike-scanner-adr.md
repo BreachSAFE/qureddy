@@ -298,20 +298,47 @@ serialization when empty so existing TLS and SSH `qureddy.scan.v1` bytes remain 
 `NegotiationOutcome` and never a fabricated observation. No code path may
 construct an `IKEProposalObservation` for a `not_tested` row.
 
+**Attempts are stored once and referenced.** `ScanResult.ike_attempts` is the
+single store; `IKEProposalObservation.attempt_ids` references into it. A batched
+sweep offers many proposals in one datagram, so embedding the attempt inside
+each observation would serialize the same datagram many times and create as
+many copies of one truth. The reverse index `IKEAttemptEvidence.proposal_ids`
+records which proposals that datagram carried.
+
+**A zero responder identity is permitted only for a bound stateless error.**
+A responder answering `COOKIE` or `INVALID_KE_PAYLOAD` before creating state
+returns a zero responder SPI, and that attempt is legitimately `outcome=bound`.
+An attempt whose responder SPI or cookie is all zeros **MUST NOT** contribute
+accepted selection evidence: `outcome=bound` with a zero responder identity is
+valid only when the response carried a stateless error notification and the
+proposal outcome is not `accepted`. The Phase 0 lab already asserts this on
+`PH0-VEEPIN-INVALID-KE-RETRY`, whose first leg carries a zero responder SPI.
+
 **Attempt-level evidence is lossless and never collapsed.** Every datagram the
 scanner sends is one `IKEAttemptEvidence` with its own source port, SPI pair,
 header fields, digests, and timing. A retry is a **new attempt with a new
 `ordinal`** whose `parent_ordinal` names the attempt that provoked it, not a
 mutation of the first. This is required by the protocol, not a preference:
 
-- `COOKIE`: the initiator retries `IKE_SA_INIT` with the cookie
-  (`rfc7296/rfc7296.txt:667`). Two datagrams, one logical proposal.
-- `INVALID_KE_PAYLOAD`: the responder accepted the proposal and disagreed only
-  about the key exchange group (`rfc7296/rfc7296.txt` §1.3, §3.10.1, interaction
-  with COOKIE at line 149). Recording it as a rejection loses the fact that
-  everything except the group was acceptable, so the first leg keeps
-  `outcome=bound` with `reason=explicit_notify` and the retry carries
-  `role=invalid_ke_retry`.
+- `COOKIE`: when the responder replies with a `COOKIE` notification the
+  initiator MUST retry `IKE_SA_INIT` including that cookie as the first payload
+  **and all other payloads unchanged** (`rfc7296/rfc7296.txt:1799-1807`). Two
+  datagrams, one logical proposal.
+- `INVALID_KE_PAYLOAD`: the responder names the key exchange group it wants and
+  the initiator MUST retry with the corrected group
+  (`rfc7296/rfc7296.txt:663-668`). The interaction between the two retry causes
+  is `rfc7296/rfc7296.txt:1911` §2.6.1.
+
+  **This is preferred-group evidence only. It is not evidence that the rest of
+  the proposal was accepted.** `rfc7296/rfc7296.txt:668-681` requires the
+  initiator to again propose its *full* set of acceptable suites precisely
+  *"because the rejection message was unauthenticated and otherwise an active
+  attacker could trick the endpoints into negotiating a weaker suite than a
+  stronger one that they both prefer."* The retry's response is evidence about
+  the second group alone. The first leg therefore records
+  `outcome=bound`, `reason=explicit_notify`, and the responder's named group;
+  it never contributes accepted-transform evidence, and the retry carries
+  `role=invalid_ke_retry` with `parent_attempt_id` set.
 - Retransmission (`rfc7296/rfc7296.txt:323`) is `role=retransmission` and
   **must not create a second `IKEProposalObservation`**.
 
@@ -325,11 +352,27 @@ carry `NAT_DETECTION_SOURCE_IP`, `NAT_DETECTION_DESTINATION_IP`,
 `INTERMEDIATE_EXCHANGE_SUPPORTED`, and `COOKIE` together, and
 `rfc7296/rfc7296.txt:3570` states there **MAY be multiple**
 `NAT_DETECTION_SOURCE_IP` payloads in one message. Order is as received.
-`data_hex` is populated only for types on a bounded allowlist; every other
-notification records `data_length` and `data_sha256` with `redacted=True`.
+**The `data_hex` allowlist is frozen here.** Exactly these types may populate
+`data_hex`, with the stated validator; every other type, known or unknown,
+records `data_length` and `data_sha256` with `redacted=True` and `data_hex`
+unset.
+
+| Notify | Wire ID | `data_hex` | Validator |
+|---|---:|---|---|
+| `INVALID_KE_PAYLOAD` | 17 | yes | exactly 2 octets, a KE method ID resolved against the pinned registry |
+| `NAT_DETECTION_SOURCE_IP` | 16388 | **no** | 20-octet SHA-1 hash over addresses; length-checked, digest only |
+| `NAT_DETECTION_DESTINATION_IP` | 16389 | **no** | as above |
+| `INTERMEDIATE_EXCHANGE_SUPPORTED` | 16438 | yes | zero-length; any payload is `malformed` |
+| `NO_PROPOSAL_CHOSEN` | 14 | yes | zero-length |
+| `COOKIE` | 16390 | **never** | 1 to 64 octets (`rfc7296:1801`); length and digest only |
+
+`NAT_DETECTION_*` data is excluded because it is a hash over the peer's
+addresses and SPIs. Retaining it publishes an identifier of the scanned host,
+and the match result is what the evidence needs.
+
 **COOKIE values, nonces, key shares, and authentication material are never
-retained in a public model**, so a `COOKIE` notification carries its length and
-digest and never its bytes.
+retained in a public model.** An unknown notify type is preserved by number
+with its length and digest; it is never guessed at and never given a name.
 
 **NAT-T is an observation, not a boolean.** The two IKE versions use different
 mechanisms and `IKENatObservation` distinguishes them: IKEv1 sends NAT-D
@@ -379,22 +422,37 @@ class IKEEndpoint(BaseModel):
     ip: str
     port: int = Field(ge=1, le=65535)
 
+class IKEv1CookiePair(BaseModel):
+    """ISAKMP header cookies, rfc2408:1157. Not SPIs; do not rename."""
+    kind: Literal["ikev1_cookie"] = "ikev1_cookie"
+    initiator_cookie: str = Field(pattern=r"^[0-9a-f]{16}$")
+    responder_cookie: str | None = Field(default=None, pattern=r"^[0-9a-f]{16}$")
+
+class IKEv2SpiPair(BaseModel):
+    """IKEv2 SPIs, rfc7296 Figure 4."""
+    kind: Literal["ikev2_spi"] = "ikev2_spi"
+    initiator_spi: str = Field(pattern=r"^[0-9a-f]{16}$")
+    responder_spi: str | None = Field(default=None, pattern=r"^[0-9a-f]{16}$")
+
+type IKESessionIdentity = IKEv1CookiePair | IKEv2SpiPair
+
 class IKEAttemptEvidence(BaseModel):
-    """One concrete datagram exchange. Never merged, never summarized away."""
+    """One datagram exchange, stored once in ScanResult.ike_attempts."""
+    attempt_id: str
     ordinal: int = Field(ge=1)
     role: AttemptRole
-    parent_ordinal: int | None = None
+    parent_attempt_id: str | None = None
     source: IKEEndpoint
     destination: IKEEndpoint
     response_source: IKEEndpoint | None = None
-    initiator_spi: str = Field(pattern=r"^[0-9a-f]{16}$")
-    responder_spi: str | None = Field(default=None, pattern=r"^[0-9a-f]{16}$")
+    identity: IKESessionIdentity
     ike_version: IKEVersion
     exchange: IKEExchange
     flags_hex: str = Field(pattern=r"^[0-9a-f]{2}$")
     message_id: int = Field(ge=0)
     declared_length: int | None = None
     observed_length: int | None = None
+    non_esp_marker: NonEspMarker = NonEspMarker.NOT_APPLICABLE
     request_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     response_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     sent_at_ms: int
@@ -402,6 +460,7 @@ class IKEAttemptEvidence(BaseModel):
     outcome: AttemptOutcome
     reason: NegotiationReason
     notifications: tuple[IKENotificationObservation, ...] = ()
+    proposal_ids: tuple[str, ...] = ()
 
 class IKENotificationObservation(BaseModel):
     """Ordered as received. RFC 7296 line 3570 permits repeats of one type."""
@@ -416,7 +475,12 @@ class IKENotificationObservation(BaseModel):
     redacted: bool = True
 
 class IKENatObservation(BaseModel):
-    """IKEv1 NAT-D (rfc3947:211) and IKEv2 NAT_DETECTION_* (rfc7296:3560)."""
+    """DERIVED from the referenced attempts. Never authored independently.
+
+    Ports and non-ESP framing are per-datagram and live on IKEAttemptEvidence.
+    They are deliberately absent here so there is exactly one NAT truth.
+    IKEv1 NAT-D rfc3947:211; IKEv2 NAT_DETECTION_* rfc7296:3560.
+    """
     requested: IKENatT
     mechanism: NatMechanism
     vendor_id_observed: bool = False
@@ -426,9 +490,8 @@ class IKENatObservation(BaseModel):
     source_match: NatMatch = NatMatch.NOT_TESTED
     destination_match: NatMatch = NatMatch.NOT_TESTED
     translation: NatTranslation = NatTranslation.NOT_TESTED
-    non_esp_marker: NonEspMarker = NonEspMarker.NOT_APPLICABLE
     port_float: PortFloat = PortFloat.NOT_TESTED
-    observed_ports: tuple[int, ...] = ()
+    derived_from: tuple[str, ...] = Field(min_length=1)
 
 class CoverageEntry(BaseModel):
     """One catalog/profile row. The only place not_tested names a proposal."""
@@ -466,7 +529,7 @@ class IKEProposalObservation(BaseModel):
     outcome: NegotiationOutcome
     evidence_level: Literal["selected"] | None = None
     reason: NegotiationReason
-    attempts: tuple[IKEAttemptEvidence, ...] = Field(min_length=1)
+    attempt_ids: tuple[str, ...] = Field(min_length=1)
     duration_ms: int
 
 class CoverageReceipt(BaseModel):
@@ -515,6 +578,10 @@ class ScanResult(BaseModel):
     # Existing fields remain unchanged and in their existing order.
     dependencies: tuple[RuntimeDependency, ...]
     coverage: tuple[CoverageReceipt, ...] = Field(
+        default_factory=tuple,
+        exclude_if=lambda value: not value,
+    )
+    ike_attempts: tuple[IKEAttemptEvidence, ...] = Field(
         default_factory=tuple,
         exclude_if=lambda value: not value,
     )
@@ -1105,7 +1172,13 @@ pure model or projection test needing no socket, so none is blocked on a peer:
 
 | Test | Asserts | Fails today because |
 |---|---|---|
-| `test_ike_models.py::test_attempt_sequence_is_lossless` | an `INVALID_KE_PAYLOAD` first leg and its retry survive as two `IKEAttemptEvidence` with distinct `ordinal`, `source.port`, and `responder_spi`, the retry carrying `role=invalid_ke_retry` and `parent_ordinal=1` | `IKEAttemptEvidence` does not exist; `attempts: int` cannot hold two source ports |
+| `test_ike_models.py::test_attempt_sequence_is_lossless` | an `INVALID_KE_PAYLOAD` first leg and its retry survive as two `IKEAttemptEvidence` in `ScanResult.ike_attempts` with distinct `attempt_id`, `source.port`, and responder identity, the retry carrying `role=invalid_ke_retry` and `parent_attempt_id` set | `IKEAttemptEvidence` does not exist; `attempts: int` cannot hold two source ports |
+| `test_ike_models.py::test_attempts_are_stored_once` | one datagram carrying three batched proposals yields **one** entry in `ScanResult.ike_attempts` and three observations whose `attempt_ids` all reference it | nothing prevents serializing the same datagram three times |
+| `test_ike_models.py::test_ikev1_identity_is_a_cookie_pair` | an IKEv1 attempt round-trips `IKEv1CookiePair` and an IKEv2 attempt round-trips `IKEv2SpiPair`; the IKEv1 field is never named `initiator_spi` | no discriminated identity exists, so IKEv1 cookies are misnamed as SPIs |
+| `test_ike_models.py::test_zero_responder_identity_cannot_accept` | an attempt with an all-zero responder identity is accepted as `outcome=bound` when the response carried a stateless error, and **rejected** when the proposal outcome is `accepted` | no rule distinguishes the two cases |
+| `test_ike_models.py::test_invalid_ke_is_not_acceptance` | an `INVALID_KE_PAYLOAD` first leg contributes the responder's named group and **no** accepted-transform evidence | nothing prevents reading the notify as partial acceptance |
+| `test_ike_models.py::test_nat_is_derived_from_attempts` | `IKENatObservation.derived_from` names real `attempt_id`s, and constructing one whose fields contradict those attempts is rejected | the NAT model can be authored independently of the datagrams it summarizes |
+| `test_ike_models.py::test_notification_allowlist_is_enforced` | `NAT_DETECTION_SOURCE_IP` and `COOKIE` store `data_length` and `data_sha256` with `data_hex` unset and `redacted=True`; `INVALID_KE_PAYLOAD` stores exactly 2 octets of `data_hex`; an unknown type is preserved by number and redacted | the allowlist is prose, not a validator |
 | `test_ike_models.py::test_retransmission_creates_no_second_observation` | a `role=retransmission` attempt appends to `attempts` and yields exactly one `IKEProposalObservation` | no attempt role exists to distinguish a retry from a retransmission |
 | `test_ike_models.py::test_notifications_are_ordered_and_repeatable` | two `NAT_DETECTION_SOURCE_IP` plus one `NAT_DETECTION_DESTINATION_IP` round-trip in received order, and a `COOKIE` notification stores `data_length` and `data_sha256` with `data_hex` unset and `redacted=True` | `notify_type: int \| None` holds one value and has no redaction boundary |
 | `test_ike_models.py::test_nat_states_are_distinguishable` | `requested=force` with no vendor ID observed, versus vendor ID observed with `translation=none_detected`, versus `port_float=unavailable`, are three distinct serializations | `nat_t: bool` collapses all three |
