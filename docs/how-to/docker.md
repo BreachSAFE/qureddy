@@ -18,11 +18,37 @@ BreachSAFE GitHub Container Registry (GHCR) and Docker Hub mirror.
 
 ## 1. Pull the release image
 
+If Docker is installed, no Python or OpenSSL setup is required. Run a scan
+directly; Docker downloads the image automatically:
+
 ```bash
-docker pull ghcr.io/breachsafe/qureddy:latest
+docker run --rm docker.io/breachsafe/qureddy:latest \
+  scan tls mozilla.org
 ```
 
-Docker Hub mirror:
+For SSH:
+
+```bash
+docker run --rm docker.io/breachsafe/qureddy:latest \
+  scan ssh github.com
+```
+
+The container needs outbound TCP port 443 for TLS or TCP port 22 for SSH.
+
+If Docker Hub is unavailable, run the same commands from GHCR:
+
+```bash
+docker run --rm ghcr.io/breachsafe/qureddy:latest scan tls mozilla.org
+docker run --rm ghcr.io/breachsafe/qureddy:latest scan ssh github.com
+```
+
+To download the image without running a scan:
+
+```bash
+docker pull docker.io/breachsafe/qureddy:latest
+```
+
+The GHCR image is also available:
 
 ```bash
 docker pull docker.io/breachsafe/qureddy:latest
@@ -37,21 +63,21 @@ The image includes the TLS collector. A host OpenSSL installation and
 ## 2. Run a TLS scan
 
 ```bash
-docker run --rm ghcr.io/breachsafe/qureddy:latest \
+docker run --rm docker.io/breachsafe/qureddy:latest \
   scan tls pq.cloudflareresearch.com
 ```
 
 For an IP target that requires SNI:
 
 ```bash
-docker run --rm ghcr.io/breachsafe/qureddy:latest \
+docker run --rm docker.io/breachsafe/qureddy:latest \
   scan tls 1.1.1.1:443 --sni one.one.one.one
 ```
 
 ## 3. Run an SSH scan
 
 ```bash
-docker run --rm ghcr.io/breachsafe/qureddy:latest \
+docker run --rm docker.io/breachsafe/qureddy:latest \
   scan ssh github.com
 ```
 
@@ -60,10 +86,10 @@ SSH scans need outbound TCP 22 access and do not invoke OpenSSL.
 ## 4. Write JSON or CBOM output
 
 ```bash
-docker run --rm ghcr.io/breachsafe/qureddy:latest \
+docker run --rm docker.io/breachsafe/qureddy:latest \
   scan tls pq.cloudflareresearch.com --format json > scan.json
 
-docker run --rm ghcr.io/breachsafe/qureddy:latest \
+docker run --rm docker.io/breachsafe/qureddy:latest \
   scan ssh github.com --format cbom > github-ssh.cdx.json
 ```
 

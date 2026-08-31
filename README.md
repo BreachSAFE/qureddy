@@ -93,8 +93,24 @@ package access. The image entrypoint is
 the `qureddy` command, so any argument you would pass to the CLI you pass to
 `docker run` unchanged:
 
+If Docker is already installed, copy and paste one of these commands:
+
+```console
+# TLS scan
+docker run --rm docker.io/breachsafe/qureddy:latest scan tls mozilla.org
+
+# SSH scan
+docker run --rm docker.io/breachsafe/qureddy:latest scan ssh github.com
+```
+
+Docker downloads the image automatically. No Python or OpenSSL installation is
+required on the host. The scan needs outbound access to TCP port 443 for TLS or
+TCP port 22 for SSH.
+
+If Docker Hub is unavailable, use the GHCR copy of the same release:
+
 ```bash
-docker run --rm ghcr.io/breachsafe/qureddy:latest scan tls example.com
+docker run --rm ghcr.io/breachsafe/qureddy:latest scan tls mozilla.org
 docker run --rm ghcr.io/breachsafe/qureddy:latest scan ssh github.com
 ```
 
