@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from qureddy.core.models import (
     AxisStatus,
     Confidence,
@@ -132,12 +134,34 @@ def test_interpretation_covers_positive_and_classical_paths() -> None:
     )
 
     pure = build_interpretation(
-        [_finding("tls.pq.negotiated_pure", "tls.kex.pq", Readiness.QUANTUM_SAFE)], [], None
+        [_finding("tls.pq.negotiated_pure", "tls.kex.pure_pq", Readiness.QUANTUM_SAFE)], [], None
     )
     assert pure.headline.startswith("Pure post-quantum")
     assert pure.hndl_exposure is HndlExposure.PROTECTED
     assert pure.hygiene_status is HygieneStatus.OK
     assert pure.display.overall_status == "Post-quantum protection observed"
+
+
+@pytest.mark.parametrize(
+    ("finding_type", "readiness"),
+    [
+        ("ike.kex.classical", Readiness.QUANTUM_VULNERABLE),
+        ("ike.kex.hybrid", Readiness.TRANSITIONAL_HYBRID),
+        ("ike.kex.pure_pq", Readiness.QUANTUM_SAFE),
+    ],
+)
+def test_ike_key_establishment_never_sets_global_hndl_posture(
+    finding_type: str,
+    readiness: Readiness,
+) -> None:
+    interpretation = build_interpretation(
+        [_finding(finding_type, finding_type, readiness)],
+        [],
+        None,
+        protocol="ike",
+    )
+
+    assert interpretation.hndl_exposure is HndlExposure.UNKNOWN
 
 
 def test_classical_only_is_at_risk_and_action_needed() -> None:
