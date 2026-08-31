@@ -5,16 +5,15 @@
 [![Architecture decision](https://img.shields.io/badge/QuReddy-architecture%20decision-8250df?style=flat-square)](https://github.com/BreachSAFE/qureddy/blob/main/docs/architecture/ike-scanner-adr.md)
 
 **Tag:** `[546]`
-**Status:** Proposed for maintainer review
+**Status:** Accepted; implementation pending
 **Scope:** QuReddy native IKE observation and canonical output integration
 **Issue:** [#546](https://github.com/BreachSAFE/qureddy/issues/546)
 
-Until PR #564 merges, this Proposed ADR mirrors the normative working contract in #546. If the
-two differ before that merge, #546 controls and this file must be corrected. The merge commit is
-the atomic authority handoff: after merge, this version-controlled ADR is the normative durable
-architecture, and #546 tracks delivery and links the governing commit. Later architectural
-changes require a reviewed ADR update; an issue edit or comment cannot silently override it.
-Earlier draft issues are historical material only and are not implementation authorities.
+PR #564 merged this version-controlled ADR as the sole normative IKE architecture and data
+contract. Issue #546 is the delivery tracker, not a second specification. Later architectural
+changes require a reviewed ADR update; an issue edit or comment cannot silently override this
+file. Earlier issue-body drafts and comments are historical material only and are not
+implementation authorities.
 
 ## Contents
 
@@ -270,13 +269,181 @@ the network operation.
 
 ### 4.1 Canonical model ownership
 
-Before PR #564 merges, the complete public and private model contract is defined in the #546
-issue body. The merge transfers that authority to this ADR. This document does not repeat a
-second model graph. Implementers MUST use the exact names and ownership in the currently
-authoritative artifact: `NetworkTransport`, `IKEVersion`, `IKEExchange`, `IKESlot`, `IKENatT`,
-`AlgorithmObservation`, `IKEProposalObservation`, `CoverageReceipt`,
-`CryptoProviderDependency`, `ScopedHndlAssessment`, and the private codec/transport/provider
-types. All are immutable and strictly validated at the CLI boundary.
+This section is the complete public IKE model contract. The implementation may split these
+models across modules, but it must preserve the names, field meanings, enum values, validation,
+and ownership below. All public models are immutable. Optional additions are excluded from
+serialization when empty so existing TLS and SSH `qureddy.scan.v1` bytes remain unchanged.
+
+| Type | Normative values |
+|---|---|
+| `NetworkTransport` | `tcp`, `udp` |
+| `IKEVersion` | `1`, `2` |
+| `IKEExchange` | `main`, `aggressive`, `ike_sa_init` |
+| `IKESlot` | `primary`; `addke1` through `addke7` are reserved for 0.14 |
+| `IKENatT` | `auto`, `off`, `force` (configuration only) |
+| `AlgorithmRole` | `encryption`, `hash`, `prf`, `integrity`, `authentication`, `key_exchange` |
+| `AlgorithmStatus` | `current`, `deprecated`, `private`, `unknown`, `not_allowed` |
+| `NegotiationOutcome` | `accepted`, `rejected`, `unknown` |
+| `NegotiationReason` | `selected`, `explicit_notify`, `no_response`, `filtered`, `rate_limited`, `malformed`, `response_mismatch`, `ambiguous_selection`, `retry_exhausted`, `budget_exhausted`, `deadline_exhausted`, `provider_unavailable`, `profile_excluded` |
+
+`not_tested` is a coverage count, never a negotiation outcome or fabricated observation.
+The pre-PQC evidence level is the literal `selected`; completion levels require the 0.14 contract
+change in #562 and do not exist in the 0.10 through 0.13 public model or provider interface.
+
+```python
+class IKETransformAttribute(BaseModel):
+    attribute_type: int
+    encoding: Literal["tv", "tlv"]
+    value_hex: str
+    ordinal: int
+
+class AlgorithmObservation(BaseModel):
+    registry: str
+    wire_id: int
+    name: str
+    role: AlgorithmRole
+    slot: IKESlot = IKESlot.PRIMARY
+    key_size: int | None = None
+    status: AlgorithmStatus
+
+class IKETransformObservation(BaseModel):
+    ordinal: int
+    transform_number: int | None = None
+    transform_type: int | None = None
+    transform_id: int
+    slot: IKESlot = IKESlot.PRIMARY
+    attributes: tuple[IKETransformAttribute, ...] = ()
+    algorithms: tuple[AlgorithmObservation, ...]
+
+class IKEProposalObservation(BaseModel):
+    proposal_id: str
+    catalog_version: str
+    catalog_sha256: str
+    profile_id: str
+    profile_sha256: str
+    ike_version: IKEVersion
+    exchange: IKEExchange
+    transport: NetworkTransport
+    destination_port: int
+    nat_t: bool
+    proposal_number: int
+    protocol_id: int
+    doi: int | None = None
+    situation_hex: str | None = None
+    offered: tuple[IKETransformObservation, ...]
+    selected: tuple[IKETransformObservation, ...] = ()
+    outcome: NegotiationOutcome
+    evidence_level: Literal["selected"] | None = None
+    reason: NegotiationReason
+    notify_type: int | None = None
+    request_sha256: str
+    response_sha256: str | None = None
+    attempts: int = 1
+    duration_ms: int
+
+class CoverageReceipt(BaseModel):
+    protocol: Literal["ike"] = "ike"
+    ike_version: IKEVersion
+    exchange: IKEExchange
+    catalog_version: str
+    catalog_sha256: str
+    profile_id: str
+    profile_sha256: str
+    planned: int
+    attempted: int
+    accepted: int
+    rejected: int
+    unknown: int
+    not_tested: int
+    complete: bool
+    incomplete_reason: NegotiationReason | None = None
+
+class CryptoProviderDependency(BaseModel):
+    name: str
+    version: str | None = None
+    backend: str
+    capabilities: tuple[str, ...] = ()
+    failure_category: FailureCategory | None = None
+
+class ScanTarget(BaseModel):
+    # Existing fields remain unchanged and in their existing order.
+    transport: NetworkTransport = Field(
+        default=NetworkTransport.TCP,
+        exclude_if=lambda value: value is NetworkTransport.TCP,
+    )
+
+class Evidence(BaseModel):
+    # Existing fields remain unchanged and in their existing order.
+    ike_proposal: IKEProposalObservation | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+    )
+
+class ScanResult(BaseModel):
+    # Existing fields remain unchanged and in their existing order.
+    dependencies: tuple[OpenSSLDependency | CryptoProviderDependency, ...]
+    coverage: tuple[CoverageReceipt, ...] = Field(
+        default_factory=tuple,
+        exclude_if=lambda value: not value,
+    )
+```
+
+The additive integration points are `ScanTarget.transport`, `Evidence.ike_proposal`,
+`ScanResult.coverage`, and the dependency union
+`tuple[OpenSSLDependency | CryptoProviderDependency, ...]`. The union is intentional for the
+first release: it preserves the existing OpenSSL object and serialized bytes while representing
+the in-process PyCA provider without inventing a generic property bag. A repository-wide neutral
+dependency migration is separate work and must not be smuggled into IKE implementation.
+
+`proposal_number`, `protocol_id`, IKEv1 DOI/situation, the ordered wire transforms, and every typed
+transform attribute are evidence-bearing identity, not display metadata. `value_hex` and
+`situation_hex` are lowercase, even-length hexadecimal of the exact bounded value bytes.
+Validators require `transform_number` and prohibit `transform_type` for IKEv1; they require
+`transform_type` and prohibit `transform_number`, DOI, and situation for IKEv2. The normalized
+`algorithms` tuple is derived from that exact wire representation. `key_size` must match the
+corresponding attribute when present and is never the sole preservation of an attribute.
+
+Proposal identity uses the following canonical JSON object and no smaller projection:
+
+```json
+{
+  "schema": "qureddy.ike.proposal.v2",
+  "version": "2",
+  "exchange": "ike_sa_init",
+  "proposal_number": 1,
+  "protocol_id": 1,
+  "doi": null,
+  "situation_hex": null,
+  "transforms": [
+    {
+      "ordinal": 0,
+      "type": 1,
+      "slot": "primary",
+      "transform_number": null,
+      "transform_id": 20,
+      "attributes": [
+        {"ordinal": 0, "type": 14, "encoding": "tv", "value_hex": "0100"}
+      ]
+    }
+  ]
+}
+```
+
+`proposal_id` always identifies the offered proposal. A response selection remains linked to that
+ID and is accepted only when its `selected` wire transforms are an unchanged subset of the same
+proposal; it does not replace or rewrite the offered identity. A batched request retains one
+observation and proposal ID per offered proposal number, while `request_sha256` binds the complete
+datagram.
+
+Arrays remain in offered wire order; ordinals must be contiguous and duplicates remain present.
+Serialize with `json.dumps(sort_keys=True, separators=(",", ":"), ensure_ascii=True,
+allow_nan=False)`, UTF-8 encode, and prefix the lowercase SHA-256 hex digest with `sha256:`.
+Catalog names, normalized algorithm projections, target, timestamps, packet digests, transport,
+NAT-T, and volatile cookies/SPIs are excluded because they do not change the wire proposal. They
+remain independently bound and evidenced. Changing proposal number, protocol ID, DOI/situation,
+transform order/number/type/ID/slot, attribute order/type/encoding/value, version, or exchange must
+change `proposal_id`. #550 must add failing-before-fix collision vectors for each field before
+implementing the catalog or binder.
 
 The current QuReddy result seam is authoritative: `CollectionResult` is the collector wrapper,
 `ScanResult` contains the evaluator output and is the renderer input, and the scoped HNDL tuple is
@@ -295,9 +462,10 @@ metadata, bounded timing/counts, and one-way digests may enter the canonical res
 
 ### 4.2 Protocol-private boundary
 
-The codec, transport, sweep, and provider types are private implementation boundaries named by
-the #546 contract. They may carry bounded wire data internally, but they cannot be imported by evaluators,
-renderers, CBOM mappers, or EnXemble. The only public handoff is an
+The codec, transport, sweep, and provider types are private implementation boundaries. Their
+module owners and invariants are specified in sections 5 and 16; their exact field layout is an
+implementation detail. They may carry bounded wire data internally, but they cannot be imported
+by evaluators, renderers, CBOM mappers, or EnXemble. The only public handoff is an
 `IKEProposalObservation` plus `CoverageReceipt` inside the canonical result. A selected tuple is
 valid only after source/destination, IKEv1 initiator/responder cookie or IKEv2 SPI, version,
 exchange, flags, message ID, retry state, and exact offered-proposal binding pass. IKEv2
@@ -356,7 +524,7 @@ following gaps are release-blocking design work:
 | Gap | Required closure |
 |---|---|
 | Duplicate IKE enum vocabulary | One canonical owner for version, exchange, NAT-T, transport, and evidence-level types |
-| TLS-shaped dependency field | Replace protocol-specific unions with one neutral tool/provenance dependency model |
+| Additive dependency representation | Use the exact two-member dependency union in section 4.1; do not add a third IKE-only provenance path |
 | Completion truth | Store coverage completion once; derive aggregate sweep status from receipts |
 | Validator result | Define a versioned status/provenance model for EnXemble `ike-scan` corroboration |
 | Evaluation mapping | Specify exact neutral facts, reason codes, and IKE-axis rules before renderer work |
@@ -446,9 +614,10 @@ IKEv1 NAT-T. Public evidence may retain a bounded length, SHA-256 digest, observ
 and catalog/provenance version. It never retains raw Vendor-ID bytes or assigns a vendor name from
 an unreviewed fingerprint database. Broader fingerprint interpretation remains #563.
 
-The known forged-response fixture that previously produced `HNDL: PROTECTED` is a
-release blocker until it remains non-`PROTECTED` through the real CLI and every
-output format.
+The direct predicate reproduction recorded in #598 demonstrates a false-`PROTECTED` path; no IKE
+fixture or implemented IKE CLI exists yet. That defect is a release blocker until a
+failing-before-fix regression test covers the shared evaluator and the installed real CLI keeps
+forged, partial, and unauthenticated IKE evidence non-`PROTECTED` in every output format.
 
 ## 6. CLI contract
 
@@ -461,6 +630,7 @@ qureddy scan ike TARGET[:PORT]
 Examples:
 
 ```console
+# Syntax examples only. The reserved example addresses are not acceptance targets.
 # Probe both protocol families with the default observation profile.
 qureddy scan ike vpn.example.com
 
@@ -759,16 +929,20 @@ All implementation work follows the repository ten-step loop:
 
 ### 10.2 Real CLI commands
 
-The acceptance run must use the built wheel or image, not Python importing Python:
+The acceptance run must use the built wheel or image, not Python importing Python. It must set
+`QUREDDY_IKE_LAB_TARGET` to an authorized, reachable responder from the pinned #570 local lab;
+reserved documentation addresses and silent public endpoints do not qualify:
 
 ```console
+export QUREDDY_IKE_LAB_TARGET="<authorized-#570-lab-host>:500"
 qureddy --version
-qureddy scan ike vpn.example.com -vvv
-qureddy scan ike vpn.example.com --format json --output scan.json
-qureddy scan ike vpn.example.com --format jsonl --output scan.jsonl
-qureddy scan ike vpn.example.com --format cbom --output scan.cdx.json
-qureddy scan ike vpn.example.com --output-dir run/
-docker run --rm ghcr.io/breachsafe/qureddy:<release> scan ike vpn.example.com -vvv
+qureddy scan ike "$QUREDDY_IKE_LAB_TARGET" -vvv
+qureddy scan ike "$QUREDDY_IKE_LAB_TARGET" --format json --output scan.json
+qureddy scan ike "$QUREDDY_IKE_LAB_TARGET" --format jsonl --output scan.jsonl
+qureddy scan ike "$QUREDDY_IKE_LAB_TARGET" --format cbom --output scan.cdx.json
+qureddy scan ike "$QUREDDY_IKE_LAB_TARGET" --output-dir run/
+docker run --rm ghcr.io/breachsafe/qureddy:<release> \
+  scan ike "$QUREDDY_IKE_LAB_TARGET" -vvv
 ```
 
 Each command’s exit code, stdout, stderr, files, and parsed evaluation must be
@@ -862,18 +1036,18 @@ transitive package dependency.
 
 ## 15. Open decisions
 
-1. Which CycloneDX 1.7 component/protocol mapping is accepted by Qurum and
-   mint-oscal before CBOM admission?
-2. Which real FortiGate/strongSwan interoperability endpoints can be used under
-   the approved test authorization?
-Provider selection, IKEv1/IKEv2 sequencing, validator ownership, and completion
-scope are decided by #546 and its child issues; they are not open decisions here.
+The CycloneDX 1.7 mapping is closed by section 7.3 and #554:
+`protocolProperties.type: "ike"` for the endpoint protocol component, linked algorithm assets for
+ENCR/PRF/INTEG/KE/ADDKE, and namespaced properties for ADDKE transform types 6 through 12.
+
+One operational decision remains: which real FortiGate/strongSwan interoperability endpoints can
+be used under the approved test authorization? Provider selection, IKEv1/IKEv2 sequencing,
+validator ownership, and completion scope are closed by this ADR and its child issues.
 
 ## 16. Implementation handoff and ownership
 
-This section mirrors the child-issue ownership in #546 for milestones `0.10.0`
-through `0.14.0`. #546 remains normative only until PR #564 merges; the merged ADR then governs
-architecture while the issue tracks delivery.
+The plan of record is this ADR and the assigned child issues from `0.10.0` through `0.14.0`.
+Issue #546 tracks delivery and links this contract; it does not define a parallel model or CLI.
 
 ### 16.1 File and component map
 
@@ -935,6 +1109,8 @@ IKEScanConfig                 CLI/profile defaults; one owner
 IKEProbeRequest               one concrete wire attempt; private
 ParsedIKEResponse             syntactically parsed, still untrusted; private
 ValidatedIKEResponse          request-bound response; private constructor
+IKETransformAttribute         exact typed TV/TLV attribute; public evidence
+IKETransformObservation       exact ordered wire transform; public evidence
 IKEProposalObservation        public positive/negative observation; one output input
 CoverageReceipt               planned/attempted/accepted/rejected/unknown/not-tested
 ScanResult                    constructed once by IKEScanner; renderer input
