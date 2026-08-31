@@ -26,6 +26,7 @@
 13. [Acceptance criteria](#13-acceptance-criteria)
 14. [Rollout and compatibility](#14-rollout-and-compatibility)
 15. [Open decisions](#15-open-decisions)
+16. [Implementation handoff and ownership](#16-implementation-handoff-and-ownership)
 
 ## 1. Decision summary
 
@@ -759,6 +760,110 @@ transitive package dependency.
    mint-oscal before CBOM admission?
 5. Which real FortiGate/strongSwan interoperability endpoints can be used under
    the approved test authorization?
+
+## 16. Implementation handoff and ownership
+
+This section is normative for the child issues in milestones `0.10.0` through
+`0.14.0`.
+
+### 16.1 File and component map
+
+```text
+CLI -> target parser -> CollectorRegistry -> NativeIKECollector -> IKEScanner
+                                                            |
+                           +----------------+---------------+----------------+
+                           v                v                                v
+                    UDP transport       IKE catalog                       provider
+                           |                |                                |
+                           +--------> codec/binding <-----------------------+
+                                          |
+                                          v
+                                public IKE observation
+                                          |
+                                          +--> coverage receipt
+                                          +--> neutral policy facts
+                                          |
+                                          v
+                                    CollectionResult
+                                          |
+                                          v
+                                      ScanResult
+                               /          |          \
+                            Rich        JSON/JSONL     CBOM
+```
+
+The source tree is divided by ownership:
+
+```text
+src/qureddy/cli/ike.py                       CLI only
+src/qureddy/core/contracts.py                neutral capability/provenance seams
+src/qureddy/core/models.py                   additive public result types
+src/qureddy/core/targets.py                  lossless IKE target parsing
+src/qureddy/core/registry.py                 deterministic selection
+src/qureddy/collectors/native.py             source-to-scanner adapter
+src/qureddy/scanners/ike/models.py           private wire/request types
+src/qureddy/scanners/ike/catalog.py          pinned IANA IDs and profiles
+src/qureddy/scanners/ike/codec.py            bounded encode/parse/bind
+src/qureddy/scanners/ike/transport.py        UDP 500/4500 and NAT-T
+src/qureddy/scanners/ike/sweep.py            proposal scheduling/coverage
+src/qureddy/scanners/ike/provider.py         approved crypto-provider port
+src/qureddy/scanners/ike/findings.py         observation-to-neutral-facts mapping
+src/qureddy/scanners/ike/scanner.py          orchestration only
+src/qureddy/output/cbom_ike.py               public-model CBOM projection only
+```
+
+No IKE parser, transport, provider, or external-validator logic may be added to
+CLI, renderer, or generic output modules. `ike-scan` remains an EnXemble-side
+validator/oracle and never enters this tree as a runtime dependency.
+
+### 16.2 Single-owner data model
+
+```text
+IkeScanConfig                 CLI/profile defaults; one owner
+IkeProbeRequest               one concrete wire attempt; private
+ParsedIkeResponse             syntactically parsed, still untrusted; private
+ValidatedIkeResponse          request-bound response; private constructor
+IkeProposalObservation        public positive/negative observation; one output input
+CoverageReceipt               planned/attempted/accepted/rejected/unknown/not-tested
+CollectionResult              acquisition boundary
+ScanResult                    evaluator boundary and renderer input
+ValidatorObservation          EnXemble corroborator provenance, separate from evidence
+```
+
+Do not create parallel `IkeVersion`, `IkeExchange`, `EvidenceLevel`, transport,
+coverage, dependency, or completion types. Generic concepts have one neutral
+owner; wire-specific concepts remain private to `scanners/ike`.
+
+### 16.3 Per-issue working agreement
+
+For every child issue:
+
+- **Codex writes the production code and owns the implementation diff.**
+- **Claude writes and maintains the tests**, including real lab scripts and
+  acceptance evidence, without weakening assertions or hiding failures.
+- **Codex monitors bugs on every check-in**: review the diff, run the relevant
+  anti-pattern categories, inspect test integrity, and record regressions before
+  moving to the next slice.
+- Neither agent may claim a gate passed without the command, version, exit code,
+  and artifact being recorded.
+- No mocks or fake peers satisfy production-path acceptance. Deterministic byte
+  fixtures are limited to parser-negative and fuzz safety cases.
+- A child issue cannot close while a required gate is `NOT RUN`.
+
+### 16.4 Milestone exit contract
+
+```text
+0.10.0  contracts, catalog, identity, provider port, prerequisites
+0.11.0  real IKEv1/IKEv2 classical observations and strict binding
+0.12.0  canonical findings, all outputs, coverage, EnXemble validator
+0.13.0  real ADDKE/ML-KEM selection evidence
+0.14.0  optional completion, package/image/docs/release proof
+```
+
+Each milestone exit requires the real installed CLI and, where applicable, the
+built container against the local IPsec harness. Public endpoint silence is not
+an acceptance result. Existing TLS/SSH output compatibility remains a gate for
+every milestone.
 
 ### References
 
