@@ -31,7 +31,7 @@ implementation authorities.
    1. [Canonical model ownership](#41-canonical-model-ownership)
    2. [Protocol-private boundary](#42-protocol-private-boundary)
    3. [Result integration](#43-result-integration)
-   4. [Contract closure gates](#44-contract-closure-gates)
+   4. [Contract ownership gates](#44-contract-ownership-gates)
 5. [IKE protocol contract](#5-ike-protocol-contract)
    1. [Probe behavior](#51-probe-behavior)
    2. [Evidence ladder](#52-evidence-ladder)
@@ -365,6 +365,8 @@ class CryptoProviderDependency(BaseModel):
     capabilities: tuple[str, ...] = ()
     failure_category: FailureCategory | None = None
 
+type RuntimeDependency = OpenSSLDependency | CryptoProviderDependency
+
 class ScanTarget(BaseModel):
     # Existing fields remain unchanged and in their existing order.
     transport: NetworkTransport = Field(
@@ -381,7 +383,7 @@ class Evidence(BaseModel):
 
 class ScanResult(BaseModel):
     # Existing fields remain unchanged and in their existing order.
-    dependencies: tuple[OpenSSLDependency | CryptoProviderDependency, ...]
+    dependencies: tuple[RuntimeDependency, ...]
     coverage: tuple[CoverageReceipt, ...] = Field(
         default_factory=tuple,
         exclude_if=lambda value: not value,
@@ -389,11 +391,18 @@ class ScanResult(BaseModel):
 ```
 
 The additive integration points are `ScanTarget.transport`, `Evidence.ike_proposal`,
-`ScanResult.coverage`, and the dependency union
-`tuple[OpenSSLDependency | CryptoProviderDependency, ...]`. The union is intentional for the
-first release: it preserves the existing OpenSSL object and serialized bytes while representing
-the in-process PyCA provider without inventing a generic property bag. A repository-wide neutral
-dependency migration is separate work and must not be smuggled into IKE implementation.
+`ScanResult.coverage`, and the single `RuntimeDependency` alias. Issue #473 owns that alias and the
+`CollectionResult`/`ScanProvenance` envelope. Issue #597 owns only
+`CryptoProviderDependency` production and the private provider protocol. Both issues must import
+or reference `RuntimeDependency`; neither may define another dependency union or provenance
+shape. This two-member alias preserves existing OpenSSL objects and bytes while representing the
+in-process PyCA provider. A repository-wide dependency-schema migration is separate work.
+
+| Dependency option | Cost | Decision |
+|---|---|---|
+| Named two-member `RuntimeDependency` alias | Keeps two concrete models while preserving shipped TLS bytes | Selected |
+| Unnamed unions repeated by each scanner | Allows issue-local drift and conflicting validators | Rejected |
+| Generic dependency property bag | Loses field-level validation and changes shipped OpenSSL serialization | Rejected for IKE |
 
 `proposal_number`, `protocol_id`, IKEv1 DOI/situation, the ordered wire transforms, and every typed
 transform attribute are evidence-bearing identity, not display metadata. `value_hex` and
@@ -516,23 +525,22 @@ The tuple contains at most one assessment per `HndlScope` and is reached as
 scope in every output format. A convenience alias on `ScanResult`, if ever added, must be
 read-only and non-serialized; no renderer may compute a second verdict.
 
-### 4.4 Contract closure gates
+### 4.4 Contract ownership gates
 
-The model inventory above is necessary but not sufficient for implementation. The
-following gaps are release-blocking design work:
+The architecture assigns each cross-cutting contract to one implementation issue. The ADR owns
+the shape; the issue owns its implementation and tests:
 
-| Gap | Required closure |
-|---|---|
-| Duplicate IKE enum vocabulary | One canonical owner for version, exchange, NAT-T, transport, and evidence-level types |
-| Additive dependency representation | Use the exact two-member dependency union in section 4.1; do not add a third IKE-only provenance path |
-| Completion truth | Store coverage completion once; derive aggregate sweep status from receipts |
-| Validator result | Define a versioned status/provenance model for EnXemble `ike-scan` corroboration |
-| Evaluation mapping | Specify exact neutral facts, reason codes, and IKE-axis rules before renderer work |
-| Current `ScanResult` seam | Reconcile the proposed additive fields with the actual model and preserve TLS/SSH bytes |
+| Contract | Sole implementation owner | Required gate |
+|---|---|---|
+| `RuntimeDependency`, `CollectionResult`, `ScanProvenance` | #473, with lifecycle wiring in #539 | one exact alias/envelope; compatibility projections cannot diverge |
+| IKE enums and public observations | #550 | no duplicate public or renderer-local type |
+| `IKEObservationProvider`, `CryptoProviderDependency` | #597 | exact surface in section 7.2; forbidden completion methods absent |
+| Coverage truth | #550 and protocol sweeps #552/#553 | store receipts once; derive aggregate status |
+| Evaluator and scoped HNDL | #554, guarded by #598 | exact neutral facts and no favorable unauthenticated global posture |
+| EnXemble validator provenance | #554 and EnXemble #51 | versioned corroboration status; never primary evidence |
 
-No implementation issue may introduce a second type for any row above. The public
-observation is the only IKE object consumed by evaluation or output; wire/parser
-objects remain private.
+No issue may introduce a second type for a row above. The public observation is the only IKE
+object consumed by evaluation or output; wire/parser objects remain private.
 
 ## 5. IKE protocol contract
 
@@ -665,7 +673,7 @@ accepted because aliases would create incompatible scripts and documentation.
 | `--v1-mode` | `all` | `main`, `aggressive`, or `all` (only with version `1`/`all`) |
 | `--profile` | `default` | pre-PQC reviewed covering profile; not a Cartesian sweep and no PQ selection |
 | `--port` | `500`/profile | UDP 500 or 4500 only for the first release |
-| `--nat-t` | `auto` | probe/require/disable NAT-T behavior |
+| `--nat-t` | `auto` | `auto`, `off`, or `force`; no alternate vocabulary |
 | `--timeout` | existing default | per-datagram timeout, bounded by existing limits |
 | `--retries` | existing default | bounded retransmission, no unbounded loop |
 | `--retry-delay` | existing default | bounded delay between attempts |
@@ -806,13 +814,41 @@ contract before #554 emits IKE findings.
 6. A corroborator disagreement is preserved as evidence and cannot silently
    improve the posture.
 
-The observation provider exposes only capability reporting, randomness, valid
-KE-share generation, and bounded disposal. It does not expose shared-secret
-derivation, IKE KDFs, encryption/decryption, integrity, `derive`, `protect`,
-`verify`, or transcript completion. Those completion-only methods belong to #562
-and are absent from every 0.10 through 0.13 provider interface. ML-KEM/ADDKE capability and
-completion types remain in the 0.14 design section until #555/#562 implement and verify them;
-they are not selectable pre-PQC provider methods, profiles, or CLI options.
+The pre-PQC provider surface is exact:
+
+```python
+class IKEKeyShareHandle(Protocol):
+    """Opaque provider-owned handle; never serialized, logged, or inspected."""
+
+@dataclass(frozen=True, slots=True)
+class IKEInitiatorKeyShare:
+    method_id: int
+    public_value: bytes
+    handle: IKEKeyShareHandle = field(repr=False)
+
+class IKEObservationProvider(Protocol):
+    dependency: CryptoProviderDependency
+    supported_method_ids: frozenset[int]
+
+    def create_initiator_key_share(self, method_id: int) -> IKEInitiatorKeyShare: ...
+    def dispose(self, handle: IKEKeyShareHandle) -> None: ...
+```
+
+`public_value` is the catalog-bounded canonical KE public value passed to the codec; it is not
+retained in public evidence. `create_initiator_key_share` uses the locked production PyCA provider
+and returns a typed local-provider failure for unsupported or broken capabilities. `dispose` is
+idempotent and runs in `finally` on success, timeout, malformed response, cancellation, and
+failure. The provider records its backend and supported method IDs through the single
+`RuntimeDependency` path owned by #473.
+
+No other public callable belongs to `IKEObservationProvider` through 0.13. Architecture tests
+must compare the callable surface to
+`{"create_initiator_key_share", "dispose"}` and reject shared-secret derivation, responder-payload
+consumption, IKE KDFs, encryption/decryption, integrity, `derive`, `protect`, `verify`, transcript
+completion, authentication, or Child-SA methods. Those completion-only methods require the
+separate #562 contract change. ML-KEM/ADDKE capability and completion types remain in the 0.14
+design until #555/#562 implement and verify them; they are not selectable pre-PQC provider
+methods, profiles, or CLI options.
 
 ### 7.3 Output parity
 
@@ -929,24 +965,55 @@ All implementation work follows the repository ten-step loop:
 
 ### 10.2 Real CLI commands
 
-The acceptance run must use the built wheel or image, not Python importing Python. It must set
-`QUREDDY_IKE_LAB_TARGET` to an authorized, reachable responder from the pinned #570 local lab;
-reserved documentation addresses and silent public endpoints do not qualify:
+Issue #570 must publish `docs/lab/ike-peer-matrix.md` before these commands become executable.
+Each matrix row has one stable ID and records the peer implementation/version, immutable image or
+package digest, configuration digest, host, UDP port, IKE version/mode, NAT-T state, exact offered
+and expected selected `qureddy.ike.proposal.v2` objects, expected outcome/exit, responder-log
+command, and expected authoritative log fields. Missing cells are `NOT RUN` with release impact;
+they are never inferred from another row.
+
+Issue #561 must run the built wheel and production image against the same named rows. The evidence
+bundle records the source revision, wheel SHA-256, installed distribution/version, OCI manifest
+digest, image-reported version, command, exit code, stdout, stderr, output digests, and the matching
+responder-log excerpt digest. The responder log corroborates the exchange but never replaces
+QuReddy's bound network evidence.
+
+The acceptance command shape is:
 
 ```console
-export QUREDDY_IKE_LAB_TARGET="<authorized-#570-lab-host>:500"
-qureddy --version
-qureddy scan ike "$QUREDDY_IKE_LAB_TARGET" -vvv
-qureddy scan ike "$QUREDDY_IKE_LAB_TARGET" --format json --output scan.json
-qureddy scan ike "$QUREDDY_IKE_LAB_TARGET" --format jsonl --output scan.jsonl
-qureddy scan ike "$QUREDDY_IKE_LAB_TARGET" --format cbom --output scan.cdx.json
-qureddy scan ike "$QUREDDY_IKE_LAB_TARGET" --output-dir run/
-docker run --rm ghcr.io/breachsafe/qureddy:<release> \
-  scan ike "$QUREDDY_IKE_LAB_TARGET" -vvv
+export QUREDDY_WHEEL="dist/<built-wheel>.whl"
+export QUREDDY_IMAGE="ghcr.io/breachsafe/qureddy@sha256:<manifest-digest>"
+export QUREDDY_IKE_V1_MAIN_HOST="<host-from-#570-row>"
+export QUREDDY_IKE_V1_AGGRESSIVE_HOST="<host-from-#570-row>"
+export QUREDDY_IKE_V2_HOST="<host-from-#570-row>"
+export QUREDDY_IKE_LAB_NETWORK="<network-from-#570>"
+
+shasum -a 256 "$QUREDDY_WHEEL"
+uv run --isolated --no-project --with "$QUREDDY_WHEEL" qureddy --version
+docker image inspect "$QUREDDY_IMAGE" --format '{{json .RepoDigests}}'
+docker run --rm "$QUREDDY_IMAGE" --version
+
+uv run --isolated --no-project --with "$QUREDDY_WHEEL" qureddy scan ike \
+  "$QUREDDY_IKE_V1_MAIN_HOST" --port 500 --ike-version 1 --v1-mode main -vvv
+uv run --isolated --no-project --with "$QUREDDY_WHEEL" qureddy scan ike \
+  "$QUREDDY_IKE_V1_AGGRESSIVE_HOST" \
+  --port 500 --ike-version 1 --v1-mode aggressive --format json --output v1-aggressive.json
+uv run --isolated --no-project --with "$QUREDDY_WHEEL" qureddy scan ike \
+  "$QUREDDY_IKE_V2_HOST" \
+  --port 500 --ike-version 2 --format jsonl --output v2.jsonl
+uv run --isolated --no-project --with "$QUREDDY_WHEEL" qureddy scan ike \
+  "$QUREDDY_IKE_V2_HOST" \
+  --port 4500 --ike-version 2 --nat-t force --format cbom --output v2-natt.cdx.json
+uv run --isolated --no-project --with "$QUREDDY_WHEEL" qureddy scan ike \
+  "$QUREDDY_IKE_V2_HOST" --port 500 --ike-version 2 --output-dir run/
+
+docker run --rm --network "$QUREDDY_IKE_LAB_NETWORK" "$QUREDDY_IMAGE" \
+  scan ike "$QUREDDY_IKE_V2_HOST" --port 500 --ike-version 2 -vvv
 ```
 
-Each command’s exit code, stdout, stderr, files, and parsed evaluation must be
-recorded. A command that is not run is reported `NOT RUN`, never assumed passing.
+The matrix supplies expected tuples and responder log commands; placeholders above are not
+executable evidence. A checkout or editable install does not satisfy acceptance. Reserved
+documentation addresses and silent public endpoints do not qualify.
 
 ## 11. Security and safety controls
 
@@ -976,10 +1043,10 @@ recorded. A command that is not run is reported `NOT RUN`, never assumed passing
 | Go/Rust sidecar as primary | Strong packet libraries and future provider options | Adds runtime/package/image boundary before evidence contract is stable | Deferred |
 | Fork `ike-scan` | Reuse mature C implementation | GPL fork ownership plus still-missing modern IKEv2/PQ work | Rejected |
 
-The selected architecture is **8/10 before implementation**: the boundaries and
-evidence semantics are explicit, but execution readiness remains zero until the
-forged-response failure, lifecycle prerequisites, and real lab gates pass. It can
-be called 10/10 only after the acceptance criteria below are demonstrated.
+The architecture contract is accepted. Implementation readiness remains blocked until the
+forged-response guard, lifecycle prerequisites, pinned real lab, installed wheel, production
+image, and acceptance criteria below are demonstrated. Design acceptance is not execution
+evidence.
 
 ## 13. Acceptance criteria
 
@@ -1200,9 +1267,13 @@ The normative claims in this ADR are grounded in the corpus vendored by the priv
 | IKEv2 `NO_PROPOSAL_CHOSEN` rejects the offered proposals | `breachsafe-common:standards/rfc/rfc7296/rfc7296.txt:1973-1976,5675-5681` |
 | IKEv2 `COOKIE` retry echoes unchanged data and otherwise unchanged payloads | `breachsafe-common:standards/rfc/rfc7296/rfc7296.txt:1799-1807` |
 
-The corpus provenance is checked from this checkout with
-`.agents/skills/breachsafe-ipsec-conformance/scripts/verify_corpus.sh`. The current result is
-144 files, integrity PASS, registry closure 95/95, and ML-KEM draft revision `-09`.
+The accepted corpus snapshot is `paul007ex/breachsafe-common` revision
+`77f9e5a66dd168634d410129904cd946eacf7411`. Its `standards/rfc/README.md` SHA-256 is
+`4ba1641e1880eef42a0294e879033d01d694ebea7c5e83415a2b3dacd863a05c`; the pinned IKEv2 registry
+reports `updated=2026-07-16`. Verification from this checkout uses
+`.agents/skills/breachsafe-ipsec-conformance/scripts/verify_corpus.sh` and reports 144 files,
+integrity PASS, registry closure 95/95, and ML-KEM draft revision `-09`. Counts in explanatory
+skills or historical comments are non-authoritative when they differ from this verifier output.
 
 - [RFC 7296 — Internet Key Exchange Protocol Version 2 (IKEv2)](https://www.rfc-editor.org/info/rfc7296)
 - [RFC 2409 — The Internet Key Exchange (IKE)](https://www.rfc-editor.org/info/rfc2409)
