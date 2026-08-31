@@ -304,6 +304,37 @@ exchange, flags, message ID, retry state, and exact offered-proposal binding pas
 `COOKIE`, `INVALID_KE_PAYLOAD`, and `NO_PROPOSAL_CHOSEN` are typed outcomes; they never become
 implicit success or unsupported claims.
 
+### 4.2.1 Fixed headers and payload boundaries
+
+The parser implements the fixed wire headers from the vendored IKE sources, not a
+protocol-specific approximation. The IKEv2 header is 28 octets:
+
+```text
+Initiator SPI (8) | Responder SPI (8)
+Next Payload (1)  | Version (1: major/minor nibbles)
+Exchange Type (1) | Flags (1)
+Message ID (4)    | Length (4)
+```
+
+The IKEv1 ISAKMP header has the same field widths, with initiator/responder cookies
+and ISAKMP version/mode semantics. The generic payload header is four octets:
+
+```text
+Next Payload (1) | Critical bit + reserved bits (1) | Payload Length (2)
+```
+
+`Payload Length` includes its four-octet header. A chain terminates only when
+`Next Payload == 0`; every length, reserved field, version, exchange, flag, message
+ID, SPI/cookie, and payload boundary is validated before a payload is interpreted.
+The parser rejects truncation, declared-length overrun, zero/invalid lengths,
+unknown critical payloads, and chains exceeding configured count/size limits.
+
+The source of truth for these layouts is
+`breachsafe-common:skills/skills/breachsafe-ipsec-conformance/references/citations.md`
+§5, sourced from `rfc7296` and `rfc2408`. The corresponding normative behavior is
+recorded in `rfc7296/rfc7296.txt` and `rfc2408/rfc2408.txt`; implementers MUST cite
+those vendored files when changing the codec.
+
 ### 4.3 Result integration
 
 `CollectionResult` remains the collector boundary, and its `scan_result` field carries
