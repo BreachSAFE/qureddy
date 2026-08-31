@@ -250,16 +250,18 @@ jobs:
         run: |
           set -euo pipefail
           digest="sha256:$(docker buildx imagetools inspect --raw "$SOURCE_IMAGE:sha-${GITHUB_SHA::12}" | sha256sum | cut -d' ' -f1)"
-          # Copy the manifest and its signature/attestation references; do not rebuild per registry.
-          cosign copy --recursive "$SOURCE_IMAGE@$digest" "$DEST_IMAGE@$digest"
+          # Promote the already-built manifest; do not rebuild per registry.
+          # Sign the destination digest below because registry signature references
+          # are stored separately and are not transferred by imagetools.
           for tag in "$QUREDDY_VERSION" latest; do
-            docker buildx imagetools create --tag "$DEST_IMAGE:$tag" "$DEST_IMAGE@$digest"
+            docker buildx imagetools create --tag "$DEST_IMAGE:$tag" "$SOURCE_IMAGE@$digest"
           done
           destination_digest="sha256:$(docker buildx imagetools inspect --raw "$DEST_IMAGE:$QUREDDY_VERSION" | sha256sum | cut -d' ' -f1)"
           test "$destination_digest" = "$digest" || {
             echo "Docker Hub manifest digest mismatch: expected $digest, got $destination_digest" >&2
             exit 1
           }
+          cosign sign --yes "$DEST_IMAGE@$destination_digest"
           cosign verify "$DEST_IMAGE@$digest" \
             --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
             --certificate-identity-regexp '^https://github.com/BreachSAFE/qureddy/\.github/workflows/'
