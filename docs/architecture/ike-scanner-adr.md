@@ -285,8 +285,68 @@ serialization when empty so existing TLS and SSH `qureddy.scan.v1` bytes remain 
 | `AlgorithmStatus` | `current`, `deprecated`, `private`, `unknown`, `not_allowed` |
 | `NegotiationOutcome` | `accepted`, `rejected`, `unknown` |
 | `NegotiationReason` | `selected`, `explicit_notify`, `no_response`, `filtered`, `rate_limited`, `malformed`, `response_mismatch`, `ambiguous_selection`, `retry_exhausted`, `budget_exhausted`, `deadline_exhausted`, `provider_unavailable`, `profile_excluded` |
+| `AttemptRole` | `initial`, `cookie_retry`, `invalid_ke_retry`, `retransmission` |
+| `AttemptOutcome` | `bound`, `unbound`, `no_response`, `malformed`, `send_failed` |
+| `CoverageState` | `accepted`, `rejected`, `unknown`, `not_tested` |
+| `NatMechanism` | `none`, `ikev1_natd`, `ikev2_notify` |
+| `NatMatch` | `not_tested`, `absent`, `match`, `mismatch` |
+| `NatTranslation` | `not_tested`, `none_detected`, `detected` |
+| `NonEspMarker` | `not_applicable`, `absent`, `present` |
+| `PortFloat` | `not_tested`, `not_attempted`, `attempted`, `accepted`, `unavailable` |
 
-`not_tested` is a coverage count, never a negotiation outcome or fabricated observation.
+`not_tested` is a coverage state on a `CoverageEntry`, never a
+`NegotiationOutcome` and never a fabricated observation. No code path may
+construct an `IKEProposalObservation` for a `not_tested` row.
+
+**Attempt-level evidence is lossless and never collapsed.** Every datagram the
+scanner sends is one `IKEAttemptEvidence` with its own source port, SPI pair,
+header fields, digests, and timing. A retry is a **new attempt with a new
+`ordinal`** whose `parent_ordinal` names the attempt that provoked it, not a
+mutation of the first. This is required by the protocol, not a preference:
+
+- `COOKIE`: the initiator retries `IKE_SA_INIT` with the cookie
+  (`rfc7296/rfc7296.txt:667`). Two datagrams, one logical proposal.
+- `INVALID_KE_PAYLOAD`: the responder accepted the proposal and disagreed only
+  about the key exchange group (`rfc7296/rfc7296.txt` §1.3, §3.10.1, interaction
+  with COOKIE at line 149). Recording it as a rejection loses the fact that
+  everything except the group was acceptable, so the first leg keeps
+  `outcome=bound` with `reason=explicit_notify` and the retry carries
+  `role=invalid_ke_retry`.
+- Retransmission (`rfc7296/rfc7296.txt:323`) is `role=retransmission` and
+  **must not create a second `IKEProposalObservation`**.
+
+A failed binding followed by an accepted response is therefore two attempts on
+one observation: `outcome=unbound` then `outcome=bound`. Both are retained. The
+proposal-level `outcome` is derived from the attempt sequence and is `accepted`
+only when the final bound attempt satisfies every §5.3 binding rule.
+
+**Notifications are an ordered tuple, never a scalar.** A single response can
+carry `NAT_DETECTION_SOURCE_IP`, `NAT_DETECTION_DESTINATION_IP`,
+`INTERMEDIATE_EXCHANGE_SUPPORTED`, and `COOKIE` together, and
+`rfc7296/rfc7296.txt:3570` states there **MAY be multiple**
+`NAT_DETECTION_SOURCE_IP` payloads in one message. Order is as received.
+`data_hex` is populated only for types on a bounded allowlist; every other
+notification records `data_length` and `data_sha256` with `redacted=True`.
+**COOKIE values, nonces, key shares, and authentication material are never
+retained in a public model**, so a `COOKIE` notification carries its length and
+digest and never its bytes.
+
+**NAT-T is an observation, not a boolean.** The two IKE versions use different
+mechanisms and `IKENatObservation` distinguishes them: IKEv1 sends NAT-D
+payloads and requires the vendor ID in the first two Phase 1 messages
+(`rfc3947/rfc3947.txt:178`, payloads at `:211`); IKEv2 uses
+`NAT_DETECTION_SOURCE_IP` and `NAT_DETECTION_DESTINATION_IP` notifications
+(`rfc7296/rfc7296.txt:3560`). `requested` records configuration only. A peer
+that mandates NAT-T will not answer an initiator that omitted the vendor ID,
+and that silence is indistinguishable from a filtered host without the peer
+log, so it stays `unknown`.
+
+**Coverage totals are derived.** `CoverageReceipt.entries` is the source of
+truth and the integer fields are computed from it; an implementation must not
+author a total independently. This is what lets a receipt answer *which* row
+was not tested. ML-KEM-512 / ID 35 is the standing case: it appears as a
+`CoverageEntry` with `state=not_tested`, `planned=False`, `attempted=False`,
+and an `exclusion_reason`, and never as an observation.
 The pre-PQC evidence level is the literal `selected`; completion levels require the 0.14 contract
 change in #562 and do not exist in the 0.10 through 0.13 public model or provider interface.
 
@@ -315,6 +375,77 @@ class IKETransformObservation(BaseModel):
     attributes: tuple[IKETransformAttribute, ...] = ()
     algorithms: tuple[AlgorithmObservation, ...]
 
+class IKEEndpoint(BaseModel):
+    ip: str
+    port: int = Field(ge=1, le=65535)
+
+class IKEAttemptEvidence(BaseModel):
+    """One concrete datagram exchange. Never merged, never summarized away."""
+    ordinal: int = Field(ge=1)
+    role: AttemptRole
+    parent_ordinal: int | None = None
+    source: IKEEndpoint
+    destination: IKEEndpoint
+    response_source: IKEEndpoint | None = None
+    initiator_spi: str = Field(pattern=r"^[0-9a-f]{16}$")
+    responder_spi: str | None = Field(default=None, pattern=r"^[0-9a-f]{16}$")
+    ike_version: IKEVersion
+    exchange: IKEExchange
+    flags_hex: str = Field(pattern=r"^[0-9a-f]{2}$")
+    message_id: int = Field(ge=0)
+    declared_length: int | None = None
+    observed_length: int | None = None
+    request_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    response_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    sent_at_ms: int
+    elapsed_ms: int = Field(ge=0)
+    outcome: AttemptOutcome
+    reason: NegotiationReason
+    notifications: tuple[IKENotificationObservation, ...] = ()
+
+class IKENotificationObservation(BaseModel):
+    """Ordered as received. RFC 7296 line 3570 permits repeats of one type."""
+    ordinal: int = Field(ge=0)
+    notify_type: int = Field(ge=0, le=65535)
+    notify_name: str | None = None
+    protocol_id: int = 0
+    spi_size: int = 0
+    data_length: int = Field(ge=0)
+    data_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    data_hex: str | None = None
+    redacted: bool = True
+
+class IKENatObservation(BaseModel):
+    """IKEv1 NAT-D (rfc3947:211) and IKEv2 NAT_DETECTION_* (rfc7296:3560)."""
+    requested: IKENatT
+    mechanism: NatMechanism
+    vendor_id_observed: bool = False
+    vendor_id_sha256: tuple[str, ...] = ()
+    source_payloads: int = Field(default=0, ge=0)
+    destination_payloads: int = Field(default=0, ge=0)
+    source_match: NatMatch = NatMatch.NOT_TESTED
+    destination_match: NatMatch = NatMatch.NOT_TESTED
+    translation: NatTranslation = NatTranslation.NOT_TESTED
+    non_esp_marker: NonEspMarker = NonEspMarker.NOT_APPLICABLE
+    port_float: PortFloat = PortFloat.NOT_TESTED
+    observed_ports: tuple[int, ...] = ()
+
+class CoverageEntry(BaseModel):
+    """One catalog/profile row. The only place not_tested names a proposal."""
+    catalog_version: str
+    catalog_sha256: str
+    profile_id: str
+    profile_sha256: str
+    proposal_id: str
+    ike_version: IKEVersion
+    exchange: IKEExchange
+    planned: bool
+    attempted: bool
+    state: CoverageState
+    reason: NegotiationReason | None = None
+    exclusion_reason: str | None = None
+    observation_ref: str | None = None
+
 class IKEProposalObservation(BaseModel):
     proposal_id: str
     catalog_version: str
@@ -325,7 +456,7 @@ class IKEProposalObservation(BaseModel):
     exchange: IKEExchange
     transport: NetworkTransport
     destination_port: int
-    nat_t: bool
+    nat: IKENatObservation
     proposal_number: int
     protocol_id: int
     doi: int | None = None
@@ -335,13 +466,11 @@ class IKEProposalObservation(BaseModel):
     outcome: NegotiationOutcome
     evidence_level: Literal["selected"] | None = None
     reason: NegotiationReason
-    notify_type: int | None = None
-    request_sha256: str
-    response_sha256: str | None = None
-    attempts: int = 1
+    attempts: tuple[IKEAttemptEvidence, ...] = Field(min_length=1)
     duration_ms: int
 
 class CoverageReceipt(BaseModel):
+    """Totals are DERIVED from entries. Never authored independently."""
     protocol: Literal["ike"] = "ike"
     ike_version: IKEVersion
     exchange: IKEExchange
@@ -349,6 +478,7 @@ class CoverageReceipt(BaseModel):
     catalog_sha256: str
     profile_id: str
     profile_sha256: str
+    entries: tuple[CoverageEntry, ...] = Field(min_length=1)
     planned: int
     attempted: int
     accepted: int
@@ -389,6 +519,24 @@ class ScanResult(BaseModel):
         exclude_if=lambda value: not value,
     )
 ```
+
+**Delta against the current tree, measured on `main`.** None of the four
+integration points exists yet, so every one is a new field and not a
+modification of shipped bytes:
+
+| Symbol | In `src/` today | Lands in |
+|---|---|---|
+| `OpenSSLDependency` | **yes**, 11 files | unchanged; must keep its exact serialized bytes |
+| `RuntimeDependency` | **no**, 0 files | #473 |
+| `CryptoProviderDependency` | **no**, 0 files | #597 |
+| `ScanResult.coverage` | **no** field on `ScanResult` | #550 defines, #552/#553 populate |
+| `ScanTarget.transport` | **no** | #463 |
+| `Evidence.ike_proposal` | **no** | #550 |
+
+An implementer must not assume `RuntimeDependency` is available to import.
+Until #473 lands it, `dependencies` remains `tuple[OpenSSLDependency, ...]` and
+TLS and SSH bytes are unchanged because the alias is a superset whose second
+member never appears in a TLS or SSH result.
 
 The additive integration points are `ScanTarget.transport`, `Evidence.ike_proposal`,
 `ScanResult.coverage`, and the single `RuntimeDependency` alias. Issue #473 owns that alias and the
@@ -566,7 +714,10 @@ the shape; the issue owns its implementation and tests:
 | `RuntimeDependency`, `CollectionResult`, `ScanProvenance` | #473, with lifecycle wiring in #539 | one exact alias/envelope; compatibility projections cannot diverge |
 | IKE enums and public observations | #550 | no duplicate public or renderer-local type |
 | `IKEObservationProvider`, `CryptoProviderDependency` | #597 | exact surface in section 7.2; forbidden completion methods absent |
-| Coverage truth | #550 and protocol sweeps #552/#553 | store receipts once; derive aggregate status |
+| Coverage truth: `CoverageEntry`, `CoverageReceipt` | #550 defines and emits entries; sweeps #552/#553 populate them | one entry per catalog/profile row; totals derived from entries, never authored |
+| `IKEAttemptEvidence`, `IKEEndpoint`, `AttemptRole`, `AttemptOutcome` | #597 owns the codec/transport that produces attempts; #550 owns the public type | one attempt per datagram; retries are new ordinals, never mutations |
+| `IKENotificationObservation` | #550 | ordered tuple; bounded allowlist for `data_hex`; no COOKIE, nonce, or key material retained |
+| `IKENatObservation` and its five enums | #550 defines; #552 populates IKEv1 NAT-D, #553 populates IKEv2 notifications | one NAT model spanning both mechanisms; `nat_t: bool` must not reappear |
 | Evaluator and scoped HNDL | #554, guarded by #598 | exact neutral facts and no favorable unauthenticated global posture |
 | EnXemble validator provenance | #554 and EnXemble #51 | versioned corroboration status; never primary evidence |
 
@@ -949,6 +1100,21 @@ duplicate the generic registry, evaluator, renderer, or CBOM path.
 | `tests/live/test_live_ike.py` | opt-in strongSwan/veepin lab interoperability |
 | `tests/fuzz/fuzz_ike_packet.py` | parser non-crash and bounded-resource properties |
 
+These five must fail before the section 4.1 contract is implemented. Each is a
+pure model or projection test needing no socket, so none is blocked on a peer:
+
+| Test | Asserts | Fails today because |
+|---|---|---|
+| `test_ike_models.py::test_attempt_sequence_is_lossless` | an `INVALID_KE_PAYLOAD` first leg and its retry survive as two `IKEAttemptEvidence` with distinct `ordinal`, `source.port`, and `responder_spi`, the retry carrying `role=invalid_ke_retry` and `parent_ordinal=1` | `IKEAttemptEvidence` does not exist; `attempts: int` cannot hold two source ports |
+| `test_ike_models.py::test_retransmission_creates_no_second_observation` | a `role=retransmission` attempt appends to `attempts` and yields exactly one `IKEProposalObservation` | no attempt role exists to distinguish a retry from a retransmission |
+| `test_ike_models.py::test_notifications_are_ordered_and_repeatable` | two `NAT_DETECTION_SOURCE_IP` plus one `NAT_DETECTION_DESTINATION_IP` round-trip in received order, and a `COOKIE` notification stores `data_length` and `data_sha256` with `data_hex` unset and `redacted=True` | `notify_type: int \| None` holds one value and has no redaction boundary |
+| `test_ike_models.py::test_nat_states_are_distinguishable` | `requested=force` with no vendor ID observed, versus vendor ID observed with `translation=none_detected`, versus `port_float=unavailable`, are three distinct serializations | `nat_t: bool` collapses all three |
+| `test_ike_policy.py::test_not_tested_names_its_row` | a receipt whose `entries` contain ML-KEM-512 / ID 35 with `state=not_tested` reports `not_tested == 1`, exposes `proposal_id`, and produces **no** `IKEProposalObservation` | `not_tested: int` is an integer with no row identity |
+
+A sixth is a guard rather than a feature: `test_ike_models.py::test_totals_are_derived_from_entries`
+asserts a `CoverageReceipt` whose integer totals disagree with its `entries` is
+rejected at construction, so a total can never be authored independently.
+
 ### 9.3 EnXemble files (separate repository/follow-up)
 
 Do not modify EnXemble in the QuReddy implementation PR. The follow-up changes
@@ -1209,8 +1375,13 @@ ParsedIKEResponse             syntactically parsed, still untrusted; private
 ValidatedIKEResponse          request-bound response; private constructor
 IKETransformAttribute         exact typed TV/TLV attribute; public evidence
 IKETransformObservation       exact ordered wire transform; public evidence
+IKEEndpoint                   ip/port pair; public, shared by attempts
+IKEAttemptEvidence            one datagram exchange; public, never collapsed
+IKENotificationObservation    one notification, ordered as received; public
+IKENatObservation             NAT-T evidence spanning IKEv1 NAT-D and IKEv2 notify
 IKEProposalObservation        public positive/negative observation; one output input
-CoverageReceipt               planned/attempted/accepted/rejected/unknown/not-tested
+CoverageEntry                 one catalog/profile row; the only home of not_tested
+CoverageReceipt               derived totals over CoverageEntry; never authored alone
 ScanResult                    constructed once by IKEScanner; renderer input
 CollectionResult              collector wrapper carrying the same ScanResult
 ValidatorObservation          EnXemble corroborator provenance, separate from evidence
