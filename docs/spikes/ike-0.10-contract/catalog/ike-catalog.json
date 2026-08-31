@@ -1,0 +1,5703 @@
+{
+  "schema": "qureddy.ike.algorithm-catalog.v1",
+  "catalog_version": "0.10.0-draft1",
+  "source": "pinned IANA snapshots; no network fetch",
+  "provenance": {
+    "ikev2-parameters.xml": {
+      "sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "updated": "2026-07-16"
+    },
+    "ipsec-registry.xml": {
+      "sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "updated": "2024-12-06"
+    }
+  },
+  "entry_count": 332,
+  "range_rows_skipped": 52,
+  "entries": [
+    {
+      "ike_version": "1",
+      "role": "attribute_type",
+      "wire_location": "sa_attribute_classes",
+      "wire_id": 1,
+      "name": "Encryption Algorithm",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2409"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "attribute_type",
+      "wire_location": "sa_attribute_classes",
+      "wire_id": 2,
+      "name": "Hash Algorithm",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2409"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "attribute_type",
+      "wire_location": "sa_attribute_classes",
+      "wire_id": 3,
+      "name": "Authentication Method",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2409"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "attribute_type",
+      "wire_location": "sa_attribute_classes",
+      "wire_id": 4,
+      "name": "Group Description",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2409"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "attribute_type",
+      "wire_location": "sa_attribute_classes",
+      "wire_id": 5,
+      "name": "Group Type",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2409"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "attribute_type",
+      "wire_location": "sa_attribute_classes",
+      "wire_id": 6,
+      "name": "Group Prime/Irreducible Polynomial",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2409"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "attribute_type",
+      "wire_location": "sa_attribute_classes",
+      "wire_id": 7,
+      "name": "Group Generator One",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2409"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "attribute_type",
+      "wire_location": "sa_attribute_classes",
+      "wire_id": 8,
+      "name": "Group Generator Two",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2409"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "attribute_type",
+      "wire_location": "sa_attribute_classes",
+      "wire_id": 9,
+      "name": "Group Curve A",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2409"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "attribute_type",
+      "wire_location": "sa_attribute_classes",
+      "wire_id": 10,
+      "name": "Group Curve B",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2409"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "attribute_type",
+      "wire_location": "sa_attribute_classes",
+      "wire_id": 11,
+      "name": "Life Type",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2409"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "attribute_type",
+      "wire_location": "sa_attribute_classes",
+      "wire_id": 12,
+      "name": "Life Duration",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2409"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "attribute_type",
+      "wire_location": "sa_attribute_classes",
+      "wire_id": 13,
+      "name": "PRF",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2409"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "attribute_type",
+      "wire_location": "sa_attribute_classes",
+      "wire_id": 14,
+      "name": "Key Length",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2409"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "attribute_type",
+      "wire_location": "sa_attribute_classes",
+      "wire_id": 15,
+      "name": "Field Size",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2409"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "attribute_type",
+      "wire_location": "sa_attribute_classes",
+      "wire_id": 16,
+      "name": "Group Order",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2409"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "authentication",
+      "wire_location": "sa_attribute=3",
+      "wire_id": 0,
+      "name": "Reserved",
+      "status": "reserved",
+      "citations": null,
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "authentication",
+      "wire_location": "sa_attribute=3",
+      "wire_id": 1,
+      "name": "pre-shared key",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2409"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "scheduled_0_10",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "authentication",
+      "wire_location": "sa_attribute=3",
+      "wire_id": 2,
+      "name": "DSS signatures",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2409"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "authentication",
+      "wire_location": "sa_attribute=3",
+      "wire_id": 3,
+      "name": "RSA signatures",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2409"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "authentication",
+      "wire_location": "sa_attribute=3",
+      "wire_id": 4,
+      "name": "Encryption with RSA",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2409"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "authentication",
+      "wire_location": "sa_attribute=3",
+      "wire_id": 5,
+      "name": "Revised encryption with RSA",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2409"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "authentication",
+      "wire_location": "sa_attribute=3",
+      "wire_id": 6,
+      "name": "Reserved (was Encryption with El-Gamal)",
+      "status": "reserved",
+      "citations": null,
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "authentication",
+      "wire_location": "sa_attribute=3",
+      "wire_id": 7,
+      "name": "Reserved (was Revised encryption with El-Gamal)",
+      "status": "reserved",
+      "citations": null,
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "authentication",
+      "wire_location": "sa_attribute=3",
+      "wire_id": 8,
+      "name": "Reserved (was ECDSA signatures)",
+      "status": "reserved",
+      "citations": null,
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "authentication",
+      "wire_location": "sa_attribute=3",
+      "wire_id": 9,
+      "name": "ECDSA with SHA-256 on the P-256 curve",
+      "status": "current",
+      "citations": [
+        "rfc:rfc4754"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "authentication",
+      "wire_location": "sa_attribute=3",
+      "wire_id": 10,
+      "name": "ECDSA with SHA-384 on the P-384 curve",
+      "status": "current",
+      "citations": [
+        "rfc:rfc4754"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "authentication",
+      "wire_location": "sa_attribute=3",
+      "wire_id": 11,
+      "name": "ECDSA with SHA-512 on the P-521 curve",
+      "status": "current",
+      "citations": [
+        "rfc:rfc4754"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "encryption",
+      "wire_location": "sa_attribute=1",
+      "wire_id": 0,
+      "name": "Reserved",
+      "status": "reserved",
+      "citations": null,
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "encryption",
+      "wire_location": "sa_attribute=1",
+      "wire_id": 1,
+      "name": "DES-CBC",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2405"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "encryption",
+      "wire_location": "sa_attribute=1",
+      "wire_id": 2,
+      "name": "IDEA-CBC",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2409"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "encryption",
+      "wire_location": "sa_attribute=1",
+      "wire_id": 3,
+      "name": "Blowfish-CBC",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2409"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "encryption",
+      "wire_location": "sa_attribute=1",
+      "wire_id": 4,
+      "name": "RC5-R16-B64-CBC",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2409"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "encryption",
+      "wire_location": "sa_attribute=1",
+      "wire_id": 5,
+      "name": "3DES-CBC",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2409"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "encryption",
+      "wire_location": "sa_attribute=1",
+      "wire_id": 6,
+      "name": "CAST-CBC",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2409"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "encryption",
+      "wire_location": "sa_attribute=1",
+      "wire_id": 7,
+      "name": "AES-CBC",
+      "status": "current",
+      "citations": [
+        "rfc:rfc3602"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "scheduled_0_10",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "encryption",
+      "wire_location": "sa_attribute=1",
+      "wire_id": 8,
+      "name": "CAMELLIA-CBC",
+      "status": "current",
+      "citations": [
+        "rfc:rfc4312"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "exchange_type",
+      "wire_location": "isakmp_header_exchange",
+      "wire_id": 0,
+      "name": "NONE",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2408"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "exchange_type",
+      "wire_location": "isakmp_header_exchange",
+      "wire_id": 1,
+      "name": "Base",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2408"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "exchange_type",
+      "wire_location": "isakmp_header_exchange",
+      "wire_id": 2,
+      "name": "Identity Protection",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2408"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "exchange_type",
+      "wire_location": "isakmp_header_exchange",
+      "wire_id": 3,
+      "name": "Authentication Only",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2408"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "exchange_type",
+      "wire_location": "isakmp_header_exchange",
+      "wire_id": 4,
+      "name": "Aggressive",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2408"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "exchange_type",
+      "wire_location": "isakmp_header_exchange",
+      "wire_id": 5,
+      "name": "Informational",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2408"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "group_type",
+      "wire_location": "sa_attribute=5",
+      "wire_id": 0,
+      "name": "Reserved",
+      "status": "reserved",
+      "citations": null,
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "group_type",
+      "wire_location": "sa_attribute=5",
+      "wire_id": 1,
+      "name": "MODP (modular exponentiation group)",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2409"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "group_type",
+      "wire_location": "sa_attribute=5",
+      "wire_id": 2,
+      "name": "ECP  (elliptic curve group over GF[P])",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2409"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "group_type",
+      "wire_location": "sa_attribute=5",
+      "wire_id": 3,
+      "name": "EC2N (elliptic curve group over GF[2^N])",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2409"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "hash",
+      "wire_location": "sa_attribute=2",
+      "wire_id": 0,
+      "name": "Reserved",
+      "status": "reserved",
+      "citations": null,
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "hash",
+      "wire_location": "sa_attribute=2",
+      "wire_id": 1,
+      "name": "MD5",
+      "status": "current",
+      "citations": [
+        "rfc:rfc1321"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "hash",
+      "wire_location": "sa_attribute=2",
+      "wire_id": 2,
+      "name": "SHA",
+      "status": "current",
+      "citations": null,
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "scheduled_0_10",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "hash",
+      "wire_location": "sa_attribute=2",
+      "wire_id": 3,
+      "name": "Tiger",
+      "status": "current",
+      "citations": null,
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "hash",
+      "wire_location": "sa_attribute=2",
+      "wire_id": 4,
+      "name": "SHA2-256",
+      "status": "current",
+      "citations": [
+        "rfc:rfc4868"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "hash",
+      "wire_location": "sa_attribute=2",
+      "wire_id": 5,
+      "name": "SHA2-384",
+      "status": "current",
+      "citations": [
+        "rfc:rfc4868"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "hash",
+      "wire_location": "sa_attribute=2",
+      "wire_id": 6,
+      "name": "SHA2-512",
+      "status": "current",
+      "citations": [
+        "rfc:rfc4868"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "key_exchange",
+      "wire_location": "sa_attribute=4",
+      "wire_id": 0,
+      "name": "Reserved",
+      "status": "reserved",
+      "citations": null,
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "key_exchange",
+      "wire_location": "sa_attribute=4",
+      "wire_id": 1,
+      "name": "default 768-bit MODP group",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2409"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "key_exchange",
+      "wire_location": "sa_attribute=4",
+      "wire_id": 2,
+      "name": "alternate 1024-bit MODP group",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2409"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "key_exchange",
+      "wire_location": "sa_attribute=4",
+      "wire_id": 3,
+      "name": "EC2N group on GP[2^155]",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2409"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "key_exchange",
+      "wire_location": "sa_attribute=4",
+      "wire_id": 4,
+      "name": "EC2N group on GP[2^185]",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2409"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "key_exchange",
+      "wire_location": "sa_attribute=4",
+      "wire_id": 5,
+      "name": "1536-bit MODP group",
+      "status": "current",
+      "citations": [
+        "rfc:rfc3526"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "key_exchange",
+      "wire_location": "sa_attribute=4",
+      "wire_id": 6,
+      "name": "EC2N group over GF[2^163](see Note)",
+      "status": "current",
+      "citations": [
+        "draft:draft-ietf-ipsec-ike-ecc-groups-10"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "key_exchange",
+      "wire_location": "sa_attribute=4",
+      "wire_id": 7,
+      "name": "EC2N group over GF[2^163](see Note)",
+      "status": "current",
+      "citations": [
+        "draft:draft-ietf-ipsec-ike-ecc-groups-10"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "key_exchange",
+      "wire_location": "sa_attribute=4",
+      "wire_id": 8,
+      "name": "EC2N group over GF[2^283](see Note)",
+      "status": "current",
+      "citations": [
+        "draft:draft-ietf-ipsec-ike-ecc-groups-10"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "key_exchange",
+      "wire_location": "sa_attribute=4",
+      "wire_id": 9,
+      "name": "EC2N group over GF[2^283](see Note)",
+      "status": "current",
+      "citations": [
+        "draft:draft-ietf-ipsec-ike-ecc-groups-10"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "key_exchange",
+      "wire_location": "sa_attribute=4",
+      "wire_id": 10,
+      "name": "EC2N group over GF[2^409](see Note)",
+      "status": "current",
+      "citations": [
+        "draft:draft-ietf-ipsec-ike-ecc-groups-10"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "key_exchange",
+      "wire_location": "sa_attribute=4",
+      "wire_id": 11,
+      "name": "EC2N group over GF[2^409](see Note)",
+      "status": "current",
+      "citations": [
+        "draft:draft-ietf-ipsec-ike-ecc-groups-10"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "key_exchange",
+      "wire_location": "sa_attribute=4",
+      "wire_id": 12,
+      "name": "EC2N group over GF[2^571](see Note)",
+      "status": "current",
+      "citations": [
+        "draft:draft-ietf-ipsec-ike-ecc-groups-10"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "key_exchange",
+      "wire_location": "sa_attribute=4",
+      "wire_id": 13,
+      "name": "EC2N group over GF[2^571](see Note)",
+      "status": "current",
+      "citations": [
+        "draft:draft-ietf-ipsec-ike-ecc-groups-10"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "key_exchange",
+      "wire_location": "sa_attribute=4",
+      "wire_id": 14,
+      "name": "2048-bit MODP group",
+      "status": "current",
+      "citations": [
+        "rfc:rfc3526"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "scheduled_0_10",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "key_exchange",
+      "wire_location": "sa_attribute=4",
+      "wire_id": 15,
+      "name": "3072-bit MODP group",
+      "status": "current",
+      "citations": [
+        "rfc:rfc3526"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "key_exchange",
+      "wire_location": "sa_attribute=4",
+      "wire_id": 16,
+      "name": "4096-bit MODP group",
+      "status": "current",
+      "citations": [
+        "rfc:rfc3526"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "key_exchange",
+      "wire_location": "sa_attribute=4",
+      "wire_id": 17,
+      "name": "6144-bit MODP group",
+      "status": "current",
+      "citations": [
+        "rfc:rfc3526"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "key_exchange",
+      "wire_location": "sa_attribute=4",
+      "wire_id": 18,
+      "name": "8192-bit MODP group",
+      "status": "current",
+      "citations": [
+        "rfc:rfc3526"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "key_exchange",
+      "wire_location": "sa_attribute=4",
+      "wire_id": 19,
+      "name": "256-bit random ECP group",
+      "status": "current",
+      "citations": [
+        "rfc:rfc5903"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "key_exchange",
+      "wire_location": "sa_attribute=4",
+      "wire_id": 20,
+      "name": "384-bit random ECP group",
+      "status": "current",
+      "citations": [
+        "rfc:rfc5903"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "key_exchange",
+      "wire_location": "sa_attribute=4",
+      "wire_id": 21,
+      "name": "521-bit random ECP group",
+      "status": "current",
+      "citations": [
+        "rfc:rfc5903"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "key_exchange",
+      "wire_location": "sa_attribute=4",
+      "wire_id": 22,
+      "name": "1024-bit MODP Group with 160-bit Prime Order Subgroup",
+      "status": "current",
+      "citations": [
+        "rfc:rfc5114"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "key_exchange",
+      "wire_location": "sa_attribute=4",
+      "wire_id": 23,
+      "name": "2048-bit MODP Group with 224-bit Prime Order Subgroup",
+      "status": "current",
+      "citations": [
+        "rfc:rfc5114"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "key_exchange",
+      "wire_location": "sa_attribute=4",
+      "wire_id": 24,
+      "name": "2048-bit MODP Group with 256-bit Prime Order Subgroup",
+      "status": "current",
+      "citations": [
+        "rfc:rfc5114"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "key_exchange",
+      "wire_location": "sa_attribute=4",
+      "wire_id": 25,
+      "name": "192-bit Random ECP Group",
+      "status": "current",
+      "citations": [
+        "rfc:rfc5114"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "key_exchange",
+      "wire_location": "sa_attribute=4",
+      "wire_id": 26,
+      "name": "224-bit Random ECP Group",
+      "status": "current",
+      "citations": [
+        "rfc:rfc5114"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "key_exchange",
+      "wire_location": "sa_attribute=4",
+      "wire_id": 27,
+      "name": "224-bit Brainpool ECP group",
+      "status": "current",
+      "citations": [
+        "rfc:rfc6932"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "key_exchange",
+      "wire_location": "sa_attribute=4",
+      "wire_id": 28,
+      "name": "256-bit Brainpool ECP group",
+      "status": "current",
+      "citations": [
+        "rfc:rfc6932"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "key_exchange",
+      "wire_location": "sa_attribute=4",
+      "wire_id": 29,
+      "name": "384-bit Brainpool ECP group",
+      "status": "current",
+      "citations": [
+        "rfc:rfc6932"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "key_exchange",
+      "wire_location": "sa_attribute=4",
+      "wire_id": 30,
+      "name": "512-bit Brainpool ECP group",
+      "status": "current",
+      "citations": [
+        "rfc:rfc6932"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "life_type",
+      "wire_location": "sa_attribute=11",
+      "wire_id": 0,
+      "name": "Reserved",
+      "status": "reserved",
+      "citations": null,
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "life_type",
+      "wire_location": "sa_attribute=11",
+      "wire_id": 1,
+      "name": "seconds",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2409"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "life_type",
+      "wire_location": "sa_attribute=11",
+      "wire_id": 2,
+      "name": "kilobytes",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2409"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 1,
+      "name": "INVALID-PAYLOAD-TYPE",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2408"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 2,
+      "name": "DOI-NOT-SUPPORTED",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2408"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 3,
+      "name": "SITUATION-NOT-SUPPORTED",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2408"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 4,
+      "name": "INVALID-COOKIE",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2408"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 5,
+      "name": "INVALID-MAJOR-VERSION",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2408"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 6,
+      "name": "INVALID-MINOR-VERSION",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2408"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 7,
+      "name": "INVALID-EXCHANGE-TYPE",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2408"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 8,
+      "name": "INVALID-FLAGS",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2408"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 9,
+      "name": "INVALID-MESSAGE-ID",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2408"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 10,
+      "name": "INVALID-PROTOCOL-ID",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2408"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 11,
+      "name": "INVALID-SPI",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2408"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 12,
+      "name": "INVALID-TRANSFORM-ID",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2408"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 13,
+      "name": "ATTRIBUTES-NOT-SUPPORTED",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2408"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 14,
+      "name": "NO-PROPOSAL-CHOSEN",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2408"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 15,
+      "name": "BAD-PROPOSAL-SYNTAX",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2408"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 16,
+      "name": "PAYLOAD-MALFORMED",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2408"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 17,
+      "name": "INVALID-KEY-INFORMATION",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2408"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 18,
+      "name": "INVALID-ID-INFORMATION",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2408"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 19,
+      "name": "INVALID-CERT-ENCODING",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2408"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 20,
+      "name": "INVALID-CERTIFICATE",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2408"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 21,
+      "name": "CERT-TYPE-UNSUPPORTED",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2408"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 22,
+      "name": "INVALID-CERT-AUTHORITY",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2408"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 23,
+      "name": "INVALID-HASH-INFORMATION",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2408"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 24,
+      "name": "AUTHENTICATION-FAILED",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2408"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 25,
+      "name": "INVALID-SIGNATURE",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2408"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 26,
+      "name": "ADDRESS-NOTIFICATION",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2408"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 27,
+      "name": "NOTIFY-SA-LIFETIME",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2408"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 28,
+      "name": "CERTIFICATE-UNAVAILABLE",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2408"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 29,
+      "name": "UNSUPPORTED-EXCHANGE-TYPE",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2408"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "1",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 30,
+      "name": "UNEQUAL-PAYLOAD-LENGTHS",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2408"
+      ],
+      "registry_file": "ipsec-registry.xml",
+      "registry_updated": "2024-12-06",
+      "registry_sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "attribute_type",
+      "wire_location": "transform_attribute",
+      "wire_id": 14,
+      "name": "Key Length (in bits)",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "attribute_type",
+      "wire_location": "transform_attribute",
+      "wire_id": 18,
+      "name": "Signature Algorithm Identifier",
+      "status": "current",
+      "citations": [
+        "rfc:rfc9838"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "authentication",
+      "wire_location": "auth_method_payload",
+      "wire_id": 0,
+      "name": "Reserved",
+      "status": "reserved",
+      "citations": [
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "authentication",
+      "wire_location": "auth_method_payload",
+      "wire_id": 1,
+      "name": "RSA Digital Signature",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "authentication",
+      "wire_location": "auth_method_payload",
+      "wire_id": 2,
+      "name": "Shared Key Message Integrity Code",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "authentication",
+      "wire_location": "auth_method_payload",
+      "wire_id": 3,
+      "name": "DSS Digital Signature",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "authentication",
+      "wire_location": "auth_method_payload",
+      "wire_id": 9,
+      "name": "ECDSA with SHA-256 on the P-256 curve",
+      "status": "current",
+      "citations": [
+        "rfc:rfc4754"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "authentication",
+      "wire_location": "auth_method_payload",
+      "wire_id": 10,
+      "name": "ECDSA with SHA-384 on the P-384 curve",
+      "status": "current",
+      "citations": [
+        "rfc:rfc4754"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "authentication",
+      "wire_location": "auth_method_payload",
+      "wire_id": 11,
+      "name": "ECDSA with SHA-512 on the P-521 curve",
+      "status": "current",
+      "citations": [
+        "rfc:rfc4754"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "authentication",
+      "wire_location": "auth_method_payload",
+      "wire_id": 12,
+      "name": "Generic Secure Password Authentication Method",
+      "status": "current",
+      "citations": [
+        "rfc:rfc6467"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "authentication",
+      "wire_location": "auth_method_payload",
+      "wire_id": 13,
+      "name": "NULL Authentication",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7619"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "authentication",
+      "wire_location": "auth_method_payload",
+      "wire_id": 14,
+      "name": "Digital Signature",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7427"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "encryption",
+      "wire_location": "transform_type=1",
+      "wire_id": 0,
+      "name": "Reserved",
+      "status": "reserved",
+      "citations": [
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "encryption",
+      "wire_location": "transform_type=1",
+      "wire_id": 1,
+      "name": "ENCR_DES_IV64",
+      "status": "deprecated",
+      "citations": [
+        "rfc:rfc9395"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "encryption",
+      "wire_location": "transform_type=1",
+      "wire_id": 2,
+      "name": "ENCR_DES",
+      "status": "deprecated",
+      "citations": [
+        "rfc:rfc8247",
+        "rfc:rfc2405",
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": "MUST NOT",
+      "rfc8247_citation": "rfc8247/rfc8247.txt:295"
+    },
+    {
+      "ike_version": "2",
+      "role": "encryption",
+      "wire_location": "transform_type=1",
+      "wire_id": 3,
+      "name": "ENCR_3DES",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2451",
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": "MAY",
+      "rfc8247_citation": "rfc8247/rfc8247.txt:294"
+    },
+    {
+      "ike_version": "2",
+      "role": "encryption",
+      "wire_location": "transform_type=1",
+      "wire_id": 4,
+      "name": "ENCR_RC5",
+      "status": "deprecated",
+      "citations": [
+        "rfc:rfc9395",
+        "rfc:rfc2451",
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "encryption",
+      "wire_location": "transform_type=1",
+      "wire_id": 5,
+      "name": "ENCR_IDEA",
+      "status": "deprecated",
+      "citations": [
+        "rfc:rfc9395",
+        "rfc:rfc2451",
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "encryption",
+      "wire_location": "transform_type=1",
+      "wire_id": 6,
+      "name": "ENCR_CAST",
+      "status": "deprecated",
+      "citations": [
+        "rfc:rfc9395",
+        "rfc:rfc2451",
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "encryption",
+      "wire_location": "transform_type=1",
+      "wire_id": 7,
+      "name": "ENCR_BLOWFISH",
+      "status": "deprecated",
+      "citations": [
+        "rfc:rfc9395",
+        "rfc:rfc2451",
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "encryption",
+      "wire_location": "transform_type=1",
+      "wire_id": 8,
+      "name": "ENCR_3IDEA",
+      "status": "deprecated",
+      "citations": [
+        "rfc:rfc9395",
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "encryption",
+      "wire_location": "transform_type=1",
+      "wire_id": 9,
+      "name": "ENCR_DES_IV32",
+      "status": "deprecated",
+      "citations": [
+        "rfc:rfc9395"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "encryption",
+      "wire_location": "transform_type=1",
+      "wire_id": 10,
+      "name": "Reserved",
+      "status": "reserved",
+      "citations": [
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "encryption",
+      "wire_location": "transform_type=1",
+      "wire_id": 11,
+      "name": "ENCR_NULL",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2410"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": "MUST NOT",
+      "rfc8247_citation": "rfc8247/rfc8247.txt:296"
+    },
+    {
+      "ike_version": "2",
+      "role": "encryption",
+      "wire_location": "transform_type=1",
+      "wire_id": 12,
+      "name": "ENCR_AES_CBC",
+      "status": "current",
+      "citations": [
+        "rfc:rfc3602",
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "scheduled_0_10",
+      "rfc8247_requirement": "MUST",
+      "rfc8247_citation": "rfc8247/rfc8247.txt:290"
+    },
+    {
+      "ike_version": "2",
+      "role": "encryption",
+      "wire_location": "transform_type=1",
+      "wire_id": 13,
+      "name": "ENCR_AES_CTR",
+      "status": "current",
+      "citations": [
+        "rfc:rfc3686",
+        "rfc:rfc5930"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": "SHOULD",
+      "rfc8247_citation": "rfc8247/rfc8247.txt:585"
+    },
+    {
+      "ike_version": "2",
+      "role": "encryption",
+      "wire_location": "transform_type=1",
+      "wire_id": 14,
+      "name": "ENCR_AES_CCM_8",
+      "status": "current",
+      "citations": [
+        "rfc:rfc4309",
+        "rfc:rfc5282"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": "SHOULD",
+      "rfc8247_citation": "rfc8247/rfc8247.txt:293"
+    },
+    {
+      "ike_version": "2",
+      "role": "encryption",
+      "wire_location": "transform_type=1",
+      "wire_id": 15,
+      "name": "ENCR_AES_CCM_12",
+      "status": "current",
+      "citations": [
+        "rfc:rfc4309",
+        "rfc:rfc5282"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "encryption",
+      "wire_location": "transform_type=1",
+      "wire_id": 16,
+      "name": "ENCR_AES_CCM_16",
+      "status": "current",
+      "citations": [
+        "rfc:rfc4309",
+        "rfc:rfc5282"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "encryption",
+      "wire_location": "transform_type=1",
+      "wire_id": 17,
+      "name": "Unassigned",
+      "status": "unassigned",
+      "citations": null,
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "encryption",
+      "wire_location": "transform_type=1",
+      "wire_id": 18,
+      "name": "ENCR_AES_GCM_8",
+      "status": "current",
+      "citations": [
+        "rfc:rfc4106",
+        "rfc:rfc8247",
+        "rfc:rfc5282"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "encryption",
+      "wire_location": "transform_type=1",
+      "wire_id": 19,
+      "name": "ENCR_AES_GCM_12",
+      "status": "current",
+      "citations": [
+        "rfc:rfc4106",
+        "rfc:rfc8247",
+        "rfc:rfc5282"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "encryption",
+      "wire_location": "transform_type=1",
+      "wire_id": 20,
+      "name": "ENCR_AES_GCM_16",
+      "status": "current",
+      "citations": [
+        "rfc:rfc4106",
+        "rfc:rfc8247",
+        "rfc:rfc5282"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "scheduled_0_10",
+      "rfc8247_requirement": "SHOULD",
+      "rfc8247_citation": "rfc8247/rfc8247.txt:292"
+    },
+    {
+      "ike_version": "2",
+      "role": "encryption",
+      "wire_location": "transform_type=1",
+      "wire_id": 21,
+      "name": "ENCR_NULL_AUTH_AES_GMAC",
+      "status": "current",
+      "citations": [
+        "rfc:rfc4543"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "encryption",
+      "wire_location": "transform_type=1",
+      "wire_id": 22,
+      "name": "Reserved for IEEE P1619 XTS-AES",
+      "status": "reserved",
+      "citations": null,
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "encryption",
+      "wire_location": "transform_type=1",
+      "wire_id": 23,
+      "name": "ENCR_CAMELLIA_CBC",
+      "status": "current",
+      "citations": [
+        "rfc:rfc5529",
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "encryption",
+      "wire_location": "transform_type=1",
+      "wire_id": 24,
+      "name": "ENCR_CAMELLIA_CTR",
+      "status": "current",
+      "citations": [
+        "rfc:rfc5529"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "encryption",
+      "wire_location": "transform_type=1",
+      "wire_id": 25,
+      "name": "ENCR_CAMELLIA_CCM_8",
+      "status": "current",
+      "citations": [
+        "rfc:rfc5529",
+        "rfc:rfc8247"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "encryption",
+      "wire_location": "transform_type=1",
+      "wire_id": 26,
+      "name": "ENCR_CAMELLIA_CCM_12",
+      "status": "current",
+      "citations": [
+        "rfc:rfc5529",
+        "rfc:rfc8247"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "encryption",
+      "wire_location": "transform_type=1",
+      "wire_id": 27,
+      "name": "ENCR_CAMELLIA_CCM_16",
+      "status": "current",
+      "citations": [
+        "rfc:rfc5529",
+        "rfc:rfc8247"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "encryption",
+      "wire_location": "transform_type=1",
+      "wire_id": 28,
+      "name": "ENCR_CHACHA20_POLY1305",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7634"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": "SHOULD",
+      "rfc8247_citation": "rfc8247/rfc8247.txt:291"
+    },
+    {
+      "ike_version": "2",
+      "role": "encryption",
+      "wire_location": "transform_type=1",
+      "wire_id": 29,
+      "name": "ENCR_AES_CCM_8_IIV",
+      "status": "current",
+      "citations": [
+        "rfc:rfc8750"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "encryption",
+      "wire_location": "transform_type=1",
+      "wire_id": 30,
+      "name": "ENCR_AES_GCM_16_IIV",
+      "status": "current",
+      "citations": [
+        "rfc:rfc8750"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "encryption",
+      "wire_location": "transform_type=1",
+      "wire_id": 31,
+      "name": "ENCR_CHACHA20_POLY1305_IIV",
+      "status": "current",
+      "citations": [
+        "rfc:rfc8750"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "encryption",
+      "wire_location": "transform_type=1",
+      "wire_id": 32,
+      "name": "ENCR_KUZNYECHIK_MGM_KTREE",
+      "status": "current",
+      "citations": [
+        "rfc:rfc9227"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "encryption",
+      "wire_location": "transform_type=1",
+      "wire_id": 33,
+      "name": "ENCR_MAGMA_MGM_KTREE",
+      "status": "current",
+      "citations": [
+        "rfc:rfc9227"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "encryption",
+      "wire_location": "transform_type=1",
+      "wire_id": 34,
+      "name": "ENCR_KUZNYECHIK_MGM_MAC_KTREE",
+      "status": "current",
+      "citations": [
+        "rfc:rfc9227"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "encryption",
+      "wire_location": "transform_type=1",
+      "wire_id": 35,
+      "name": "ENCR_MAGMA_MGM_MAC_KTREE",
+      "status": "current",
+      "citations": [
+        "rfc:rfc9227"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "esn",
+      "wire_location": "transform_type=5",
+      "wire_id": 0,
+      "name": "32-bit Sequential Numbers",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7296",
+        "rfc:rfc9827"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "esn",
+      "wire_location": "transform_type=5",
+      "wire_id": 1,
+      "name": "Partially Transmitted 64-bit Sequential Numbers",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7296",
+        "rfc:rfc9827"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "esn",
+      "wire_location": "transform_type=5",
+      "wire_id": 2,
+      "name": "32-bit Unspecified Numbers",
+      "status": "current",
+      "citations": [
+        "rfc:rfc9838"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "integrity",
+      "wire_location": "transform_type=3",
+      "wire_id": 0,
+      "name": "NONE",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "integrity",
+      "wire_location": "transform_type=3",
+      "wire_id": 1,
+      "name": "AUTH_HMAC_MD5_96",
+      "status": "deprecated",
+      "citations": [
+        "rfc:rfc8247",
+        "rfc:rfc2403",
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": "MUST NOT",
+      "rfc8247_citation": "rfc8247/rfc8247.txt:430"
+    },
+    {
+      "ike_version": "2",
+      "role": "integrity",
+      "wire_location": "transform_type=3",
+      "wire_id": 2,
+      "name": "AUTH_HMAC_SHA1_96",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2404",
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": "MUST-",
+      "rfc8247_citation": "rfc8247/rfc8247.txt:428"
+    },
+    {
+      "ike_version": "2",
+      "role": "integrity",
+      "wire_location": "transform_type=3",
+      "wire_id": 3,
+      "name": "AUTH_DES_MAC",
+      "status": "deprecated",
+      "citations": [
+        "rfc:rfc8247"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": "MUST NOT",
+      "rfc8247_citation": "rfc8247/rfc8247.txt:431"
+    },
+    {
+      "ike_version": "2",
+      "role": "integrity",
+      "wire_location": "transform_type=3",
+      "wire_id": 4,
+      "name": "AUTH_KPDK_MD5",
+      "status": "deprecated",
+      "citations": [
+        "rfc:rfc8247"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": "MUST NOT",
+      "rfc8247_citation": "rfc8247/rfc8247.txt:432"
+    },
+    {
+      "ike_version": "2",
+      "role": "integrity",
+      "wire_location": "transform_type=3",
+      "wire_id": 5,
+      "name": "AUTH_AES_XCBC_96",
+      "status": "current",
+      "citations": [
+        "rfc:rfc3566",
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": "SHOULD",
+      "rfc8247_citation": "rfc8247/rfc8247.txt:429"
+    },
+    {
+      "ike_version": "2",
+      "role": "integrity",
+      "wire_location": "transform_type=3",
+      "wire_id": 6,
+      "name": "AUTH_HMAC_MD5_128",
+      "status": "deprecated",
+      "citations": [
+        "rfc:rfc9395",
+        "rfc:rfc4595"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "integrity",
+      "wire_location": "transform_type=3",
+      "wire_id": 7,
+      "name": "AUTH_HMAC_SHA1_160",
+      "status": "deprecated",
+      "citations": [
+        "rfc:rfc9395",
+        "rfc:rfc4595"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "integrity",
+      "wire_location": "transform_type=3",
+      "wire_id": 8,
+      "name": "AUTH_AES_CMAC_96",
+      "status": "current",
+      "citations": [
+        "rfc:rfc4494"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "integrity",
+      "wire_location": "transform_type=3",
+      "wire_id": 9,
+      "name": "AUTH_AES_128_GMAC",
+      "status": "current",
+      "citations": [
+        "rfc:rfc4543"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "integrity",
+      "wire_location": "transform_type=3",
+      "wire_id": 10,
+      "name": "AUTH_AES_192_GMAC",
+      "status": "current",
+      "citations": [
+        "rfc:rfc4543"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "integrity",
+      "wire_location": "transform_type=3",
+      "wire_id": 11,
+      "name": "AUTH_AES_256_GMAC",
+      "status": "current",
+      "citations": [
+        "rfc:rfc4543"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "integrity",
+      "wire_location": "transform_type=3",
+      "wire_id": 12,
+      "name": "AUTH_HMAC_SHA2_256_128",
+      "status": "current",
+      "citations": [
+        "rfc:rfc4868"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "scheduled_0_10",
+      "rfc8247_requirement": "MUST",
+      "rfc8247_citation": "rfc8247/rfc8247.txt:426"
+    },
+    {
+      "ike_version": "2",
+      "role": "integrity",
+      "wire_location": "transform_type=3",
+      "wire_id": 13,
+      "name": "AUTH_HMAC_SHA2_384_192",
+      "status": "current",
+      "citations": [
+        "rfc:rfc4868"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "integrity",
+      "wire_location": "transform_type=3",
+      "wire_id": 14,
+      "name": "AUTH_HMAC_SHA2_512_256",
+      "status": "current",
+      "citations": [
+        "rfc:rfc4868"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": "SHOULD",
+      "rfc8247_citation": "rfc8247/rfc8247.txt:427"
+    },
+    {
+      "ike_version": "2",
+      "role": "key_exchange",
+      "wire_location": "transform_type=4",
+      "wire_id": 0,
+      "name": "NONE",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "key_exchange",
+      "wire_location": "transform_type=4",
+      "wire_id": 1,
+      "name": "768-bit MODP Group",
+      "status": "deprecated",
+      "citations": [
+        "rfc:rfc8247",
+        "rfc:rfc6989",
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "key_exchange",
+      "wire_location": "transform_type=4",
+      "wire_id": 2,
+      "name": "1024-bit MODP Group",
+      "status": "current",
+      "citations": [
+        "rfc:rfc6989",
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "key_exchange",
+      "wire_location": "transform_type=4",
+      "wire_id": 5,
+      "name": "1536-bit MODP Group",
+      "status": "current",
+      "citations": [
+        "rfc:rfc6989",
+        "rfc:rfc3526"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "key_exchange",
+      "wire_location": "transform_type=4",
+      "wire_id": 14,
+      "name": "2048-bit MODP Group",
+      "status": "current",
+      "citations": [
+        "rfc:rfc6989",
+        "rfc:rfc3526"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "scheduled_0_10",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "key_exchange",
+      "wire_location": "transform_type=4",
+      "wire_id": 15,
+      "name": "3072-bit MODP Group",
+      "status": "current",
+      "citations": [
+        "rfc:rfc6989",
+        "rfc:rfc3526"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "key_exchange",
+      "wire_location": "transform_type=4",
+      "wire_id": 16,
+      "name": "4096-bit MODP Group",
+      "status": "current",
+      "citations": [
+        "rfc:rfc6989",
+        "rfc:rfc3526"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "key_exchange",
+      "wire_location": "transform_type=4",
+      "wire_id": 17,
+      "name": "6144-bit MODP Group",
+      "status": "current",
+      "citations": [
+        "rfc:rfc6989",
+        "rfc:rfc3526"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "key_exchange",
+      "wire_location": "transform_type=4",
+      "wire_id": 18,
+      "name": "8192-bit MODP Group",
+      "status": "current",
+      "citations": [
+        "rfc:rfc6989",
+        "rfc:rfc3526"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "key_exchange",
+      "wire_location": "transform_type=4",
+      "wire_id": 19,
+      "name": "256-bit random ECP group",
+      "status": "current",
+      "citations": [
+        "rfc:rfc6989",
+        "rfc:rfc5903"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "scheduled_0_10",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "key_exchange",
+      "wire_location": "transform_type=4",
+      "wire_id": 20,
+      "name": "384-bit random ECP group",
+      "status": "current",
+      "citations": [
+        "rfc:rfc6989",
+        "rfc:rfc5903"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "key_exchange",
+      "wire_location": "transform_type=4",
+      "wire_id": 21,
+      "name": "521-bit random ECP group",
+      "status": "current",
+      "citations": [
+        "rfc:rfc6989",
+        "rfc:rfc5903"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "key_exchange",
+      "wire_location": "transform_type=4",
+      "wire_id": 22,
+      "name": "1024-bit MODP Group with 160-bit Prime Order Subgroup",
+      "status": "deprecated",
+      "citations": [
+        "rfc:rfc8247",
+        "rfc:rfc6989",
+        "rfc:rfc5114"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "key_exchange",
+      "wire_location": "transform_type=4",
+      "wire_id": 23,
+      "name": "2048-bit MODP Group with 224-bit Prime Order Subgroup",
+      "status": "current",
+      "citations": [
+        "rfc:rfc6989",
+        "rfc:rfc5114"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "key_exchange",
+      "wire_location": "transform_type=4",
+      "wire_id": 24,
+      "name": "2048-bit MODP Group with 256-bit Prime Order Subgroup",
+      "status": "current",
+      "citations": [
+        "rfc:rfc6989",
+        "rfc:rfc5114"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "key_exchange",
+      "wire_location": "transform_type=4",
+      "wire_id": 25,
+      "name": "192-bit Random ECP Group",
+      "status": "current",
+      "citations": [
+        "rfc:rfc6989",
+        "rfc:rfc5114"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "key_exchange",
+      "wire_location": "transform_type=4",
+      "wire_id": 26,
+      "name": "224-bit Random ECP Group",
+      "status": "current",
+      "citations": [
+        "rfc:rfc6989",
+        "rfc:rfc5114"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "key_exchange",
+      "wire_location": "transform_type=4",
+      "wire_id": 27,
+      "name": "brainpoolP224r1",
+      "status": "current",
+      "citations": [
+        "rfc:rfc6989",
+        "rfc:rfc6954"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "key_exchange",
+      "wire_location": "transform_type=4",
+      "wire_id": 28,
+      "name": "brainpoolP256r1",
+      "status": "current",
+      "citations": [
+        "rfc:rfc6989",
+        "rfc:rfc6954"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "key_exchange",
+      "wire_location": "transform_type=4",
+      "wire_id": 29,
+      "name": "brainpoolP384r1",
+      "status": "current",
+      "citations": [
+        "rfc:rfc6989",
+        "rfc:rfc6954"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "key_exchange",
+      "wire_location": "transform_type=4",
+      "wire_id": 30,
+      "name": "brainpoolP512r1",
+      "status": "current",
+      "citations": [
+        "rfc:rfc6989",
+        "rfc:rfc6954"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "key_exchange",
+      "wire_location": "transform_type=4",
+      "wire_id": 31,
+      "name": "Curve25519",
+      "status": "current",
+      "citations": [
+        "rfc:rfc8031"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "scheduled_0_10",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "key_exchange",
+      "wire_location": "transform_type=4",
+      "wire_id": 32,
+      "name": "Curve448",
+      "status": "current",
+      "citations": [
+        "rfc:rfc8031"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "key_exchange",
+      "wire_location": "transform_type=4",
+      "wire_id": 33,
+      "name": "GOST3410_2012_256",
+      "status": "current",
+      "citations": [
+        "rfc:rfc9385"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "key_exchange",
+      "wire_location": "transform_type=4",
+      "wire_id": 34,
+      "name": "GOST3410_2012_512",
+      "status": "current",
+      "citations": [
+        "rfc:rfc9385"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "key_exchange",
+      "wire_location": "transform_type=4",
+      "wire_id": 35,
+      "name": "ml-kem-512",
+      "status": "current",
+      "citations": [
+        "draft:RFC-ietf-ipsecme-ikev2-mlkem-09"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only_never_scheduled",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "key_exchange",
+      "wire_location": "transform_type=4",
+      "wire_id": 36,
+      "name": "ml-kem-768",
+      "status": "current",
+      "citations": [
+        "draft:RFC-ietf-ipsecme-ikev2-mlkem-09"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "post_mvp_0_14_555",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "key_exchange",
+      "wire_location": "transform_type=4",
+      "wire_id": 37,
+      "name": "ml-kem-1024",
+      "status": "current",
+      "citations": [
+        "draft:RFC-ietf-ipsecme-ikev2-mlkem-09"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "post_mvp_0_14_555",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 0,
+      "name": "Reserved",
+      "status": "reserved",
+      "citations": [
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 1,
+      "name": "UNSUPPORTED_CRITICAL_PAYLOAD",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 4,
+      "name": "INVALID_IKE_SPI",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 5,
+      "name": "INVALID_MAJOR_VERSION",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 6,
+      "name": "Reserved",
+      "status": "reserved",
+      "citations": [
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 7,
+      "name": "INVALID_SYNTAX",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 8,
+      "name": "Reserved",
+      "status": "reserved",
+      "citations": [
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 9,
+      "name": "INVALID_MESSAGE_ID",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 10,
+      "name": "Reserved",
+      "status": "reserved",
+      "citations": [
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 11,
+      "name": "INVALID_SPI",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 14,
+      "name": "NO_PROPOSAL_CHOSEN",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 17,
+      "name": "INVALID_KE_PAYLOAD",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 24,
+      "name": "AUTHENTICATION_FAILED",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 34,
+      "name": "SINGLE_PAIR_REQUIRED",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 35,
+      "name": "NO_ADDITIONAL_SAS",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 36,
+      "name": "INTERNAL_ADDRESS_FAILURE",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 37,
+      "name": "FAILED_CP_REQUIRED",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 38,
+      "name": "TS_UNACCEPTABLE",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 39,
+      "name": "INVALID_SELECTORS",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 40,
+      "name": "UNACCEPTABLE_ADDRESSES",
+      "status": "current",
+      "citations": [
+        "rfc:rfc4555"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 41,
+      "name": "UNEXPECTED_NAT_DETECTED",
+      "status": "current",
+      "citations": [
+        "rfc:rfc4555"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 42,
+      "name": "USE_ASSIGNED_HoA",
+      "status": "current",
+      "citations": [
+        "rfc:rfc5026"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 43,
+      "name": "TEMPORARY_FAILURE",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 44,
+      "name": "CHILD_SA_NOT_FOUND",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 45,
+      "name": "INVALID_GROUP_ID",
+      "status": "current",
+      "citations": [
+        "rfc:rfc9838"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 46,
+      "name": "AUTHORIZATION_FAILED",
+      "status": "current",
+      "citations": [
+        "rfc:rfc9838"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 47,
+      "name": "STATE_NOT_FOUND",
+      "status": "current",
+      "citations": [
+        "rfc:rfc9370"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 48,
+      "name": "TS_MAX_QUEUE",
+      "status": "current",
+      "citations": [
+        "rfc:rfc9611"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_error",
+      "wire_location": "notify_type",
+      "wire_id": 49,
+      "name": "REGISTRATION_FAILED",
+      "status": "current",
+      "citations": [
+        "rfc:rfc9838"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16384,
+      "name": "INITIAL_CONTACT",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16385,
+      "name": "SET_WINDOW_SIZE",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16386,
+      "name": "ADDITIONAL_TS_POSSIBLE",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16387,
+      "name": "IPCOMP_SUPPORTED",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16388,
+      "name": "NAT_DETECTION_SOURCE_IP",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16389,
+      "name": "NAT_DETECTION_DESTINATION_IP",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16390,
+      "name": "COOKIE",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16391,
+      "name": "USE_TRANSPORT_MODE",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16392,
+      "name": "HTTP_CERT_LOOKUP_SUPPORTED",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16393,
+      "name": "REKEY_SA",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16394,
+      "name": "ESP_TFC_PADDING_NOT_SUPPORTED",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16395,
+      "name": "NON_FIRST_FRAGMENTS_ALSO",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16396,
+      "name": "MOBIKE_SUPPORTED",
+      "status": "current",
+      "citations": [
+        "rfc:rfc4555"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16397,
+      "name": "ADDITIONAL_IP4_ADDRESS",
+      "status": "current",
+      "citations": [
+        "rfc:rfc4555"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16398,
+      "name": "ADDITIONAL_IP6_ADDRESS",
+      "status": "current",
+      "citations": [
+        "rfc:rfc4555"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16399,
+      "name": "NO_ADDITIONAL_ADDRESSES",
+      "status": "current",
+      "citations": [
+        "rfc:rfc4555"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16400,
+      "name": "UPDATE_SA_ADDRESSES",
+      "status": "current",
+      "citations": [
+        "rfc:rfc4555"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16401,
+      "name": "COOKIE2",
+      "status": "current",
+      "citations": [
+        "rfc:rfc4555"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16402,
+      "name": "NO_NATS_ALLOWED",
+      "status": "current",
+      "citations": [
+        "rfc:rfc4555"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16403,
+      "name": "AUTH_LIFETIME",
+      "status": "current",
+      "citations": [
+        "rfc:rfc4478"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16404,
+      "name": "MULTIPLE_AUTH_SUPPORTED",
+      "status": "current",
+      "citations": [
+        "rfc:rfc4739"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16405,
+      "name": "ANOTHER_AUTH_FOLLOWS",
+      "status": "current",
+      "citations": [
+        "rfc:rfc4739"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16406,
+      "name": "REDIRECT_SUPPORTED",
+      "status": "current",
+      "citations": [
+        "rfc:rfc5685"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16407,
+      "name": "REDIRECT",
+      "status": "current",
+      "citations": [
+        "rfc:rfc5685"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16408,
+      "name": "REDIRECTED_FROM",
+      "status": "current",
+      "citations": [
+        "rfc:rfc5685"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16409,
+      "name": "TICKET_LT_OPAQUE",
+      "status": "current",
+      "citations": [
+        "rfc:rfc5723"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16410,
+      "name": "TICKET_REQUEST",
+      "status": "current",
+      "citations": [
+        "rfc:rfc5723"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16411,
+      "name": "TICKET_ACK",
+      "status": "current",
+      "citations": [
+        "rfc:rfc5723"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16412,
+      "name": "TICKET_NACK",
+      "status": "current",
+      "citations": [
+        "rfc:rfc5723"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16413,
+      "name": "TICKET_OPAQUE",
+      "status": "current",
+      "citations": [
+        "rfc:rfc5723"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16414,
+      "name": "LINK_ID",
+      "status": "current",
+      "citations": [
+        "rfc:rfc5739"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16415,
+      "name": "USE_WESP_MODE",
+      "status": "current",
+      "citations": [
+        "rfc:rfc5840"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16416,
+      "name": "ROHC_SUPPORTED",
+      "status": "current",
+      "citations": [
+        "rfc:rfc5857"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16417,
+      "name": "EAP_ONLY_AUTHENTICATION",
+      "status": "current",
+      "citations": [
+        "rfc:rfc5998"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16418,
+      "name": "CHILDLESS_IKEV2_SUPPORTED",
+      "status": "current",
+      "citations": [
+        "rfc:rfc6023"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16419,
+      "name": "QUICK_CRASH_DETECTION",
+      "status": "current",
+      "citations": [
+        "rfc:rfc6290"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16420,
+      "name": "IKEV2_MESSAGE_ID_SYNC_SUPPORTED",
+      "status": "current",
+      "citations": [
+        "rfc:rfc6311"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16421,
+      "name": "IPSEC_REPLAY_COUNTER_SYNC_SUPPORTED",
+      "status": "current",
+      "citations": [
+        "rfc:rfc6311"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16422,
+      "name": "IKEV2_MESSAGE_ID_SYNC",
+      "status": "current",
+      "citations": [
+        "rfc:rfc6311"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16423,
+      "name": "IPSEC_REPLAY_COUNTER_SYNC",
+      "status": "current",
+      "citations": [
+        "rfc:rfc6311"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16424,
+      "name": "SECURE_PASSWORD_METHODS",
+      "status": "current",
+      "citations": [
+        "rfc:rfc6467"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16425,
+      "name": "PSK_PERSIST",
+      "status": "current",
+      "citations": [
+        "rfc:rfc6631"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16426,
+      "name": "PSK_CONFIRM",
+      "status": "current",
+      "citations": [
+        "rfc:rfc6631"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16427,
+      "name": "ERX_SUPPORTED",
+      "status": "current",
+      "citations": [
+        "rfc:rfc6867"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16428,
+      "name": "IFOM_CAPABILITY",
+      "status": "current",
+      "citations": null,
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16429,
+      "name": "GROUP_SENDER",
+      "status": "current",
+      "citations": [
+        "rfc:rfc9838"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16430,
+      "name": "IKEV2_FRAGMENTATION_SUPPORTED",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7383"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16431,
+      "name": "SIGNATURE_HASH_ALGORITHMS",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7427"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16432,
+      "name": "CLONE_IKE_SA_SUPPORTED",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7791"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16433,
+      "name": "CLONE_IKE_SA",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7791"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16434,
+      "name": "PUZZLE",
+      "status": "current",
+      "citations": [
+        "rfc:rfc8019"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16435,
+      "name": "USE_PPK",
+      "status": "current",
+      "citations": [
+        "rfc:rfc8784"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16436,
+      "name": "PPK_IDENTITY",
+      "status": "current",
+      "citations": [
+        "rfc:rfc8784"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16437,
+      "name": "NO_PPK_AUTH",
+      "status": "current",
+      "citations": [
+        "rfc:rfc8784"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16438,
+      "name": "INTERMEDIATE_EXCHANGE_SUPPORTED",
+      "status": "current",
+      "citations": [
+        "rfc:rfc9242"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16439,
+      "name": "IP4_ALLOWED",
+      "status": "current",
+      "citations": [
+        "rfc:rfc8983"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16440,
+      "name": "IP6_ALLOWED",
+      "status": "current",
+      "citations": [
+        "rfc:rfc8983"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16441,
+      "name": "ADDITIONAL_KEY_EXCHANGE",
+      "status": "current",
+      "citations": [
+        "rfc:rfc9370"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16442,
+      "name": "USE_AGGFRAG",
+      "status": "current",
+      "citations": [
+        "rfc:rfc9347"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16443,
+      "name": "SUPPORTED_AUTH_METHODS",
+      "status": "current",
+      "citations": [
+        "rfc:rfc9593"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16444,
+      "name": "SA_RESOURCE_INFO",
+      "status": "current",
+      "citations": [
+        "rfc:rfc9611"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16445,
+      "name": "USE_PPK_INT",
+      "status": "current",
+      "citations": [
+        "rfc:rfc9867"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16446,
+      "name": "PPK_IDENTITY_KEY",
+      "status": "current",
+      "citations": [
+        "rfc:rfc9867"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "notify_status",
+      "wire_location": "notify_type",
+      "wire_id": 16447,
+      "name": "IKE_SA_INIT_FULL_TRANSCRIPT_AUTH",
+      "status": "current",
+      "citations": [
+        "draft:RFC-ietf-ipsecme-ikev2-downgrade-prevention-08"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "prf",
+      "wire_location": "transform_type=2",
+      "wire_id": 0,
+      "name": "Reserved",
+      "status": "reserved",
+      "citations": [
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "prf",
+      "wire_location": "transform_type=2",
+      "wire_id": 1,
+      "name": "PRF_HMAC_MD5",
+      "status": "deprecated",
+      "citations": [
+        "rfc:rfc8247",
+        "rfc:rfc2104"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": "MUST NOT",
+      "rfc8247_citation": "rfc8247/rfc8247.txt:377"
+    },
+    {
+      "ike_version": "2",
+      "role": "prf",
+      "wire_location": "transform_type=2",
+      "wire_id": 2,
+      "name": "PRF_HMAC_SHA1",
+      "status": "current",
+      "citations": [
+        "rfc:rfc2104"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": "MUST-",
+      "rfc8247_citation": "rfc8247/rfc8247.txt:375"
+    },
+    {
+      "ike_version": "2",
+      "role": "prf",
+      "wire_location": "transform_type=2",
+      "wire_id": 3,
+      "name": "PRF_HMAC_TIGER",
+      "status": "deprecated",
+      "citations": [
+        "rfc:rfc9395"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "prf",
+      "wire_location": "transform_type=2",
+      "wire_id": 4,
+      "name": "PRF_AES128_XCBC",
+      "status": "current",
+      "citations": [
+        "rfc:rfc4434"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": "SHOULD",
+      "rfc8247_citation": "rfc8247/rfc8247.txt:376"
+    },
+    {
+      "ike_version": "2",
+      "role": "prf",
+      "wire_location": "transform_type=2",
+      "wire_id": 5,
+      "name": "PRF_HMAC_SHA2_256",
+      "status": "current",
+      "citations": [
+        "rfc:rfc4868"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "scheduled_0_10",
+      "rfc8247_requirement": "MUST",
+      "rfc8247_citation": "rfc8247/rfc8247.txt:373"
+    },
+    {
+      "ike_version": "2",
+      "role": "prf",
+      "wire_location": "transform_type=2",
+      "wire_id": 6,
+      "name": "PRF_HMAC_SHA2_384",
+      "status": "current",
+      "citations": [
+        "rfc:rfc4868"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "prf",
+      "wire_location": "transform_type=2",
+      "wire_id": 7,
+      "name": "PRF_HMAC_SHA2_512",
+      "status": "current",
+      "citations": [
+        "rfc:rfc4868"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": "SHOULD+",
+      "rfc8247_citation": "rfc8247/rfc8247.txt:374"
+    },
+    {
+      "ike_version": "2",
+      "role": "prf",
+      "wire_location": "transform_type=2",
+      "wire_id": 8,
+      "name": "PRF_AES128_CMAC",
+      "status": "current",
+      "citations": [
+        "rfc:rfc4615"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "prf",
+      "wire_location": "transform_type=2",
+      "wire_id": 9,
+      "name": "PRF_HMAC_STREEBOG_512",
+      "status": "current",
+      "citations": [
+        "rfc:rfc9385"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "transform_type",
+      "wire_location": "transform_type_registry",
+      "wire_id": 0,
+      "name": "Reserved",
+      "status": "reserved",
+      "citations": [
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "transform_type",
+      "wire_location": "transform_type_registry",
+      "wire_id": 1,
+      "name": "Encryption Algorithm (ENCR)",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7296",
+        "rfc:rfc9838"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "transform_type",
+      "wire_location": "transform_type_registry",
+      "wire_id": 2,
+      "name": "Pseudo-random Function (PRF)",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "transform_type",
+      "wire_location": "transform_type_registry",
+      "wire_id": 3,
+      "name": "Integrity Algorithm (INTEG)",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7296",
+        "rfc:rfc9838"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "transform_type",
+      "wire_location": "transform_type_registry",
+      "wire_id": 4,
+      "name": "Key Exchange Method (KE)",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7296",
+        "rfc:rfc9370"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "transform_type",
+      "wire_location": "transform_type_registry",
+      "wire_id": 5,
+      "name": "Sequence Numbers (SN)",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7296",
+        "rfc:rfc9827"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "transform_type",
+      "wire_location": "transform_type_registry",
+      "wire_id": 6,
+      "name": "Additional Key Exchange 1 (ADDKE1)",
+      "status": "current",
+      "citations": [
+        "rfc:rfc9370"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "transform_type",
+      "wire_location": "transform_type_registry",
+      "wire_id": 7,
+      "name": "Additional Key Exchange 2 (ADDKE2)",
+      "status": "current",
+      "citations": [
+        "rfc:rfc9370"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "transform_type",
+      "wire_location": "transform_type_registry",
+      "wire_id": 8,
+      "name": "Additional Key Exchange 3 (ADDKE3)",
+      "status": "current",
+      "citations": [
+        "rfc:rfc9370"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "transform_type",
+      "wire_location": "transform_type_registry",
+      "wire_id": 9,
+      "name": "Additional Key Exchange 4 (ADDKE4)",
+      "status": "current",
+      "citations": [
+        "rfc:rfc9370"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "transform_type",
+      "wire_location": "transform_type_registry",
+      "wire_id": 10,
+      "name": "Additional Key Exchange 5 (ADDKE5)",
+      "status": "current",
+      "citations": [
+        "rfc:rfc9370"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "transform_type",
+      "wire_location": "transform_type_registry",
+      "wire_id": 11,
+      "name": "Additional Key Exchange 6 (ADDKE6)",
+      "status": "current",
+      "citations": [
+        "rfc:rfc9370"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "transform_type",
+      "wire_location": "transform_type_registry",
+      "wire_id": 12,
+      "name": "Additional Key Exchange 7 (ADDKE7)",
+      "status": "current",
+      "citations": [
+        "rfc:rfc9370"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "transform_type",
+      "wire_location": "transform_type_registry",
+      "wire_id": 13,
+      "name": "Key Wrap Algorithm (KWA)",
+      "status": "current",
+      "citations": [
+        "rfc:rfc9838"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "transform_type",
+      "wire_location": "transform_type_registry",
+      "wire_id": 14,
+      "name": "Group Controller Authentication Method (GCAUTH)",
+      "status": "current",
+      "citations": [
+        "rfc:rfc9838"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "transform_type",
+      "wire_location": "transform_type_registry",
+      "wire_id": 14,
+      "name": "Key Length (in bits)",
+      "status": "current",
+      "citations": [
+        "rfc:rfc7296"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    },
+    {
+      "ike_version": "2",
+      "role": "transform_type",
+      "wire_location": "transform_type_registry",
+      "wire_id": 18,
+      "name": "Signature Algorithm Identifier",
+      "status": "current",
+      "citations": [
+        "rfc:rfc9838"
+      ],
+      "registry_file": "ikev2-parameters.xml",
+      "registry_updated": "2026-07-16",
+      "registry_sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+      "scheduled_profile": "catalog_only",
+      "rfc8247_requirement": null,
+      "rfc8247_citation": null
+    }
+  ],
+  "rfc8247_axis": {
+    "note": "IANA status and RFC 8247 requirement are independent axes",
+    "rows_parsed": 20,
+    "entries_matched": 20,
+    "entries_unmatched": 312
+  }
+}
