@@ -3,6 +3,12 @@
 Goal-oriented recipes ([Diátaxis](https://diataxis.fr/how-to-guides/)): each page solves one
 specific task. Return to [the documentation index](../README.md).
 
+## Contents
+
+1. [Guides](#guides)
+
+## Guides
+
 1. [Run QuReddy with Docker](docker.md)
 2. [Install and troubleshoot QuReddy](install.md)
 3. [How to scan an SSH / SFTP endpoint](scan-ssh.md)

@@ -4,6 +4,12 @@ Information-oriented contracts ([Diátaxis](https://diataxis.fr/reference/)): ex
 descriptions of what QuReddy produces and how it behaves. Return to
 [the documentation index](../README.md).
 
+## Contents
+
+1. [References](#references)
+
+## References
+
 1. [CLI reference](cli.md)
 2. [Scanner contract](scan-contract.md)
 3. [CycloneDX 1.7 CBOM reference](cbom.md)
