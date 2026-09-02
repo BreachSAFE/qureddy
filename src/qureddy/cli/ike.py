@@ -88,7 +88,7 @@ def _select_ike_scanner(
     selected = CollectorRegistry([scanner]).select_scanner(
         ScanSource(kind=SourceKind.ENDPOINT, protocol="ike", locator=target.locator)
     )
-    if not isinstance(selected, IKEScanner):
+    if not isinstance(selected, IKEScanner):  # pragma: no cover - registry invariant
         raise TypeError("IKE registry returned an incompatible scanner")
     return selected
 

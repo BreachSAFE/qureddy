@@ -93,13 +93,13 @@ def _kill_process_tree(process: subprocess.Popen[bytes]) -> None:
     if os.name == "posix":
         try:
             os.killpg(process.pid, signal.SIGKILL)
-        except ProcessLookupError:
+        except ProcessLookupError:  # pragma: no cover - process-exit race
             pass
-        except PermissionError:
+        except PermissionError:  # pragma: no cover - OS permission race
             if process.poll() is None:
                 process.kill()
         return
-    if os.name == "nt":
+    if os.name == "nt":  # pragma: no cover - exercised by Windows CI
         system_root = os.environ.get("SYSTEMROOT", r"C:\Windows")
         taskkill = Path(system_root) / "System32" / "taskkill.exe"
         try:
@@ -117,7 +117,7 @@ def _kill_process_tree(process: subprocess.Popen[bytes]) -> None:
             if process.poll() is None:
                 process.kill()
         return
-    if process.poll() is None:
+    if process.poll() is None:  # pragma: no cover - non-POSIX/Windows fallback
         process.kill()
 
 
@@ -129,7 +129,7 @@ def _terminate(process: subprocess.Popen[bytes], *, tree: bool = False) -> int:
         process.kill()
     try:
         return process.wait(timeout=_KILL_WAIT_SECONDS)
-    except subprocess.TimeoutExpired:
+    except subprocess.TimeoutExpired:  # pragma: no cover - post-kill OS race
         _kill_process_tree(process)
         return process.wait(timeout=_KILL_WAIT_SECONDS)
 
@@ -141,7 +141,7 @@ def _drain_pipe(stream: IO[bytes], name: StreamName, capture: _BoundedCapture) -
             chunk = stream.read(_READ_SIZE)
             if not chunk or not capture.append(name, chunk):
                 return
-    except OSError:
+    except OSError:  # pragma: no cover - pipe-close OS race
         # The controller closes the process tree when a timeout or limit wins the race.
         return
     finally:
@@ -155,7 +155,7 @@ def _start_readers(
     """Start one bounded reader for each available child pipe."""
     readers: list[threading.Thread] = []
     for name, stream in (("stdout", process.stdout), ("stderr", process.stderr)):
-        if stream is None:
+        if stream is None:  # pragma: no cover - Popen requests both pipes
             continue
         reader = threading.Thread(
             target=_drain_pipe,
@@ -228,11 +228,11 @@ def _collect_process_output(
         else:
             try:
                 return_code = process.wait(timeout=max(deadline - time.monotonic(), 0))
-            except subprocess.TimeoutExpired:
+            except subprocess.TimeoutExpired:  # pragma: no cover - reader/exit race
                 timed_out = True
                 return_code = _terminate(process, tree=True)
     finally:
-        if return_code is None:
+        if return_code is None:  # pragma: no cover - defensive BaseException cleanup
             return_code = _terminate(process, tree=True)
         capture.stop()
         for reader in readers:

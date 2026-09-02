@@ -4,13 +4,14 @@
 
 from __future__ import annotations
 
+import subprocess
 import sys
 import time
 
 import pytest
 
 from qureddy.scanners.ike.adapter import IkeScanAdapter
-from qureddy.scanners.ike.execution import run_bounded
+from qureddy.scanners.ike.execution import _BoundedCapture, _terminate, run_bounded
 from qureddy.scanners.ike.types import IKEMode
 
 
@@ -89,3 +90,24 @@ def test_run_bounded_stops_descendants_holding_output_pipes() -> None:
 
     assert output.timed_out
     assert time.monotonic() - started < 2.5
+
+
+def test_bounded_capture_rejects_writes_after_stop() -> None:
+    """Freeze the final output snapshot before the controller returns it."""
+    capture = _BoundedCapture(4, 0)
+    capture.stop()
+    assert not capture.append("stdout", b"late")
+
+
+def test_terminate_stops_and_reaps_real_child() -> None:
+    """Exercise the single-process termination path without mocks."""
+    process = subprocess.Popen(
+        [sys.executable, "-c", "import time; time.sleep(5)"],
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        shell=False,
+    )
+    return_code = _terminate(process)
+    assert return_code != 0
+    assert process.poll() is not None

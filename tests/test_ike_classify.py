@@ -7,7 +7,7 @@ from __future__ import annotations
 import pytest
 
 from qureddy.core.models import Asset, Confidence, Evidence, ObservationType, Readiness
-from qureddy.scanners.ike.classify import classify_ike
+from qureddy.scanners.ike.classify import _finding, classify_ike
 
 
 def _asset() -> Asset:
@@ -97,3 +97,54 @@ def test_cipher_key_length_suffix_is_removed_for_policy_matching() -> None:
     findings = classify_ike(_asset(), [_algorithm("ike.cipher", "ENCR_DES_64")])
 
     assert any(item.rule_id == "ike.transport.prohibited" for item in findings)
+
+
+def test_protocol_identity_legacy_and_notify_findings() -> None:
+    records = [
+        Evidence(
+            id="ev-mode",
+            asset_id="asset-ike",
+            evidence_type="ike.mode.responded",
+            observation_type=ObservationType.OBSERVED,
+            source="fixture",
+            protocol="ike",
+            protocol_version="IKEv2",
+            confidence=Confidence.LOW,
+        ),
+        _algorithm("ike.cipher", "3DES"),
+        Evidence(
+            id="ev-identity",
+            asset_id="asset-ike",
+            evidence_type="ike.identity_exposed",
+            observation_type=ObservationType.OBSERVED,
+            source="fixture",
+            protocol="ike",
+            confidence=Confidence.LOW,
+        ),
+        _algorithm("ike.notify", "NO_PROPOSAL_CHOSEN"),
+    ]
+
+    rules = {item.rule_id for item in classify_ike(_asset(), records)}
+    assert rules == {
+        "ike.v2.tool_reported",
+        "ike.transport.legacy_3des",
+        "ike.v1.aggressive.identity_exposed",
+        "ike.proposal.rejected",
+    }
+
+
+def test_prohibited_group_and_empty_finding_guard() -> None:
+    findings = classify_ike(_asset(), [_group(1, "768-bit_MODP_group")])
+    weak = next(item for item in findings if item.rule_id == "ike.dh.weak")
+    assert weak.severity.value == "high"
+    with pytest.raises(ValueError, match="requires evidence"):
+        _finding(
+            _asset(),
+            [],
+            rule_id="fixture",
+            finding_type="fixture",
+            title="fixture",
+            description="fixture",
+            severity=weak.severity,
+            readiness=weak.readiness,
+        )

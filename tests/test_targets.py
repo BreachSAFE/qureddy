@@ -297,6 +297,18 @@ class TestParseIkeTarget:
         with pytest.raises(TargetParseError):
             parse_ike_target(target)
 
+    @pytest.mark.parametrize(
+        "target",
+        [None, "", "   ", "ike://", "ike://vpn.example:70000", "[2001:db8::1]oops", ":500"],
+    )
+    def test_rejected_boundary_forms(self, target: str | None) -> None:
+        with pytest.raises(TargetParseError):
+            parse_ike_target(target)  # type: ignore[arg-type]
+
+    def test_internal_guard_rejects_loopback(self) -> None:
+        with pytest.raises(TargetParseError, match="internal"):
+            parse_ike_target("127.0.0.1", block_internal=True)
+
 
 class TestScanTargetValidationErrorWrapped:
     """A host that clears string checks but trips a ScanTarget field validator must
