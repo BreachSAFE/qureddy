@@ -1,25 +1,44 @@
+# SPDX-FileCopyrightText: 2026 BreachSAFE
 # SPDX-License-Identifier: Apache-2.0
-"""Generate the data-model reference (enums + relationship graph) from the source AST.
+"""Generate checked data-model reference sections from the QuReddy source AST.
 
-The data-model docs went stale because they were hand-maintained. This walks
-``src/qureddy`` with the AST, extracts every class, enum, and typed field, and emits the
-enum table plus a Mermaid class diagram of every relationship. Run it and paste the two
-blocks into ``docs/architecture/data-model.md`` (or wire it into a CI check so the doc
-cannot drift from the code again).
-
-    python scripts/gen_data_model.py            # print both blocks
-    python scripts/gen_data_model.py --enums    # just the enum table
-    python scripts/gen_data_model.py --graph    # just the Mermaid diagram
+The generator owns two bounded sections in ``docs/architecture/data-model.md``:
+the enum table and the annotated-field relationship graph. It declares every
+class discovered under ``src/qureddy`` and rejects duplicate class names rather
+than silently dropping one.
 """
 
 from __future__ import annotations
 
+import argparse
 import ast
+import json
+import re
 import sys
+from collections.abc import Sequence
+from dataclasses import dataclass
 from pathlib import Path
 
-_ENUM_BASES = {"Enum", "StrEnum", "IntEnum"}
-_ROOT = Path(__file__).resolve().parent.parent / "src" / "qureddy"
+_ENUM_BASES = frozenset({"Enum", "IntEnum", "StrEnum"})
+_COLLECTION_TYPES = ("frozenset[", "list[", "Mapping[", "tuple[")
+_REPOSITORY_ROOT = Path(__file__).resolve().parent.parent
+_SOURCE_ROOT = _REPOSITORY_ROOT / "src" / "qureddy"
+_DOCUMENT = _REPOSITORY_ROOT / "docs" / "architecture" / "data-model.md"
+_ENUM_START = "<!-- BEGIN GENERATED: enum-table -->"
+_ENUM_END = "<!-- END GENERATED: enum-table -->"
+_GRAPH_START = "<!-- BEGIN GENERATED: class-graph -->"
+_GRAPH_END = "<!-- END GENERATED: class-graph -->"
+
+
+@dataclass(frozen=True, slots=True)
+class ClassInfo:
+    """Describe one class declaration extracted from a source module."""
+
+    name: str
+    module: str
+    is_enum: bool
+    members: tuple[str, ...]
+    fields: tuple[str, ...]
 
 
 def _base_name(node: ast.expr) -> str:
@@ -30,88 +49,165 @@ def _base_name(node: ast.expr) -> str:
     return ast.unparse(node)
 
 
-def _collect() -> dict[str, dict[str, object]]:
-    classes: dict[str, dict[str, object]] = {}
-    for path in sorted(_ROOT.rglob("*.py")):
-        if "__pycache__" in str(path):
+def _module_name(path: Path) -> str:
+    relative = path.relative_to(_SOURCE_ROOT).with_suffix("")
+    return ".".join(relative.parts)
+
+
+def _render_enum_value(node: ast.expr) -> str:
+    try:
+        value = ast.literal_eval(node)
+    except TypeError, ValueError:
+        return ast.unparse(node)
+    return json.dumps(value, sort_keys=True)
+
+
+def _enum_members(node: ast.ClassDef) -> tuple[str, ...]:
+    members: list[str] = []
+    for statement in node.body:
+        if not isinstance(statement, ast.Assign):
             continue
-        try:
-            tree = ast.parse(path.read_text())
-        except SyntaxError:
-            continue
-        module = str(path.relative_to(_ROOT)).replace("/", ".")[:-3]
+        rendered_value = _render_enum_value(statement.value)
+        for target in statement.targets:
+            if isinstance(target, ast.Name):
+                members.append(f"{target.id} = {rendered_value}")
+    return tuple(members)
+
+
+def _annotated_fields(node: ast.ClassDef) -> tuple[str, ...]:
+    return tuple(
+        ast.unparse(statement.annotation)
+        for statement in node.body
+        if isinstance(statement, ast.AnnAssign) and isinstance(statement.target, ast.Name)
+    )
+
+
+def _collect() -> tuple[ClassInfo, ...]:
+    classes: dict[str, ClassInfo] = {}
+    for path in sorted(_SOURCE_ROOT.rglob("*.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        module = _module_name(path)
         for node in ast.walk(tree):
             if not isinstance(node, ast.ClassDef):
                 continue
-            bases = [_base_name(b) for b in node.bases]
-            is_enum = any(b in _ENUM_BASES for b in bases)
-            members: list[str] = []
-            fields: list[tuple[str, str]] = []
-            for stmt in node.body:
-                if is_enum and isinstance(stmt, ast.Assign):
-                    members += [t.id for t in stmt.targets if isinstance(t, ast.Name)]
-                elif isinstance(stmt, ast.AnnAssign) and isinstance(stmt.target, ast.Name):
-                    fields.append((stmt.target.id, ast.unparse(stmt.annotation)))
-            classes[node.name] = {
-                "enum": is_enum,
-                "members": members,
-                "fields": fields,
-                "module": module,
-            }
-    return classes
+            if node.name in classes:
+                previous = classes[node.name]
+                message = f"duplicate class name {node.name!r}: {previous.module!r} and {module!r}"
+                raise ValueError(message)
+            is_enum = any(_base_name(base) in _ENUM_BASES for base in node.bases)
+            classes[node.name] = ClassInfo(
+                name=node.name,
+                module=module,
+                is_enum=is_enum,
+                members=_enum_members(node) if is_enum else (),
+                fields=_annotated_fields(node),
+            )
+    return tuple(classes[name] for name in sorted(classes))
 
 
-def _enum_table(classes: dict[str, dict[str, object]]) -> str:
-    lines = ["| Enum | Module | Values |", "|---|---|---|"]
-    for name, info in sorted(classes.items()):
-        if not info["enum"]:
+def _enum_table(classes: Sequence[ClassInfo]) -> str:
+    lines = [
+        "| Enum | Module | Members and serialized values |",
+        "|---|---|---|",
+    ]
+    for info in classes:
+        if not info.is_enum:
             continue
-        values = ", ".join(f"`{m}`" for m in info["members"])  # type: ignore[union-attr]
-        lines.append(f"| `{name}` | `{info['module']}` | {values} |")
+        members = ", ".join(f"`{member}`" for member in info.members)
+        lines.append(f"| `{info.name}` | `{info.module}` | {members} |")
     return "\n".join(lines)
 
 
-def _graph(classes: dict[str, dict[str, object]]) -> str:
-    import re
-
-    names = set(classes)
-    enums = {n for n, i in classes.items() if i["enum"]}
+def _graph(classes: Sequence[ClassInfo]) -> str:
+    names = {info.name for info in classes}
+    enums = {info.name for info in classes if info.is_enum}
     edges: set[tuple[str, str, str, str]] = set()
-    for name, info in classes.items():
-        if info["enum"]:
+    for info in classes:
+        if info.is_enum:
             continue
-        for _field, ftype in info["fields"]:  # type: ignore[union-attr]
-            tokens = set(re.findall(r"[A-Za-z_][A-Za-z0-9_]*", ftype))
-            for target in (tokens & names) - {name}:
-                many = any(c in ftype for c in ("tuple[", "list[", "frozenset[", "Mapping["))
+        for field_type in info.fields:
+            tokens = set(re.findall(r"[A-Za-z_][A-Za-z0-9_]*", field_type))
+            for target in (tokens & names) - {info.name}:
+                many = any(container in field_type for container in _COLLECTION_TYPES)
                 relation = "-->" if target in enums else "*--"
-                edges.add((name, relation, target, "*" if many else ""))
-    out = ["```mermaid", "classDiagram", "direction LR"]
-    for enum in sorted(enums):
-        out.append(f"class {enum} {{ <<enum>> }}")
-    linked = {a for a, _, _, _ in edges} | {b for _, _, b, _ in edges}
-    for name in sorted(names - enums):
-        if name in linked:
-            out.append(f"class {name}")
+                edges.add((info.name, relation, target, "*" if many else ""))
+
+    output = ["```mermaid", "classDiagram", "direction LR"]
+    for info in classes:
+        suffix = " { <<enum>> }" if info.is_enum else ""
+        output.append(f"class {info.name}{suffix}")
     for source, relation, target, many in sorted(edges):
-        card = f' "{many}"' if many else ""
-        out.append(f"{source} {relation}{card} {target}")
-    out.append("```")
-    return "\n".join(out)
+        cardinality = f' "{many}"' if many else ""
+        output.append(f"{source} {relation}{cardinality} {target}")
+    output.append("```")
+    return "\n".join(output)
 
 
-def main() -> int:
+def _replace_generated_section(document: str, start: str, end: str, content: str) -> str:
+    if document.count(start) != 1 or document.count(end) != 1:
+        message = f"expected exactly one generated section bounded by {start!r} and {end!r}"
+        raise ValueError(message)
+    before, remainder = document.split(start, maxsplit=1)
+    _, after = remainder.split(end, maxsplit=1)
+    return f"{before}{start}\n{content}\n{end}{after}"
+
+
+def _render_document(classes: Sequence[ClassInfo]) -> str:
+    document = _DOCUMENT.read_text(encoding="utf-8")
+    document = _replace_generated_section(
+        document,
+        _ENUM_START,
+        _ENUM_END,
+        _enum_table(classes),
+    )
+    return _replace_generated_section(
+        document,
+        _GRAPH_START,
+        _GRAPH_END,
+        _graph(classes),
+    )
+
+
+def _parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description=__doc__)
+    modes = parser.add_mutually_exclusive_group()
+    modes.add_argument("--enums", action="store_true", help="print the generated enum table")
+    modes.add_argument("--graph", action="store_true", help="print the generated class graph")
+    modes.add_argument(
+        "--write", action="store_true", help="update the generated document sections"
+    )
+    modes.add_argument("--check", action="store_true", help="verify the document is current")
+    return parser
+
+
+def main(arguments: Sequence[str] | None = None) -> int:
+    """Run the requested generation or drift-check mode."""
+    options = _parser().parse_args(arguments)
     classes = _collect()
-    arg = sys.argv[1] if len(sys.argv) > 1 else ""
-    if arg == "--enums":
+    if options.enums:
         print(_enum_table(classes))
-    elif arg == "--graph":
+        return 0
+    if options.graph:
         print(_graph(classes))
-    else:
-        print("## Enums\n")
-        print(_enum_table(classes))
-        print("\n## Relationship graph\n")
-        print(_graph(classes))
+        return 0
+
+    rendered = _render_document(classes)
+    if options.write:
+        _DOCUMENT.write_text(rendered, encoding="utf-8")
+        return 0
+    if options.check:
+        if rendered == _DOCUMENT.read_text(encoding="utf-8"):
+            return 0
+        print(
+            "docs/architecture/data-model.md is stale; "
+            "run `uv run --locked python scripts/gen_data_model.py --write`",
+            file=sys.stderr,
+        )
+        return 1
+
+    print(_enum_table(classes))
+    print()
+    print(_graph(classes))
     return 0
 
 
