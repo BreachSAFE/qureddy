@@ -5,7 +5,9 @@
 from __future__ import annotations
 
 import json
+import os
 import stat
+import sys
 from pathlib import Path
 
 from typer.testing import CliRunner
@@ -14,12 +16,20 @@ from qureddy.cli import app
 
 
 def _tool(tmp_path: Path) -> str:
-    path = tmp_path / "ike-scan-cli-fixture"
-    path.write_text(
-        "#!/bin/sh\n"
-        'if [ "$1" = "--version" ]; then echo \'ike-scan 1.9.5\'; exit 0; fi\n'
-        "echo 'Handshake returned (1 transforms) Encr=AES KeyLength=256 Group=14:modp2048'\n"
+    script = tmp_path / "ike_scan_cli_fixture.py"
+    script.write_text(
+        "import sys\n"
+        "if '--version' in sys.argv:\n"
+        "    print('ike-scan 1.9.5')\n"
+        "    raise SystemExit\n"
+        "print('Handshake returned (1 transforms) Encr=AES KeyLength=256 Group=14:modp2048')\n"
     )
+    if os.name == "nt":
+        path = tmp_path / "ike-scan-cli-fixture.cmd"
+        path.write_text(f'@"{sys.executable}" "{script}" %*\n')
+        return str(path)
+    path = tmp_path / "ike-scan-cli-fixture"
+    path.write_text(f"#!{sys.executable}\n{script.read_text()}")
     path.chmod(path.stat().st_mode | stat.S_IXUSR)
     return str(path)
 

@@ -4,7 +4,9 @@
 
 from __future__ import annotations
 
+import os
 import stat
+import sys
 from pathlib import Path
 
 import pytest
@@ -25,8 +27,14 @@ from qureddy.scanners.ike.types import IKEMode, IKEParseStatus
 
 def _tool(tmp_path: Path, body: str) -> str:
     """Create a real executable child process for an adapter integration test."""
+    script = tmp_path / "ike_scan_fixture.py"
+    script.write_text(f"import sys\n{body}\n")
+    if os.name == "nt":
+        path = tmp_path / "ike-scan-fixture.cmd"
+        path.write_text(f'@"{sys.executable}" "{script}" %*\n')
+        return str(path)
     path = tmp_path / "ike-scan-fixture"
-    path.write_text(f"#!/bin/sh\n{body}\n")
+    path.write_text(f"#!{sys.executable}\n{script.read_text()}")
     path.chmod(path.stat().st_mode | stat.S_IXUSR)
     return str(path)
 
@@ -55,8 +63,10 @@ def _probe(category: FailureCategory | None = None) -> ProbeResult:
 def test_adapter_runs_real_executable_and_normalizes_response(tmp_path: Path) -> None:
     binary = _tool(
         tmp_path,
-        """if [ "$1" = "--version" ]; then echo 'ike-scan 9.9'; exit 0; fi
-echo 'Handshake returned (1 transforms) Encr=AES KeyLength=256 Prf=SHA2 Integ=HMAC_SHA2 Group=14:modp2048'""",
+        """if "--version" in sys.argv:
+    print("ike-scan 9.9")
+    raise SystemExit
+print("Handshake returned (1 transforms) Encr=AES KeyLength=256 Prf=SHA2 Integ=HMAC_SHA2 Group=14:modp2048")""",
     )
     adapter = IkeScanAdapter(binary)
 
@@ -113,7 +123,7 @@ def test_missing_adapter_reports_dependency_and_typed_failures() -> None:
     ],
 )
 def test_adapter_rejects_malformed_sources(tmp_path: Path, source: ScanSource) -> None:
-    adapter = IkeScanAdapter(_tool(tmp_path, "exit 0"))
+    adapter = IkeScanAdapter(_tool(tmp_path, "raise SystemExit(0)"))
     result = adapter.run(source, timeout_seconds=1)
     assert result.failure.kind is CollectionFailureKind.MALFORMED
 
@@ -121,9 +131,9 @@ def test_adapter_rejects_malformed_sources(tmp_path: Path, source: ScanSource) -
 @pytest.mark.parametrize(
     ("body", "expected"),
     [
-        ("exit 7", CollectionFailureKind.EXECUTION),
-        ("printf '%05000d' 0", CollectionFailureKind.MALFORMED),
-        ("sleep 3", CollectionFailureKind.TIMEOUT),
+        ("raise SystemExit(7)", CollectionFailureKind.EXECUTION),
+        ("print('0' * 5000, end='')", CollectionFailureKind.MALFORMED),
+        ("import time; time.sleep(3)", CollectionFailureKind.TIMEOUT),
     ],
 )
 def test_adapter_maps_real_process_failures(
@@ -136,7 +146,8 @@ def test_adapter_maps_real_process_failures(
 
 
 def test_adapter_maps_exec_format_error(tmp_path: Path) -> None:
-    binary = tmp_path / "bad-executable"
+    suffix = ".exe" if os.name == "nt" else ""
+    binary = tmp_path / f"bad-executable{suffix}"
     binary.write_text("not an executable format")
     binary.chmod(binary.stat().st_mode | stat.S_IXUSR)
     result = IkeScanAdapter(str(binary)).run(_source(), timeout_seconds=1)
@@ -144,12 +155,9 @@ def test_adapter_maps_exec_format_error(tmp_path: Path) -> None:
 
 
 def test_version_falls_back_for_empty_nonzero_and_unexecutable_tools(tmp_path: Path) -> None:
-    empty = IkeScanAdapter(_tool(tmp_path, "exit 0"))
+    empty = IkeScanAdapter(_tool(tmp_path, "raise SystemExit(0)"))
     assert empty.version == "unknown"
-    other = tmp_path / "nonzero"
-    other.write_text("#!/bin/sh\nexit 2\n")
-    other.chmod(other.stat().st_mode | stat.S_IXUSR)
-    assert IkeScanAdapter(str(other)).version == "unknown"
+    assert IkeScanAdapter(_tool(tmp_path, "raise SystemExit(2)")).version == "unknown"
 
 
 def test_process_state_helpers_cover_each_typed_outcome() -> None:

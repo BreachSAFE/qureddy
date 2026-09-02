@@ -4,7 +4,9 @@
 
 from __future__ import annotations
 
+import os
 import stat
+import sys
 from pathlib import Path
 
 import pytest
@@ -37,12 +39,20 @@ from qureddy.scanners.ike.types import IKEMode
 
 
 def _tool(tmp_path: Path, output: str = "") -> str:
-    path = tmp_path / "ike-scan-scanner-fixture"
-    path.write_text(
-        "#!/bin/sh\n"
-        'if [ "$1" = "--version" ]; then echo \'ike-scan 1.9.5\'; exit 0; fi\n'
-        f"printf '%s\\n' '{output}'\n"
+    script = tmp_path / "ike_scan_scanner_fixture.py"
+    script.write_text(
+        "import sys\n"
+        "if '--version' in sys.argv:\n"
+        "    print('ike-scan 1.9.5')\n"
+        "    raise SystemExit\n"
+        f"print({output!r})\n"
     )
+    if os.name == "nt":
+        path = tmp_path / "ike-scan-scanner-fixture.cmd"
+        path.write_text(f'@"{sys.executable}" "{script}" %*\n')
+        return str(path)
+    path = tmp_path / "ike-scan-scanner-fixture"
+    path.write_text(f"#!{sys.executable}\n{script.read_text()}")
     path.chmod(path.stat().st_mode | stat.S_IXUSR)
     return str(path)
 

@@ -45,8 +45,8 @@ def test_run_bounded_keeps_stdout_and_stderr_separate() -> None:
     )
 
     assert output.return_code == 0
-    assert output.stdout == b"out\n"
-    assert output.stderr == b"err\n"
+    assert output.stdout.splitlines() == [b"out"]
+    assert output.stderr.splitlines() == [b"err"]
     assert not output.timed_out
     assert not output.output_limited
 
