@@ -877,6 +877,30 @@ fixture or implemented IKE CLI exists yet. That defect is a release blocker unti
 failing-before-fix regression test covers the shared evaluator and the installed real CLI keeps
 forged, partial, and unauthenticated IKE evidence non-`PROTECTED` in every output format.
 
+### 5.4 Live calibration and corroborator rules
+
+Peer behavior is evidence about the identified implementation and configuration; it is not a
+universal capability claim. Every positive result records the peer version, image/configuration
+digests, source and destination ports, command digest, and authoritative responder log.
+
+Silence is not negative algorithm evidence. Unsupported proposals, wrong version or exchange,
+credential-gated requests, filtering, and an over-fast sweep can all be silent. The sweep must be
+paced within the peer's measured envelope; dropped burst responses produce incomplete coverage.
+
+Binding is version-specific: IKEv1 error exchanges may be Informational with responder cookies,
+while IKEv2 stateless errors may legitimately carry a zero responder SPI. A single responder-SPI
+rule is invalid for both versions. TShark or an equivalent wire decoder may be used for local
+validation, but public evidence retains only bounded fields and digests.
+
+`ike-scan` is a corroborator only. Its exit status does not identify handshake success: exit zero
+can accompany silence, explicit rejection, or a successful response. Record its complete command
+and output, compare it with native bound evidence, and never ingest it directly into findings or
+CBOM.
+
+The minimum live calibration set is one accepted classical tuple, one explicit rejection, one
+silent/filtered case, one malformed packet, one `INVALID_KE_PAYLOAD` retry, one NAT-T/UDP 4500
+transition, and one forged or cross-source response. Missing cases remain `NOT RUN`.
+
 ## 6. CLI contract
 
 ### 6.1 Command
