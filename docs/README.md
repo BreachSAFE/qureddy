@@ -63,6 +63,7 @@ Look-it-up information. Comprehensive, accurate, dry.
 - [CLI options](reference/cli.md) — every flag, every default, every value
 - [Exit codes](reference/exit-codes.md) — 0, 2, 3, 4, 70 and what triggers each
 - [JSON output schema](reference/json-schema.md) — the locked top-level keys, every field type
+- [Crypto registry](reference/crypto-registry.md): proposed facts, ratings, provenance, validation, and consumer contract
 - [CycloneDX CBOM output](reference/cbom.md) — emitted 1.7 components, references, metadata, and limits
 - [Failure categories](reference/failure-categories.md) — the `FailureCategory` enum, what each value means, retry eligibility
 - [Host integration](reference/host-integration.md) — CLI, stdout artifact, exit-code, CBOM, and posture contract for GUI hosts

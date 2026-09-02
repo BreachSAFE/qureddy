@@ -293,6 +293,9 @@ policy, result receipt, and CSA QRI evidence map. QuReddy emits their stable ide
 Mint-oscal owns framework mappings and OSCAL construction (#630, #718). Enterprise owns
 organizational scope and approvals.
 
+The [crypto registry reference](../reference/crypto-registry.md) defines the proposed fields,
+validation rules, consumer obligations, and compatibility policy.
+
 ## 9. Grading and index alignment
 
 The registry and canonical assessments enable a deterministic endpoint score (#669). The score is
