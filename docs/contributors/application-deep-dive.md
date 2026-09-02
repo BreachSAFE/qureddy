@@ -3,7 +3,7 @@
 [![Maintainer reference](https://img.shields.io/badge/QuReddy-maintainer%20reference-8250df?style=flat-square)](https://github.com/BreachSAFE/qureddy)
 
 This is a code-derived reference for maintainers and coding agents. It describes the
-canonical implementation at commit `004f53b17765a60eef6bd15469e116b8674cf903`.
+canonical implementation at base commit `0da546284a16da8515d400ec5e2e69cb439f684c`.
 When a model, scanner seam, CLI command, or output contract changes, update this
 document from source and record the new commit. Do not use this document as a reason
 to create a parallel model or renderer.
@@ -16,7 +16,7 @@ to create a parallel model or renderer.
 4. [Canonical data model](#4-canonical-data-model)
 5. [Collection contracts and registry](#5-collection-contracts-and-registry)
 6. [TLS pipeline](#6-tls-pipeline)
-7. [SSH pipeline](#7-ssh-pipeline)
+7. [SSH and IKE pipelines](#7-ssh-and-ike-pipelines)
 8. [Evaluation and policy](#8-evaluation-and-policy)
 9. [Output projections](#9-output-projections)
 10. [Errors, logging, retries, and exit codes](#10-errors-logging-retries-and-exit-codes)
@@ -29,7 +29,7 @@ to create a parallel model or renderer.
 
 The shipped application is a Python CLI package. `pyproject.toml` declares the
 install-time entry point as `qureddy = qureddy.cli:main`, requires Python `>=3.14`,
-and currently supports the `tls` and `ssh` schemes. The canonical repository is
+and currently supports the `tls`, `ssh`, and `ike` schemes. The canonical repository is
 `github.com/breachsafe/qureddy`; similarly named personal checkouts are not product
 source.
 
@@ -56,6 +56,7 @@ src/qureddy/
 │   ├── main.py              root Typer app and top-level error translation
 │   ├── scan.py              scan tls command and common CLI orchestration
 │   ├── ssh.py               scan ssh command
+│   ├── ike.py               scan ike command and stock-tool selection
 │   ├── _options.py          shared option declarations/callbacks
 │   ├── _execute.py          scanner invocation and result/exit mapping
 │   ├── _render.py           output dispatch and --output-dir fan-out
@@ -67,7 +68,7 @@ src/qureddy/
 │   ├── models.py            enums and immutable Pydantic result graph
 │   ├── contracts.py         ScanSource, collector/tool/scanner protocols
 │   ├── registry.py          capability-based collector selection
-│   ├── targets.py           TLS/SSH target parsing and SSRF checks
+│   ├── targets.py           TLS/SSH/IKE target parsing and SSRF checks
 │   ├── policy.py            finding rules and evidence classification
 │   ├── evaluation.py        CISO evaluation value object
 │   ├── retry.py             allow-listed retry policy
@@ -81,6 +82,7 @@ src/qureddy/
 ├── scanners/
 │   ├── tls/                 OpenSSL probes, parsing, certificate, legacy TLS
 │   ├── ssh/                 socket KEXINIT probe and SSH classification
+│   ├── ike/                 stock-tool adapter, bounded execution, parser, policy
 │   └── common/              shared assets, metadata, rollup, posture/evaluation
 └── output/
     ├── json.py              one canonical ScanResult document
@@ -97,6 +99,8 @@ flowchart LR
     CLI --> Registry["core.registry"]
     Registry --> Collectors["collectors/native.py"]
     Collectors --> Scanners["scanners/tls or scanners/ssh"]
+    Registry --> IKE["scanners/ike: IKEScanner + IkeScanAdapter"]
+    IKE --> Models
     Scanners --> Models["core.models: ScanResult"]
     Scanners --> Common["scanners/common: policy/evaluation/rollup"]
     Models --> Outputs["output/{console,json,jsonl,cbom}"]
@@ -113,7 +117,7 @@ protocol-private scanner. A new protocol belongs behind the collector/scanner se
 console script `qureddy`
   -> qureddy.cli:main
      -> cli.main Typer root / scan_app
-        -> scan.scan_tls or ssh.scan_ssh_cmd
+        -> scan.scan_tls, ssh.scan_ssh_cmd, or ike.scan_ike_cmd
            -> parse target and options
            -> select collector/scanner
            -> cli._execute._execute_scan
@@ -138,11 +142,11 @@ sequenceDiagram
     participant Result as ScanResult
     participant Renderers
 
-    User->>CLI: scan tls|ssh TARGET [options]
+    User->>CLI: scan tls|ssh|ike TARGET [options]
     CLI->>Parser: normalize target
     Parser-->>CLI: ScanTarget
     CLI->>Registry: select capability/policy
-    Registry-->>CLI: Native collector
+    Registry-->>CLI: Matching collector
     CLI->>Collector: scan/collect
     Collector->>Scanner: protocol acquisition
     Scanner-->>Collector: evidence/findings
@@ -188,7 +192,7 @@ ScanResult
 ├── schema_version: str = "qureddy.scan.v1"
 ├── scan: ScanMetadata
 ├── target: ScanTarget
-├── dependencies: tuple[OpenSSLDependency, ...]
+├── dependencies: tuple[OpenSSLDependency | ExternalToolDependency, ...]
 ├── assets: tuple[Asset, ...]
 ├── evidence: tuple[Evidence, ...]
 ├── findings: tuple[Finding, ...]
@@ -203,8 +207,9 @@ ScanResult
 
 | Type | Fields and invariants |
 | --- | --- |
-| `ScanTarget` | `original_input`, validated `host`, `port` 1–65535, optional `sni`, `scheme` (`tls`/`ssh`), canonical `locator`; a model validator requires locator consistency |
+| `ScanTarget` | `original_input`, validated `host`, `port` 1–65535, optional `sni`, `scheme` (`tls`/`ssh`/`ike`), canonical `locator`; a model validator requires locator consistency |
 | `OpenSSLDependency` | `name`, `path`, `version`, capability booleans, optional `failure_category` |
+| `ExternalToolDependency` | `name`, resolved path, version, and optional typed failure for an executable-backed collector |
 | `ProbeCommand` | executable, tuple args, timeout, redacted flag |
 | `ProbeResult` | command, return code, SHA-256 hashes of stdout/stderr, bounded excerpts, duration, attempt number, optional failure; raw parser input is excluded from serialization |
 | `Asset` | stable id/type/locator/display name, protocol and version, algorithm/primitive/parameter set, key size, negotiated group, CBOM ref/OID, NIST quantum level |
@@ -227,8 +232,8 @@ findings.
 
 - `SourceKind`: `endpoint`, `ssh_public_key`, `ssh_config`, `certificate`,
   `static_inventory`.
-- `ToolPolicy`: `auto`, `native`, `openssl`, `ssh-audit`.
-- `Capability`: TLS endpoint, SSH endpoint/key/config, and X.509 certificate.
+- `ToolPolicy`: `auto`, `native`, `openssl`, `ssh-audit`, `ike-scan`.
+- `Capability`: TLS endpoint, SSH endpoint/key/config, IKE endpoint, and X.509 certificate.
 - `ScanSource`: frozen validated locator plus protocol and string metadata.
 - `CollectionFailure`: typed kind/message/retryable value.
 - `CollectionResult`: collector/version, evidence, findings, provenance, failure,
@@ -240,7 +245,8 @@ findings.
 rejects duplicate collector names, maps a `ScanSource` to a capability, filters by
 `ToolPolicy`, and verifies that a selected scanner implements `ScanCollector`.
 Native collectors are named `native-tls` and `native-ssh`; policy `native` matches
-that prefix, while other policies match a collector name exactly.
+that prefix. The stock IKE collector is named `ike-scan`; other policies match a
+collector name exactly.
 
 ```text
 ScanSource -> _capability_for -> registry.select -> Collector
@@ -248,8 +254,8 @@ ScanSource -> _capability_for -> registry.select -> Collector
                                       +-- select_scanner -> ScanCollector
 ```
 
-This is the extension point for a future external tool. The adapter should return
-the same evidence/finding/result types; it must not add a second output or posture
+This is also the extension point used by the IKE external tool. Its adapter returns
+the same evidence/finding/result types and does not add a second output or posture
 model.
 
 ## 6. TLS pipeline
@@ -290,7 +296,9 @@ The certificate path is independent of key-exchange success. A missing certifica
 does not erase a valid key-exchange result; a local OpenSSL absence is not swallowed
 because capability checking has already failed the scan.
 
-## 7. SSH pipeline
+## 7. SSH and IKE pipelines
+
+### SSH
 
 `SSHScanner.scan()` calls `_scan_ssh`:
 
@@ -325,6 +333,38 @@ sequenceDiagram
 SSH uses the same `ScanTarget`, `Asset`, `Evidence`, `Finding`, `ScanResult`, and
 renderers as TLS. Its protocol-specific vocabulary stays in `scanners/ssh/` and
 `core/ssh_algorithms.py`.
+
+### IKE
+
+`IKEScanner.scan()` builds a bounded probe plan for IKEv1 Main Mode, IKEv1
+Aggressive Mode, and IKEv2. With `--nat-t`, each mode probes UDP/4500 first and
+falls back to the requested port only when that mode did not respond. This avoids
+double-counting successful NAT-T and direct passes.
+
+`IkeScanAdapter` resolves and versions stock `ike-scan`, executes an argument
+vector under time and output bounds, and parses its untrusted text. The parser
+normalizes responder modes, transform algorithms, numeric group identifiers,
+NOTIFY responses, and Aggressive Mode identity exposure into `Evidence`.
+`classify_ike` then creates findings; the common rollup and output fan-out are the
+same ones used by TLS and SSH.
+
+```mermaid
+flowchart LR
+    CLI["scan ike"] --> Registry["CollectorRegistry"]
+    Registry --> Scanner["IKEScanner"]
+    Scanner --> Adapter["IkeScanAdapter"]
+    Adapter --> Process["bounded stock ike-scan"]
+    Process --> Parser["IKE text parser"]
+    Parser --> Evidence["canonical Evidence"]
+    Evidence --> Policy["classify + common rollup"]
+    Policy --> Result["one ScanResult"]
+    Result --> Outputs["Rich / JSON / JSONL / CBOM"]
+```
+
+The stock adapter is lower-trust discovery. It does not claim peer
+authentication, IKE_AUTH completion, Child-SA creation, RFC 9370 additional key
+exchange, or an installed SA. The numeric `ike_group_id` is an optional field on
+the shared `Evidence` model; there is no second IKE result graph.
 
 ## 8. Evaluation and policy
 
@@ -394,7 +434,7 @@ interpretation, reason codes, policy identity, and scan identity.
 
 `output.cbom.render_cbom` delegates to `cyclonedx-python-lib` 11.x for CycloneDX 1.7
 serialization. It creates an endpoint metadata component, records QuReddy/OpenSSL
-tool provenance, then adds algorithm, protocol, legacy cipher, SSH, and captured
+or external-tool provenance, then adds algorithm, protocol, legacy cipher, SSH, IKE, and captured
 certificate components. Evidence occurrences and finding annotations are attached
 after serialization where the library lacks the required 1.7 fields; those patches
 are intentionally narrow and validated by the CBOM conformance tests.
@@ -435,7 +475,7 @@ exceptions become exit 2 (or a machine-readable failure result).
 | ---: | --- |
 | 0 | Scan completed without a target failure |
 | 2 | Target connection, handshake, middlebox, or parser failure |
-| 3 | Local OpenSSL capability/dependency failure |
+| 3 | Required local OpenSSL or stock `ike-scan` dependency failure |
 | 4 | Usage, target syntax, option, output, or log-path error |
 | 70 | Unhandled internal error |
 
@@ -457,7 +497,8 @@ suppresses courtesy diagnostics that would corrupt a single machine document.
 and delay. Only explicitly selected categories retry. CLI parsing validates retry
 arguments. TLS applies retries to individual hybrid/classical probes; the legacy
 multi-protocol sweep is not retried as one unit. SSH's unauthenticated offer probe is
-one bounded operation.
+one bounded operation. IKE bounds each external-tool attempt independently and does
+not use the TLS retry policy.
 
 ## 11. Extension rules
 
@@ -489,6 +530,7 @@ The tests mirror the architecture:
 | Collector contracts/selection | `test_contracts.py`, `test_registry.py`, `test_native_collectors.py`, `test_scanner_contract.py` |
 | TLS/OpenSSL/parser | `test_openssl_*.py`, `test_tls_parse.py`, `test_scanner.py`, certificate/legacy tests |
 | SSH | `test_ssh_probe.py`, `test_ssh_scanner.py`, `test_ssh_classify.py`, peer-close/error tests |
+| IKE | `test_ike_execution.py`, parser-negative tests, policy tests, and `tests/live/test_live_ike.py` against real stock `ike-scan` |
 | Evaluation/rollup | `test_evaluation.py`, `test_posture.py`, `test_semantic_signals.py`, `test_scanner_rollup.py` |
 | Output contracts | `test_output.py`, `test_jsonl.py`, `test_cbom*.py`, `test_console_panels.py`, golden tests |
 | Architecture/docs/CI | `test_architecture_boundaries.py`, `test_docs_contract.py`, `test_ci_workflows.py` |
@@ -519,11 +561,10 @@ is a syntax-only fallback and must not be reported as the full quality gate.
 
 ## 13. Known boundaries
 
-- Current native endpoint coverage is TLS and SSH. `SourceKind` contains future
-  source categories, but a type name alone does not mean an implementation exists.
+- Current native endpoint coverage is TLS and SSH. IKE is an executable-backed
+  collector through stock `ike-scan`; it is not a native implementation.
 - The native TLS scanner invokes OpenSSL subprocesses; the SSH scanner uses a direct
-  socket offer probe. External tools named in `ToolPolicy` require an actual
-  registered adapter before they can run.
+  socket offer probe; IKE invokes a registered, bounded external-tool adapter.
 - `scan_ssh` remains a compatibility function; `SSHScanner` is its contract adapter.
 - CBOM library-gap patches are confined to `output/cbom.py`; do not spread raw JSON
   post-processing into other output modules.

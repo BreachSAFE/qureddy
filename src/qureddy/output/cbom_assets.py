@@ -60,6 +60,12 @@ def select_by_evidence_type(*evidence_types: str) -> Callable[[Evidence], str | 
     return lambda evidence: evidence.negotiated_group if evidence.evidence_type in allowed else None
 
 
+def select_algorithm_by_evidence_type(*evidence_types: str) -> Callable[[Evidence], str | None]:
+    """Select a reported algorithm for the given evidence types."""
+    allowed = frozenset(evidence_types)
+    return lambda evidence: evidence.algorithm if evidence.evidence_type in allowed else None
+
+
 def verdict_pairs(
     readiness: str, severity: str, rule_id: str | None = None
 ) -> list[tuple[str, str]]:

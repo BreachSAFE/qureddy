@@ -36,10 +36,12 @@ Read these in order:
 
 ## 2. Project state
 
-QuReddy ships TLS and SSH scanners with Rich, JSON, and CycloneDX 1.7
-CBOM output. Certificate signature observation and legacy TLS enumeration are
-part of the TLS scan. Full certificate chain analysis, config scanning, source
-scanning, hosted operation, and remediation are not shipped.
+QuReddy ships TLS, SSH, and stock `ike-scan` backed IKE scanners with Rich,
+JSON, JSONL, and CycloneDX 1.7 CBOM output. Certificate signature observation
+and legacy TLS enumeration are part of the TLS scan. IKE observations are
+lower-trust discovery evidence and do not prove an authenticated tunnel. Full
+certificate chain analysis, config scanning, source scanning, hosted operation,
+and remediation are not shipped.
 
 The current milestone is named in [`docs/reference/milestones.md`](docs/reference/milestones.md).
 
@@ -75,6 +77,9 @@ You also need OpenSSL 3.5.7 LTS on your `PATH` for the TLS scanner to work end-t
 - Windows: install a trusted OpenSSL 3.5.7 LTS build and set its path
 
 QuReddy's capability check exits 3 with a clear message when OpenSSL is missing or too old.
+
+Install stock `ike-scan` separately to run the live IKE path. QuReddy invokes
+the executable at runtime and does not distribute or link its GPL-licensed code.
 
 ## 4. Workflow
 
@@ -123,7 +128,7 @@ Per `docs/contributors/coding-rules.md` Section 9:
 
 - Every test runs every time. No `@pytest.mark.skip`, no `@pytest.mark.acceptance`.
 - Network-dependent tests live in `tests/live/` and run on default `pytest`. `pytest-rerunfailures` absorbs hiccups.
-- Coverage minimum is 80%.
+- Coverage minimum is 90%.
 - Fixtures under `tests/fixtures/` use real captured outputs, not synthetic stubs.
 
 ## 7. Dependencies
@@ -138,6 +143,8 @@ Adding a runtime dependency requires PR justification per Rule 13.1:
 GPL, AGPL, and LGPL dependencies do not meet the documented dependency policy.
 Reviewers verify license compatibility before accepting a runtime dependency;
 the current CI does not automate that decision with `pip-licenses`.
+The optional stock `ike-scan` program is a separately installed executable, not
+a linked or distributed Python runtime dependency.
 
 ## 8. Security
 

@@ -53,7 +53,18 @@ SELF_SIGNED_PROPERTY = "qureddy:certificate.is_self_signed"
 # legacy TLS ciphers in cbom_legacy), skipped by the generic algorithm emitter so no bom-ref
 # is emitted twice and each keeps its specialized classification.
 _SPECIALIZED_EVIDENCE_TYPES = frozenset(
-    {"ssh.hostkey", "ssh.kex", "ssh.kex.weak", "ssh.cipher", "ssh.mac", "tls.legacy.cipher"}
+    {
+        "ssh.hostkey",
+        "ssh.kex",
+        "ssh.kex.weak",
+        "ssh.cipher",
+        "ssh.mac",
+        "tls.legacy.cipher",
+        "ike.cipher",
+        "ike.dh_group",
+        "ike.prf",
+        "ike.integrity",
+    }
 )
 
 
@@ -74,7 +85,7 @@ def add_algorithm_components(
         select=lambda e: (
             e.negotiated_group if e.evidence_type not in _SPECIALIZED_EVIDENCE_TYPES else None
         ),
-        algorithm_properties=_algorithm_properties,
+        algorithm_properties=key_exchange_algorithm_properties,
     )
 
 
@@ -117,7 +128,7 @@ _KEY_EXCHANGE_FUNCTIONS = MappingProxyType(
 )
 
 
-def _algorithm_properties(group: str) -> AlgorithmProperties | None:
+def key_exchange_algorithm_properties(group: str) -> AlgorithmProperties | None:
     """Return a fresh AlgorithmProperties for a known group, else None (#146).
 
     A fresh instance per call keeps CycloneDX's mutable model out of shared module state.
@@ -231,6 +242,7 @@ def _protocol_component(
     protocol_type = {
         "tls": ProtocolPropertiesType.TLS,
         "ssh": ProtocolPropertiesType.SSH,
+        "ike": ProtocolPropertiesType.IKE,
     }.get(protocol)
     return Component(
         name=protocol_version,
@@ -259,6 +271,8 @@ def _bare_protocol_version(protocol: str, protocol_version: str) -> str:
         rest = protocol_version.removeprefix("TLSv")
         # "TLSv1" is TLS 1.0; give it an explicit minor so every value is "major.minor".
         return rest if "." in rest else f"{rest}.0"
+    if protocol == "ike" and protocol_version.startswith("IKEv"):
+        return f"{protocol_version.removeprefix('IKEv')}.0"
     return protocol_version
 
 

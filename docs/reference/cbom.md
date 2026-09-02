@@ -79,7 +79,7 @@ contract.
 
 - a generated UTC timestamp;
 - the remote endpoint as `metadata.component`;
-- QuReddy and the usable local OpenSSL collector under
+- QuReddy and any usable local collector under
   `metadata.tools.components`;
 - QuReddy scan status properties.
 
@@ -125,6 +125,10 @@ OpenSSL is omitted when the local capability check fails. The collector is
 tool provenance, not a component supplied by or depended on by the endpoint.
 SSH CBOMs contain QuReddy tool provenance and no OpenSSL tool.
 
+IKE CBOMs identify stock `ike-scan` as an external-tool adapter, including its
+observed version and its resolved path outside deterministic mode. The executable
+is collector provenance, not software supplied by the endpoint.
+
 ## 6. Cryptographic assets
 
 Observed assets use CycloneDX component type `cryptographic-asset`.
@@ -144,8 +148,8 @@ Findings themselves are top-level `annotations` that link back to the asset by
 
 ### Algorithms
 
-Each unique positively observed key exchange or certificate signature
-algorithm becomes a component with:
+Each unique positively observed cipher, integrity/MAC, key exchange, or
+certificate signature algorithm becomes a component with:
 
 ```text
 bom-ref: crypto/algorithm/<lowercase-observed-name>
@@ -183,7 +187,9 @@ cryptoProperties.assetType: protocol
 ```
 
 TLS protocol components may include observed cipher suites and references to
-their observed algorithms. SSH produces a protocol component for SSH 2.0.
+their observed algorithms. SSH produces a protocol component for SSH 2.0. IKE
+produces protocol components for the responder modes observed by stock
+`ike-scan` and links tool-reported transform algorithms to the endpoint graph.
 
 ### Certificate
 
@@ -292,7 +298,7 @@ per-run are omitted under `--deterministic` so the document is content-addressab
 
 | `metadata.properties` key | Presence | Value |
 | --- | --- | --- |
-| `qureddy:scan.scanner_name` | always | `tls` or `ssh` |
+| `qureddy:scan.scanner_name` | always | `tls`, `ssh`, or `ike` |
 | `qureddy:scan.status` | always | `completed` or the top-level failure category (see [scan status](#9-scan-status)) |
 | `qureddy:scan.readiness` | always | run-level readiness verdict |
 | `qureddy:scan.effective_readiness` | when interpretation is present | legacy interpretation readiness |
@@ -319,8 +325,8 @@ per-run are omitted under `--deterministic` so the document is content-addressab
 | `qureddy:scan.completed_at` | per-run | ISO 8601 scan completion time |
 | `qureddy:target.original_input` | always | target exactly as given on the command line |
 | `qureddy:target.host` | always | resolved host |
-| `qureddy:target.port` | always | TCP port |
-| `qureddy:target.scheme` | always | target scheme (`tls` or `ssh`) |
+| `qureddy:target.port` | always | Endpoint port; TCP for TLS/SSH and UDP for IKE |
+| `qureddy:target.scheme` | always | target scheme (`tls`, `ssh`, or `ike`) |
 | `qureddy:target.locator` | always | normalized `host:port` locator |
 | `qureddy:target.sni` | when SNI is set | Server Name Indication used for the TLS probe |
 
@@ -481,6 +487,7 @@ The CBOM is an observation artifact for one target and one scan. It is not:
 - proof of certificate trust or revocation;
 - proof of FIPS validation;
 - a compliance conclusion;
+- proof of IKE peer authentication, IKE_AUTH, Child-SA creation, or an installed SA;
 - a claim about algorithms that the endpoint did not expose to the probe.
 
 Interpret CBOM entries as observations from the selected collector. The output does

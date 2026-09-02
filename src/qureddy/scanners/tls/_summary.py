@@ -21,7 +21,7 @@ from qureddy.core.models import (
 # Readiness/severity rollup now lives in the shared protocol-agnostic core (#248).
 # Re-exported here (listed in __all__) so existing TLS callers and tests keep importing
 # it from _summary, and mypy treats the re-export as intentional rather than incidental.
-from qureddy.scanners.common.posture import build_interpretation
+from qureddy.scanners.common.posture import build_scan_summary
 from qureddy.scanners.common.rollup import highest_severity, scan_readiness
 
 __all__ = ["build_summary", "highest_severity", "scan_readiness", "summary_failure_category"]
@@ -34,14 +34,12 @@ def build_summary(
 ) -> ScanSummary:
     """Build the top-level `ScanSummary` from the scan's findings + evidence."""
     failure_category = summary_failure_category(findings, evidence)
-    interpretation = build_interpretation(findings, evidence, failure_category, protocol="tls")
-    return ScanSummary(
-        target=target.locator,
-        finding_count=len(findings),
-        highest_severity=highest_severity(findings),
-        readiness=interpretation.effective,
-        failure_category=failure_category,
-        interpretation=interpretation,
+    return build_scan_summary(
+        target,
+        findings,
+        evidence,
+        failure_category,
+        protocol="tls",
     )
 
 

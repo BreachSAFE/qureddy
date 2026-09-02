@@ -5,7 +5,8 @@
 [![Architecture decision](https://img.shields.io/badge/QuReddy-architecture%20decision-8250df?style=flat-square)](https://github.com/BreachSAFE/qureddy/blob/main/docs/architecture/ike-scanner-adr.md)
 
 **Tag:** `[546]`
-**Status:** Accepted; implementation pending
+**Status:** Accepted; initial-backend sequencing superseded by
+[`ike-scan-backend-adr.md`](./ike-scan-backend-adr.md)
 **Scope:** QuReddy native IKE observation and canonical output integration
 **Issue:** [#546](https://github.com/BreachSAFE/qureddy/issues/546)
 

@@ -283,10 +283,7 @@ def _weak_algorithms(findings: list[Finding], evidence: list[Evidence]) -> tuple
         if ".weak" in finding.finding_type or ".weak" in finding.rule_id
         for evidence_id in finding.evidence_ids
     }
-    return tuple(
-        dict.fromkeys(
-            item.negotiated_group
-            for item in evidence
-            if item.id in weak_evidence_ids and item.negotiated_group
-        )
+    names = (
+        item.negotiated_group or item.algorithm for item in evidence if item.id in weak_evidence_ids
     )
+    return tuple(dict.fromkeys(name for name in names if name is not None))

@@ -36,7 +36,7 @@ HOSTNAME_PATTERN = re.compile(
 )
 
 # Constrain schemes so deserialized input cannot reach downstream tooling (#369).
-SUPPORTED_SCHEMES = frozenset({"tls", "ssh"})
+SUPPORTED_SCHEMES = frozenset({"tls", "ssh", "ike"})
 
 
 def _is_ip_literal(value: str) -> bool:
@@ -63,6 +63,7 @@ class ObservationType(str, Enum):
     INFERRED = "inferred"
     NOT_OFFERED = "not_offered"
     NOT_TESTABLE = "not_testable"
+    NO_RESPONSE = "no_response"
 
 
 class Severity(str, Enum):
@@ -215,6 +216,8 @@ class FailureCategory(str, Enum):
     LOCAL_OPENSSL_TOO_OLD = "local_openssl_too_old"
     LOCAL_OPENSSL_VERSION_MISMATCH = "local_openssl_version_mismatch"
     LOCAL_OPENSSL_LACKS_GROUP = "local_openssl_lacks_group"
+    LOCAL_IKE_SCAN_MISSING = "local_ike_scan_missing"
+    LOCAL_IKE_SCAN_BROKEN = "local_ike_scan_broken"
     TARGET_SCAN_FAILED = "target_scan_failed"
     TARGET_CONNECT_FAILED = "target_connect_failed"
     TLS_HANDSHAKE_FAILED = "tls_handshake_failed"
@@ -223,6 +226,9 @@ class FailureCategory(str, Enum):
     PARSE_NO_GROUP = "parse_no_group"
     PARSE_AMBIGUOUS = "parse_ambiguous"
     UNEXPECTED_GROUP = "unexpected_group"
+    IKE_PROBE_TIMEOUT = "ike_probe_timeout"
+    IKE_OUTPUT_LIMIT = "ike_output_limit"
+    IKE_OUTPUT_MALFORMED = "ike_output_malformed"
 
 
 # The "operator's environment is the problem" categories, defined once
@@ -239,6 +245,8 @@ LOCAL_CAPABILITY_CATEGORIES: frozenset[FailureCategory] = frozenset(
         FailureCategory.LOCAL_OPENSSL_TOO_OLD,
         FailureCategory.LOCAL_OPENSSL_VERSION_MISMATCH,
         FailureCategory.LOCAL_OPENSSL_LACKS_GROUP,
+        FailureCategory.LOCAL_IKE_SCAN_MISSING,
+        FailureCategory.LOCAL_IKE_SCAN_BROKEN,
     }
 )
 
@@ -341,6 +349,20 @@ class OpenSSLDependency(BaseModel):
     failure_category: FailureCategory | None = None
 
 
+class ExternalToolDependency(BaseModel):
+    """Executable-backed scanner dependency captured as result provenance."""
+
+    model_config = FROZEN
+
+    name: str
+    path: str | None = None
+    version: str | None = None
+    failure_category: FailureCategory | None = None
+
+
+RuntimeDependency = OpenSSLDependency | ExternalToolDependency
+
+
 class ProbeCommand(BaseModel):
     """Subprocess command issued for a single probe."""
 
@@ -353,7 +375,7 @@ class ProbeCommand(BaseModel):
 
 
 class ProbeResult(BaseModel):
-    """Outcome of a single OpenSSL invocation."""
+    """Outcome of a single local probe invocation."""
 
     model_config = FROZEN
 
@@ -415,6 +437,12 @@ class Evidence(BaseModel):
     server_version: str | None = None
     probe_role: ProbeRole | None = None
     expected_group: str | None = None
+    ike_group_id: int | None = Field(
+        default=None,
+        ge=0,
+        le=65535,
+        exclude_if=lambda value: value is None,
+    )
     probe_result: ProbeResult | None = None
     failure_category: FailureCategory | None = None
     confidence: Confidence = Confidence.HIGH
@@ -507,7 +535,7 @@ class ScanResult(BaseModel):
     schema_version: str = "qureddy.scan.v1"
     scan: ScanMetadata
     target: ScanTarget
-    dependencies: tuple[OpenSSLDependency, ...]
+    dependencies: tuple[RuntimeDependency, ...]
     assets: tuple[Asset, ...]
     evidence: tuple[Evidence, ...]
     findings: tuple[Finding, ...]

@@ -15,6 +15,8 @@ from qureddy.core.models import (
     PostureAxes,
     PqcSupport,
     ScanInterpretation,
+    ScanSummary,
+    ScanTarget,
 )
 from qureddy.scanners.common.evaluation import (
     PostureSignals,
@@ -22,7 +24,7 @@ from qureddy.scanners.common.evaluation import (
     evaluate_posture,
 )
 from qureddy.scanners.common.evaluation import reason_codes as build_reason_codes
-from qureddy.scanners.common.rollup import scan_readiness
+from qureddy.scanners.common.rollup import highest_severity, scan_readiness
 
 POLICY_ID = "qureddy-readiness"
 POLICY_VERSION = "1"
@@ -358,4 +360,29 @@ def build_interpretation(
         evidence_refs=tuple(ev.id for ev in evidence),
         policy_id=POLICY_ID,
         policy_version=POLICY_VERSION,
+    )
+
+
+def build_scan_summary(
+    target: ScanTarget,
+    findings: list[Finding],
+    evidence: list[Evidence],
+    failure_category: FailureCategory | None,
+    *,
+    protocol: str,
+) -> ScanSummary:
+    """Build the canonical scan summary from protocol-neutral records."""
+    interpretation = build_interpretation(
+        findings,
+        evidence,
+        failure_category,
+        protocol=protocol,
+    )
+    return ScanSummary(
+        target=target.locator,
+        finding_count=len(findings),
+        highest_severity=highest_severity(findings),
+        readiness=interpretation.effective,
+        failure_category=failure_category,
+        interpretation=interpretation,
     )

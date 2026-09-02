@@ -51,7 +51,7 @@ def render_rich(
       4. The findings table (rule-by-rule).
       5. The dependencies table.
       6. (`verbosity >= 3` only) A "Commands run" panel listing the
-         exact OpenSSL invocations the scanner issued, for traceability.
+         exact local probe invocations the scanner issued, for traceability.
          Probe args are also logged at DEBUG level on stderr at -vv/-vvv,
          and are always present in JSON output regardless of verbosity.
 

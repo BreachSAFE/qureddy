@@ -25,8 +25,8 @@ host to call. A packaged installation places `qureddy` on `PATH`; a container
 deployment can use the descriptor's Docker fallback image
 `ghcr.io/breachsafe/qureddy:<tag>`.
 
-The host's canonical descriptors are `tools/qureddy/qureddy.yaml` for TLS and
-`tools/qureddy-ssh/qureddy-ssh.yaml` for SSH.
+The host's canonical descriptors currently cover TLS and SSH. IKE produces the
+same machine artifact contract, but a host descriptor is not part of this change.
 
 ## 2. Command shape
 
@@ -35,6 +35,7 @@ The descriptors build commands equivalent to:
 ```text
 qureddy scan tls <host>:<port> --format cbom [--timeout N] [--sni NAME]
 qureddy scan ssh <host>:<port> --format cbom [--timeout N]
+qureddy scan ike <host>:<port> --format cbom [--timeout N] [--nat-t]
 ```
 
 Each value is passed as its own argument by the host; it is not interpolated
@@ -59,8 +60,8 @@ finding as process failure:
 | Code | Meaning |
 |---:|---|
 | 0 | Scan completed; inspect posture and `scan.status`. A vulnerable finding can still exit 0. |
-| 2 | Target connection, handshake, or parsing failure. |
-| 3 | Local OpenSSL missing/unsupported; TLS only. SSH does not use OpenSSL. |
+| 2 | Target connection, handshake, timeout, or parsing failure. |
+| 3 | Required local executable missing or unsupported; TLS and IKE only. |
 | 4 | Usage or configuration error. |
 | 70 | Internal QuReddy error. |
 

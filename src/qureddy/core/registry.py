@@ -74,6 +74,8 @@ def _capability_for(source: ScanSource) -> Capability:
         return Capability.TLS_ENDPOINT
     if source.protocol == "ssh":
         return Capability.SSH_ENDPOINT
+    if source.protocol == "ike":
+        return Capability.IKE_ENDPOINT
     raise CollectorSelectionError(
         f"source protocol is required for endpoint selection: {source.protocol!r}"
     )

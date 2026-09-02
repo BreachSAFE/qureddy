@@ -25,7 +25,7 @@ def _ip_or_none(host: str) -> str | None:
 
 
 def _nuclei_type(scheme: str) -> str:
-    return {"tls": "ssl", "ssh": "ssh"}[scheme]
+    return {"tls": "ssl", "ssh": "ssh", "ike": "ike"}[scheme]
 
 
 def finding_record(result: ScanResult, finding: Finding) -> dict[str, Any]:
@@ -92,6 +92,7 @@ def summary_record(result: ScanResult) -> dict[str, Any]:
         "scan_id": result.scan.scan_id,
         "scanner": result.scan.scanner_name,
         "scanner_version": result.scan.scanner_version,
+        "status": result.scan.status,
         "target": result.target.locator,
         "readiness": result.summary.readiness.value,
         "highest_severity": (
