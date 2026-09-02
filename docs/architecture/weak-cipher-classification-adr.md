@@ -165,157 +165,133 @@ preserve identity across the selected boundary.
 ## 8. Registry and policy ownership
 
 ```text
-qureddy-crypto-registry.json
-  algorithms, wire identities, ratings, postures, evidence types, sources
-                  |
-                  +--> probe-plan JSON
-                  |
-                  +--> ScanResult
-                            |
-                            v
-mint-oscal policy packs
-  framework sources, mappings, Catalog/Profile resolution, AP/AR/POA&M
-                            |
-                            v
-Enterprise
-  customer scope, applicability, approvals, presentation
+LEGEND
+🟨 external authority or tool    🟦 acquisition
+🟩 canonical QuReddy data        🟪 scoring policy
+🟧 output                        🟥 prohibited path
+
+
++--------------------------------------------------------------+
+| 🟨 AUTHORITATIVE SOURCES                                     |
+|                                                              |
+|  IANA       RFCs        NIST        MITRE CWE    CycloneDX   |
+|  Y/N/D      Weaknesses  PQ status   Taxonomy     CBOM names  |
++-----+---------+-----------+------------+------------+--------+
+      +---------+-----------+------------+------------+
+                              |
+                              v
++--------------------------------------------------------------+
+| 🟩 REVIEWED IMPORT                                            |
+|                                                              |
+|  Pin source URI + release + digest + license + exact clause  |
++-----------------------------+--------------------------------+
+                              |
+                              v
++--------------------------------------------------------------+
+| 🟩 qureddy-crypto-registry.json                               |
+|                                                              |
+|  algorithms       wire identities       sourced ratings      |
+|  posture IDs      reason codes          curated CWE refs     |
++-----------------------+--------------------------------------+
+                        | classification lookup
+                        |
+          +-------------+----------------------+
+          |                                    |
++---------v-------------------+     +----------v----------------+
+| 🟦 STANDARD SCAN            |     | 🟦 DEEP OR VULN SCAN       |
+|                             |     |                           |
+|  Native selector            |     |  External testssl.sh      |
+|  Pinned OpenSSL             |     |  --deep or --vuln         |
++---------+-------------------+     +----------+----------------+
+          |                                    |
+          | observations                       | testssl JSON
+          |                                    |
+          |                         +----------v----------------+
+          |                         | 🟦 TESTSSL ADAPTER           |
+          |                         |                           |
+          |                         | tool ID -> canonical type |
+          |                         | preserve raw severity     |
+          |                         | preserve CWE and CVE      |
+          |                         | record tool version       |
+          |                         +----------+----------------+
+          |                                    |
+          +----------------+-------------------+
+                           |
+                           v
++--------------------------------------------------------------+
+| 🟩 CANONICAL OBSERVATIONS                                     |
+|                                                              |
+|  offered          not_offered       not_testable             |
+|  ambiguous        not_attempted     vulnerable/not_vulnerable|
++-----------------------------+--------------------------------+
+                              |
+                              v
++--------------------------------------------------------------+
+| 🟩 CANONICAL FINDINGS                                         |
+|                                                              |
+|  finding_type      reason_codes       posture_ids            |
+|  evidence_refs     CWE/CVE refs        source provenance      |
++-----------------------------+--------------------------------+
+                              |
+                              v
++--------------------------------------------------------------+
+| 🟩 CAPABILITY ASSESSMENTS                                     |
+|                                                              |
+|  Key establishment       Authentication                     |
+|  Symmetric strength      Downgrade resistance               |
+|  Classical hygiene                                          |
++-----------------------------+--------------------------------+
+                              |
+                              v
++--------------------------------------------------------------+
+| 🟪 grading-policy.json                                        |
+|                                                              |
+|  weights + coverage gate + grade bands + visible caps        |
+|                                                              |
+|  CWE does not directly subtract points                       |
+|  testssl severity does not override QuReddy policy           |
++-----------------------------+--------------------------------+
+                              |
+                              v
++--------------------------------------------------------------+
+| 🟪 QUANTUM READINESS RESULT                                  |
+|                                                              |
+|  Score     Grade     Assurance     Coverage                  |
+|  Dimension scores     Applied caps     Evidence references   |
++----------+------------------+-------------------+-------------+
+           |                  |                   |
+           v                  v                   v
+     +-----------+      +-----------+      +-------------+
+     | 🟧 OUTPUT |      | 🟧 OUTPUT |      | 🟧 OUTPUT   |
+     | Rich      |      | JSON      |      | SARIF       |
+     | summary   |      | JSONL     |      | findings    |
+     +-----------+      +-----------+      +-------------+
+
+       Registry + observations -------------> 🟧 CBOM inventory
+       Findings + evidence -----------------> 🟧 mint-oscal/Enterprise
+
+
+🟥 PROHIBITED PATHS
+
+ testssl severity ----------------X----------> score
+ raw CWE count -------------------X----------> point deduction
+ compliance mapping --------------X----------> crypto registry
+ endpoint score ------------------X----------> CSA QRI level
 ```
 
-The compact registry shape appears below. Complete review fixtures in `docs/architecture/examples/`
-cover the registry, probe plan, grading policy, result receipt, and CSA QRI evidence map.
+Plain-text path: authoritative sources enter a reviewed import, which builds the crypto registry.
+Native, OpenSSL, and planned external testssl probes produce observations. The registry interprets
+those observations into canonical findings and capability assessments. The grading policy consumes
+the assessments. Renderers only project the canonical result.
 
-```json
-{
-  "$schema": "https://qureddy.io/schemas/crypto-registry/v1/schema.json",
-  "schema_version": "1.0.0",
-  "registry_id": "qureddy-crypto-registry",
-  "registry_version": "2026.09.0",
-  "effective_date": "2026-09-02",
-  "sources": {
-    "iana-tls-2026-08-10": {
-      "kind": "iana-registry",
-      "uri": "https://www.iana.org/assignments/tls-parameters/tls-parameters-4.csv",
-      "release": "2026-08-10",
-      "sha256": "4fe36f25017ed2882bf1c4a24493af83ed98526c0869881934cb968803489ed3"
-    },
-    "rfc7465": {
-      "kind": "rfc",
-      "uri": "https://www.rfc-editor.org/rfc/rfc7465",
-      "release": "RFC 7465"
-    },
-    "rfc10015": {
-      "kind": "rfc",
-      "uri": "https://www.rfc-editor.org/rfc/rfc10015",
-      "release": "RFC 10015"
-    },
-    "nist-ir-8547-ipd": {
-      "kind": "nist-publication",
-      "uri": "https://doi.org/10.6028/NIST.IR.8547.ipd",
-      "release": "Initial Public Draft, 2024-11-12"
-    }
-  },
-  "postures": {
-    "crypto.classically_weak": {
-      "axis": "classical",
-      "verdict": "classically_weak"
-    },
-    "crypto.quantum_vulnerable": {
-      "axis": "quantum",
-      "verdict": "quantum_vulnerable"
-    }
-  },
-  "evidence_types": {
-    "tls.cipher.selected": {
-      "description": "ServerHello selected the exact offered TLS cipher suite."
-    }
-  },
-  "algorithms": {
-    "rsa-key-establishment": {
-      "name": "RSA key establishment",
-      "cryptoProperties": {
-        "assetType": "algorithm",
-        "algorithmProperties": {
-          "primitive": "pke",
-          "nistQuantumSecurityLevel": 0
-        }
-      },
-      "ratings": {
-        "quantum": {
-          "verdict": "quantum_vulnerable",
-          "reason_codes": ["classical_public_key_algorithm"],
-          "source_refs": [
-            {"source_id": "nist-ir-8547-ipd", "locator": "table-4"}
-          ]
-        }
-      },
-      "posture_ids": ["crypto.quantum_vulnerable"]
-    },
-    "rc4-128": {
-      "name": "RC4-128",
-      "cryptoProperties": {
-        "assetType": "algorithm",
-        "algorithmProperties": {
-          "primitive": "stream-cipher",
-          "parameterSetIdentifier": "128"
-        }
-      },
-      "ratings": {
-        "classical": {
-          "verdict": "classically_weak",
-          "reason_codes": ["rc4_prohibited"],
-          "source_refs": [
-            {"source_id": "rfc7465", "locator": "section-2"}
-          ]
-        }
-      },
-      "posture_ids": ["crypto.classically_weak"]
-    },
-    "hmac-sha1": {
-      "name": "HMAC-SHA-1",
-      "cryptoProperties": {
-        "assetType": "algorithm",
-        "algorithmProperties": {
-          "primitive": "mac"
-        }
-      }
-    }
-  },
-  "tls": {
-    "cipher_suites": {
-      "0x0005": {
-        "name": "TLS_RSA_WITH_RC4_128_SHA",
-        "iana": {
-          "recommended": "D",
-          "dtls_ok": false,
-          "source_ref": {
-            "source_id": "iana-tls-2026-08-10",
-            "locator": "0x00,0x05"
-          }
-        },
-        "algorithm_refs": {
-          "key_establishment": "rsa-key-establishment",
-          "confidentiality": "rc4-128",
-          "authentication": "hmac-sha1"
-        },
-        "posture_ids": [
-          "crypto.classically_weak",
-          "crypto.quantum_vulnerable"
-        ]
-      }
-    }
-  }
-}
-```
+Issue #722 tracks the planned testssl adapter. It preserves testssl tool ID, version, raw severity,
+CVE, and CWE as imported evidence. Raw severity and CWE counts cannot directly change the score.
+Registry ratings and the grading policy remain the interpretation authorities.
 
-The example is abbreviated. Production validation rejects unknown fields, malformed IDs,
-duplicates, unresolved references, invalid CycloneDX enums, and unsupported IANA recommendation
-values. Unknown optional CBOM properties are omitted. `certificationLevel` requires evidence about
-an implementation certification. Confidence belongs to scan evidence, outside static
-`algorithmProperties`.
-
-QuReddy emits stable registry ID, registry version, digest, plan ID, plan version, posture ID,
-evidence type, asset reference, and observation state. Mint-oscal owns framework mappings and OSCAL
-construction (#630, #718). Enterprise owns organizational scope and approvals.
+Complete review fixtures in `docs/architecture/examples/` cover the registry, probe plan, grading
+policy, result receipt, and CSA QRI evidence map. QuReddy emits their stable identities and digests.
+Mint-oscal owns framework mappings and OSCAL construction (#630, #718). Enterprise owns
+organizational scope and approvals.
 
 ## 9. Grading and index alignment
 
@@ -395,4 +371,4 @@ Revisit this decision when any of these conditions occurs:
 - [`draft-dev-xipher-cbom-extension-00`](https://datatracker.ietf.org/doc/draft-dev-xipher-cbom-extension/).
 - [Open Quantum Secure at the reviewed commit](https://github.com/jimbo111/open-quantum-secure/blob/db003740b3d1cccd443ee2750f75bc332747751e/pkg/quantum/score.go), published Quantum Readiness Score bands and reference calculation.
 - [Singapore CSA Quantum Readiness Index V1](https://www.csa.gov.sg/resources/publications/quantum-safe-handbook-and-quantum-readiness-index/).
-- QuReddy issues #591, #599, #616, #623, #630, #669, #671, #672, #700, #701, #705, #706, #708, #709, #710, and #718.
+- QuReddy issues #591, #599, #616, #623, #630, #669, #671, #672, #700, #701, #705, #706, #708, #709, #710, #718, and #722.
