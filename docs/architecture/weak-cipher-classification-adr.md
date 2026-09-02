@@ -17,10 +17,11 @@ SPDX-License-Identifier: Apache-2.0
 6. [Detection and probe profiles](#6-detection-and-probe-profiles)
 7. [Alternatives considered](#7-alternatives-considered)
 8. [Registry and policy ownership](#8-registry-and-policy-ownership)
-9. [Grading and index alignment](#9-grading-and-index-alignment)
-10. [Consequences](#10-consequences)
-11. [Revisit when](#11-revisit-when)
-12. [References](#12-references)
+9. [Current implementation and migration gates](#9-current-implementation-and-migration-gates)
+10. [Grading and index alignment](#10-grading-and-index-alignment)
+11. [Consequences](#11-consequences)
+12. [Revisit when](#12-revisit-when)
+13. [References](#13-references)
 
 ## 1. Context
 
@@ -34,6 +35,11 @@ coverage state (#706).
 
 This ADR defines the source, classification, acquisition, output, and grading boundaries behind the
 native selector (#700), registry (#708), source import (#709), probe plans (#599), and score (#669).
+
+The typed `CatalogDefinition`, compiler, immutable snapshot, and classification receipt shipped in
+PR #734. They are the internal runtime boundary. The publication schema proposed here is a richer
+source envelope; its loader must normalize once into that runtime model and prove parity before any
+scanner or renderer switches to registry-backed classification.
 
 ## 2. Requirements
 
@@ -55,6 +61,9 @@ The design must:
 QuReddy will use a compact CBOM-aligned crypto registry for facts and ratings, separate versioned
 probe plans for acquisition, and a separate versioned grading policy over canonical capability
 assessments. Mint-oscal will own framework mappings and OSCAL construction.
+
+Each rating owns its `posture_id`. Effective postures are derived during catalog compilation; an
+algorithm or protocol entry does not maintain a second editable posture list.
 
 ## 4. Authoritative sources
 
@@ -105,9 +114,9 @@ QuReddy retains `block_bits` as a custom fact because CycloneDX 1.7 has no direc
 
 ## 6. Detection and probe profiles
 
-The native selector offers reviewed two-byte IANA suite identifiers in a ClientHello, reads one
-bounded TLS record, validates any selected suite against the offer, and stops after ServerHello.
-It performs no key exchange.
+The proposed native selector will offer reviewed two-byte IANA suite identifiers in a ClientHello,
+read one bounded TLS record, validate any selected suite against the offer, and stop after
+ServerHello. It will perform no key exchange.
 
 ```text
 resolved candidate IDs
@@ -123,9 +132,10 @@ canonical attempt observation
 OFFERED | NOT_OFFERED | NOT_TESTABLE | AMBIGUOUS | NOT_ATTEMPTED
 ```
 
-Probe execution uses a separate strict JSON plan (#599). The plan pins the registry identity and
-digest and owns selectors, backends, bounds, ordering, timeouts, and coverage. Selectors resolve to
-an immutable ordered candidate list before network access. The result records that list.
+The proposed probe execution contract uses a separate strict JSON plan (#599). The plan pins the
+registry identity and digest and owns selectors, backends, bounds, ordering, timeouts, and coverage.
+Selectors resolve to an immutable ordered candidate list before network access. The result records
+that list.
 
 Planned built-in profiles are:
 
@@ -279,24 +289,80 @@ LEGEND
  endpoint score ------------------X----------> CSA QRI level
 ```
 
-Plain-text path: authoritative sources enter a reviewed import, which builds the crypto registry.
-Native, OpenSSL, and planned external testssl probes produce observations. The registry interprets
-those observations into canonical findings and capability assessments. The grading policy consumes
-the assessments. Renderers only project the canonical result.
+Plain-text target path: authoritative sources enter a reviewed import, which builds the crypto
+registry. Native, OpenSSL, and planned external testssl probes produce observations. The registry
+will interpret those observations into canonical findings and capability assessments. The grading
+policy will consume the assessments. Renderers will only project the canonical result.
 
 Issue #722 tracks the planned testssl adapter. It preserves testssl tool ID, version, raw severity,
 CVE, and CWE as imported evidence. Raw severity and CWE counts cannot directly change the score.
 Registry ratings and the grading policy remain the interpretation authorities.
 
 Complete review fixtures in `docs/architecture/examples/` cover the registry, probe plan, grading
-policy, result receipt, and CSA QRI evidence map. QuReddy emits their stable identities and digests.
-Mint-oscal owns framework mappings and OSCAL construction (#630, #718). Enterprise owns
-organizational scope and approvals.
+policy, result receipt, and CSA QRI evidence map. Once activated, each contract will require QuReddy
+to record its stable identity and digest. Mint-oscal owns framework mappings and OSCAL construction
+(#630, #718). Enterprise owns organizational scope and approvals.
 
 The [crypto registry reference](../reference/crypto-registry.md) defines the proposed fields,
 validation rules, consumer obligations, and compatibility policy.
 
-## 9. Grading and index alignment
+## 9. Current implementation and migration gates
+
+PR #734 shipped the typed catalog models, compiler, immutable indexes, and receipt. No production
+scanner or renderer consumes that package yet. The current production path remains:
+
+```text
+[ target ]
+    |
+    v
+[ CLI: scan | ssh | ike ]
+    |
+    v
+[ CollectorRegistry ] ---> [ selected TLS | SSH | IKE scanner ]
+                                      |
+                                      v
+                           [ Evidence[] + Finding[] ]
+                                      |
+                                      v
+                            [ ScanInterpretation ]
+                                      |
+                                      v
+                                [ ScanResult ]
+                                      |
+                                      v
+                      [ Rich | JSON | JSONL | CBOM ]
+
+[ crypto_catalog ] - - - not connected to production consumers
+```
+
+The disconnected package is deliberate migration scaffolding, but it creates time-bounded
+duplication that must remain visible:
+
+| Cluster | Current state | Decision |
+| --- | --- | --- |
+| Certificate shapes | `CertificateInfo` and `CertificateObservation` have the same fields | Remove the exact duplicate under #746; retain public and parser projections only when their contracts differ |
+| Rating vocabularies | Live `Readiness` and `AxisStatus` coexist with catalog `Rating` types | Bridge once, then derive the live view from catalog ratings under #747 |
+| Classification engines | Legacy cipher, algorithm-profile, and PQC classifiers coexist with the catalog | Shadow-compare before switching; delete legacy owners only after parity under #747 |
+| Algorithm facts | `AlgorithmProfile` is a subset of `AlgorithmFacts` | Keep a compatibility projection during migration, then remove it under #747 |
+| Asset and evidence | `Asset` repeats fields needed to identify evidence subjects | Retain as a deliberate CBOM and result projection; it is not a second classification owner |
+
+The consolidation sequence is:
+
+1. populate the catalog with compatibility data and the reviewed JSON source (#708 and #709);
+2. normalize the publication document into the shipped `CatalogDefinition` and compile one
+   immutable snapshot;
+3. add one compatibility bridge from catalog classification to the existing live vocabulary;
+4. shadow-compare TLS, SSH, IKE, and certificate classifications over a bounded real corpus;
+5. move CBOM projection to catalog facts after byte and semantic parity passes;
+6. move live findings and interpretation to catalog ratings after scan parity passes; and
+7. delete the legacy classifier tables and compatibility bridge only after the parity gate remains
+   green.
+
+The migration must not create a second long-lived registry or let a renderer classify raw names.
+Issue #731 remains open for the unshipped compatibility data and consumer work. Issue #747 owns the
+explicit reconcile-and-delete gate.
+
+## 10. Grading and index alignment
 
 The registry and canonical assessments enable a deterministic endpoint score (#669). The score is
 a third policy file because weights, caps, and grade bands are interpretation rules. Probe profiles
@@ -333,7 +399,7 @@ CBOM remains a crypto inventory. JSON and Rich may present the score directly. A
 requires a reviewed namespaced CycloneDX property and cannot appear inside standard
 `algorithmProperties`.
 
-## 10. Consequences
+## 11. Consequences
 
 - The design permits native testing of reviewed RC4, DES, and 3DES suites excluded by OpenSSL.
 - The coverage contract adds a terminal state for every resolved candidate.
@@ -347,7 +413,7 @@ requires a reviewed namespaced CycloneDX property and cannot appear inside stand
 - The design introduces three versioned data contracts and requires cross-contract compatibility
   tests, source pinning, and release review.
 
-## 11. Revisit when
+## 12. Revisit when
 
 Revisit this decision when any of these conditions occurs:
 
@@ -358,7 +424,7 @@ Revisit this decision when any of these conditions occurs:
 5. The selected score bands change or a standards body publishes a reproducible endpoint scale.
 6. CSA publishes a machine-readable QRI model suitable for governed downstream ingestion.
 
-## 12. References
+## 13. References
 
 - [IANA TLS Parameters](https://www.iana.org/assignments/tls-parameters/), TLS Cipher Suites.
 - [RFC 9847](https://www.rfc-editor.org/rfc/rfc9847), IANA registry updates for TLS and DTLS.

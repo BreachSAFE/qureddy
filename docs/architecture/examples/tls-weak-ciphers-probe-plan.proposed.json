@@ -27,7 +27,7 @@
           "value": "assigned"
         },
         {
-          "field": "posture_ids",
+          "field": "effective_posture_ids",
           "operator": "contains_any",
           "values": [
             "crypto.classically_weak",

@@ -83,8 +83,15 @@
           "nistQuantumSecurityLevel": 0
         }
       },
+      "fact_source_refs": [
+        {
+          "source_id": "nist-ir-8547-ipd",
+          "locator": "table-4"
+        }
+      ],
       "ratings": {
         "quantum": {
+          "posture_id": "crypto.quantum_vulnerable",
           "verdict": "quantum_vulnerable",
           "reason_codes": [
             "classical_public_key_algorithm"
@@ -96,10 +103,7 @@
             }
           ]
         }
-      },
-      "posture_ids": [
-        "crypto.quantum_vulnerable"
-      ]
+      }
     },
     "rc4-128": {
       "name": "RC4-128",
@@ -110,8 +114,15 @@
           "parameterSetIdentifier": "128"
         }
       },
+      "fact_source_refs": [
+        {
+          "source_id": "rfc7465",
+          "locator": "section-2"
+        }
+      ],
       "ratings": {
         "classical": {
+          "posture_id": "crypto.classically_weak",
           "verdict": "classically_weak",
           "reason_codes": [
             "rc4_prohibited"
@@ -123,10 +134,7 @@
             }
           ]
         }
-      },
-      "posture_ids": [
-        "crypto.classically_weak"
-      ]
+      }
     },
     "hmac-sha1": {
       "name": "HMAC-SHA-1",
@@ -135,7 +143,13 @@
         "algorithmProperties": {
           "primitive": "mac"
         }
-      }
+      },
+      "fact_source_refs": [
+        {
+          "source_id": "iana-tls-2026-08-10",
+          "locator": "0x00,0x05"
+        }
+      ]
     }
   },
   "protocols": {
@@ -159,6 +173,7 @@
           },
           "ratings": {
             "deployment": {
+              "posture_id": "crypto.discouraged",
               "verdict": "discouraged",
               "reason_codes": [
                 "iana_recommended_discouraged"
@@ -170,12 +185,7 @@
                 }
               ]
             }
-          },
-          "posture_ids": [
-            "crypto.classically_weak",
-            "crypto.quantum_vulnerable",
-            "crypto.discouraged"
-          ]
+          }
         }
       }
     }

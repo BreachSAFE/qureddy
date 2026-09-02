@@ -164,6 +164,25 @@ The proposed document has these top-level fields:
 
 The loader MUST reject unknown top-level fields.
 
+### Publication-to-runtime mapping
+
+The publication document is a review contract, not the serialized form of the shipped
+`CatalogDefinition` model. The loader tracked by #708 must validate this envelope, normalize its
+keyed source, algorithm, and protocol maps into `CatalogDefinition`, and then call
+`compile_catalog`. The resulting `CryptoCatalogSnapshot` is the only classification surface used
+by scanners and renderers.
+
+The normalization is one way and deterministic. Map keys become stable entity IDs, CBOM
+`algorithmProperties` become `AlgorithmFacts`, protocol algorithm references become
+`AlgorithmUse` records, and each rating retains its own `posture_id`. Publication-only metadata,
+including schema and effective dates, remains in the validated envelope and receipt. Activation
+requires parity tests that prove the publication document and compatibility data compile to the
+same snapshot over their shared entries.
+
+Normalization explicitly maps CycloneDX names such as `classicalSecurityLevel`,
+`nistQuantumSecurityLevel`, and `parameterSetIdentifier` to the internal model fields. The loader
+must not rely on Pydantic serialization aliases as input aliases.
+
 ## 5. Source records
 
 Every fact or rating that requires an authority refers to an entry in `sources`. A source record
@@ -199,6 +218,7 @@ A rating contains:
 
 | Field | Meaning |
 | --- | --- |
+| `posture_id` | Stable posture established by this rating |
 | `verdict` | Interpretation on the rating axis |
 | `reason_codes` | Stable machine-readable reasons |
 | `source_refs` | Exact authorities for the interpretation |
@@ -222,14 +242,17 @@ CycloneDX-aligned crypto properties, optional sourced ratings, and posture refer
         "parameterSetIdentifier": "128"
       }
     },
+    "fact_source_refs": [
+      {"source_id": "rfc7465", "locator": "section-2"}
+    ],
     "ratings": {
       "classical": {
+        "posture_id": "crypto.classically_weak",
         "verdict": "classically_weak",
         "reason_codes": ["rc4_prohibited"],
         "source_refs": [{"source_id": "rfc7465", "locator": "section-2"}]
       }
-    },
-    "posture_ids": ["crypto.classically_weak"]
+    }
   }
 }
 ```
@@ -256,10 +279,11 @@ record contains:
 | `iana` | IANA recommendation, DTLS status, and source row |
 | `algorithm_refs` | Constituent key-establishment, confidentiality, and authentication algorithms |
 | `ratings` | Protocol-entry interpretations that do not belong to one constituent |
-| `posture_ids` | Combined postures established by the cited constituents and entry ratings |
+| effective posture IDs | Derived from constituent and protocol-entry ratings after compilation |
 
 Algorithm decomposition prevents cipher-suite names from becoming the rating source. TLS, SSH, IKE,
-and future protocol adapters can reference the same algorithm and posture identities.
+and future protocol adapters can reference the same algorithm and posture identities. An algorithm
+or protocol entry does not author a second `posture_ids` list; `Rating.posture_id` is authoritative.
 
 ## 9. Evidence types
 
@@ -313,6 +337,9 @@ Validation is atomic. A loader MUST NOT expose a partially parsed registry, skip
 or continue with a previous registry while reporting the new identity. A validation error MUST name
 the failing JSON path and stable error code. Diagnostic text belongs on standard error when invoked
 through a CLI. Machine output on standard output MUST remain parseable.
+
+The loader MUST also reject owner-level `posture_ids` fields. Effective posture IDs are derived
+from validated ratings so one owner cannot publish two independent answers for the same fact.
 
 The review fixture uses `integrity.state: unpublished-proposal`. A released registry MUST replace
 that state with a digest over defined canonical bytes. The registry MUST NOT include a digest over
