@@ -10,6 +10,9 @@ hard ceiling.
 
 from __future__ import annotations
 
+from typing import TypedDict
+
+from qureddy.core.algorithm_profile import classify_key_exchange
 from qureddy.core.ids import new_id
 from qureddy.core.models import (
     Asset,
@@ -22,6 +25,28 @@ from qureddy.core.models import (
 )
 from qureddy.scanners.common.assets import build_endpoint_asset
 from qureddy.scanners.tls.parse import ParsedNegotiation, parse_brief_output
+
+
+class _AlgorithmFields(TypedDict):
+    algorithm: str | None
+    primitive: str | None
+    parameter_set_identifier: str | None
+    nist_quantum_security_level: int | None
+
+
+def _algorithm_fields(name: str | None) -> _AlgorithmFields:
+    """Return canonical model fields for one negotiated key-exchange name."""
+    profile = classify_key_exchange(name) if name is not None else None
+    return {
+        "algorithm": name,
+        "primitive": profile.primitive if profile is not None else None,
+        "parameter_set_identifier": (
+            profile.parameter_set_identifier if profile is not None else None
+        ),
+        "nist_quantum_security_level": (
+            profile.nist_quantum_security_level if profile is not None else None
+        ),
+    }
 
 
 def build_asset(target: ScanTarget) -> Asset:
@@ -98,7 +123,11 @@ def _evidence_for_parse_failure(
         source="qureddy.scanners.tls.parse",
         protocol_version=parsed.protocol_version,
         cipher_suite=parsed.cipher_suite,
+        **_algorithm_fields(parsed.negotiated_group),
         negotiated_group=parsed.negotiated_group,
+        handshake_signature=parsed.handshake_signature,
+        handshake_hash=parsed.handshake_hash,
+        key_bits=parsed.key_bits,
         probe_role=probe_role,
         expected_group=expected_group,
         probe_result=probe,
@@ -122,7 +151,11 @@ def _evidence_for_negotiation(
         source="qureddy.scanners.tls.parse",
         protocol_version=parsed.protocol_version,
         cipher_suite=parsed.cipher_suite,
+        **_algorithm_fields(parsed.negotiated_group),
         negotiated_group=parsed.negotiated_group,
+        handshake_signature=parsed.handshake_signature,
+        handshake_hash=parsed.handshake_hash,
+        key_bits=parsed.key_bits,
         probe_role=probe_role,
         expected_group=expected_group,
         probe_result=probe,

@@ -70,7 +70,7 @@ if os.environ.get("QUREDDY_TEST_FORCE_CLASSICAL_RESULT") == "1":
                         "evidence_type": "tls.cert.signature",
                         "observation_type": "observed",
                         "source": "installed-contract-fixture",
-                        "certificate": {
+                        "certificate_record": {
                             "subject": "CN=classical.example.invalid",
                             "issuer": "CN=Fixture CA",
                             "not_before": "Jul 17 07:18:11 2026 GMT",

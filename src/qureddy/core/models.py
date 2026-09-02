@@ -13,10 +13,10 @@ import re
 from datetime import datetime
 from enum import Enum
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator, model_validator
 
 from qureddy import __version__ as _version
-from qureddy.core.certificate import CertificateObservation  # noqa: TC001
+from qureddy.core.certificate import CertificateDetails, CertificateObservation  # noqa: TC001
 from qureddy.core.evaluation import InterpretationDisplay, PostureEvaluation  # noqa: F401, TC001
 
 FROZEN = ConfigDict(frozen=True, extra="forbid")
@@ -24,10 +24,9 @@ FROZEN = ConfigDict(frozen=True, extra="forbid")
 MIN_PORT = 1
 MAX_PORT = 65535
 
-# Canonical hostname grammar for the platform, kept here because models.py is
-# the lower module of the pair: targets.py imports ScanTarget from this module,
-# so the reverse import would be circular. targets.py imports HOSTNAME_PATTERN
-# from here instead of re-declaring it, so there is exactly one copy (#315).
+# Canonical hostname grammar lives here because targets.py imports ScanTarget
+# from this module; the reverse import would be circular. targets.py imports
+# HOSTNAME_PATTERN from here, so there is exactly one copy (#315).
 # Callers use `.fullmatch` (not `.match`): the trailing `$` also matches just
 # before a final "\n", so `.match` would accept "example.com\n" and let a
 # control char / newline reach OpenSSL argv; `.fullmatch` rejects it (#369).
@@ -36,9 +35,7 @@ HOSTNAME_PATTERN = re.compile(
     r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?$",
 )
 
-# The transport schemes a ScanTarget may carry — TLS scans and SSH scans.
-# Constrained so a caller (or deserialized JSON) cannot supply an arbitrary
-# scheme that would flow into the locator and downstream tooling (#369).
+# Constrain schemes so deserialized input cannot reach downstream tooling (#369).
 SUPPORTED_SCHEMES = frozenset({"tls", "ssh"})
 
 
@@ -394,14 +391,7 @@ class Asset(BaseModel):
 
 
 class Evidence(BaseModel):
-    """Observation supporting a finding.
-
-    Issue #232: `probe_role`/`expected_group` are new, optional (default
-    None) fields — added to `qureddy.scan.v1` with explicit maintainer
-    authorization, not silently. They let policy distinguish a hybrid
-    readiness probe's failure from a classical control probe's failure,
-    which are not the same fact.
-    """
+    """Observation supporting a finding, including optional typed protocol details."""
 
     model_config = FROZEN
 
@@ -413,7 +403,14 @@ class Evidence(BaseModel):
     protocol: str = "tls"
     protocol_version: str | None = None
     cipher_suite: str | None = None
+    algorithm: str | None = None
+    primitive: str | None = None
+    parameter_set_identifier: str | None = None
+    nist_quantum_security_level: int | None = Field(default=None, ge=0, le=5)
     negotiated_group: str | None = None
+    handshake_signature: str | None = None
+    handshake_hash: str | None = None
+    key_bits: int | None = Field(default=None, ge=1)
     server_software: str | None = None
     server_version: str | None = None
     probe_role: ProbeRole | None = None
@@ -422,7 +419,16 @@ class Evidence(BaseModel):
     failure_category: FailureCategory | None = None
     confidence: Confidence = Confidence.HIGH
     notes: tuple[str, ...] = Field(default_factory=tuple)
-    certificate: CertificateObservation | None = Field(default=None, exclude=True, repr=False)
+    certificate_record: CertificateObservation | None = Field(
+        default=None, exclude=True, repr=False
+    )
+
+    @computed_field(exclude_if=lambda value: value is None)  # type: ignore[prop-decorator]
+    @property
+    def certificate(self) -> CertificateDetails | None:
+        """Return the stable public projection of an internal certificate observation."""
+        observed = self.certificate_record
+        return observed.public_details() if observed is not None else None
 
 
 class Finding(BaseModel):

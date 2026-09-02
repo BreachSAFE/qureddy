@@ -85,6 +85,12 @@ def test_legacy_tls_and_ssh_ids_map_to_same_neutral_signals() -> None:
             {SemanticSignal.CLASSICAL_KEX},
         ),
         (
+            "tls.pq.negotiated_pure",
+            "tls.kex.pure_pq",
+            Readiness.QUANTUM_SAFE,
+            {SemanticSignal.PURE_PQC},
+        ),
+        (
             "ssh.hostkey.weak",
             "ssh.hostkey.weak",
             Readiness.CLASSICALLY_WEAK,
@@ -152,3 +158,22 @@ def test_all_current_protocol_findings_map_to_typed_signals(
 ) -> None:
     signals = derive_signals([_finding(rule_id, finding_type, readiness)], [])
     assert signals.semantic == frozenset(expected)
+
+
+@pytest.mark.parametrize(
+    ("rule_id", "finding_type", "readiness"),
+    [
+        ("ike.proposal.selected", "ike.proposal.selected", Readiness.QUANTUM_SAFE),
+        ("ike.kex.pure_pq", "ike.kex.pure_pq", Readiness.UNKNOWN),
+        ("ike.kex.classical", "ike.kex.classical", Readiness.QUANTUM_SAFE),
+        ("ike.kex.hybrid", "ike.proposal.selected", Readiness.TRANSITIONAL_HYBRID),
+    ],
+)
+def test_kex_signals_require_canonical_finding_type_and_readiness_pair(
+    rule_id: str,
+    finding_type: str,
+    readiness: Readiness,
+) -> None:
+    signals = derive_signals([_finding(rule_id, finding_type, readiness)], [])
+
+    assert not signals.semantic

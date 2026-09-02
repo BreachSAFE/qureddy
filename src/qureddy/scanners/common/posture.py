@@ -83,6 +83,24 @@ def _is_not_testable(failure_category: FailureCategory | None) -> bool:
     }
 
 
+def _resolve_protocol(
+    findings: list[Finding], evidence: list[Evidence], protocol: str | None
+) -> str:
+    """Resolve and normalize the protocol before deriving any posture."""
+    resolved = (
+        protocol
+        or next(
+            (item.protocol for item in evidence if item.protocol),
+            None,
+        )
+        or next(
+            (item.protocol for item in findings if item.protocol),
+            "unknown",
+        )
+    )
+    return resolved.casefold()
+
+
 def _pqc_axis(
     *, classical: bool, hybrid: bool, pure_pq: bool, hybrid_failed: bool, not_testable: bool
 ) -> tuple[PqcSupport, AxisStatus]:
@@ -137,12 +155,15 @@ def _protocol_axis(
 
 def _hndl_exposure(
     *,
+    protocol: str,
     classical: bool,
     hybrid: bool,
     pure_pq: bool,
     not_testable: bool,
 ) -> HndlExposure:
     """Classify future-quantum exposure without ranking present-day hygiene."""
+    if protocol == "ike":
+        return HndlExposure.UNKNOWN
     if not_testable:
         return HndlExposure.UNKNOWN
     if hybrid:
@@ -274,32 +295,32 @@ def build_interpretation(
     protocol: str | None = None,
 ) -> ScanInterpretation:
     """Build stable posture axes and provenance from observed findings."""
+    resolved_protocol = _resolve_protocol(findings, evidence, protocol)
     axes = _build_axes(findings, evidence, failure_category)
     reason_codes = build_reason_codes(findings, failure_category)
     signals = derive_signals(findings, evidence)
     not_testable = _is_not_testable(failure_category)
     headline, recommended_action = _ciso_text(axes, reason_codes)
     hndl_exposure = _hndl_exposure(
+        protocol=resolved_protocol,
         classical=signals.classical_kex,
         hybrid=signals.hybrid,
         pure_pq=signals.pure_pq,
         not_testable=not_testable,
     )
     hygiene_status = _hygiene_status(
-        signals,
-        not_testable=not_testable,
-        has_findings=bool(findings),
+        signals, not_testable=not_testable, has_findings=bool(findings)
     )
     evaluation = evaluate_posture(
         findings,
         evidence,
-        protocol=protocol,
+        protocol=resolved_protocol,
         support=axes.pqc_support,
         hndl_exposure=hndl_exposure,
         hygiene_status=hygiene_status,
     )
     return ScanInterpretation(
-        effective=scan_readiness(findings),
+        effective=scan_readiness(findings, evidence),
         headline=headline,
         recommended_action=recommended_action,
         display=_display(

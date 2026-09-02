@@ -10,7 +10,7 @@ up to UNKNOWN, and used a bare ``max`` that raised on an empty finding set.
 
 from __future__ import annotations
 
-from qureddy.core.models import Finding, Readiness, Severity
+from qureddy.core.models import Evidence, Finding, ObservationType, Readiness, Severity
 
 SEVERITY_ORDER: dict[Severity, int] = {
     Severity.INFO: 0,
@@ -20,13 +20,11 @@ SEVERITY_ORDER: dict[Severity, int] = {
     Severity.CRITICAL: 4,
 }
 
-# Readiness rollup precedence, highest first. CLASSICALLY_WEAK trumps everything because
-# broken classical crypto is exploitable today regardless of PQ posture. QUANTUM_SAFE (pure
-# PQ) and TRANSITIONAL_HYBRID both outrank QUANTUM_VULNERABLE because the classical control
-# probe fires quantum_vulnerable on every scan by design and must not downgrade a genuinely
-# safe/hybrid verdict; QUANTUM_SAFE is the strongest positive, above hybrid (#330 — before,
-# QUANTUM_SAFE sat below QUANTUM_VULNERABLE, so a pure-PQ endpoint rolled up to vulnerable).
-# The full tier set is listed so no verdict silently degrades to UNKNOWN.
+# Default readiness precedence, highest first. CLASSICALLY_WEAK stays above an offered-only
+# PQ capability because broken classical crypto is exploitable today and SSH currently observes
+# name-lists rather than a completed negotiation. A PQ finding backed by negotiated or observed
+# evidence is handled first by ``scan_readiness`` so a working PQ path remains the PQ-readiness
+# verdict while the independent hygiene axis carries present-day weakness.
 READINESS_PRECEDENCE: tuple[Readiness, ...] = (
     Readiness.CLASSICALLY_WEAK,
     Readiness.QUANTUM_SAFE,
@@ -34,6 +32,14 @@ READINESS_PRECEDENCE: tuple[Readiness, ...] = (
     Readiness.QUANTUM_VULNERABLE,
     Readiness.UNKNOWN,
     Readiness.NOT_APPLICABLE,
+)
+
+_POSITIVE_READINESS: tuple[Readiness, ...] = (
+    Readiness.QUANTUM_SAFE,
+    Readiness.TRANSITIONAL_HYBRID,
+)
+_POSITIVE_OBSERVATIONS: frozenset[ObservationType] = frozenset(
+    {ObservationType.NEGOTIATED, ObservationType.OBSERVED}
 )
 
 
@@ -44,12 +50,37 @@ def highest_severity(findings: list[Finding]) -> Severity | None:
     return max((f.severity for f in findings), key=lambda s: SEVERITY_ORDER[s])
 
 
-def scan_readiness(findings: list[Finding]) -> Readiness:
-    """Roll up per-finding readiness to one scan verdict (precedence highest first)."""
-    if not findings:
-        return Readiness.UNKNOWN
-    readinesses = {f.readiness for f in findings}
-    for tier in READINESS_PRECEDENCE:
+def _conclusive_evidence_ids(evidence: list[Evidence] | None) -> frozenset[str]:
+    """Return evidence identifiers that prove an observed protocol result."""
+    if not evidence:
+        return frozenset()
+    return frozenset(
+        item.id for item in evidence if item.observation_type in _POSITIVE_OBSERVATIONS
+    )
+
+
+def _first_matching_tier(
+    readinesses: set[Readiness], precedence: tuple[Readiness, ...]
+) -> Readiness | None:
+    """Return the first readiness present in the ordered precedence tuple."""
+    for tier in precedence:
         if tier in readinesses:
             return tier
-    return Readiness.UNKNOWN
+    return None
+
+
+def scan_readiness(findings: list[Finding], evidence: list[Evidence] | None = None) -> Readiness:
+    """Roll up findings, preserving PQ support backed by conclusive evidence."""
+    if not findings:
+        return Readiness.UNKNOWN
+    conclusive_evidence_ids = _conclusive_evidence_ids(evidence)
+    conclusive_readinesses = {
+        finding.readiness
+        for finding in findings
+        if conclusive_evidence_ids.intersection(finding.evidence_ids)
+    }
+    conclusive_readiness = _first_matching_tier(conclusive_readinesses, _POSITIVE_READINESS)
+    if conclusive_readiness is not None:
+        return conclusive_readiness
+    readinesses = {f.readiness for f in findings}
+    return _first_matching_tier(readinesses, READINESS_PRECEDENCE) or Readiness.UNKNOWN

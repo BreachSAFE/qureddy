@@ -51,6 +51,23 @@ class TestRealClassicalCapture:
         assert result.failure_category is None
         assert result.protocol_version == "TLSv1.3"
 
+    def test_live_certificate_verify_signature_and_hash_are_captured(self) -> None:
+        result = parse_brief_output(
+            _load("brief_classical_example_com.txt"),
+            expected_group=CLASSICAL,
+        )
+
+        assert result.handshake_signature == "ecdsa_secp256r1_sha256"
+        assert result.handshake_hash == "SHA256"
+
+    def test_ephemeral_key_size_is_captured(self) -> None:
+        result = parse_brief_output(
+            _load("brief_classical_example_com.txt"),
+            expected_group=CLASSICAL,
+        )
+
+        assert result.key_bits == 253
+
 
 class TestUnexpectedGroupGate:
     """Probe asked for hybrid; server returned classical."""
@@ -114,6 +131,27 @@ class TestServerTempKeyFallback:
         result = parse_brief_output(stdout, expected_group=CLASSICAL)
         assert result.negotiated_group == CLASSICAL
         assert result.failure_category is None
+        assert result.key_bits == 253
+
+
+class TestMissingHandshakeDetails:
+    """Missing optional OpenSSL lines stay unknown without inventing values."""
+
+    def test_hybrid_capture_without_temp_key_line_has_no_key_size(self) -> None:
+        result = parse_brief_output(
+            _load("brief_hybrid_pq_cloudflare.txt"),
+            expected_group=HYBRID,
+        )
+
+        assert result.key_bits is None
+
+    def test_invalid_key_sizes_stay_unknown(self) -> None:
+        for bits in ("0", "99999999"):
+            output = f"Protocol version: TLSv1.3\nPeer Temp Key: X25519, {bits} bits\n"
+
+            result = parse_brief_output(output, expected_group=CLASSICAL)
+
+            assert result.key_bits is None
 
 
 class TestBoundaryEmptyAndWhitespace:

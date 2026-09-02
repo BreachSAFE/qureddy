@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 # NIST SP 800-57 Part 1 Rev.5, Table 2: classical security strength (bits) by asymmetric
 # key size. Only the standard sizes are listed; an off-table size yields no claimed strength.
 _RSA_CLASSICAL_STRENGTH: MappingProxyType[int, int] = MappingProxyType(
-    {1024: 80, 2048: 112, 3072: 128, 4096: 152, 7680: 192, 15360: 256}
+    {1024: 80, 2048: 112, 3072: 128, 7680: 192, 15360: 256}
 )
 _EC_CLASSICAL_STRENGTH: MappingProxyType[int, int] = MappingProxyType(
     {255: 128, 256: 128, 384: 192, 448: 224, 521: 256}

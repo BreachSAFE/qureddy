@@ -29,16 +29,23 @@
   ],
   "evidence": [
     {
+      "algorithm": null,
       "asset_id": "asset-1",
       "cipher_suite": "TLS_AES_256_GCM_SHA384",
       "confidence": "high",
       "evidence_type": "tls.negotiation",
       "expected_group": null,
       "failure_category": null,
+      "handshake_hash": null,
+      "handshake_signature": null,
       "id": "ev-hybrid",
+      "key_bits": null,
       "negotiated_group": "X25519MLKEM768",
+      "nist_quantum_security_level": null,
       "notes": [],
       "observation_type": "negotiated",
+      "parameter_set_identifier": null,
+      "primitive": null,
       "probe_result": {
         "attempt_number": 1,
         "command": {
@@ -70,16 +77,23 @@
       "source": "qureddy.scanners.tls.parse"
     },
     {
+      "algorithm": null,
       "asset_id": "asset-1",
       "cipher_suite": "TLS_AES_256_GCM_SHA384",
       "confidence": "high",
       "evidence_type": "tls.negotiation",
       "expected_group": null,
       "failure_category": null,
+      "handshake_hash": null,
+      "handshake_signature": null,
       "id": "ev-classical",
+      "key_bits": null,
       "negotiated_group": "X25519",
+      "nist_quantum_security_level": null,
       "notes": [],
       "observation_type": "negotiated",
+      "parameter_set_identifier": null,
+      "primitive": null,
       "probe_result": {
         "attempt_number": 1,
         "command": {
@@ -165,7 +179,7 @@
     "completed_at": "2026-04-26T00:00:00Z",
     "scan_id": "scan-1",
     "scanner_name": "tls",
-    "scanner_version": "0.9.1",
+    "scanner_version": "0.9.5",
     "started_at": "2026-04-26T00:00:00Z",
     "status": "completed",
     "total_attempts": 2
