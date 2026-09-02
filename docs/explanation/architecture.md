@@ -359,42 +359,14 @@ dependency. This keeps a new source or output from multiplying scan paths.
 
 ## 10. Canonical result model
 
-```mermaid
-classDiagram
-    class ScanSource {
-        +SourceKind kind
-        +str endpoint
-        +str display_name
-        +ToolPolicy policy
-        +RetryPolicy retry
-    }
-    class CollectionResult {
-        +tuple observations
-        +tuple findings
-        +tuple failures
-        +Provenance provenance
-        +bool complete
-    }
-    class ScanResult {
-        +ScanTarget target
-        +ScanSummary summary
-        +tuple findings
-        +tuple evidence
-        +tuple failures
-        +Provenance provenance
-    }
-    class OutputProjection {
-        +render(ScanResult)
-    }
-    ScanSource --> CollectionResult : collector returns
-    CollectionResult --> ScanResult : semantic evaluation
-    ScanResult --> OutputProjection : every renderer consumes
-```
+The [generated data-model reference](../architecture/data-model.md) inventories every source
+class and enum, plus relationships represented by class-level type annotations. The generator's
+CI check keeps that inventory synchronized with `src/qureddy`.
 
 | Model | Owns | Does not own |
 | --- | --- | --- |
-| `ScanSource` | validated source kind, endpoint, policy, retry options | sockets, subprocesses, rendered text |
-| `CollectionResult` | raw observations, typed failures, acquisition provenance | final wording, output formatting |
+| `ScanSource` | validated source kind, locator, optional protocol, metadata | sockets, subprocesses, rendered text |
+| `CollectionResult` | evidence, findings, typed failure, acquisition provenance, optional canonical result | final wording, output formatting |
 | `ScanResult` | normalized findings, summary, evidence references | network calls, tool invocation |
 | output projection | serialization and presentation | protocol classification or retries |
 
