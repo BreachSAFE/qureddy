@@ -189,6 +189,13 @@ The parser's internal input field is excluded from serialized JSON.
 | `oid` | string or null | Object identifier |
 | `nist_quantum_security_level` | integer `0..5` or null | Established security level |
 
+Key-exchange findings populate `primitive`, `parameter_set_identifier`, and
+`nist_quantum_security_level` from QuReddy's protocol-neutral classifier when
+the negotiated or representative offered group is recognized. Classical key
+agreement and key transport use level `0`. Recognized post-quantum KEM parameter
+sets use their assigned NIST category. An unknown group remains null instead of
+receiving a fabricated classification.
+
 ## 10. Summary
 
 | Field | Type | Meaning |
@@ -337,15 +344,15 @@ not a captured current posture for the target.
       "readiness": "transitional_hybrid",
       "confidence": "high",
       "algorithm": "sntrup761x25519-sha512",
-      "primitive": null,
-      "parameter_set_identifier": null,
+      "primitive": "kem",
+      "parameter_set_identifier": "sntrup761",
       "key_size": null,
       "protocol": "ssh",
       "protocol_version": null,
       "negotiated_group": "sntrup761x25519-sha512",
       "bom_ref": null,
       "oid": null,
-      "nist_quantum_security_level": null
+      "nist_quantum_security_level": 2
     }
   ],
   "summary": {

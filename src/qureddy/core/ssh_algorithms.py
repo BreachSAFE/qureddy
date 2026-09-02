@@ -5,22 +5,13 @@
 from __future__ import annotations
 
 from types import MappingProxyType
-from typing import NamedTuple
 
 from qureddy.core import pqc
+from qureddy.core.algorithm_profile import AlgorithmProfile, classify_key_exchange
 
 # PQ KEM token/category tables live in the shared qureddy.core.pqc classifier (#330), so
 # TLS and SSH classify post-quantum groups through one structural source instead of copies.
 
-# Named-curve labels for the classical half of a KEX group, so a classical KEX
-# component carries the same shape (primitive + curve + level 0) the TLS X25519
-# control group already emits. Finite-field Diffie-Hellman has no curve.
-_CLASSICAL_KEX_CURVES: tuple[tuple[str, str], ...] = (
-    ("curve25519", "curve25519"),
-    ("nistp256", "P-256"),
-    ("nistp384", "P-384"),
-    ("nistp521", "P-521"),
-)
 # Weak/deprecated host-key algorithms, keyed to a justification note. Matched
 # by exact name (not prefix) so the SHA-2 families rsa-sha2-256 / rsa-sha2-512
 # and their cert variants stay OUT of this set -- only bare ssh-rsa signs with
@@ -94,6 +85,8 @@ _WEAK_MAC_NOTES = MappingProxyType(
 
 _TERRAPIN_CHACHA20 = "chacha20-poly1305@openssh.com"
 
+KexClass = AlgorithmProfile
+
 
 def terrapin_susceptible_modes(ciphers: tuple[str, ...], macs: tuple[str, ...]) -> tuple[str, ...]:
     """Return offered cipher/MAC combinations relevant to the Terrapin attack surface.
@@ -120,21 +113,6 @@ def weak_mac_note(name: str) -> str | None:
     return _WEAK_MAC_NOTES.get(name)
 
 
-class KexClass(NamedTuple):
-    """Structured classification of one SSH KEX group for the CBOM (#241).
-
-    ``primitive`` uses the CycloneDX ``cryptoProperties`` primitive vocabulary
-    verbatim (``kem`` / ``key-agree`` / ``pke``) so the output layer maps it with
-    no translation table. ``nist_quantum_security_level`` is the NIST PQC category
-    (0 for a classical algorithm, ``None`` when unknown -- never fabricated).
-    """
-
-    primitive: str
-    nist_quantum_security_level: int | None
-    parameter_set_identifier: str | None = None
-    curve: str | None = None
-
-
 def is_pq_hybrid_kex(name: str) -> bool:
     """True if a KEX name carries any post-quantum KEM (structural; shared classifier, #330)."""
     return pqc.is_pq_kem(name)
@@ -145,41 +123,9 @@ def pq_hybrid_kex(offer_kex: tuple[str, ...]) -> tuple[str, ...]:
     return tuple(a for a in offer_kex if is_pq_hybrid_kex(a))
 
 
-def _pq_kem_parameters(name: str) -> tuple[str, int] | None:
-    """Return (parameter_set, NIST level) for the PQ KEM in ``name``, or None (shared, #330)."""
-    return pqc.pq_kem_category(name)
-
-
-def _classical_kex_curve(lowered: str) -> str | None:
-    """Return the named curve for an ECDH/x25519 KEX name, or None."""
-    for token, curve in _CLASSICAL_KEX_CURVES:
-        if token in lowered:
-            return curve
-    return None
-
-
 def classify_kex(name: str) -> KexClass | None:
-    """Classify one SSH KEX group into a CBOM algorithm profile, or None if unknown.
-
-    PQ (hybrid or standalone) groups are the KEM primitive and carry the KEM's
-    NIST category (``None`` if the specific parameter set is unrecognized rather
-    than fabricated). Classical groups are honest key-agreement (ECDH/DH) or key
-    transport (RSA) at NIST level 0. An unrecognized name returns None so the
-    component keeps a minimal ``algorithmProperties`` instead of a made-up one.
-    """
-    lowered = name.lower()
-    if is_pq_hybrid_kex(name):
-        params = _pq_kem_parameters(name)
-        parameter_set, level = params if params is not None else (None, None)
-        return KexClass("kem", level, parameter_set_identifier=parameter_set)
-    curve = _classical_kex_curve(lowered)
-    if curve is not None:
-        return KexClass("key-agree", 0, curve=curve)
-    if lowered.startswith("diffie-hellman"):
-        return KexClass("key-agree", 0)
-    if lowered.startswith("rsa"):
-        return KexClass("pke", 0)
-    return None
+    """Preserve the SSH classifier API through the protocol-neutral owner."""
+    return classify_key_exchange(name)
 
 
 _PSEUDO_KEX_MARKERS = ("ext-info-", "kex-strict-")

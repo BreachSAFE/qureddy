@@ -46,7 +46,9 @@ def _run(
 def test_pq_hybrid_offered_is_transitional_hybrid() -> None:
     r = _run(("mlkem768x25519-sha256", "curve25519-sha256"), ("ssh-ed25519",))
     assert r.summary.readiness is Readiness.TRANSITIONAL_HYBRID
-    assert any(f.rule_id == "ssh.kex.hybrid_offered" for f in r.findings)
+    finding = next(f for f in r.findings if f.rule_id == "ssh.kex.hybrid_offered")
+    assert finding.primitive == "kem"
+    assert finding.nist_quantum_security_level == 3
 
 
 def test_pq_hybrid_with_classical_fallback_is_defeasible() -> None:
@@ -67,6 +69,11 @@ def test_pq_hybrid_with_classical_fallback_is_defeasible() -> None:
     assert "Classical alternative accepted: curve25519-sha256" in (
         result.summary.interpretation.display.evaluation.observed_facts
     )
+    classical = next(
+        finding for finding in result.findings if finding.rule_id == "ssh.kex.classical_alternative"
+    )
+    assert classical.primitive == "key-agree"
+    assert classical.nist_quantum_security_level == 0
 
 
 @pytest.mark.parametrize("marker", ["ext-info-c", "kex-strict-c-v00@openssh.com"])
@@ -97,7 +104,10 @@ def test_unrecognized_classical_kex_is_reported_as_downgrade(classical_kex: str)
 def test_classical_only_is_quantum_vulnerable() -> None:
     r = _run(("curve25519-sha256", "ecdh-sha2-nistp256"), ("ssh-ed25519",))
     assert r.summary.readiness is Readiness.QUANTUM_VULNERABLE
-    assert any(f.rule_id == "ssh.kex.classical_only" for f in r.findings)
+    finding = next(f for f in r.findings if f.rule_id == "ssh.kex.classical_only")
+    assert finding.algorithm is None
+    assert finding.primitive is None
+    assert finding.nist_quantum_security_level is None
 
 
 def test_weak_hostkey_rolls_up_to_classically_weak() -> None:

@@ -10,6 +10,7 @@ from typing import Literal
 from pydantic import BaseModel
 
 from qureddy.core import pqc
+from qureddy.core.algorithm_profile import classify_key_exchange
 from qureddy.core.ids import new_id
 from qureddy.core.models import (
     FROZEN,
@@ -284,6 +285,11 @@ def _condition_matches(condition: RuleCondition, evidence: Evidence) -> bool:
 
 
 def _build_finding(asset: Asset, rule: PolicyRule, evidence: Evidence) -> Finding:
+    profile = (
+        classify_key_exchange(evidence.negotiated_group)
+        if evidence.negotiated_group is not None
+        else None
+    )
     return Finding(
         id=new_id("finding"),
         asset_id=asset.id,
@@ -297,4 +303,11 @@ def _build_finding(asset: Asset, rule: PolicyRule, evidence: Evidence) -> Findin
         confidence=rule.confidence,
         protocol_version=evidence.protocol_version,
         negotiated_group=evidence.negotiated_group,
+        primitive=profile.primitive if profile is not None else None,
+        parameter_set_identifier=(
+            profile.parameter_set_identifier if profile is not None else None
+        ),
+        nist_quantum_security_level=(
+            profile.nist_quantum_security_level if profile is not None else None
+        ),
     )
