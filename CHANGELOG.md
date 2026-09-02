@@ -33,6 +33,13 @@ versions follow [PEP 440](https://peps.python.org/pep-0440/).
 
 ## Unreleased
 
+### Fixed
+
+- Bundle pinned stock `ike-scan` in the standard container image so the advertised
+  `qureddy scan ike` command works without mutating the published artifact. The image
+  preserves the package license notice and continues to run as an unprivileged user
+  ([issue #739](https://github.com/BreachSAFE/qureddy/issues/739)).
+
 ## [0.9.7] - 2026-09-02
 
 ### Added
