@@ -27,8 +27,8 @@ artifacts. The EnXemble repository is moving into the BreachSAFE organization; t
 organization link remains stable during that transition.
 
 TLS scans use a local OpenSSL 3.5.7 LTS binary. SSH scans read the server's
-cleartext KEXINIT offer directly. IKE scans use an optional stock `ike-scan`
-executable as a lower-trust discovery backend.
+cleartext KEXINIT offer directly. IKE scans use stock `ike-scan` as a
+lower-trust discovery backend. The container includes both external tools.
 
 > **Tip:** Start with the [Docker quickstart](#1-quickstart-with-docker). It includes
 > the pinned OpenSSL runtime and keeps the host setup small.
@@ -104,14 +104,14 @@ docker run --rm docker.io/breachsafe/qureddy:latest scan tls mozilla.org
 
 # SSH scan
 docker run --rm docker.io/breachsafe/qureddy:latest scan ssh github.com
+
+# IKE scan
+docker run --rm docker.io/breachsafe/qureddy:latest scan ike vpn.example.com
 ```
 
 Docker downloads the image automatically. No Python or OpenSSL installation is
-required on the host. The scan needs outbound access to TCP port 443 for TLS or
-TCP port 22 for SSH.
-
-The current image does not bundle the GPL-licensed `ike-scan` executable. Run IKE
-discovery from a local QuReddy installation with a separately installed executable.
+required on the host. The scan needs outbound access to TCP port 443 for TLS,
+TCP port 22 for SSH, or UDP port 500/4500 for IKE.
 
 If Docker Hub is unavailable, use the GHCR copy of the same release:
 
@@ -168,8 +168,8 @@ bash guided-scan.sh
 ```
 
 Only scan targets you are authorized to test. Set `DRY_RUN=1` to print the commands without
-running them. The guided Docker script covers TLS and SSH. Use the locally installed CLI for
-IKE because the current image does not bundle the stock `ike-scan` executable.
+running them. The guided Docker script covers TLS and SSH. Run IKE with the direct container
+command in [section 6](#6-run-an-ike-scan).
 
 ## 2. Install locally with pipx
 
@@ -209,7 +209,7 @@ Windows, virtual environment, upgrade, and uninstall instructions.
 
 A local install covers SSH scanning immediately. TLS scanning additionally needs a
 suitable OpenSSL, covered in [section 4](#4-prepare-openssl-for-tls). IKE scanning
-additionally needs stock `ike-scan`; the current container does not bundle it.
+additionally needs stock `ike-scan`. The container bundles both external tools.
 
 ## 3. Run the first SSH scan
 
@@ -285,12 +285,14 @@ qureddy scan tls 1.1.1.1:443 --sni one.one.one.one
 
 ## 6. Run an IKE scan
 
-Install stock `ike-scan` separately, confirm its version, and scan only endpoints you
-are authorized to test:
+For a local Python installation, install stock `ike-scan` separately and confirm its
+version. The container already includes it. Scan only endpoints you are authorized to
+test:
 
 ```bash
 ike-scan --version
 qureddy scan ike vpn.example.com --nat-t
+docker run --rm ghcr.io/breachsafe/qureddy:latest scan ike vpn.example.com --nat-t
 ```
 
 The backend records lower-trust, tool-reported discovery evidence. It does not claim a

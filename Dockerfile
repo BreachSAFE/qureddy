@@ -37,13 +37,22 @@ RUN python -m build --wheel --no-isolation --outdir /tmp/wheel
 FROM python:3.14-slim-bookworm@sha256:9ab8d9c8514b44f90cf0029dd42fdd7e9e211e639c8b995304cc04568dee900f
 
 ARG QUREDDY_VERSION=0.9.7
+ARG IKE_SCAN_VERSION=1.9.5-1+b1
 LABEL org.opencontainers.image.title="QuReddy" \
-      org.opencontainers.image.description="Post-quantum readiness scanner for TLS and SSH endpoints" \
+      org.opencontainers.image.description="Post-quantum readiness scanner for TLS, SSH, and IKE endpoints" \
       org.opencontainers.image.source="https://github.com/breachsafe/qureddy" \
-      org.opencontainers.image.licenses="Apache-2.0" \
-      org.opencontainers.image.version="${QUREDDY_VERSION}"
+      org.opencontainers.image.licenses="Apache-2.0 AND (GPL-3.0-or-later WITH openvpn-openssl-exception)" \
+      org.opencontainers.image.version="${QUREDDY_VERSION}" \
+      io.breachsafe.qureddy.ike-scan.version="${IKE_SCAN_VERSION}"
 
 COPY --from=openssl-build /opt/openssl /opt/openssl
+
+# IKE scans invoke Debian's stock ike-scan as a separate process. Keep the
+# package's installed copyright and license notice with the runtime image.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends "ike-scan=${IKE_SCAN_VERSION}" \
+    && test -r /usr/share/doc/ike-scan/copyright \
+    && rm -rf /var/lib/apt/lists/*
 
 ENV QUREDDY_OPENSSL=/opt/openssl/bin/openssl \
     LD_LIBRARY_PATH=/opt/openssl/lib64:/opt/openssl/lib \
