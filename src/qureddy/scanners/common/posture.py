@@ -176,7 +176,11 @@ def _hndl_exposure(
 
 
 def _hygiene_status(
-    signals: PostureSignals, *, not_testable: bool, has_findings: bool
+    signals: PostureSignals,
+    *,
+    failure_category: FailureCategory | None,
+    not_testable: bool,
+    has_findings: bool,
 ) -> HygieneStatus:
     """Classify present-day hygiene independently of HNDL exposure."""
     if not_testable:
@@ -184,12 +188,15 @@ def _hygiene_status(
     if signals.hygiene_weak:
         return HygieneStatus.WEAK
     if (
-        signals.classical_kex
+        signals.legacy_protocol
+        or signals.classical_kex
         or signals.authentication_classical
         or signals.downgrade_action_needed
         or signals.protocol_action_needed
     ):
         return HygieneStatus.ACTION_NEEDED
+    if failure_category is FailureCategory.TLS_HANDSHAKE_FAILED:
+        return HygieneStatus.UNKNOWN
     return HygieneStatus.OK if has_findings else HygieneStatus.UNKNOWN
 
 
@@ -309,7 +316,10 @@ def build_interpretation(
         not_testable=not_testable,
     )
     hygiene_status = _hygiene_status(
-        signals, not_testable=not_testable, has_findings=bool(findings)
+        signals,
+        failure_category=failure_category,
+        not_testable=not_testable,
+        has_findings=bool(findings),
     )
     evaluation = evaluate_posture(
         findings,
