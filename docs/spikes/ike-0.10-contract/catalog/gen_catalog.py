@@ -10,10 +10,17 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-import sys
+from argparse import ArgumentParser, Namespace
 from pathlib import Path
 
-CORPUS = Path("/Users/paul/claude/breachsafe-standards/standards/rfc/iana-ike")
+EXPECTED_SHA256 = {
+    "ikev2-parameters.xml": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
+    "ipsec-registry.xml": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
+}
+SOURCE_URL = {
+    "ikev2-parameters.xml": "https://www.iana.org/assignments/ikev2-parameters/ikev2-parameters.xml",
+    "ipsec-registry.xml": "https://www.iana.org/assignments/ipsec-registry/ipsec-registry.xml",
+}
 
 # role -> (registry file, registry id, ike version, wire location)
 SPEC = {
@@ -65,6 +72,29 @@ POST_MVP = {("2", "key_exchange", 36), ("2", "key_exchange", 37)}  # ML-KEM-768/
 def sha256(p: Path) -> str:
     """Return the SHA-256 hex digest of a file."""
     return hashlib.sha256(p.read_bytes()).hexdigest()
+
+
+def parse_args() -> Namespace:
+    """Parse explicit, portable input and output paths."""
+    parser = ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--corpus-dir",
+        required=True,
+        type=Path,
+        help="directory containing the pinned IANA XML snapshots",
+    )
+    parser.add_argument("--output", required=True, type=Path, help="catalog JSON to write")
+    return parser.parse_args()
+
+
+def verify_input(path: Path, expected: str) -> str:
+    """Fail closed unless an input exists and matches the pinned digest."""
+    if not path.is_file():
+        raise SystemExit(f"required input does not exist: {path}")
+    actual = sha256(path)
+    if actual != expected:
+        raise SystemExit(f"input digest mismatch for {path}: expected {expected}, got {actual}")
+    return actual
 
 
 def updated(text: str) -> str:
@@ -121,13 +151,10 @@ def classify(name: str, status: str | None) -> str:
     return "current"
 
 
-def main() -> int:
-    """Generate the catalog and write it to the given path."""
-    files = {f: (CORPUS / f) for f in {v[0] for v in SPEC.values()}}
-    prov = {
-        f: {"sha256": sha256(p), "updated": updated(p.read_text(encoding="utf-8"))}
-        for f, p in files.items()
-    }
+def build_entries(
+    files: dict[str, Path], provenance: dict[str, dict[str, str]]
+) -> tuple[list[dict], int]:
+    """Build sorted catalog entries and return the skipped-range count."""
     entries, skipped = [], 0
     for (ver, role), (fname, reg_id, wire) in sorted(SPEC.items()):
         for r in parse(files[fname], reg_id):
@@ -156,24 +183,40 @@ def main() -> int:
                     "status": classify(r["name"], r["status_raw"]),
                     "citations": r["xrefs"] or None,
                     "registry_file": fname,
-                    "registry_updated": prov[fname]["updated"],
-                    "registry_sha256": prov[fname]["sha256"],
+                    "registry_updated": provenance[fname]["updated"],
+                    "registry_sha256": provenance[fname]["sha256"],
                     "scheduled_profile": sched,
                 }
             )
     entries.sort(key=lambda e: (e["ike_version"], e["role"], e["wire_id"]))
+    return entries, skipped
+
+
+def main() -> int:
+    """Generate the catalog and write it to the given path."""
+    args = parse_args()
+    files = {name: args.corpus_dir / name for name in EXPECTED_SHA256}
+    verified = {name: verify_input(path, EXPECTED_SHA256[name]) for name, path in files.items()}
+    provenance = {
+        name: {
+            "source_url": SOURCE_URL[name],
+            "sha256": verified[name],
+            "updated": updated(path.read_text(encoding="utf-8")),
+        }
+        for name, path in files.items()
+    }
+    entries, skipped = build_entries(files, provenance)
     doc = {
         "schema": "qureddy.ike.algorithm-catalog.v1",
         "catalog_version": "0.10.0-draft1",
         "source": "pinned IANA snapshots; no network fetch",
-        "provenance": prov,
+        "provenance": provenance,
         "entry_count": len(entries),
         "range_rows_skipped": skipped,
         "entries": entries,
     }
-    out = Path(sys.argv[1] if len(sys.argv) > 1 else "ike-catalog.json")
-    out.write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
-    print(f"  wrote {out}: {len(entries)} entries, {skipped} range rows skipped")
+    args.output.write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
+    print(f"  wrote {args.output}: {len(entries)} entries, {skipped} range rows skipped")
     return 0
 
 

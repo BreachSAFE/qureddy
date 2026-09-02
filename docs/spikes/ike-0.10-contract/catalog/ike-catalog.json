@@ -4,10 +4,12 @@
   "source": "pinned IANA snapshots; no network fetch",
   "provenance": {
     "ikev2-parameters.xml": {
+      "source_url": "https://www.iana.org/assignments/ikev2-parameters/ikev2-parameters.xml",
       "sha256": "9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b",
       "updated": "2026-07-16"
     },
     "ipsec-registry.xml": {
+      "source_url": "https://www.iana.org/assignments/ipsec-registry/ipsec-registry.xml",
       "sha256": "5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0",
       "updated": "2024-12-06"
     }
@@ -5696,6 +5698,8 @@
   ],
   "rfc8247_axis": {
     "note": "IANA status and RFC 8247 requirement are independent axes",
+    "source_url": "https://www.rfc-editor.org/rfc/rfc8247.txt",
+    "sha256": "e1e6a86cfddcb2ebbe39ba1c2cf5516b8cb5f39fd0d53dea468a522a3b7a7250",
     "rows_parsed": 20,
     "entries_matched": 20,
     "entries_unmatched": 312

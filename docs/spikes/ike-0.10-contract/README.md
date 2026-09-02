@@ -103,23 +103,33 @@ no tuple matrix, no payload table beyond error notifies, and no projections.
 | `catalog/ike-catalog.json` | 332 entries, IKEv1 118 and IKEv2 214 |
 | `capture/ike-lab.pcap` | 12 ISAKMP packets, IKEv1 and IKEv2, five peers |
 
-Catalog provenance is embedded per row: registry file, the registry's own
-`updated` value, and its SHA-256.
+Catalog provenance is embedded per row: registry file, canonical source URL,
+the registry's own `updated` value, and its SHA-256. The RFC 8247 axis likewise
+records its canonical URL and SHA-256. The generators reject missing or changed
+inputs rather than silently generating from a different snapshot.
 
 ```
-ikev2-parameters.xml  updated=2026-07-16  sha256=9bf17e07cfe8bba7…
-ipsec-registry.xml    updated=2024-12-06  sha256=5f84b39002709181…
+ikev2-parameters.xml  updated=2026-07-16  sha256=9bf17e07cfe8bba7a5c249bd882873077f480d0f968b47c64ae3e6b7f096dd6b
+ipsec-registry.xml    updated=2024-12-06  sha256=5f84b390027091816f48942f0ad9a5402491ae658c0585481c6f4d1ceaeae3f0
+rfc8247.txt                               sha256=e1e6a86cfddcb2ebbe39ba1c2cf5516b8cb5f39fd0d53dea468a522a3b7a7250
 ```
 
 ## 4. Reproducing
 
 ```bash
-# catalog, from the vendored corpus only
-python3 catalog/gen_catalog.py ike-catalog.json
-python3 catalog/add_rfc8247.py ike-catalog.json
+# Run from the QuReddy repository root. Set BREACHSAFE_COMMON_DIR to a local
+# corpus containing the exact snapshots listed above.
+: "${BREACHSAFE_COMMON_DIR:?set this to the breachsafe-common checkout}"
+SPIKE_DIR=docs/spikes/ike-0.10-contract
+uv run --locked python "$SPIKE_DIR/catalog/gen_catalog.py" \
+  --corpus-dir "$BREACHSAFE_COMMON_DIR/standards/rfc/iana-ike" \
+  --output "$SPIKE_DIR/catalog/ike-catalog.json"
+uv run --locked python "$SPIKE_DIR/catalog/add_rfc8247.py" \
+  --rfc-path "$BREACHSAFE_COMMON_DIR/standards/rfc/rfc8247/rfc8247.txt" \
+  --catalog "$SPIKE_DIR/catalog/ike-catalog.json"
 
 # capture, from a container on the lab bridge
-tshark -r capture/ike-lab.pcap -Y isakmp -T fields \
+tshark -r "$SPIKE_DIR/capture/ike-lab.pcap" -Y isakmp -T fields \
   -e frame.number -e ip.src -e isakmp.ispi -e isakmp.rspi \
   -e isakmp.version -e isakmp.exchangetype -e isakmp.flags -e isakmp.messageid
 ```
