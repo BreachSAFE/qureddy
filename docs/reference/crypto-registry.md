@@ -7,9 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 
 [![Diátaxis reference](https://img.shields.io/badge/Di%C3%A1taxis-reference-1f6feb?style=flat-square)](https://diataxis.fr/reference/)
 
-This page describes the proposed `qureddy-crypto-registry.json` contract tracked by issue #708.
-The registry is not a shipped runtime interface. Its current review fixture is
-[`qureddy-crypto-registry.proposed.json`](../architecture/examples/qureddy-crypto-registry.proposed.json).
+This page describes the proposed `qureddy-crypto-registry.json` contract tracked by issue #708. The current review fixture is [`qureddy-crypto-registry.proposed.json`](../architecture/examples/qureddy-crypto-registry.proposed.json).
 
 ## Contents
 
@@ -41,9 +39,7 @@ The registry is not a shipped runtime interface. Its current review fixture is
 | Review fixture | `docs/architecture/examples/qureddy-crypto-registry.proposed.json` |
 | Runtime availability | Not implemented |
 
-The schema URI records the intended stable identifier. No published schema or runtime loader exists
-until #708 satisfies its acceptance criteria. Consumers must not treat the review fixture as a
-released registry.
+The schema URI records the intended stable identifier. Until #708 is accepted, consumers MUST NOT treat the review fixture as a released registry.
 
 ## 2. Requirements language and terms
 
@@ -60,8 +56,7 @@ Lowercase uses of these words retain their ordinary meaning.
 | Assessment | A protocol-neutral capability conclusion consumed by grading policy |
 | Consumer | Code that loads the registry or consumes identities derived from it |
 
-An implementation conforms to this proposed contract only when it validates the complete document,
-resolves every required reference, and applies the failure behavior in Section 11.
+Conformance requires complete validation, reference resolution, and the Section 11 failure behavior.
 
 ## 3. Registry responsibility
 
@@ -85,6 +80,67 @@ The registry does not own:
 | Framework and control mappings | mint-oscal policy packs |
 | Organizational scope and approval | Enterprise |
 | Raw testssl severity, CWE, CVE, or finding text | testssl adapter evidence |
+
+### Processing flow
+
+Figure 1 shows the proposed registry inputs, acquisition boundary, canonical interpretation, and
+output ownership. Text labels carry the same meaning as color.
+
+```mermaid
+flowchart TB
+    subgraph AUTH["🟨 Authoritative sources"]
+        IANA[IANA] ~~~ RFC[RFCs] ~~~ NIST[NIST] ~~~ CWE[MITRE CWE] ~~~ CDX[CycloneDX]
+    end
+    IANA & RFC & NIST & CWE & CDX --> IMPORT["🟩 Reviewed import<br/>URI + release + digest + license + locator"]
+    IMPORT --> REG["🟩 Crypto registry<br/>facts + ratings + postures + source refs"]
+    PROFILE["🟦 CLI profile"] --> PLAN["🟦 Probe plan"]
+    PLAN --> NATIVE["🟦 Native selector"] & OPENSSL["🟦 Pinned OpenSSL"] & TESTSSL["🟨 External testssl"]
+    TESTSSL -->|"versioned JSON<br/>raw severity + CWE/CVE"| ADAPTER["🟦 testssl adapter"]
+    NATIVE & OPENSSL & ADAPTER --> OBS["🟩 Canonical observations"]
+    REG & OBS --> FIND["🟩 Canonical findings"]
+    FIND --> ASSESS["🟩 Capability assessments"]
+    ASSESS --> POLICY["🟪 Grading policy"] --> SCORE["🟪 Score + grade + assurance"]
+    REG & OBS --> CBOM["🟧 CBOM inventory"]
+    FIND --> SARIF["🟧 SARIF"] & OSCAL["🟧 mint-oscal / Enterprise"]
+    SCORE --> RICH["🟧 Rich summary"] & JSON["🟧 JSON / JSONL"]
+    ADAPTER -. "raw severity or CWE" .-> BLOCK["⛔ no direct scoring"]
+    BLOCK ~~~ POLICY
+    classDef authority fill:#fff3bf,stroke:#b7791f,color:#332500
+    classDef acquisition fill:#bee3f8,stroke:#2b6cb0,color:#102a43
+    classDef canonical fill:#c6f6d5,stroke:#25855a,color:#102a1d
+    classDef policy fill:#e9d8fd,stroke:#805ad5,color:#27143d
+    classDef output fill:#feebc8,stroke:#c05621,color:#3d1c00
+    classDef blocked fill:#fed7d7,stroke:#c53030,color:#3b0a0a
+    class IANA,RFC,NIST,CWE,CDX,TESTSSL authority
+    class PROFILE,PLAN,NATIVE,OPENSSL,ADAPTER acquisition
+    class IMPORT,REG,OBS,FIND,ASSESS canonical
+    class POLICY,SCORE policy
+    class CBOM,SARIF,OSCAL,RICH,JSON output
+    class BLOCK blocked
+```
+
+Text-only equivalent:
+
+```text
+IANA + RFCs + NIST + MITRE CWE + CycloneDX
+                       |
+                       v
+              reviewed import ---> crypto registry
+                                         |
+profile ---> probe plan ---> collectors ---> canonical observations
+                                         |             |
+                                         +-------------+
+                                                       v
+canonical findings ---> capability assessments ---> grading policy ---> score
+        |                                                      |
+        +---> CBOM / SARIF / mint-oscal             Rich / JSON / JSONL
+
+testssl raw severity or CWE --------X--------> direct score change
+```
+
+Plain-text path: reviewed authorities build the registry. Probe plans control acquisition.
+Collectors and adapters emit observations. The registry interprets observations into findings and
+assessments. The grading policy scores assessments. Renderers project canonical results.
 
 ## 4. Document fields
 
@@ -123,8 +179,7 @@ contains:
 | `sha256` | Digest of the reviewed source bytes |
 | `license` | Applicable source terms or license |
 
-A `source_ref` contains a `source_id` plus an exact `locator`, such as an RFC section, NIST table,
-or IANA row. Every rating MUST contain at least one resolvable source reference.
+A `source_ref` contains a `source_id` and exact `locator`. Every rating MUST contain at least one resolvable source reference.
 
 ## 6. Postures and ratings
 
@@ -170,20 +225,11 @@ CycloneDX-aligned crypto properties, optional sourced ratings, and posture refer
     "ratings": {
       "classical": {
         "verdict": "classically_weak",
-        "reason_codes": [
-          "rc4_prohibited"
-        ],
-        "source_refs": [
-          {
-            "source_id": "rfc7465",
-            "locator": "section-2"
-          }
-        ]
+        "reason_codes": ["rc4_prohibited"],
+        "source_refs": [{"source_id": "rfc7465", "locator": "section-2"}]
       }
     },
-    "posture_ids": [
-      "crypto.classically_weak"
-    ]
+    "posture_ids": ["crypto.classically_weak"]
   }
 }
 ```
@@ -212,8 +258,8 @@ record contains:
 | `ratings` | Protocol-entry interpretations that do not belong to one constituent |
 | `posture_ids` | Combined postures established by the cited constituents and entry ratings |
 
-The algorithm decomposition prevents cipher-suite names from becoming the rating source. TLS, SSH,
-IKE, and future protocol adapters can reference the same algorithm and posture identities.
+Algorithm decomposition prevents cipher-suite names from becoming the rating source. TLS, SSH, IKE,
+and future protocol adapters can reference the same algorithm and posture identities.
 
 ## 9. Evidence types
 
