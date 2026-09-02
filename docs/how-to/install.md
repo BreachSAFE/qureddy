@@ -5,7 +5,7 @@
 Install the `breachsafe-qureddy` distribution with Python 3.14 or newer. Use `pipx` for
 the command line application or install into a managed virtual environment.
 SSH scanning works without OpenSSL. TLS scanning requires a separate OpenSSL
-3.5.7 LTS binary.
+3.5.7 LTS binary. IKE scanning requires a separate stock `ike-scan` executable.
 
 ## Contents
 
@@ -29,6 +29,7 @@ QuReddy requires:
 - macOS, Linux, or Windows
 - network reachability to the target
 - OpenSSL 3.5.7 LTS for `scan tls` only
+- stock `ike-scan` for `scan ike` only
 
 Check Python before installing:
 
@@ -89,6 +90,13 @@ Homebrew can install Python and pipx:
 ```bash
 brew install python@3.14 pipx
 pipx ensurepath
+```
+
+Install the optional IKE collector tool separately when needed:
+
+```bash
+brew install ike-scan
+ike-scan --version
 ```
 
 For the current TestPyPI-only release, use both indexes:
@@ -244,6 +252,7 @@ The version and help commands are offline:
 qureddy --version
 qureddy scan ssh --help
 qureddy scan tls --help
+qureddy scan ike --help
 ```
 
 The first network check uses SSH and needs outbound TCP port 22:
@@ -328,6 +337,31 @@ KEXINIT response was malformed. Confirm DNS, the port, firewall rules, and
 source IP allowlisting. Do not install OpenSSL for this failure; SSH scans do
 not use it.
 
+### IKE scan exits 2
+
+Exit `2` means a bounded `ike-scan` probe timed out or produced output that
+QuReddy could not interpret safely. Confirm UDP reachability to the target,
+then inspect process diagnostics:
+
+```bash
+qureddy scan ike vpn.example.com --nat-t -vv
+```
+
+### IKE scan exits 3
+
+Exit `3` means the stock `ike-scan` executable is missing, cannot run, or
+exited nonzero. Confirm the exact executable and, if necessary, select it
+explicitly:
+
+```bash
+ike-scan --version
+qureddy scan ike vpn.example.com --ike-scan /absolute/path/to/ike-scan
+```
+
+Direct probes bind UDP source port `500`; NAT-T probes bind source port `4500`.
+Resolve local permission or port-conflict errors instead of overriding the
+source port unless the target accepts a different one.
+
 ### Machine output does not parse
 
 Do not combine explicitly requested verbose logs with standard output. Use:
@@ -345,4 +379,5 @@ error empty.
 - [CLI reference](../reference/cli.md)
 - [Exit codes](../reference/exit-codes.md)
 - [Scan SSH or SFTP](scan-ssh.md)
+- [Scan an IKE endpoint](scan-ike.md)
 - [Generate and validate a CBOM](generate-a-cbom.md)

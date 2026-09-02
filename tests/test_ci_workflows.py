@@ -21,6 +21,22 @@ def test_public_network_probes_are_scheduled_or_manual_only() -> None:
     assert LIVE_ONLY_IF in live_phase
     assert LIVE_ONLY_IF in self_scan
     assert "scan ssh github.com" in self_scan
+    assert "pytest tests/live/test_live_targets.py" in live_phase
+    assert "tests/ike_lab" not in live_phase
+
+
+def test_unit_matrix_exercises_windows_pipe_behavior() -> None:
+    """Run the real bounded-process tests where selectors cannot read pipes."""
+    workflow = CI_WORKFLOW.read_text(encoding="utf-8")
+    unit_phase = workflow.split("  phase-2-unit:", 1)[1].split("  phase-2-ike-windows:", 1)[0]
+    windows_phase = workflow.split("  phase-2-ike-windows:", 1)[1].split(
+        "  phase-3-integration:", 1
+    )[0]
+
+    assert "os: [ubuntu-latest, macos-latest]" in unit_phase
+    assert "runs-on: windows-latest" in windows_phase
+    assert "pytest tests/test_ike_*.py" in windows_phase
+    assert "needs: [phase-2-unit, phase-2-ike-windows]" in workflow
 
 
 def test_blocking_package_install_smoke_is_hermetic() -> None:

@@ -58,9 +58,11 @@ BUILD_GATES = (
     "smoke-version",
     "smoke-tls-help",
     "smoke-ssh-help",
+    "smoke-ike-help",
     "smoke-usage-error",
     "smoke-tls-scan",
     "smoke-ssh-scan",
+    "smoke-ike-missing-tool",
     "sdist-venv",
     "sdist-install",
     "sdist-pip-check",
@@ -96,6 +98,8 @@ def test_actual_orchestrator_fails_closed_at_each_gate(
         expected = (
             4
             if command[-2:] == ["scan", "tls"]
+            else 3
+            if "scan" in command and "ike" in command and "--format" in command
             else 2
             if "scan" in command and "ssh" in command and "--format" in command
             else 0

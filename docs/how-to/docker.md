@@ -3,18 +3,20 @@
 [![Diátaxis how-to](https://img.shields.io/badge/Di%C3%A1taxis-how--to-2ea44f?style=flat-square)](https://diataxis.fr/how-to-guides/)
 
 The QuReddy container packages the release wheel with a checksum-verified
-OpenSSL 3.5.7 runtime. It runs as an unprivileged user and is published to the
-BreachSAFE GitHub Container Registry (GHCR) and Docker Hub mirror.
+OpenSSL 3.5.7 runtime and stock `ike-scan`. It runs as an unprivileged user and
+is published to the BreachSAFE GitHub Container Registry (GHCR) and Docker Hub
+mirror.
 
 ## Contents
 
 1. [Pull the release image](#1-pull-the-release-image)
 2. [Run a TLS scan](#2-run-a-tls-scan)
 3. [Run an SSH scan](#3-run-an-ssh-scan)
-4. [Write JSON or CBOM output](#4-write-json-or-cbom-output)
-5. [Pin the image digest](#5-pin-the-image-digest)
-6. [Build locally](#6-build-locally)
-7. [Publish a release image](#7-publish-a-release-image)
+4. [Run an IKE scan](#4-run-an-ike-scan)
+5. [Write JSON or CBOM output](#5-write-json-or-cbom-output)
+6. [Pin the image digest](#6-pin-the-image-digest)
+7. [Build locally](#7-build-locally)
+8. [Publish a release image](#8-publish-a-release-image)
 
 ## 1. Pull the release image
 
@@ -33,19 +35,28 @@ docker run --rm docker.io/breachsafe/qureddy:latest \
   scan ssh github.com
 ```
 
-The container needs outbound TCP port 443 for TLS or TCP port 22 for SSH.
+For IKE:
+
+```bash
+docker run --rm docker.io/breachsafe/qureddy:latest \
+  scan ike vpn.example.com
+```
+
+The container needs outbound TCP port 443 for TLS, TCP port 22 for SSH, or UDP
+port 500/4500 for IKE.
 
 If Docker Hub is unavailable, run the same commands from GHCR:
 
 ```bash
 docker run --rm ghcr.io/breachsafe/qureddy:latest scan tls mozilla.org
 docker run --rm ghcr.io/breachsafe/qureddy:latest scan ssh github.com
+docker run --rm ghcr.io/breachsafe/qureddy:latest scan ike vpn.example.com
 ```
 
 To download the image without running a scan:
 
 ```bash
-docker pull docker.io/breachsafe/qureddy:latest
+docker pull ghcr.io/breachsafe/qureddy:latest
 ```
 
 The GHCR image is also available:
@@ -61,7 +72,7 @@ Docker Hub applies limits to unauthenticated pulls. Authenticate with
 `docker login` for automation, or use the GHCR copy when Docker Hub access is
 limited.
 
-The image includes the TLS collector. A host OpenSSL installation and
+The image includes the TLS and IKE collectors. Host OpenSSL, `ike-scan`, and a
 `QUREDDY_OPENSSL` setting are unnecessary inside the container.
 
 ## 2. Run a TLS scan
@@ -87,7 +98,18 @@ docker run --rm docker.io/breachsafe/qureddy:latest \
 
 SSH scans need outbound TCP 22 access and do not invoke OpenSSL.
 
-## 4. Write JSON or CBOM output
+## 4. Run an IKE scan
+
+```bash
+docker run --rm docker.io/breachsafe/qureddy:latest \
+  scan ike vpn.example.com --nat-t
+```
+
+IKE discovery needs outbound UDP 500, or UDP 4500 with `--nat-t`. The bundled
+stock `ike-scan` runs as the same unprivileged user as QuReddy. It does not
+require added Linux capabilities or privileged container mode.
+
+## 5. Write JSON or CBOM output
 
 ```bash
 docker run --rm docker.io/breachsafe/qureddy:latest \
@@ -103,7 +125,7 @@ documented exit-code contract applies inside the container, including exit
 code `2` for a target handshake failure and `3` for a local TLS collector
 failure.
 
-## 5. Pin the image digest
+## 6. Pin the image digest
 
 ```bash
 docker pull ghcr.io/breachsafe/qureddy:latest
@@ -113,7 +135,7 @@ docker image inspect ghcr.io/breachsafe/qureddy:latest \
 
 Replace the tag with the returned `@sha256:...` reference in production jobs.
 
-## 6. Build locally
+## 7. Build locally
 
 A fresh clone builds with no prerequisites; the image builds the wheel from
 source in an in-image stage, so no host `python -m build` step is needed:
@@ -124,10 +146,11 @@ docker run --rm qureddy:local --version
 ```
 
 The Dockerfile verifies the OpenSSL source archive SHA-256 before compiling,
-builds the wheel from source, and copies only the installed runtime into the
+installs a version-pinned Debian `ike-scan` package with its license notice,
+builds the wheel from source, and copies only the required runtime into the
 final image.
 
-## 7. Publish a release image
+## 8. Publish a release image
 
 The repository workflow at `.github/workflows/container.yml` publishes when a
 GitHub Release is published, and on demand through a manual dispatch with

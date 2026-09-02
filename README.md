@@ -18,7 +18,7 @@
 [![TestPyPI package](https://img.shields.io/badge/TestPyPI-breachsafe--qureddy-blue?style=flat-square&logo=pypi)](https://test.pypi.org/project/breachsafe-qureddy/)
 
 QuReddy is an open-source command line scanner for post-quantum readiness at
-TLS and SSH endpoints. It records the protocol and cryptographic evidence that
+TLS, SSH, and IKE endpoints. It records the protocol and cryptographic evidence that
 the endpoint exposes to a client, then reports the observed readiness posture.
 
 Primary integration: [BreachSAFE EnXemble](https://github.com/BreachSAFE) runs QuReddy
@@ -27,7 +27,8 @@ artifacts. The EnXemble repository is moving into the BreachSAFE organization; t
 organization link remains stable during that transition.
 
 TLS scans use a local OpenSSL 3.5.7 LTS binary. SSH scans read the server's
-cleartext KEXINIT offer directly and do not require OpenSSL.
+cleartext KEXINIT offer directly. IKE scans use stock `ike-scan` as a
+lower-trust discovery backend. The container includes both external tools.
 
 > **Tip:** Start with the [Docker quickstart](#1-quickstart-with-docker). It includes
 > the pinned OpenSSL runtime and keeps the host setup small.
@@ -38,6 +39,7 @@ cleartext KEXINIT offer directly and do not require OpenSSL.
 | --- | --- | --- |
 | TLS endpoint | handshake, certificate, key exchange, protocol hygiene | Rich, JSON, JSONL, CBOM |
 | SSH endpoint | banner, KEXINIT algorithms, host-key and authentication evidence | Rich, JSON, JSONL, CBOM |
+| IKE endpoint | responder modes, tool-reported transforms, NOTIFY responses | Rich, JSON, JSONL, CBOM |
 | EnXemble host | scan bundle and CISO evaluation | JSONL, JSON, CBOM |
 
 <details>
@@ -62,7 +64,7 @@ key exchange. Long-lived secrets sent now over classical TLS or SSH are already 
 
 Watch **[Your Encryption Isn't Quantum Safe](https://www.youtube.com/watch?v=ecvCfTPRBrI)**
 (IBM Technology), then track the clock at **[Is it Q-Day?](https://isitqday.com/)**. QuReddy
-shows which of your TLS and SSH endpoints are exposed today.
+shows which of your TLS, SSH, and IKE endpoints expose classical key establishment today.
 
 ## Contents
 
@@ -73,15 +75,16 @@ shows which of your TLS and SSH endpoints are exposed today.
 5. [Run the first SSH scan](#3-run-the-first-ssh-scan)
 6. [Prepare OpenSSL for TLS](#4-prepare-openssl-for-tls)
 7. [Run the first TLS scan](#5-run-the-first-tls-scan)
-8. [Write JSON, JSONL, CBOM, or a bundle](#6-write-json-jsonl-cbom-or-a-bundle)
-9. [Interpret the evidence](#7-interpret-the-evidence)
-10. [Exit codes](#8-exit-codes)
-11. [Network and privacy scope](#9-network-and-privacy-scope)
-12. [Requirements](#10-requirements)
-13. [Documentation and support](#11-documentation-and-support)
-14. [Contributing](#12-contributing)
-15. [Open-source stack](#open-source-stack)
-16. [License](#13-license)
+8. [Run an IKE scan](#6-run-an-ike-scan)
+9. [Write JSON, JSONL, CBOM, or a bundle](#7-write-json-jsonl-cbom-or-a-bundle)
+10. [Interpret the evidence](#8-interpret-the-evidence)
+11. [Exit codes](#9-exit-codes)
+12. [Network and privacy scope](#10-network-and-privacy-scope)
+13. [Requirements](#11-requirements)
+14. [Documentation and support](#12-documentation-and-support)
+15. [Contributing](#13-contributing)
+16. [Open-source stack](#open-source-stack)
+17. [License](#14-license)
 
 ## 1. Quickstart with Docker
 
@@ -101,11 +104,14 @@ docker run --rm docker.io/breachsafe/qureddy:latest scan tls mozilla.org
 
 # SSH scan
 docker run --rm docker.io/breachsafe/qureddy:latest scan ssh github.com
+
+# IKE scan
+docker run --rm docker.io/breachsafe/qureddy:latest scan ike vpn.example.com
 ```
 
 Docker downloads the image automatically. No Python or OpenSSL installation is
-required on the host. The scan needs outbound access to TCP port 443 for TLS or
-TCP port 22 for SSH.
+required on the host. The scan needs outbound access to TCP port 443 for TLS,
+TCP port 22 for SSH, or UDP port 500/4500 for IKE.
 
 If Docker Hub is unavailable, use the GHCR copy of the same release:
 
@@ -120,7 +126,7 @@ limits to unauthenticated pulls.
 Each command needs outbound network access to the named target: TCP port 443 for
 the TLS example, TCP port 22 for the SSH example. Add `--format json`,
 `--format jsonl`, or `--format cbom` for machine output, as shown in
-[section 6](#6-write-json-jsonl-cbom-or-a-bundle).
+[section 7](#7-write-json-jsonl-cbom-or-a-bundle).
 
 For reproducible deployments, pin an immutable reference instead of `:latest`.
 Use an explicit version tag, or preferably a `@sha256:` digest:
@@ -162,7 +168,8 @@ bash guided-scan.sh
 ```
 
 Only scan targets you are authorized to test. Set `DRY_RUN=1` to print the commands without
-running them. IKE support is planned; the guided script covers TLS and SSH today.
+running them. The guided Docker script covers TLS and SSH. Run IKE with the direct container
+command in [section 6](#6-run-an-ike-scan).
 
 ## 2. Install locally with pipx
 
@@ -201,8 +208,8 @@ creates an isolated environment and places `qureddy` on your command path. See t
 Windows, virtual environment, upgrade, and uninstall instructions.
 
 A local install covers SSH scanning immediately. TLS scanning additionally needs a
-suitable OpenSSL, covered in [section 4](#4-prepare-openssl-for-tls). The container
-in [section 1](#1-quickstart-with-docker) avoids that step entirely.
+suitable OpenSSL, covered in [section 4](#4-prepare-openssl-for-tls). IKE scanning
+additionally needs stock `ike-scan`. The container bundles both external tools.
 
 ## 3. Run the first SSH scan
 
@@ -276,7 +283,24 @@ For an IP target that requires Server Name Indication (SNI):
 qureddy scan tls 1.1.1.1:443 --sni one.one.one.one
 ```
 
-## 6. Write JSON, JSONL, CBOM, or a bundle
+## 6. Run an IKE scan
+
+For a local Python installation, install stock `ike-scan` separately and confirm its
+version. The container already includes it. Scan only endpoints you are authorized to
+test:
+
+```bash
+ike-scan --version
+qureddy scan ike vpn.example.com --nat-t
+docker run --rm ghcr.io/breachsafe/qureddy:latest scan ike vpn.example.com --nat-t
+```
+
+The backend records lower-trust, tool-reported discovery evidence. It does not claim a
+bound accepted proposal, authenticated tunnel, Child-SA/ESP/AH posture, favorable
+post-quantum readiness, or HNDL protection. Overall IPsec HNDL exposure remains unknown.
+See [Scan an IKE endpoint](docs/how-to/scan-ike.md) for the exact limits and options.
+
+## 7. Write JSON, JSONL, CBOM, or a bundle
 
 Use JSON for QuReddy's complete scan result:
 
@@ -284,8 +308,8 @@ Use JSON for QuReddy's complete scan result:
 qureddy scan ssh github.com --format json > github-ssh.json
 ```
 
-Use JSONL for one finding or evidence record per line, which is convenient for
-streaming pipelines:
+Use JSONL for one finding record per line followed by one canonical scan-summary
+record, which is convenient for streaming pipelines:
 
 ```bash
 qureddy scan ssh github.com --format jsonl > github-ssh.jsonl
@@ -325,7 +349,7 @@ See [generate and validate a CBOM](docs/how-to/generate-a-cbom.md),
 [CBOM output](docs/reference/cbom.md)
 for the exact contracts.
 
-## 7. Interpret the evidence
+## 8. Interpret the evidence
 
 QuReddy separates four kinds of statement:
 
@@ -335,34 +359,36 @@ QuReddy separates four kinds of statement:
 - A finding interprets one or more observations under a named rule.
 - `unknown` or `not_testable` preserves a missing or failed observation.
 
-## 8. Exit codes
+## 9. Exit codes
 
 | Code | Meaning | Scanner |
 | --- | --- | --- |
-| `0` | Scan completed; inspect the reported readiness | TLS and SSH |
-| `2` | Target connection, handshake, or parse failed | TLS and SSH |
-| `3` | Local OpenSSL is missing or unusable | TLS only |
-| `4` | Usage or configuration error | TLS and SSH |
+| `0` | Scan completed; inspect the reported readiness | TLS, SSH, and IKE |
+| `2` | Target connection, handshake, timeout, or parse failed | TLS, SSH, and IKE |
+| `3` | Required local tool is missing or unusable | TLS and IKE |
+| `4` | Usage or configuration error | TLS, SSH, and IKE |
 | `70` | Internal QuReddy error | Process wide |
 
 Scripts must branch on the exit code instead of treating a readiness finding
 as process failure. See the [exit code reference](docs/reference/exit-codes.md).
 
-## 9. Network and privacy scope
+## 10. Network and privacy scope
 
 QuReddy connects only to the target named on the command line. TLS scans make
 bounded TLS handshakes. SSH scans read the server identification and KEXINIT
-offer without authenticating or opening an SSH session.
+offer without authenticating or opening an SSH session. IKE scans invoke a bounded
+local `ike-scan` process and send unauthenticated discovery probes to UDP/500 or UDP/4500.
 
 The scanner does not change the target, send telemetry, store scan history, or
 contact a BreachSAFE service. Redirected JSON and CBOM files remain on the
 operator's system unless the operator sends them elsewhere.
 
-## 10. Requirements
+## 11. Requirements
 
 - Python `>=3.14`
 - Network reachability to the named target
 - OpenSSL 3.5.7 LTS for TLS scans only
+- Stock `ike-scan` for IKE scans only
 
 The clean-install matrix installs the wheel, source distribution, and pipx
 application on Linux and macOS every release. Windows is not exercised in CI.
@@ -370,12 +396,13 @@ Platform support does not imply that every operating system package repository
 supplies a suitable OpenSSL build; the container bundles a verified one and is
 Linux.
 
-## 11. Documentation and support
+## 12. Documentation and support
 
 - [Documentation index](docs/README.md)
 - [CLI reference](docs/reference/cli.md)
 - [Install and troubleshoot](docs/how-to/install.md)
 - [Scan SSH or SFTP](docs/how-to/scan-ssh.md)
+- [Scan an IKE endpoint](docs/how-to/scan-ike.md)
 - [Security policy and private disclosure](SECURITY.md)
 - [Public issue tracker](https://github.com/breachsafe/qureddy/issues)
 
@@ -383,7 +410,7 @@ Do not file security vulnerabilities in the public issue tracker. Follow
 [`SECURITY.md`](SECURITY.md)
 for private reporting.
 
-## 12. Contributing
+## 13. Contributing
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md)
 and the
@@ -409,7 +436,7 @@ artifact checks.
   &nbsp;|&nbsp; Tooling: <a href="https://docs.astral.sh/uv/">uv</a>
 </p>
 
-## 13. License
+## 14. License
 
 Apache License 2.0 (OSI-approved open source). See [`LICENSE`](LICENSE),
 [`LICENSES/`](LICENSES/), and [`REUSE.toml`](REUSE.toml).

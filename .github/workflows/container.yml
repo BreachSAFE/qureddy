@@ -18,7 +18,7 @@ on:
       version:
         description: Image version to publish
         required: true
-        default: 0.9.5
+        default: 0.9.7
       publish:
         description: Push the multi-architecture image to GHCR and Docker Hub
         required: true
@@ -71,9 +71,18 @@ jobs:
             | grep -F "BreachSAFE QuReddy ${QUREDDY_VERSION}"
       - name: Verify runtime identity and capability
         run: |
+          set -euo pipefail
           test "$(docker run --rm --entrypoint sh qureddy-container:smoke -c 'id -u')" = "1000"
           docker run --rm --entrypoint sh qureddy-container:smoke -c \
             'openssl version | grep -E "^OpenSSL 3\\.5\\." && openssl list -tls1_3 -tls-groups | grep -q X25519MLKEM768'
+          expected="$(docker inspect qureddy-container:smoke \
+            --format '{{ index .Config.Labels "io.breachsafe.qureddy.ike-scan.version" }}')"
+          actual="$(docker run --rm --entrypoint dpkg-query qureddy-container:smoke \
+            -W -f='${Version}' ike-scan)"
+          test "$actual" = "$expected"
+          docker run --rm --entrypoint ike-scan qureddy-container:smoke --version
+          docker run --rm --entrypoint sh qureddy-container:smoke -c \
+            'test -r /usr/share/doc/ike-scan/copyright'
       - name: Verify TLS CBOM and streams
         run: |
           set -euo pipefail

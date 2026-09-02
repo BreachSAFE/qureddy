@@ -7,7 +7,7 @@ from __future__ import annotations
 import pytest
 
 from qureddy.core.errors import TargetParseError
-from qureddy.core.targets import parse_ssh_target, parse_target
+from qureddy.core.targets import parse_ike_target, parse_ssh_target, parse_target
 
 
 class TestParseTargetHostname:
@@ -260,6 +260,54 @@ class TestParseSshTarget:
     def test_rejected_forms(self, target: str) -> None:
         with pytest.raises(TargetParseError):
             parse_ssh_target(target)
+
+
+class TestParseIkeTarget:
+    """IKE targets reuse strict endpoint parsing with UDP port defaults."""
+
+    @pytest.mark.parametrize(
+        ("target", "host", "port"),
+        [
+            ("vpn.example", "vpn.example", 500),
+            ("vpn.example:4500", "vpn.example", 4500),
+            ("ike://vpn.example", "vpn.example", 500),
+            ("[2001:db8::1]:4500", "2001:db8::1", 4500),
+            ("ike://[2001:db8::1]", "2001:db8::1", 500),
+        ],
+    )
+    def test_accepted_forms(self, target: str, host: str, port: int) -> None:
+        result = parse_ike_target(target)
+        assert result.host == host
+        assert result.port == port
+        assert result.scheme == "ike"
+
+    @pytest.mark.parametrize(
+        "target",
+        [
+            "https://vpn.example",
+            "ike://user@vpn.example",
+            "ike://vpn.example/path",
+            "vpn.example:",
+            "vpn.example:70000",
+            "vpn.example:notaport",
+            "ike://[bad",
+        ],
+    )
+    def test_rejected_forms(self, target: str) -> None:
+        with pytest.raises(TargetParseError):
+            parse_ike_target(target)
+
+    @pytest.mark.parametrize(
+        "target",
+        [None, "", "   ", "ike://", "ike://vpn.example:70000", "[2001:db8::1]oops", ":500"],
+    )
+    def test_rejected_boundary_forms(self, target: str | None) -> None:
+        with pytest.raises(TargetParseError):
+            parse_ike_target(target)  # type: ignore[arg-type]
+
+    def test_internal_guard_rejects_loopback(self) -> None:
+        with pytest.raises(TargetParseError, match="internal"):
+            parse_ike_target("127.0.0.1", block_internal=True)
 
 
 class TestScanTargetValidationErrorWrapped:

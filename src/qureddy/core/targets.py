@@ -194,7 +194,7 @@ def _extract_url_host_port(cleaned: str) -> tuple[str, int]:
 
 
 def _reject_uri_credentials(parsed: ParseResult, *, scheme_label: str) -> None:
-    """Reject userinfo (user[:password]@) in a URI — shared by TLS and SSH."""
+    """Reject userinfo (user[:password]@) in a URI shared by endpoint parsers."""
     if parsed.username is not None or parsed.password is not None:
         raise TargetParseError(f"{scheme_label} target must not contain credentials")
 
@@ -334,6 +334,7 @@ def _parse_port(raw_port: str) -> int:
 
 
 DEFAULT_SSH_PORT = 22
+DEFAULT_IKE_PORT = 500
 
 
 def parse_ssh_target(input_str: str, *, block_internal: bool = False) -> ScanTarget:
@@ -399,20 +400,71 @@ def _reject_ssh_uri_extras(parsed: ParseResult) -> None:
 
 def _parse_raw_ssh_endpoint(cleaned: str) -> tuple[str, int]:
     """Parse a raw SSH host, host:port, or bracketed IPv6 endpoint."""
+    return _parse_raw_endpoint(cleaned, default_port=DEFAULT_SSH_PORT, label="SSH")
+
+
+def parse_ike_target(input_str: str, *, block_internal: bool = False) -> ScanTarget:
+    """Parse an endpoint-only IKE target with UDP/500 as the default port."""
+    if not isinstance(input_str, str):
+        raise TargetParseError("target must be a string")
+    cleaned = input_str.strip()
+    if not cleaned:
+        raise TargetParseError("empty target")
+    if "://" in cleaned:
+        host, port = _parse_ike_uri(cleaned)
+    else:
+        host, port = _parse_raw_endpoint(cleaned, default_port=DEFAULT_IKE_PORT, label="IKE")
+    host, _ = _validate_and_classify_host(host, invalid_prefix="invalid IKE host")
+    _reject_internal_target(host, block_internal=block_internal)
+    rendered = f"[{host}]" if ":" in host else host
+    return _build_scan_target(
+        original_input=input_str,
+        host=host,
+        port=port,
+        sni=None,
+        scheme="ike",
+        locator=f"ike://{rendered}:{port}",
+    )
+
+
+def _parse_ike_uri(cleaned: str) -> tuple[str, int]:
+    """Parse an endpoint-only ``ike://`` URI."""
+    try:
+        parsed = urlparse(cleaned)
+    except ValueError as exc:
+        raise TargetParseError(f"malformed IKE target URL: {cleaned!r}") from exc
+    if parsed.scheme != "ike":
+        raise TargetParseError(f"unsupported IKE scheme {parsed.scheme!r}; expected ike")
+    _reject_uri_credentials(parsed, scheme_label="IKE")
+    if parsed.path or parsed.params or parsed.query or parsed.fragment:
+        raise TargetParseError("IKE target URI must not contain a path, query, or fragment")
+    if not parsed.hostname:
+        raise TargetParseError("IKE target URI has no host component")
+    try:
+        port = parsed.port if parsed.port is not None else DEFAULT_IKE_PORT
+    except ValueError as exc:
+        raise TargetParseError("IKE target URI contains an invalid port") from exc
+    return parsed.hostname, _validate_port(port)
+
+
+def _parse_raw_endpoint(cleaned: str, *, default_port: int, label: str) -> tuple[str, int]:
+    """Parse a credential-free host, host:port, or bracketed IPv6 endpoint."""
     if any(marker in cleaned for marker in ("/", "?", "#", "@")):
-        raise TargetParseError("SSH target must be an endpoint without credentials or a path")
-    if cleaned.startswith("[") and "]" in cleaned:
+        raise TargetParseError(f"{label} target must be an endpoint without credentials or a path")
+    if cleaned.startswith("["):
+        if "]" not in cleaned:
+            raise TargetParseError(f"malformed {label} IPv6 target literal")
         closing = cleaned.index("]")
         host, remainder = cleaned[1:closing], cleaned[closing + 1 :]
         if not remainder:
-            return host, DEFAULT_SSH_PORT
+            return host, default_port
         if not remainder.startswith(":"):
-            raise TargetParseError("malformed SSH IPv6 target literal")
+            raise TargetParseError(f"malformed {label} IPv6 target literal")
         return host, _parse_port(remainder[1:])
     if cleaned.count(":") == 1:
         host, _, raw_port = cleaned.partition(":")
         if not host:
-            raise TargetParseError("SSH target host is empty")
+            raise TargetParseError(f"{label} target host is empty")
         return host, _parse_port(raw_port)
     _reject_ambiguous_unbracketed_ipv6(cleaned)
-    return cleaned, DEFAULT_SSH_PORT
+    return cleaned, default_port

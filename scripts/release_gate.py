@@ -37,7 +37,17 @@ def _static_commands(uv: Path, gitleaks: Path, gate: Gate) -> None:
         # CI duplicate-code gate's structural check so a clone fails before push, not only in
         # CI. The token-level jscpd half of that gate runs in CI (needs Node).
         ("pylint-dupcode", [*run, "pylint", "src/qureddy"]),
-        ("tests", [*run, "pytest", "--ignore=tests/live", "--cov=qureddy", "--cov-fail-under=90"]),
+        (
+            "tests",
+            [
+                *run,
+                "pytest",
+                "--ignore=tests/live",
+                "--ignore=tests/ike_lab",
+                "--cov=qureddy",
+                "--cov-fail-under=90",
+            ],
+        ),
         ("file-size", [*run, "python", "scripts/check_size_policy.py"]),
         ("openssl-boundary", [*run, "python", "scripts/check_openssl_boundary.py"]),
         ("bandit", [*run, "bandit", "-r", "-ll", "src/qureddy", "scripts"]),
@@ -71,6 +81,7 @@ def _install_smokes(uv: Path, gate: Gate, artifacts: list[Path]) -> tuple[Path, 
     gate.run("smoke-version", [str(console), "--version"])
     gate.run("smoke-tls-help", [str(console), "scan", "tls", "--help"])
     gate.run("smoke-ssh-help", [str(console), "scan", "ssh", "--help"])
+    gate.run("smoke-ike-help", [str(console), "scan", "ike", "--help"])
     gate.run("smoke-usage-error", [str(console), "scan", "tls"], expected_exit=4)
     suffix = ".cmd" if platform.system() == "Windows" else ".sh"
     replay = ROOT / f"tests/conformance/shims/openssl_classical_replay{suffix}"
@@ -82,6 +93,20 @@ def _install_smokes(uv: Path, gate: Gate, artifacts: list[Path]) -> tuple[Path, 
         "smoke-ssh-scan",
         [str(console), "scan", "ssh", "127.0.0.1:1", "--format", "json"],
         expected_exit=2,
+    )
+    gate.run(
+        "smoke-ike-missing-tool",
+        [
+            str(console),
+            "scan",
+            "ike",
+            "192.0.2.10",
+            "--ike-scan",
+            "__qureddy_missing_ike_scan__",
+            "--format",
+            "json",
+        ],
+        expected_exit=3,
     )
     sdist_smoke = gate.evidence.parent / "sdist-smoke"
     gate.run("sdist-venv", [str(uv), "venv", "--python", "3.14", str(sdist_smoke)])

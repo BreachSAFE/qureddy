@@ -5,10 +5,9 @@
 `openssl_probe.py` only ever asks "does this target negotiate the one
 PQC-relevant hybrid/classical group on TLS 1.3?" — real, but a narrower
 question than "what is this target's whole protocol/cipher surface,"
-which is what a credible "PQC readiness" claim needs (evidence: `nmap
---script ssl-enum-ciphers` / `testssl.sh --protocols` both found TLS
-1.0/1.1 and a SWEET32-vulnerable 3DES cipher on a target qureddy
-reported clean on, because qureddy never asked).
+which is what a credible "PQC readiness" claim needs (independent TLS
+scanners found TLS 1.0/1.1 and a SWEET32-vulnerable 3DES cipher on a
+target qureddy reported clean on, because qureddy never asked).
 
 Kept out of `openssl_probe.py` (already near its 400-line hard ceiling,
 issue #82) rather than adding to an over-ceiling file, same reasoning
@@ -53,8 +52,8 @@ with "no cipher match" regardless of SECLEVEL. This is a compile-time
 absence, not a security-level gate `@SECLEVEL=0` can restore (unlike
 TLS 1.0/1.1 themselves, which *are* just SECLEVEL-gated and do work
 here). Only `NULL`-cipher and `MD5`-based ciphers remain negotiable as
-"weak" on this binary. Matching nmap/testssl.sh's exact 3DES/SWEET32
-detection depth would need a second, separately-provisioned legacy
+"weak" on this binary. Matching an independent scanner's exact
+3DES/SWEET32 detection depth would need a second, separately-provisioned legacy
 OpenSSL build (testssl.sh's own approach) — real new packaging
 complexity, deliberately out of scope for this pass. `WEAK_CIPHER_MARKERS`
 below still lists RC4/3DES/DES/RC2/EXPORT for forward-compatibility

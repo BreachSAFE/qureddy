@@ -6,18 +6,19 @@
 
 1. [Current collection contract](#1-current-collection-contract)
 2. [Dependency boundary](#2-dependency-boundary)
-3. [Deferred extension](#3-deferred-extension)
+3. [Extension boundary](#3-extension-boundary)
 4. [Result lifecycle](#4-result-lifecycle)
 5. [Extension checklist](#5-extension-checklist)
 
 ## 1. Current collection contract
 
-QuReddy currently routes TLS and SSH through a capability-based collector registry:
+QuReddy routes TLS, SSH, and IKE through a capability-based collector registry:
 
 ```text
 CLI -> ScanSource -> CollectorRegistry
                        ├── NativeTLSCollector -> TLSScanner
-                       └── NativeSSHCollector -> SSHScanner
+                       ├── NativeSSHCollector -> SSHScanner
+                       └── IKEScanner -> IkeScanAdapter -> ike-scan
                                       |
                                       v
                               CollectionResult
@@ -35,10 +36,14 @@ flowchart LR
     source --> registry["CollectorRegistry"]
     registry --> tls["NativeTLSCollector"]
     registry --> ssh["NativeSSHCollector"]
+    registry --> ike["IKEScanner"]
     tls --> tls_scan["TLSScanner"]
     ssh --> ssh_scan["SSHScanner"]
+    ike --> ike_adapter["IkeScanAdapter"]
+    ike_adapter --> ike_tool["stock ike-scan"]
     tls_scan --> result["CollectionResult"]
     ssh_scan --> result
+    ike_tool --> result
     result --> evaluation["Semantic evaluation"]
     evaluation --> rich["Rich"]
     evaluation --> json["JSON / JSONL"]
@@ -64,18 +69,23 @@ Protocol adapters own protocol vocabulary and raw collection. Shared policy and
 outputs consume canonical models and neutral semantic facts. Output adapters do
 not open sockets, invoke OpenSSL, or import protocol-private scanner modules.
 
-## 3. Deferred extension
+## 3. Extension boundary
 
-The registry is already the extension point. Add a collector only when a third
-source is approved. TLS/OpenSSL group names remain TLS-owned, SSH algorithm names
-remain SSH-owned, and only protocol-neutral facts belong in the shared layer.
+The registry is the extension point. Add a collector only for an approved source.
+TLS/OpenSSL group names remain TLS-owned, SSH algorithm names remain SSH-owned,
+IKE transform identifiers remain IKE-owned, and only protocol-neutral facts
+belong in the shared layer.
 
 External tools belong behind a collector-owned adapter. They do not introduce a
 new output path or a second posture model.
 
-`scan_ssh` remains as a compatibility function.  `SSHScanner` is a thin adapter
+`scan_ssh` remains as a compatibility function. `SSHScanner` is a thin adapter
 over that implementation, while `TLSScanner` implements the same seam directly.
 The adapter is intentionally small and contains no scanning logic.
+
+`IKEScanner` owns orchestration and normalized result assembly. `IkeScanAdapter`
+owns the bounded external process and translates tool output into canonical
+evidence. Raw `ike-scan` text never enters evaluation or output renderers.
 
 ## 4. Result lifecycle
 
@@ -109,7 +119,7 @@ against that result; it does not repeat the network scan.
 | --- | --- | --- |
 | New source kind | `core/contracts.py`, registry registration | deterministic selection and unsupported-source tests |
 | New native collector | `collectors/` | typed failures, provenance, real CLI test |
-| External tool | collector-owned adapter | version/timeout/exit-status capture and parser fixtures |
+| External tool | collector-owned adapter | version/timeout/exit-status capture, parser-negative tests, and a live real-tool test |
 | New output format | `output/` and CLI format registry | parity with canonical findings and stream contract |
 | New policy fact | protocol policy module | unit tests plus Rich/JSON/CBOM parity |
 

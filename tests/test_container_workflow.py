@@ -7,6 +7,32 @@ from __future__ import annotations
 from pathlib import Path
 
 WORKFLOW = (Path(__file__).parents[1] / ".github" / "workflows" / "container.yml").read_text()
+DOCKERFILE = (Path(__file__).parents[1] / "Dockerfile").read_text()
+
+
+def test_runtime_image_bundles_pinned_stock_ike_scan() -> None:
+    """The published image must run the advertised IKE scanner without mutation."""
+    runtime = DOCKERFILE[DOCKERFILE.rindex("FROM python:3.14-slim-bookworm") :]
+
+    assert "ARG IKE_SCAN_VERSION=1.9.5-1+b1" in runtime
+    assert '"ike-scan=${IKE_SCAN_VERSION}"' in runtime
+    assert "rm -rf /var/lib/apt/lists/*" in runtime
+    assert "/usr/share/doc/ike-scan/copyright" in runtime
+    assert "GPL-3.0-or-later WITH openvpn-openssl-exception" in runtime
+    assert 'io.breachsafe.qureddy.ike-scan.version="${IKE_SCAN_VERSION}"' in runtime
+    assert runtime.index('"ike-scan=${IKE_SCAN_VERSION}"') < runtime.index("USER qureddy")
+
+
+def test_container_smoke_executes_bundled_ike_scan() -> None:
+    """CI must fail when the stock IKE dependency is absent or drifts."""
+    smoke = WORKFLOW[: WORKFLOW.index("\n  version:\n")]
+
+    assert "--entrypoint ike-scan" in smoke
+    assert "--version" in smoke
+    assert "io.breachsafe.qureddy.ike-scan.version" in smoke
+    assert "-W -f='${Version}' ike-scan" in smoke
+    assert 'test "$actual" = "$expected"' in smoke
+    assert "test -r /usr/share/doc/ike-scan/copyright" in smoke
 
 
 def test_mutable_image_tags_are_promoted_only_after_signature_verification() -> None:

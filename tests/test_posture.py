@@ -17,9 +17,10 @@ from qureddy.core.models import (
     ObservationType,
     PqcSupport,
     Readiness,
+    ScanTarget,
     Severity,
 )
-from qureddy.scanners.common.posture import build_interpretation
+from qureddy.scanners.common.posture import build_interpretation, build_scan_summary
 
 
 def _finding(
@@ -112,6 +113,76 @@ def test_failed_target_is_not_testable_even_with_partial_findings() -> None:
     assert interpretation.axes.pqc_support is PqcSupport.NOT_TESTABLE
     assert interpretation.axes.key_exchange.value == "not_testable"
     assert interpretation.axes.authentication.value == "not_testable"
+
+
+def test_handshake_failure_without_hygiene_evidence_is_unknown() -> None:
+    interpretation = build_interpretation(
+        [
+            _finding(
+                "tls.hybrid.probe_failed",
+                "tls.kex.probe_failed",
+                Readiness.UNKNOWN,
+            ),
+            _finding(
+                "tls.classical.control_rejected",
+                "tls.kex.classical_control_rejected",
+                Readiness.NOT_APPLICABLE,
+            ),
+        ],
+        [],
+        FailureCategory.TLS_HANDSHAKE_FAILED,
+    )
+
+    assert interpretation.hygiene_status is HygieneStatus.UNKNOWN
+    assert interpretation.axes.protocol_hygiene is AxisStatus.UNKNOWN
+    assert interpretation.display.current_hygiene == "Security hygiene could not be assessed"
+
+
+def test_observed_legacy_hygiene_wins_over_handshake_failure() -> None:
+    interpretation = build_interpretation(
+        [
+            _finding(
+                "tls.hybrid.probe_failed",
+                "tls.kex.probe_failed",
+                Readiness.UNKNOWN,
+            ),
+            _finding(
+                "tls.legacy.protocol_offered",
+                "tls.legacy.protocol_offered",
+                Readiness.CLASSICALLY_WEAK,
+            ),
+        ],
+        [],
+        FailureCategory.TLS_HANDSHAKE_FAILED,
+    )
+
+    assert interpretation.hygiene_status is HygieneStatus.ACTION_NEEDED
+    assert interpretation.axes.protocol_hygiene is AxisStatus.ACTION_NEEDED
+    assert interpretation.display.current_hygiene == "Protocol hardening is required"
+
+
+def test_successful_retry_supersedes_retained_probe_failure() -> None:
+    interpretation = build_interpretation(
+        [
+            _finding(
+                "tls.hybrid.probe_failed",
+                "tls.kex.probe_failed",
+                Readiness.UNKNOWN,
+            ),
+            _finding(
+                "tls.hybrid.negotiated_pq",
+                "tls.kex.hybrid",
+                Readiness.TRANSITIONAL_HYBRID,
+            ),
+        ],
+        [],
+        None,
+    )
+
+    assert interpretation.axes.pqc_support is PqcSupport.HYBRID_OBSERVED
+    assert interpretation.hygiene_status is HygieneStatus.OK
+    assert interpretation.axes.protocol_hygiene is AxisStatus.ACCEPTABLE
+    assert interpretation.display.overall_status == "Hybrid PQC protection observed"
 
 
 def test_interpretation_covers_positive_and_classical_paths() -> None:
@@ -306,3 +377,37 @@ def test_ssh_hostkey_evidence_marks_classical_authentication_without_weak_findin
     interpretation = build_interpretation([], [_ssh_evidence()], None)
 
     assert interpretation.axes.authentication is AxisStatus.CLASSICAL
+
+
+def test_shared_summary_builder_preserves_ike_posture() -> None:
+    """Keep every scanner on one evidence-aware summary construction path."""
+    target = ScanTarget(
+        original_input="vpn.example",
+        host="vpn.example",
+        port=500,
+        sni=None,
+        scheme="ike",
+        locator="ike://vpn.example:500",
+    )
+    evidence = Evidence(
+        id="ev-1",
+        asset_id="asset-1",
+        evidence_type="ike.dh_group",
+        observation_type=ObservationType.OBSERVED,
+        source="test",
+        protocol="ike",
+    )
+    finding = _finding(
+        "ike.kex.classical",
+        "ike.kex.classical",
+        Readiness.QUANTUM_VULNERABLE,
+        protocol="ike",
+    )
+
+    summary = build_scan_summary(target, [finding], [evidence], None, protocol="ike")
+
+    assert summary.target == target.locator
+    assert summary.finding_count == 1
+    assert summary.readiness is Readiness.QUANTUM_VULNERABLE
+    assert summary.interpretation is not None
+    assert summary.interpretation.hndl_exposure is HndlExposure.UNKNOWN

@@ -18,7 +18,13 @@ from qureddy.core.contracts import (
 def test_source_and_tool_contract_are_protocol_neutral() -> None:
     source = ScanSource(kind=SourceKind.CERTIFICATE, locator="leaf.pem")
     assert source.kind is SourceKind.CERTIFICATE
-    assert ToolPolicy.SSH_AUDIT.value == "ssh-audit"
+    assert {policy.value for policy in ToolPolicy} == {
+        "auto",
+        "ike-scan",
+        "native",
+        "openssl",
+        "ssh-audit",
+    }
     assert Capability.X509_CERTIFICATE.value == "x509.certificate"
 
 

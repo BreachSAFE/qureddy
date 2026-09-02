@@ -166,7 +166,7 @@ wheels = [
 
 [[package]]
 name = "breachsafe-qureddy"
-version = "0.9.5"
+version = "0.9.7"
 source = { editable = "." }
 dependencies = [
     { name = "click" },
@@ -215,7 +215,7 @@ requires-dist = [
     { name = "allure-pytest", marker = "extra == 'dev'", specifier = ">=2.13" },
     { name = "atheris", marker = "platform_machine == 'x86_64' and sys_platform == 'linux' and extra == 'fuzz'", specifier = ">=3.1" },
     { name = "bandit", marker = "extra == 'dev'", specifier = ">=1.7" },
-    { name = "click", specifier = ">=8.3.3,<8.5" },
+    { name = "click", specifier = ">=8.3.3,<8.6" },
     { name = "cyclonedx-python-lib", specifier = ">=11.11,<12" },
     { name = "defusedxml", marker = "extra == 'dev'", specifier = ">=0.7" },
     { name = "deptry", marker = "extra == 'dev'", specifier = ">=0.20" },

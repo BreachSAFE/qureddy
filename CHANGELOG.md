@@ -12,27 +12,88 @@ versions follow [PEP 440](https://peps.python.org/pep-0440/).
 ## Contents
 
 1. [Unreleased](#unreleased)
-2. [0.9.5](#095---2026-09-02)
-3. [0.9.4](#094---2026-09-02)
-4. [0.9.3](#093---2026-09-01)
-5. [0.9.2](#092---2026-09-01)
-6. [0.9.1](#091---2026-08-31)
-7. [0.9.0.10](#09010---2026-08-30)
-8. [0.9.0.9](#0909---2026-08-26)
-9. [0.9.0.8](#0908---2026-08-26)
-10. [0.9.0.7](#0907---2026-08-26)
-11. [0.9.0.6](#0906---2026-08-26)
-12. [0.9.0.5](#0905---2026-08-26)
-13. [0.9.0.4](#0904---2026-08-26)
-14. [0.9.0.3](#0903---2026-08-25)
-15. [0.9.0.2](#0902---2026-08-25)
-16. [0.9.0.1](#0901---2026-08-24)
-17. [0.9.0.0](#0900---2026-08-24)
+2. [0.9.7](#097---2026-09-02)
+3. [0.9.6](#096---2026-09-02)
+4. [0.9.5](#095---2026-09-02)
+5. [0.9.4](#094---2026-09-02)
+6. [0.9.3](#093---2026-09-01)
+7. [0.9.2](#092---2026-09-01)
+8. [0.9.1](#091---2026-08-31)
+9. [0.9.0.10](#09010---2026-08-30)
+10. [0.9.0.9](#0909---2026-08-26)
+11. [0.9.0.8](#0908---2026-08-26)
+12. [0.9.0.7](#0907---2026-08-26)
+13. [0.9.0.6](#0906---2026-08-26)
+14. [0.9.0.5](#0905---2026-08-26)
+15. [0.9.0.4](#0904---2026-08-26)
+16. [0.9.0.3](#0903---2026-08-25)
+17. [0.9.0.2](#0902---2026-08-25)
+18. [0.9.0.1](#0901---2026-08-24)
+19. [0.9.0.0](#0900---2026-08-24)
 
 ## Unreleased
 
 ### Fixed
 
+- Bundle pinned stock `ike-scan` in the standard container image so the advertised
+  `qureddy scan ike` command works without mutating the published artifact. The image
+  preserves the package license notice and continues to run as an unprivileged user
+  ([issue #739](https://github.com/BreachSAFE/qureddy/issues/739)).
+
+## [0.9.7] - 2026-09-02
+
+### Added
+
+- Add the immutable, protocol-neutral crypto catalog runtime foundation for future TLS,
+  SSH, and IKE registry consumers. The compiler rejects ambiguous identifiers and
+  unresolved provenance, preserves unknown observations without invented ratings, and
+  records a reproducible catalog receipt. This release does not yet change scanner output
+  or ship built-in catalog data
+  ([issue #731](https://github.com/BreachSAFE/qureddy/issues/731),
+  [PR #734](https://github.com/BreachSAFE/qureddy/pull/734)).
+
+## [0.9.6] - 2026-09-02
+
+### Added
+
+- Add `qureddy scan ike` as a lower-trust discovery backend over the optional stock
+  `ike-scan` executable. One canonical result now feeds Rich, JSON, JSONL, and CycloneDX
+  CBOM output. The backend reports Historic IKEv1, weak transforms, classical key exchange,
+  explicit NOTIFY responses, and Aggressive Mode identity exposure without claiming
+  authenticated tunnel or Child-SA posture
+  ([issue #633](https://github.com/BreachSAFE/qureddy/issues/633),
+  [PR #729](https://github.com/BreachSAFE/qureddy/pull/729),
+  [IKE backend ADR](docs/architecture/ike-scan-backend-adr.md)).
+
+### Fixed
+
+- Preserve IKEv1 space-form AES key lengths and IKEv2 underscore NOTIFY names, emit a
+  separate quantum-vulnerable finding for classical KE methods, and avoid duplicate UDP/500
+  evidence when the same mode answers through NAT-T on UDP/4500
+  ([issue #713](https://github.com/BreachSAFE/qureddy/issues/713),
+  [issue #715](https://github.com/BreachSAFE/qureddy/issues/715),
+  [issue #716](https://github.com/BreachSAFE/qureddy/issues/716),
+  [PR #729](https://github.com/BreachSAFE/qureddy/pull/729)).
+- Use the protocol-required UDP source port defaults (500 direct and 4500 NAT-T) so
+  gateways do not disappear behind ephemeral source ports, and terminate the full
+  external-tool process tree when a timeout or output bound is reached
+  ([issue #719](https://github.com/BreachSAFE/qureddy/issues/719),
+  [issue #720](https://github.com/BreachSAFE/qureddy/issues/720)).
+- Preserve canonical scan status in the JSONL summary and retain IKE integrity suffixes such as
+  `HMAC_MD5_96` so prohibited-transform findings include the exact observed algorithm
+  ([issue #723](https://github.com/BreachSAFE/qureddy/issues/723),
+  [issue #724](https://github.com/BreachSAFE/qureddy/issues/724)).
+- Preserve `unknown` hygiene when TLS coverage fails instead of reporting a false clean
+  result, while retaining actionable status for observed legacy protocols
+  ([issue #672](https://github.com/BreachSAFE/qureddy/issues/672),
+  [PR #696](https://github.com/BreachSAFE/qureddy/pull/696)).
+- Keep `--json-logs` valid JSON Lines when third-party libraries emit records through
+  standard-library logging ([issue #670](https://github.com/BreachSAFE/qureddy/issues/670),
+  [PR #695](https://github.com/BreachSAFE/qureddy/pull/695)).
+- Restore the source checkout in the release-only container manifest job so signature
+  verification and multi-registry publication can complete
+  ([issue #667](https://github.com/BreachSAFE/qureddy/issues/667),
+  [PR #668](https://github.com/BreachSAFE/qureddy/pull/668)).
 - Keep negotiated or observed post-quantum protection in the top-level readiness verdict
   while reporting deprecated protocols and weak algorithms on the independent hygiene axis
   ([issue #663](https://github.com/BreachSAFE/qureddy/issues/663),

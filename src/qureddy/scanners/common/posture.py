@@ -15,6 +15,8 @@ from qureddy.core.models import (
     PostureAxes,
     PqcSupport,
     ScanInterpretation,
+    ScanSummary,
+    ScanTarget,
 )
 from qureddy.scanners.common.evaluation import (
     PostureSignals,
@@ -22,7 +24,7 @@ from qureddy.scanners.common.evaluation import (
     evaluate_posture,
 )
 from qureddy.scanners.common.evaluation import reason_codes as build_reason_codes
-from qureddy.scanners.common.rollup import scan_readiness
+from qureddy.scanners.common.rollup import highest_severity, scan_readiness
 
 POLICY_ID = "qureddy-readiness"
 POLICY_VERSION = "1"
@@ -139,14 +141,26 @@ def _authentication_axis(signals: PostureSignals, *, not_testable: bool) -> Axis
     )
 
 
+def _has_unresolved_probe_failure(signals: PostureSignals) -> bool:
+    """Return whether failed coverage lacks any successful KEX observation."""
+    return signals.hybrid_failed and not (
+        signals.classical_kex or signals.hybrid or signals.pure_pq
+    )
+
+
 def _protocol_axis(
-    signals: PostureSignals, *, has_findings: bool, not_testable: bool
+    signals: PostureSignals,
+    *,
+    has_findings: bool,
+    not_testable: bool,
 ) -> AxisStatus:
     return (
         AxisStatus.NOT_TESTABLE
         if not_testable
         else AxisStatus.ACTION_NEEDED
-        if signals.protocol_action_needed
+        if signals.protocol_action_needed or signals.legacy_protocol
+        else AxisStatus.UNKNOWN
+        if _has_unresolved_probe_failure(signals)
         else AxisStatus.ACCEPTABLE
         if has_findings
         else AxisStatus.UNKNOWN
@@ -176,7 +190,10 @@ def _hndl_exposure(
 
 
 def _hygiene_status(
-    signals: PostureSignals, *, not_testable: bool, has_findings: bool
+    signals: PostureSignals,
+    *,
+    not_testable: bool,
+    has_findings: bool,
 ) -> HygieneStatus:
     """Classify present-day hygiene independently of HNDL exposure."""
     if not_testable:
@@ -184,12 +201,15 @@ def _hygiene_status(
     if signals.hygiene_weak:
         return HygieneStatus.WEAK
     if (
-        signals.classical_kex
+        signals.legacy_protocol
+        or signals.classical_kex
         or signals.authentication_classical
         or signals.downgrade_action_needed
         or signals.protocol_action_needed
     ):
         return HygieneStatus.ACTION_NEEDED
+    if _has_unresolved_probe_failure(signals):
+        return HygieneStatus.UNKNOWN
     return HygieneStatus.OK if has_findings else HygieneStatus.UNKNOWN
 
 
@@ -262,7 +282,7 @@ def _build_axes(
     findings: list[Finding],
     evidence: list[Evidence],
     failure_category: FailureCategory | None,
-) -> PostureAxes:
+) -> tuple[PostureAxes, PostureSignals, bool]:
     signals = derive_signals(findings, evidence)
     not_testable = _is_not_testable(failure_category)
 
@@ -277,15 +297,18 @@ def _build_axes(
     downgrade = _downgrade_axis(signals, not_testable=not_testable)
     authentication = _authentication_axis(signals, not_testable=not_testable)
     protocol_hygiene = _protocol_axis(
-        signals, has_findings=bool(findings), not_testable=not_testable
+        signals,
+        has_findings=bool(findings),
+        not_testable=not_testable,
     )
-    return PostureAxes(
+    axes = PostureAxes(
         pqc_support=pqc_support,
         key_exchange=key_exchange,
         downgrade_resistance=downgrade,
         authentication=authentication,
         protocol_hygiene=protocol_hygiene,
     )
+    return axes, signals, not_testable
 
 
 def build_interpretation(
@@ -296,10 +319,8 @@ def build_interpretation(
 ) -> ScanInterpretation:
     """Build stable posture axes and provenance from observed findings."""
     resolved_protocol = _resolve_protocol(findings, evidence, protocol)
-    axes = _build_axes(findings, evidence, failure_category)
+    axes, signals, not_testable = _build_axes(findings, evidence, failure_category)
     reason_codes = build_reason_codes(findings, failure_category)
-    signals = derive_signals(findings, evidence)
-    not_testable = _is_not_testable(failure_category)
     headline, recommended_action = _ciso_text(axes, reason_codes)
     hndl_exposure = _hndl_exposure(
         protocol=resolved_protocol,
@@ -309,7 +330,9 @@ def build_interpretation(
         not_testable=not_testable,
     )
     hygiene_status = _hygiene_status(
-        signals, not_testable=not_testable, has_findings=bool(findings)
+        signals,
+        not_testable=not_testable,
+        has_findings=bool(findings),
     )
     evaluation = evaluate_posture(
         findings,
@@ -337,4 +360,29 @@ def build_interpretation(
         evidence_refs=tuple(ev.id for ev in evidence),
         policy_id=POLICY_ID,
         policy_version=POLICY_VERSION,
+    )
+
+
+def build_scan_summary(
+    target: ScanTarget,
+    findings: list[Finding],
+    evidence: list[Evidence],
+    failure_category: FailureCategory | None,
+    *,
+    protocol: str,
+) -> ScanSummary:
+    """Build the canonical scan summary from protocol-neutral records."""
+    interpretation = build_interpretation(
+        findings,
+        evidence,
+        failure_category,
+        protocol=protocol,
+    )
+    return ScanSummary(
+        target=target.locator,
+        finding_count=len(findings),
+        highest_severity=highest_severity(findings),
+        readiness=interpretation.effective,
+        failure_category=failure_category,
+        interpretation=interpretation,
     )

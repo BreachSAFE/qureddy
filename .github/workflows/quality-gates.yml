@@ -111,7 +111,7 @@ jobs:
 
       - name: pytest (coverage.xml + Allure results)
         run: |
-          uv run --locked pytest --ignore=tests/live \
+          uv run --locked pytest --ignore=tests/live --ignore=tests/ike_lab \
             --cov=qureddy --cov-report=xml:coverage.xml
 
       - name: diff-cover (100% coverage on changed lines)

@@ -1,10 +1,11 @@
-# JSON output reference
+# JSON and JSONL output reference
 
 [![Diátaxis reference](https://img.shields.io/badge/Di%C3%A1taxis-reference-1f6feb?style=flat-square)](https://diataxis.fr/reference/)
 
 `qureddy scan tls TARGET --format json` and
-`qureddy scan ssh TARGET --format json` emit the same top-level
-`qureddy.scan.v1` contract. TLS and SSH populate different evidence,
+`qureddy scan ssh TARGET --format json`, and
+`qureddy scan ike TARGET --format json` emit the same top-level
+`qureddy.scan.v1` contract. TLS, SSH, and IKE populate different evidence,
 dependency, and protocol fields.
 
 ## Contents
@@ -21,8 +22,9 @@ dependency, and protocol fields.
 10. [Summary](#10-summary)
 11. [Enumerated values](#11-enumerated-values)
 12. [SSH example](#12-ssh-example)
-13. [Stability rules](#13-stability-rules)
-14. [Related documentation](#14-related-documentation)
+13. [JSONL projection](#13-jsonl-projection)
+14. [Stability rules](#14-stability-rules)
+15. [Related documentation](#15-related-documentation)
 
 ## 1. Document contract
 
@@ -57,7 +59,7 @@ code to distinguish completion from failure.
 | `scan_id` | string | Per-run identifier |
 | `started_at` | RFC 3339 date-time string | UTC start time |
 | `completed_at` | RFC 3339 date-time string | UTC completion time |
-| `scanner_name` | string | `tls` or `ssh` |
+| `scanner_name` | string | `tls`, `ssh`, or `ike` |
 | `scanner_version` | string | Installed QuReddy version |
 | `status` | string | `completed` or the top-level failure category |
 | `total_attempts` | integer | Number of scanner probe attempts represented |
@@ -66,18 +68,19 @@ Identifiers and timestamps are intentionally different across runs.
 
 ## 4. Target
 
-| Field | Type | TLS | SSH |
-| --- | --- | --- | --- |
-| `original_input` | string | Raw command argument | Raw command argument |
-| `host` | string | Normalized hostname or IP | Normalized hostname or IP |
-| `port` | integer `1..65535` | Default `443` | Default `22` |
-| `sni` | string or null | Hostname, override, or null for an IP | null |
-| `scheme` | string | `tls` | `ssh` |
-| `locator` | string | Canonical `tls://host:port` | Canonical `ssh://host:port` |
+| Field | Type | TLS | SSH | IKE |
+| --- | --- | --- | --- | --- |
+| `original_input` | string | Raw command argument | Raw command argument | Raw command argument |
+| `host` | string | Normalized hostname or IP | Normalized hostname or IP | Normalized hostname or IP |
+| `port` | integer `1..65535` | Default `443` | Default `22` | Default `500` |
+| `sni` | string or null | Hostname, override, or null for an IP | null | null |
+| `scheme` | string | `tls` | `ssh` | `ike` |
+| `locator` | string | Canonical `tls://host:port` | Canonical `ssh://host:port` | Canonical `ike://host:port` |
 
 ## 5. Dependencies
 
-TLS emits one local OpenSSL dependency record. SSH emits an empty array.
+TLS emits one local OpenSSL dependency record. IKE emits one external-tool record for
+`ike-scan`. SSH emits an empty array.
 
 | Field | Type | Meaning |
 | --- | --- | --- |
@@ -91,15 +94,18 @@ TLS emits one local OpenSSL dependency record. SSH emits an empty array.
 This record describes the scanner host. It is not the remote endpoint's TLS
 implementation identity.
 
+The IKE dependency uses `name`, `path`, `version`, and `failure_category`. It does not
+carry OpenSSL capability fields.
+
 ## 6. Assets
 
 | Field | Type | Meaning |
 | --- | --- | --- |
 | `id` | string | Per-run asset identifier |
-| `asset_type` | string | `tls.endpoint` or `ssh.endpoint` |
+| `asset_type` | string | `tls.endpoint`, `ssh.endpoint`, or `ike.endpoint` |
 | `locator` | string | Canonical target locator |
 | `display_name` | string | Endpoint display name |
-| `protocol` | string | `tls` or `ssh` |
+| `protocol` | string | `tls`, `ssh`, or `ike` |
 | `protocol_version` | string or null | Observed version when assigned at asset level |
 | `algorithm` | string or null | Algorithm name when assigned at asset level |
 | `primitive` | string or null | Primitive classification when known |
@@ -122,7 +128,7 @@ It is not a favorable or unfavorable result.
 | `evidence_type` | string | Producer-defined evidence class |
 | `observation_type` | enum | How the fact was obtained |
 | `source` | string | QuReddy producer module |
-| `protocol` | string | `tls` or `ssh` |
+| `protocol` | string | `tls`, `ssh`, or `ike` |
 | `protocol_version` | string or null | Observed protocol version |
 | `cipher_suite` | string or null | Observed cipher suite |
 | `algorithm` | string or null | Exact algorithm name for a named observation |
@@ -136,7 +142,8 @@ It is not a favorable or unfavorable result.
 | `certificate` | object or absent | Typed leaf-certificate facts for observed `tls.cert.signature` evidence |
 | `probe_role` | string or null | `hybrid_readiness` or `classical_control` for relevant TLS probes |
 | `expected_group` | string or null | Group requested by a TLS probe |
-| `probe_result` | object or null | Local OpenSSL invocation record |
+| `ike_group_id` | integer `0..65535` or absent | Exact IKE transform identifier when reported by the tool |
+| `probe_result` | object or null | Local probe invocation record |
 | `failure_category` | string or null | Failure that prevented or qualified observation |
 | `confidence` | enum | `high`, `medium`, or `low` |
 | `notes` | array of strings | Bounded human-readable annotations |
@@ -146,6 +153,13 @@ Recognized algorithms also populate the classification fields. Classical
 signatures and key exchange use NIST level `0`; symmetric ciphers and MACs
 leave that field null because the PQC category does not apply. Unknown names
 retain their exact identity and leave classification fields null.
+
+Named IKE encryption, integrity, PRF, and key-exchange evidence also populates
+`algorithm`. The optional `ike_group_id` preserves the numeric IKE transform
+identifier without introducing an IKE-only output model. It is absent from TLS,
+SSH, and IKE records where the tool did not report an identifier. Stock
+`ike-scan` observations are lower-trust discovery evidence: they do not prove
+peer authentication, IKE_AUTH completion, Child-SA creation, or an installed SA.
 
 The `certificate` object is present only when the TLS certificate probe
 produces an observed leaf certificate. Other evidence records omit the field.
@@ -170,7 +184,8 @@ have one acquisition source.
 
 ## 8. Probe result
 
-`probe_result` is present for OpenSSL subprocess evidence.
+`probe_result` is present for local subprocess evidence, including OpenSSL and
+stock `ike-scan` probes.
 
 | Field | Type | Meaning |
 | --- | --- | --- |
@@ -188,7 +203,7 @@ have one acquisition source.
 
 | Field | Type | Meaning |
 | --- | --- | --- |
-| `executable` | string | Resolved local OpenSSL path |
+| `executable` | string | Resolved local probe executable path |
 | `args` | array of strings | Argument vector without the executable |
 | `timeout_seconds` | integer | Probe timeout |
 | `redacted` | boolean | Whether sensitive arguments were removed |
@@ -213,7 +228,7 @@ The parser's internal input field is excluded from serialized JSON.
 | `primitive` | string or null | Interpreted primitive |
 | `parameter_set_identifier` | string or null | Parameter identifier |
 | `key_size` | integer or null | Key size |
-| `protocol` | string | `tls` or `ssh` |
+| `protocol` | string | `tls`, `ssh`, or `ike` |
 | `protocol_version` | string or null | Protocol version |
 | `negotiated_group` | string or null | Group linked to the finding |
 | `bom_ref` | string or null | Cross-format reference |
@@ -400,7 +415,20 @@ not a captured current posture for the target.
 }
 ```
 
-## 13. Stability rules
+## 13. JSONL projection
+
+`--format jsonl` projects the same canonical `ScanResult` into one compact JSON
+object per finding followed by exactly one `scan_summary` object. The summary
+preserves `scan.status` as `status`, including `completed`, `no_response`, and
+`rejected`; consumers must not infer lifecycle state from `failure_category`.
+
+JSONL is a streaming projection, not a lossless copy of the JSON document. It
+does not emit standalone evidence records. Finding records retain their linked
+identity and cryptographic fields, while the final summary carries scan identity,
+producer, status, target, readiness, severity, finding count, failure category,
+and canonical interpretation.
+
+## 14. Stability rules
 
 Breaking changes require a new `schema_version`. Version 1 may add optional
 nested fields. Consumers must:
@@ -412,7 +440,7 @@ nested fields. Consumers must:
 - use the process exit code for scan completion;
 - preserve `unknown` and `not_testable`.
 
-## 14. Related documentation
+## 15. Related documentation
 
 - [CLI reference](cli.md)
 - [Failure categories](failure-categories.md)

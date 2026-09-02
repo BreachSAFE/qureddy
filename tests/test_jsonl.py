@@ -7,6 +7,8 @@ from __future__ import annotations
 import io
 import json
 
+import pytest
+
 from qureddy.core.finding_identity import finding_hash
 from qureddy.core.models import Finding, ScanTarget
 from qureddy.output.jsonl import render_jsonl
@@ -62,3 +64,30 @@ def test_jsonl_ends_with_canonical_scan_summary() -> None:
     assert lines[-1]["type"] == "scan_summary"
     assert lines[-1]["target"] == result.target.locator
     assert lines[-1]["finding_count"] == len(result.findings)
+
+
+@pytest.mark.parametrize("scheme", ["tls", "ssh", "ike"])
+@pytest.mark.parametrize("status", ["completed", "no_response", "rejected"])
+def test_jsonl_summary_preserves_canonical_scan_status(scheme: str, status: str) -> None:
+    """Keep lifecycle state lossless across every protocol projection (#723)."""
+    result = _build_result()
+    port = {"tls": 443, "ssh": 22, "ike": 500}[scheme]
+    target = result.target.model_copy(
+        update={
+            "scheme": scheme,
+            "port": port,
+            "locator": f"{scheme}://example.com:{port}",
+        }
+    )
+    result = result.model_copy(
+        update={
+            "scan": result.scan.model_copy(update={"status": status}),
+            "target": target,
+        }
+    )
+    output = io.StringIO()
+
+    render_jsonl(result, output)
+
+    summary = json.loads(output.getvalue().splitlines()[-1])
+    assert summary["status"] == result.scan.status
