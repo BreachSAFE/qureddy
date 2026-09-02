@@ -215,6 +215,16 @@ def test_offered_evidence_without_probe_result_does_not_crash_renderer() -> None
     assert "QuReddy" in out
 
 
+def test_rich_title_preserves_bracketed_ipv6_target() -> None:
+    """Issue #495: target brackets are data, not Rich markup."""
+    locator = "tls://[fe80::1%eth0]:443"
+    result = _build_result().model_copy(
+        update={"summary": _build_result().summary.model_copy(update={"target": locator})}
+    )
+
+    assert locator in _render_to_string(result)
+
+
 @pytest.mark.parametrize(
     ("group", "expected"),
     [

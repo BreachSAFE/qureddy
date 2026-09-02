@@ -55,7 +55,7 @@ def _verdict_panel(result: ScanResult) -> Panel:
     body.append_text(recommendation)
     return Panel(
         body,
-        title=f"QuReddy scan: {result.summary.target}",
+        title=Text(f"QuReddy scan: {result.summary.target}"),
         border_style=_verdict_panel_border(result),
         # Issue #7: box.HEAVY + default expand=True stretched a full-width
         # rectangle around a short verdict. HORIZONTALS draws only top/bottom
