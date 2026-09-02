@@ -320,7 +320,7 @@ def build_interpretation(
         hygiene_status=hygiene_status,
     )
     return ScanInterpretation(
-        effective=scan_readiness(findings),
+        effective=scan_readiness(findings, evidence),
         headline=headline,
         recommended_action=recommended_action,
         display=_display(
