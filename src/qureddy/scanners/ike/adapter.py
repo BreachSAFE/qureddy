@@ -34,6 +34,7 @@ from qureddy.scanners.ike.types import IKEMode, IKEParseStatus
 
 _LOG = get_logger(__name__)
 _DEFAULT_OUTPUT_LIMIT = 256 * 1024
+_DEFAULT_BACKOFF = 1.5
 _MAX_PORT = 65535
 
 
@@ -185,8 +186,17 @@ class IkeScanAdapter:
     def _argv(self, mode: IKEMode, *, host: str, port: int, nat_t: bool, timeout: int) -> list[str]:
         """Build one list-form invocation with explicit transport settings."""
         binary = self._require_binary()
-        initial_timeout_ms = max(100, timeout * 1000 // max(self._retry, 1))
-        argv = [binary, "--retry", str(self._retry), "--timeout", str(initial_timeout_ms)]
+        retry_window = sum(_DEFAULT_BACKOFF**attempt for attempt in range(self._retry))
+        initial_timeout_ms = max(100, int(timeout * 1000 / retry_window))
+        argv = [
+            binary,
+            "--retry",
+            str(self._retry),
+            "--timeout",
+            str(initial_timeout_ms),
+            "--backoff",
+            str(_DEFAULT_BACKOFF),
+        ]
         if nat_t:
             argv.append("--nat-t")
         source_port = self._source_port or (4500 if nat_t else 500)

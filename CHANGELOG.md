@@ -35,6 +35,9 @@ versions follow [PEP 440](https://peps.python.org/pep-0440/).
 
 ### Fixed
 
+- Keep silent IKE probes within the requested retry budget so a completed scan reports
+  `no_response` with unknown readiness instead of being killed and mislabeled as a probe
+  timeout ([issue #738](https://github.com/BreachSAFE/qureddy/issues/738)).
 - Bundle pinned stock `ike-scan` in the standard container image so the advertised
   `qureddy scan ike` command works without mutating the published artifact. The image
   preserves the package license notice and continues to run as an unprivileged user
