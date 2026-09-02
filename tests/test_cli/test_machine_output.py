@@ -177,6 +177,42 @@ def test_installed_classical_cbom_final_bytes_include_certificate() -> None:
     assert _without_document_identity(outputs[0]) == _without_document_identity(outputs[1])
 
 
+def test_installed_classical_json_includes_public_certificate_details() -> None:
+    """The installed JSON renderer publishes the bounded certificate projection."""
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(_SUBPROCESS_INJECT_DIR)
+    env["QUREDDY_TEST_FORCE_CLASSICAL_RESULT"] = "1"
+
+    result = _run_qureddy(
+        "scan",
+        "tls",
+        "classical.example.invalid",
+        "--format",
+        "json",
+        merge_stderr=False,
+        env=env,
+    )
+
+    assert result.returncode == 0
+    evidence = next(
+        item
+        for item in json.loads(result.stdout)["evidence"]
+        if item["evidence_type"] == "tls.cert.signature"
+    )
+    assert evidence["certificate"] == {
+        "subject": "CN=classical.example.invalid",
+        "issuer": "CN=Fixture CA",
+        "not_valid_before": "2026-07-17T07:18:11+00:00",
+        "not_valid_after": "2027-07-17T07:18:11+00:00",
+        "serial_number": "0123456789ABCDEF",
+        "signature_algorithm": "ecdsa-with-SHA256",
+        "public_key_algorithm": None,
+        "public_key_bits": None,
+        "is_self_signed": False,
+        "is_post_quantum_signature": False,
+    }
+
+
 @pytest.mark.parametrize("output_format", ["json", "cbom"])
 @pytest.mark.parametrize("quiet", [True, False])
 def test_machine_output_clean_under_2and1_on_capability_failure(

@@ -10,8 +10,6 @@ the rendered CBOM is unchanged (#171).
 
 from __future__ import annotations
 
-import re
-from datetime import UTC, datetime
 from types import MappingProxyType
 from typing import TYPE_CHECKING
 
@@ -31,6 +29,7 @@ from cyclonedx.model.crypto import (
 )
 
 from qureddy.core.algorithm_profile import classify_key_exchange, classify_signature_algorithm
+from qureddy.core.certificate import parse_openssl_date
 from qureddy.output.cbom_assets import (
     POSITIVE_OBSERVATIONS,
     add_algorithm_assets,
@@ -263,60 +262,6 @@ def _bare_protocol_version(protocol: str, protocol_version: str) -> str:
     return protocol_version
 
 
-# OpenSSL prints certificate dates in the C locale regardless of the host locale
-# ("Jul 17 07:18:11 2026 GMT"), so the English month abbreviations are fixed. We map
-# them ourselves instead of using strptime's `%b`, which is LC_TIME-dependent and
-# silently fails on a non-English host (e.g. de_DE), dropping the cert dates (#116).
-_OPENSSL_MONTHS = MappingProxyType(
-    {
-        month: index
-        for index, month in enumerate(
-            ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"),
-            start=1,
-        )
-    }
-)
-# Day is `\d{1,2}` because OpenSSL space-pads single-digit days ("Jul  7 ..."), which
-# `%d` also mishandles. Only GMT/UTC is accepted (OpenSSL always reports these in GMT).
-_OPENSSL_DATE = re.compile(
-    r"^(?P<mon>[A-Z][a-z]{2})\s+(?P<day>\d{1,2})\s+"
-    r"(?P<hour>\d{2}):(?P<minute>\d{2}):(?P<second>\d{2})\s+"
-    r"(?P<year>\d{4})\s+(?P<tz>GMT|UTC)$"
-)
-
-
-def _parse_openssl_date(text: str) -> datetime | None:
-    """Parse `openssl x509 -dates` output (e.g. "Jul 17 07:18:11 2026 GMT").
-
-    Returns None on anything unparseable rather than raising — a date
-    the CBOM can't represent should degrade to "absent from this CBOM",
-    not abort rendering the rest of a real, otherwise-valid certificate.
-    Parsing is locale-independent (see ``_OPENSSL_MONTHS``); OpenSSL always
-    reports GMT (== UTC), which is attached explicitly to satisfy the
-    project's timezone-aware-datetime rule.
-    """
-    if not text:
-        return None
-    match = _OPENSSL_DATE.match(text.strip())
-    if not match:
-        return None
-    month = _OPENSSL_MONTHS.get(match.group("mon"))
-    if month is None:
-        return None
-    try:
-        return datetime(
-            int(match.group("year")),
-            month,
-            int(match.group("day")),
-            int(match.group("hour")),
-            int(match.group("minute")),
-            int(match.group("second")),
-            tzinfo=UTC,
-        )
-    except ValueError:
-        return None
-
-
 def _add_signature_algorithm_component(
     bom: Bom, signature_algorithm: str, provides_edges: dict[str, list[str]]
 ) -> BomRef | None:
@@ -375,8 +320,8 @@ def add_certificate_component(
                     subject_name=certificate.subject,
                     issuer_name=certificate.issuer,
                     certificate_format="X.509",
-                    not_valid_before=_parse_openssl_date(certificate.not_before),
-                    not_valid_after=_parse_openssl_date(certificate.not_after),
+                    not_valid_before=parse_openssl_date(certificate.not_before),
+                    not_valid_after=parse_openssl_date(certificate.not_after),
                     signature_algorithm_ref=sig_alg_ref,
                     subject_public_key_ref=subject_key_ref,
                 ),

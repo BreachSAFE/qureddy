@@ -144,10 +144,10 @@ def _add_observed_components(
 def _observed_certificates(result: ScanResult) -> list[CertificateObservation]:
     """Certificates captured by OBSERVED evidence, in evidence order."""
     return [
-        evidence.certificate
+        evidence.certificate_record
         for evidence in result.evidence
         if evidence.observation_type is ObservationType.OBSERVED
-        and evidence.certificate is not None
+        and evidence.certificate_record is not None
     ]
 
 

@@ -133,6 +133,7 @@ It is not a favorable or unfavorable result.
 | `handshake_signature` | string or null | Live TLS CertificateVerify signature algorithm |
 | `handshake_hash` | string or null | Hash reported for the live TLS CertificateVerify signature |
 | `key_bits` | positive integer or null | Observed ephemeral public-key size |
+| `certificate` | object or absent | Typed leaf-certificate facts for observed `tls.cert.signature` evidence |
 | `probe_role` | string or null | `hybrid_readiness` or `classical_control` for relevant TLS probes |
 | `expected_group` | string or null | Group requested by a TLS probe |
 | `probe_result` | object or null | Local OpenSSL invocation record |
@@ -146,9 +147,26 @@ signatures and key exchange use NIST level `0`; symmetric ciphers and MACs
 leave that field null because the PQC category does not apply. Unknown names
 retain their exact identity and leave classification fields null.
 
-The internal typed certificate observation is intentionally excluded from
-this JSON contract. Certificate facts appear through public evidence and
-finding fields and through the CycloneDX certificate component.
+The `certificate` object is present only when the TLS certificate probe
+produces an observed leaf certificate. Other evidence records omit the field.
+Its public fields are:
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `subject` | string | Leaf certificate subject distinguished name |
+| `issuer` | string | Issuer distinguished name |
+| `not_valid_before` | RFC 3339 string or null | Validity start; null when OpenSSL text is unparseable |
+| `not_valid_after` | RFC 3339 string or null | Validity end; null when OpenSSL text is unparseable |
+| `serial_number` | string | Certificate serial number |
+| `signature_algorithm` | string | Issuer signature algorithm over the leaf certificate |
+| `public_key_algorithm` | string or null | Leaf subject-public-key algorithm |
+| `public_key_bits` | positive integer or null | Leaf subject-public-key size |
+| `is_self_signed` | boolean or null | Verified self-signature state; null means the check was unavailable |
+| `is_post_quantum_signature` | boolean | Whether the issuer signature is a recognized PQ signature |
+
+QuReddy derives this public object from its internal certificate observation.
+The CBOM renderer consumes the same observation, so JSON and CycloneDX fields
+have one acquisition source.
 
 ## 8. Probe result
 

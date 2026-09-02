@@ -31,6 +31,10 @@ versions follow [PEP 440](https://peps.python.org/pep-0440/).
 
 ### Added
 
+- Emit typed leaf-certificate subject, issuer, validity, serial, signature, and
+  public-key facts in JSON certificate evidence
+  ([issue #640](https://github.com/BreachSAFE/qureddy/issues/640),
+  [PR #655](https://github.com/BreachSAFE/qureddy/pull/655)).
 - Record the observed TLS ephemeral public-key size in JSON and as native CycloneDX
   related cryptographic material ([issue #638](https://github.com/BreachSAFE/qureddy/issues/638),
   [PR #654](https://github.com/BreachSAFE/qureddy/pull/654)).
