@@ -59,6 +59,7 @@ from qureddy.output.cbom_ssh import (
     add_ssh_server_identity_properties,
     add_ssh_transport_components,
 )
+from qureddy.output.cbom_tls_handshake import add_tls_handshake_components
 
 if TYPE_CHECKING:
     from qureddy.core.certificate import CertificateObservation
@@ -109,16 +110,7 @@ def render_cbom(
     _add_tool_provenance(bom, result, reproducible=reproducible)
     add_scan_status_properties(bom, result)
     add_scan_target_metadata(bom, result, reproducible=reproducible)
-    algorithm_refs = add_algorithm_components(bom, result, provides_edges)
-    add_ssh_host_key_components(bom, result, provides_edges)
-    add_ssh_kex_components(bom, result, provides_edges)
-    add_ssh_transport_components(bom, result, provides_edges)
-    add_cipher_suite_components(bom, result, provides_edges)
-    add_legacy_cipher_components(bom, result, provides_edges)
-    add_protocol_components(bom, result, algorithm_refs, provides_edges)
-    certificate = _captured_certificate(result)
-    if certificate is not None:
-        add_certificate_component(bom, certificate, provides_edges)
+    certificate = _add_observed_components(bom, result, provides_edges)
     bom.register_dependency(endpoint)
     _write_with_library_gap_patches(
         bom,
@@ -129,6 +121,24 @@ def render_cbom(
         reproducible=reproducible,
         compact=compact,
     )
+
+
+def _add_observed_components(
+    bom: Bom, result: ScanResult, provides_edges: dict[str, list[str]]
+) -> CertificateObservation | None:
+    """Add every observed crypto asset and return the captured certificate."""
+    algorithm_refs = add_algorithm_components(bom, result, provides_edges)
+    add_ssh_host_key_components(bom, result, provides_edges)
+    add_ssh_kex_components(bom, result, provides_edges)
+    add_ssh_transport_components(bom, result, provides_edges)
+    add_cipher_suite_components(bom, result, provides_edges)
+    add_legacy_cipher_components(bom, result, provides_edges)
+    add_protocol_components(bom, result, algorithm_refs, provides_edges)
+    add_tls_handshake_components(bom, result, algorithm_refs, provides_edges)
+    certificate = _captured_certificate(result)
+    if certificate is not None:
+        add_certificate_component(bom, certificate, provides_edges)
+    return certificate
 
 
 def _observed_certificates(result: ScanResult) -> list[CertificateObservation]:

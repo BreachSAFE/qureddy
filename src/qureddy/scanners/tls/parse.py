@@ -35,7 +35,8 @@ NEGOTIATED_LINE = re.compile(
 )
 PEER_OR_SERVER_TEMP_KEY = re.compile(
     r"^[^\S\r\n]*(?:Peer|Server)[^\S\r\n]+Temp[^\S\r\n]+Key:"
-    r"[^\S\r\n]*(?P<group>[A-Za-z0-9_]+)",
+    r"[^\S\r\n]*(?P<group>[A-Za-z0-9_]+)"
+    r"(?:[^\S\r\n]*,[^\S\r\n]*(?P<bits>\d{1,7})[^\S\r\n]+bits)?",
     re.MULTILINE,
 )
 CLIENTHELLO_LINE = re.compile(r"^\s*ClientHello\b.*$", re.MULTILINE)
@@ -46,6 +47,16 @@ PROTOCOL_VERSION = re.compile(
 )
 CIPHERSUITE = re.compile(
     r"^[^\S\r\n]*Ciphersuite:[^\S\r\n]*(?P<cipher>[A-Z0-9_]+)[^\S\r\n]*$",
+    re.MULTILINE,
+)
+SIGNATURE_TYPE = re.compile(
+    r"^[^\S\r\n]*Signature[^\S\r\n]+type:"
+    r"[^\S\r\n]*(?P<signature>[A-Za-z0-9_]+)[^\S\r\n]*$",
+    re.MULTILINE,
+)
+HASH_USED = re.compile(
+    r"^[^\S\r\n]*Hash[^\S\r\n]+used:"
+    r"[^\S\r\n]*(?P<hash>[A-Za-z0-9_-]+)[^\S\r\n]*$",
     re.MULTILINE,
 )
 
@@ -62,6 +73,9 @@ class ParsedNegotiation:
     negotiated_group: str | None = None
     protocol_version: str | None = None
     cipher_suite: str | None = None
+    handshake_signature: str | None = None
+    handshake_hash: str | None = None
+    key_bits: int | None = None
     failure_category: FailureCategory | None = None
     notes: tuple[str, ...] = ()
 
@@ -101,6 +115,9 @@ def parse_brief_output(stdout: str, *, expected_group: str) -> ParsedNegotiation
         negotiated_group=server_evidence,
         protocol_version=protocol,
         cipher_suite=cipher,
+        handshake_signature=_first_match(SIGNATURE_TYPE, stdout, "signature"),
+        handshake_hash=_first_match(HASH_USED, stdout, "hash"),
+        key_bits=_temp_key_bits(stdout),
     )
 
 
@@ -154,6 +171,14 @@ def _unexpected(
 def _first_match(pattern: re.Pattern[str], text: str, group_name: str) -> str | None:
     match = pattern.search(text)
     return match.group(group_name) if match else None
+
+
+def _temp_key_bits(text: str) -> int | None:
+    """Return the observed ephemeral-key bit length when OpenSSL reports it."""
+    match = PEER_OR_SERVER_TEMP_KEY.search(text)
+    bits = match.group("bits") if match else None
+    value = int(bits) if bits else 0
+    return value if value > 0 else None
 
 
 def _has_clienthello_context(stdout: str, group: str) -> bool:

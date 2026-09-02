@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from qureddy.core.models import FailureCategory, ProbeRole, ScanTarget
+from qureddy.core.models import FailureCategory, ProbeCommand, ProbeResult, ProbeRole, ScanTarget
 from qureddy.scanners.tls._evidence import build_asset, evidence_from_probe
 from qureddy.scanners.tls.openssl_probe import HYBRID_GROUP, run_hybrid_probe
 from tests._fake_openssl import fake_openssl
@@ -62,3 +62,33 @@ def test_evidence_parser_does_not_match_across_stream_boundary() -> None:
 
     assert evidence.negotiated_group is None
     assert evidence.failure_category is FailureCategory.PARSE_NO_GROUP
+
+
+def test_evidence_preserves_live_handshake_details() -> None:
+    """The successful probe path must project parsed details onto Evidence."""
+    transcript = (
+        "Protocol version: TLSv1.3\n"
+        "Ciphersuite: TLS_AES_256_GCM_SHA384\n"
+        "Hash used: SHA256\n"
+        "Signature type: rsa_pss_rsae_sha256\n"
+        "Peer Temp Key: X25519, 253 bits\n"
+    )
+    probe = ProbeResult(
+        command=ProbeCommand(executable="openssl", args=(), timeout_seconds=30),
+        return_code=0,
+        stdout_sha256="0" * 64,
+        stderr_sha256="0" * 64,
+        parser_input=transcript,
+        duration_ms=1,
+    )
+
+    evidence = evidence_from_probe(
+        asset=build_asset(_target()),
+        probe=probe,
+        expected_group="X25519",
+        probe_role=ProbeRole.CLASSICAL_CONTROL,
+    )
+
+    assert evidence.handshake_signature == "rsa_pss_rsae_sha256"
+    assert evidence.handshake_hash == "SHA256"
+    assert evidence.key_bits == 253

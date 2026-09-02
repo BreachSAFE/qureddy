@@ -36,9 +36,8 @@ HOSTNAME_PATTERN = re.compile(
     r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?$",
 )
 
-# The transport schemes a ScanTarget may carry — TLS scans and SSH scans.
-# Constrained so a caller (or deserialized JSON) cannot supply an arbitrary
-# scheme that would flow into the locator and downstream tooling (#369).
+# Constrain ScanTarget transport schemes so deserialized input cannot pass an
+# arbitrary scheme into the locator and downstream tooling (#369).
 SUPPORTED_SCHEMES = frozenset({"tls", "ssh"})
 
 
@@ -418,6 +417,9 @@ class Evidence(BaseModel):
     parameter_set_identifier: str | None = None
     nist_quantum_security_level: int | None = Field(default=None, ge=0, le=5)
     negotiated_group: str | None = None
+    handshake_signature: str | None = None
+    handshake_hash: str | None = None
+    key_bits: int | None = Field(default=None, ge=1)
     server_software: str | None = None
     server_version: str | None = None
     probe_role: ProbeRole | None = None
