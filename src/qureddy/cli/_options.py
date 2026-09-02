@@ -126,7 +126,16 @@ RetryDelayOpt = Annotated[
     ),
 ]
 VerboseOpt = Annotated[
-    int, typer.Option("-v", "--verbose", count=True, help="Verbosity (-v/-vv/-vvv).")
+    int,
+    typer.Option(
+        "-v",
+        "--verbose",
+        count=True,
+        help=(
+            "Levels: -v INFO logs; -vv DEBUG logs including subprocess boundaries; "
+            "-vvv also shows exact commands in Rich output and internal-error tracebacks."
+        ),
+    ),
 ]
 JsonLogsOpt = Annotated[bool, typer.Option("--json-logs", help="Emit JSON-formatted logs.")]
 QuietOpt = Annotated[bool, typer.Option("-q", "--quiet", help="Suppress non-error logs.")]
