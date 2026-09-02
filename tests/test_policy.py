@@ -70,6 +70,7 @@ class TestHybridNegotiatedRule:
         assert findings[0].severity is Severity.INFO
         assert findings[0].readiness is Readiness.TRANSITIONAL_HYBRID
         assert findings[0].confidence is Confidence.HIGH
+        assert findings[0].algorithm == "X25519MLKEM768"
         assert findings[0].primitive == "kem"
         assert findings[0].parameter_set_identifier == "ML-KEM-768"
         assert findings[0].nist_quantum_security_level == 3
@@ -91,6 +92,7 @@ class TestClassicalRule:
         assert findings[0].rule_id == "tls.classical.negotiated_x25519"
         assert findings[0].severity is Severity.LOW
         assert findings[0].readiness is Readiness.QUANTUM_VULNERABLE
+        assert findings[0].algorithm == "X25519"
         assert findings[0].primitive == "key-agree"
         assert findings[0].nist_quantum_security_level == 0
 

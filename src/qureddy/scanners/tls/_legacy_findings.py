@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from qureddy.core.ciphers import has_weak_cipher
+from qureddy.core.ciphers import cipher_primitive, has_weak_cipher
 from qureddy.core.ids import new_id
 from qureddy.core.models import (
     Asset,
@@ -115,6 +115,8 @@ def cipher_evidence_from_legacy_result(
             observation_type=ObservationType.OFFERED,
             source="qureddy.scanners.tls.legacy_probe",
             protocol_version=result.protocol_version,
+            algorithm=cipher,
+            primitive=cipher_primitive(cipher),
             negotiated_group=cipher,
             notes=(f"accepted on {result.protocol_version}",),
         )

@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import UTC, datetime
 
 import pytest
@@ -157,7 +158,32 @@ class TestTLSScannerOrchestration:
             timeout_seconds=1,
         )
         assert evidence.observation_type is ObservationType.OBSERVED
+        assert evidence.algorithm == "sha256WithRSAEncryption"
+        assert evidence.primitive == "signature"
+        assert evidence.nist_quantum_security_level == 0
         assert finding is not None
+        assert finding.algorithm == "sha256WithRSAEncryption"
+        assert finding.primitive == "signature"
+        assert finding.nist_quantum_security_level == 0
+
+        unknown_certificate = replace(certificate, signature_algorithm="vendorSignature42")
+        monkeypatch.setattr(
+            scanner_module, "parse_certificate", lambda *_args, **_kwargs: unknown_certificate
+        )
+        evidence, finding = TLSScanner._collect_cert_evidence(  # noqa: SLF001
+            target=target,
+            asset=asset,
+            openssl_path="/fixture/openssl",
+            timeout_seconds=1,
+        )
+        assert evidence.algorithm == "vendorSignature42"
+        assert evidence.primitive == "signature"
+        assert evidence.parameter_set_identifier is None
+        assert evidence.nist_quantum_security_level is None
+        assert finding is not None
+        assert finding.algorithm == "vendorSignature42"
+        assert finding.primitive == "signature"
+        assert finding.nist_quantum_security_level is None
 
         def missing_openssl(*_args: object, **_kwargs: object) -> str:
             raise LocalOpenSSLMissing("fixture openssl missing")

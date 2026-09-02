@@ -301,6 +301,7 @@ def _build_finding(asset: Asset, rule: PolicyRule, evidence: Evidence) -> Findin
         severity=rule.severity,
         readiness=rule.readiness,
         confidence=rule.confidence,
+        algorithm=evidence.algorithm or evidence.negotiated_group,
         protocol_version=evidence.protocol_version,
         negotiated_group=evidence.negotiated_group,
         primitive=profile.primitive if profile is not None else None,

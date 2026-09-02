@@ -22,6 +22,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from qureddy.core.algorithm_profile import AlgorithmProfile, classify_signature_algorithm
 from qureddy.core.certificate import CertificateObservation
 from qureddy.core.ids import new_id
 from qureddy.core.models import (
@@ -64,12 +65,19 @@ def evidence_from_certificate(asset: Asset, certificate: CertificateInfo | None)
             source="qureddy.scanners.tls.cert_probe",
             notes=("certificate not fetched or unparseable",),
         )
+    profile = classify_signature_algorithm(certificate.signature_algorithm) or AlgorithmProfile(
+        "signature", None
+    )
     return Evidence(
         id=new_id("ev"),
         asset_id=asset.id,
         evidence_type="tls.cert.signature",
         observation_type=ObservationType.OBSERVED,
         source="qureddy.scanners.tls.cert_sig",
+        algorithm=certificate.signature_algorithm,
+        primitive=profile.primitive,
+        parameter_set_identifier=profile.parameter_set_identifier,
+        nist_quantum_security_level=profile.nist_quantum_security_level,
         notes=(f"signature algorithm: {certificate.signature_algorithm}",),
         certificate=CertificateObservation(
             subject=certificate.subject,
@@ -126,6 +134,8 @@ def finding_from_certificate(
         severity=Severity.INFO,
         readiness=Readiness.NOT_APPLICABLE,
         confidence=Confidence.HIGH,
-        algorithm=certificate.signature_algorithm,
-        primitive="signature",
+        algorithm=evidence.algorithm,
+        primitive=evidence.primitive,
+        parameter_set_identifier=evidence.parameter_set_identifier,
+        nist_quantum_security_level=evidence.nist_quantum_security_level,
     )

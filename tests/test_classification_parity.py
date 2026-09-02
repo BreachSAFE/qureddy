@@ -6,10 +6,11 @@ from __future__ import annotations
 
 import io
 import json
+from pathlib import Path
 from unittest.mock import patch
 
 from qureddy.core.algorithm_profile import classify_key_exchange
-from qureddy.core.models import Evidence, ObservationType, ScanResult
+from qureddy.core.models import ProbeCommand, ProbeResult, ProbeRole, ScanResult
 from qureddy.core.policy import classify_evidence
 from qureddy.core.targets import parse_ssh_target
 from qureddy.output.cbom import render_cbom
@@ -18,7 +19,10 @@ from qureddy.output.jsonl import render_jsonl
 from qureddy.scanners.ssh.classify import classify_offered_algorithm
 from qureddy.scanners.ssh.probe import SSHOffer
 from qureddy.scanners.ssh.scanner import scan_ssh
+from qureddy.scanners.tls._evidence import evidence_from_probe
 from tests._cbom_fixtures import _build_result
+
+_OPENSSL_FIXTURES = Path(__file__).parent / "fixtures" / "openssl"
 
 
 def _github_like_ssh_result() -> ScanResult:
@@ -43,21 +47,28 @@ def test_key_exchange_classifier_rejects_embedded_known_tokens() -> None:
 def test_x25519_classification_matches_json_jsonl_and_cbom() -> None:
     """Project one classified finding identically across every machine format."""
     base = _build_result()
-    evidence = Evidence(
-        id="evidence-x25519",
-        asset_id=base.assets[0].id,
-        evidence_type="tls.negotiation",
-        observation_type=ObservationType.NEGOTIATED,
-        source="qureddy.scanners.tls.parse",
-        protocol_version="TLSv1.3",
-        negotiated_group="X25519",
+    fixture = (_OPENSSL_FIXTURES / "brief_classical_example_com.txt").read_text()
+    evidence = evidence_from_probe(
+        asset=base.assets[0],
+        probe=ProbeResult(
+            command=ProbeCommand(executable="openssl", args=(), timeout_seconds=30),
+            return_code=0,
+            stdout_sha256="0" * 64,
+            stderr_sha256="0" * 64,
+            parser_input=fixture,
+            duration_ms=1,
+        ),
+        expected_group="X25519",
+        probe_role=ProbeRole.CLASSICAL_CONTROL,
     )
     finding = classify_evidence(base.assets[0], [evidence])[0]
     result = base.model_copy(update={"evidence": (evidence,), "findings": (finding,)})
 
     json_stream = io.StringIO()
     render_json(result, json_stream)
-    json_finding = json.loads(json_stream.getvalue())["findings"][0]
+    json_document = json.loads(json_stream.getvalue())
+    json_evidence = json_document["evidence"][0]
+    json_finding = json_document["findings"][0]
 
     jsonl_stream = io.StringIO()
     render_jsonl(result, jsonl_stream)
@@ -74,6 +85,12 @@ def test_x25519_classification_matches_json_jsonl_and_cbom() -> None:
     )
 
     expected = ("key-agree", 0)
+    assert json_evidence["algorithm"] == "X25519"
+    assert (
+        json_evidence["primitive"],
+        json_evidence["nist_quantum_security_level"],
+    ) == expected
+    assert json_finding["algorithm"] == "X25519"
     assert (json_finding["primitive"], json_finding["nist_quantum_security_level"]) == expected
     assert (
         jsonl_metadata["primitive"],
