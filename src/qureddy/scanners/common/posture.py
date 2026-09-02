@@ -142,7 +142,6 @@ def _authentication_axis(signals: PostureSignals, *, not_testable: bool) -> Axis
 def _protocol_axis(
     signals: PostureSignals,
     *,
-    failure_category: FailureCategory | None,
     has_findings: bool,
     not_testable: bool,
 ) -> AxisStatus:
@@ -152,7 +151,7 @@ def _protocol_axis(
         else AxisStatus.ACTION_NEEDED
         if signals.protocol_action_needed or signals.legacy_protocol
         else AxisStatus.UNKNOWN
-        if failure_category is FailureCategory.TLS_HANDSHAKE_FAILED
+        if signals.hybrid_failed
         else AxisStatus.ACCEPTABLE
         if has_findings
         else AxisStatus.UNKNOWN
@@ -184,7 +183,6 @@ def _hndl_exposure(
 def _hygiene_status(
     signals: PostureSignals,
     *,
-    failure_category: FailureCategory | None,
     not_testable: bool,
     has_findings: bool,
 ) -> HygieneStatus:
@@ -201,7 +199,7 @@ def _hygiene_status(
         or signals.protocol_action_needed
     ):
         return HygieneStatus.ACTION_NEEDED
-    if failure_category is FailureCategory.TLS_HANDSHAKE_FAILED:
+    if signals.hybrid_failed:
         return HygieneStatus.UNKNOWN
     return HygieneStatus.OK if has_findings else HygieneStatus.UNKNOWN
 
@@ -291,7 +289,6 @@ def _build_axes(
     authentication = _authentication_axis(signals, not_testable=not_testable)
     protocol_hygiene = _protocol_axis(
         signals,
-        failure_category=failure_category,
         has_findings=bool(findings),
         not_testable=not_testable,
     )
@@ -325,7 +322,6 @@ def build_interpretation(
     )
     hygiene_status = _hygiene_status(
         signals,
-        failure_category=failure_category,
         not_testable=not_testable,
         has_findings=bool(findings),
     )
