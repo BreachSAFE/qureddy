@@ -8,7 +8,7 @@
 2. [Sources of truth, vendored and cited](#2-sources-of-truth-vendored-and-cited)
 3. [The classification policy](#3-the-classification-policy)
 4. [Detection: the ClientHello probe](#4-detection-the-clienthello-probe)
-5. [One registry, read two ways](#5-one-registry-read-two-ways)
+5. [One registry, every reader rates from it](#5-one-registry-every-reader-rates-from-it)
 6. [Consequences](#6-consequences)
 7. [References](#7-references)
 
@@ -93,7 +93,7 @@ for suite_id in weak_set (from the vendored registry):
 A suite the local build cannot enumerate is reported `NOT_TESTABLE`, never silently omitted
 (#706). The existing timeout path already models this honest state.
 
-## 5. One registry, read two ways
+## 5. One registry, every reader rates from it
 
 The classification and the detection share a single canonical cipher-suite registry (#708):
 
@@ -102,10 +102,33 @@ cipher_registry: suite_id (IANA) -> {
     name, recommended (Y|N|D), weak (bool), classical_bits, block_bits,
     kex_rating (RFC 10015), quantum_axis (classical|hybrid|pure_pq),
     source (registry release + RFC clause) }
+
+control_map: crypto_property (weak | quantum_vulnerable | kex_classical | ...) ->
+    [ { framework, version, control_id, title } ]   # each framework versioned on its own cadence
 ```
 
 The probe reads `suite_id` to know what to offer. The classifier, CBOM, and CISO summary read the
 same ratings, so they cannot disagree (this closes the #705 drift by construction).
+
+**Facts and verdict are separated, the way a CBOM separates them.** The probe emits what it
+observed on the wire as fact (OFFERED, NOT_OFFERED, NOT_TESTABLE, AMBIGUOUS) and rates nothing.
+The weak verdict lives in the registry, vendored from IANA and the RFCs with its release,
+`updated` date, and digest, so a new suite enters the weak set by re-vendoring that file while the
+scanner code stays fixed. This mirrors IBM's CBOM tooling, where detection records the
+cryptographic asset and a separate versioned compliance policy decides whether it is quantum-safe
+or weak. The registry file is that policy for QuReddy: a vendored, digest-pinned JSON file read at load
+time. Only the loader and the row type are Python; the ratings themselves stay in the file.
+
+**Control-framework mapping is a separate, independently versioned layer.** Regulations move on
+their own cadence: NIST SP 800-53 SC-12 and SC-13, PCI DSS, and the SCF QTS domain each revise
+without any change to a cipher's identity. A control id embedded in a cipher row would force a
+re-vendor of the whole cipher registry every time one framework revised. Hold the crypto facts and
+ratings in `cipher_registry`, and hold the mappings in a `control_map` keyed by crypto property
+(weak, quantum_vulnerable, kex axis), each entry carrying its framework and version. A suite joins
+to a control through its property, so a framework revision re-vendors only `control_map` and the
+cipher rows stay fixed. SCF QTS uses identifier and title as the platform's SCF sourcing policy
+requires, and SCF control text stays SCF's. This layer is out of scope for the native probe (#700)
+and the first registry import (#708); it is recorded here so the schema leaves room for it.
 
 ## 6. Consequences
 
