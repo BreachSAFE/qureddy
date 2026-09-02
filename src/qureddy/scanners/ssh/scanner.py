@@ -25,7 +25,7 @@ from qureddy.core.models import (
 from qureddy.scanners.common.assets import build_endpoint_asset
 from qureddy.scanners.common.metadata import build_scan_metadata
 from qureddy.scanners.common.posture import build_interpretation
-from qureddy.scanners.common.rollup import highest_severity
+from qureddy.scanners.common.rollup import highest_severity, scan_readiness
 from qureddy.scanners.ssh import classify
 from qureddy.scanners.ssh._identity import server_identity_observations
 from qureddy.scanners.ssh._observations import (
@@ -333,8 +333,8 @@ def _build_ssh_success_result(
     started: datetime,
 ) -> ScanResult:
     """Build the completed SSH result and deterministic rollup."""
-    interpretation = build_interpretation(findings, evidence, None, protocol="ssh")
-    readiness = interpretation.effective
+    # Shared, complete, None-safe rollup (#248) — was a forked 4-tier copy + bare max().
+    readiness = scan_readiness(findings)
     highest = highest_severity(findings)
     completed = datetime.now(UTC)
 
@@ -358,7 +358,7 @@ def _build_ssh_success_result(
             highest_severity=highest,
             readiness=readiness,
             failure_category=None,
-            interpretation=interpretation,
+            interpretation=build_interpretation(findings, evidence, None, protocol="ssh"),
         ),
     )
 
