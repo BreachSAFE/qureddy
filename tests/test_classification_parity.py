@@ -15,6 +15,7 @@ from qureddy.core.targets import parse_ssh_target
 from qureddy.output.cbom import render_cbom
 from qureddy.output.json import render_json
 from qureddy.output.jsonl import render_jsonl
+from qureddy.scanners.ssh.classify import classify_offered_algorithm
 from qureddy.scanners.ssh.probe import SSHOffer
 from qureddy.scanners.ssh.scanner import scan_ssh
 from tests._cbom_fixtures import _build_result
@@ -142,7 +143,7 @@ def test_unknown_ssh_offer_keeps_identity_without_fabricated_classification() ->
     offer = SSHOffer(
         server_banner="SSH-2.0-test",
         kex_algorithms=("future-kex@example.com",),
-        host_key_algorithms=(),
+        host_key_algorithms=("future-signature@example.com",),
         ciphers=(),
         macs=(),
     )
@@ -154,3 +155,20 @@ def test_unknown_ssh_offer_keeps_identity_without_fabricated_classification() ->
     assert evidence.primitive is None
     assert evidence.parameter_set_identifier is None
     assert evidence.nist_quantum_security_level is None
+
+    host_key = next(item for item in result.evidence if item.evidence_type == "ssh.hostkey")
+    assert host_key.algorithm == "future-signature@example.com"
+    assert host_key.primitive is None
+    cbom_stream = io.StringIO()
+    render_cbom(result, cbom_stream, reproducible=True)
+    component = next(
+        item
+        for item in json.loads(cbom_stream.getvalue())["components"]
+        if item["name"] == "future-signature@example.com"
+    )
+    assert component["cryptoProperties"] == {"assetType": "algorithm"}
+
+
+def test_non_algorithm_ssh_evidence_type_has_no_classification() -> None:
+    """Keep server identity and posture evidence outside the algorithm inventory."""
+    assert classify_offered_algorithm("ssh.server", "OpenSSH") is None
