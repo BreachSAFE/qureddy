@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
 # SPDX-License-Identifier: Apache-2.0
 
-FROM debian:bookworm-slim@sha256:7b140f374b289a7c2befc338f42ebe6441b7ea838a042bbd5acbfca6ec875818 AS openssl-build
+FROM debian:bookworm-slim@sha256:88200866dfff7ea7f5cbcb6ec7c8a701889efe6fe859fe64d6990e4b07ea4171 AS openssl-build
 
 ARG OPENSSL_VERSION=3.5.7
 ARG OPENSSL_SHA256=a8c0d28a529ca480f9f36cf5792e2cd21984552a3c8e4aa11a24aa31aeac98e8
@@ -26,7 +26,7 @@ RUN curl --fail --location --proto '=https' --connect-timeout 30 --max-time 300 
 # Build the wheel from source inside the image (#253) so a fresh `docker build .`
 # needs no host-built dist/ artifact. hatchling reads the static version from
 # pyproject.toml, so the wheel version is intrinsic to the source, not an ARG.
-FROM python:3.14-slim-bookworm@sha256:23c59390fc717bf09f9336908199a0ae75d9c4264bf296123f94ad772fea3b52 AS wheel-build
+FROM python:3.14-slim-bookworm@sha256:9ab8d9c8514b44f90cf0029dd42fdd7e9e211e639c8b995304cc04568dee900f AS wheel-build
 RUN pip install --no-cache-dir build==1.3.0 hatchling==1.31.0
 WORKDIR /src
 COPY pyproject.toml README.md LICENSE NOTICE ./
@@ -34,7 +34,7 @@ COPY LICENSES/ ./LICENSES/
 COPY src/ ./src/
 RUN python -m build --wheel --no-isolation --outdir /tmp/wheel
 
-FROM python:3.14-slim-bookworm@sha256:23c59390fc717bf09f9336908199a0ae75d9c4264bf296123f94ad772fea3b52
+FROM python:3.14-slim-bookworm@sha256:9ab8d9c8514b44f90cf0029dd42fdd7e9e211e639c8b995304cc04568dee900f
 
 ARG QUREDDY_VERSION=0.9.5
 LABEL org.opencontainers.image.title="QuReddy" \
