@@ -21,3 +21,16 @@ def test_mutable_image_tags_are_promoted_only_after_signature_verification() -> 
 
     assert staged_create < sign < verify < promotion < mutable_promotion
     assert 'for tag in "$QUREDDY_VERSION" latest' not in WORKFLOW[:promotion]
+
+
+def test_docker_hub_tags_move_only_after_destination_signature_verifies() -> None:
+    """A mirror-signing failure must not move Docker Hub release tags."""
+    mirror = WORKFLOW[WORKFLOW.index("Promote the signed digest to Docker Hub") :]
+    staging = mirror.index('--tag "$DEST_IMAGE:sha-${GITHUB_SHA::12}"')
+    sign = mirror.index('cosign sign --yes "$DEST_IMAGE@$destination_digest"')
+    verify = mirror.index('cosign verify "$DEST_IMAGE@$destination_digest"')
+    promotion = mirror.index('for tag in "$QUREDDY_VERSION" latest')
+    mutable_tag = mirror.index('--tag "$DEST_IMAGE:$tag"')
+
+    assert staging < sign < verify < promotion < mutable_tag
+    assert "cosign copy" not in mirror

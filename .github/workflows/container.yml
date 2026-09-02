@@ -250,19 +250,25 @@ jobs:
         run: |
           set -euo pipefail
           digest="sha256:$(docker buildx imagetools inspect --raw "$SOURCE_IMAGE:sha-${GITHUB_SHA::12}" | sha256sum | cut -d' ' -f1)"
-          # Promote the already-built manifest; do not rebuild per registry.
-          for tag in "$QUREDDY_VERSION" latest; do
-            docker buildx imagetools create --tag "$DEST_IMAGE:$tag" "$SOURCE_IMAGE@$digest"
-          done
-          destination_digest="sha256:$(docker buildx imagetools inspect --raw "$DEST_IMAGE:$QUREDDY_VERSION" | sha256sum | cut -d' ' -f1)"
+          # Copy the already-built manifest to an immutable staging tag. Sign and
+          # verify that destination digest before moving either mutable release tag.
+          docker buildx imagetools create \
+            --tag "$DEST_IMAGE:sha-${GITHUB_SHA::12}" "$SOURCE_IMAGE@$digest"
+          destination_digest="sha256:$(docker buildx imagetools inspect --raw "$DEST_IMAGE:sha-${GITHUB_SHA::12}" | sha256sum | cut -d' ' -f1)"
           test "$destination_digest" = "$digest" || {
             echo "Docker Hub manifest digest mismatch: expected $digest, got $destination_digest" >&2
             exit 1
           }
-          # Transfer the signed image reference and its signature to the same digest.
-          # The default copy mode targets the signed index; --only on an index can
-          # incorrectly resolve platform children that do not carry the signature.
-          cosign copy "$SOURCE_IMAGE@$digest" "$DEST_IMAGE@$destination_digest"
+          cosign sign --yes "$DEST_IMAGE@$destination_digest"
           cosign verify "$DEST_IMAGE@$destination_digest" \
             --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
             --certificate-identity-regexp '^https://github.com/BreachSAFE/qureddy/\.github/workflows/'
+          for tag in "$QUREDDY_VERSION" latest; do
+            docker buildx imagetools create --tag "$DEST_IMAGE:$tag" \
+              "$DEST_IMAGE@$destination_digest"
+            promoted_digest="sha256:$(docker buildx imagetools inspect --raw "$DEST_IMAGE:$tag" | sha256sum | cut -d' ' -f1)"
+            test "$promoted_digest" = "$destination_digest"
+            cosign verify "$DEST_IMAGE:$tag" \
+              --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+              --certificate-identity-regexp '^https://github.com/BreachSAFE/qureddy/\.github/workflows/'
+          done

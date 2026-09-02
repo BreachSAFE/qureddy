@@ -28,6 +28,13 @@ versions follow [PEP 440](https://peps.python.org/pep-0440/).
 
 ## Unreleased
 
+### Fixed
+
+- Stage, independently sign, and verify the Docker Hub manifest digest before moving
+  the version and `latest` tags, replacing the deprecated cross-registry `cosign copy`
+  path that left the mirror unsigned and failed the release workflow
+  ([issue #538](https://github.com/BreachSAFE/qureddy/issues/538)).
+
 ### Changed
 
 - Future changes will be recorded here until the next release is cut.
