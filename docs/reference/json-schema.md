@@ -130,6 +130,9 @@ It is not a favorable or unfavorable result.
 | `parameter_set_identifier` | string or null | Standard parameter identifier when known |
 | `nist_quantum_security_level` | integer `0..5` or null | Security level when established |
 | `negotiated_group` | string or null | Negotiated or offered group |
+| `handshake_signature` | string or null | Live TLS CertificateVerify signature algorithm |
+| `handshake_hash` | string or null | Hash reported for the live TLS CertificateVerify signature |
+| `key_bits` | positive integer or null | Observed ephemeral public-key size |
 | `probe_role` | string or null | `hybrid_readiness` or `classical_control` for relevant TLS probes |
 | `expected_group` | string or null | Group requested by a TLS probe |
 | `probe_result` | object or null | Local OpenSSL invocation record |

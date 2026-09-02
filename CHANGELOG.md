@@ -29,9 +29,22 @@ versions follow [PEP 440](https://peps.python.org/pep-0440/).
 
 ## Unreleased
 
+### Added
+
+- Record the observed TLS ephemeral public-key size in JSON and as native CycloneDX
+  related cryptographic material ([issue #638](https://github.com/BreachSAFE/qureddy/issues/638),
+  [PR #654](https://github.com/BreachSAFE/qureddy/pull/654)).
+
 ### Changed
 
 - Future changes will be recorded here until the next release is cut.
+
+### Fixed
+
+- Preserve the live TLS CertificateVerify signature and hash in JSON and emit the
+  signature as a distinct CBOM algorithm observation
+  ([issue #637](https://github.com/BreachSAFE/qureddy/issues/637),
+  [PR #654](https://github.com/BreachSAFE/qureddy/pull/654)).
 
 ## [0.9.3] - 2026-09-01
 
