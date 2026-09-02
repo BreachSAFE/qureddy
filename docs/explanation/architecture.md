@@ -284,7 +284,7 @@ flowchart TB
         registry --> collector["Collector"]
         collector --> tlsprobe["OpenSSL probe set"]
         collector --> sshprobe["Native SSH socket probe"]
-        collector --> future["Future tool adapter\n(ssh-audit, nmap, PKI)"]
+        collector --> future["Future tool adapter\n(ssh-audit, PKI)"]
     end
 
     acquisition --> result["CollectionResult\nobservations + findings + failures + provenance"]
@@ -360,7 +360,6 @@ flowchart LR
     adapter --> port["ToolAdapter protocol"]
     port --> openssl["OpenSSL"]
     port --> sshaudit["ssh-audit"]
-    port --> nmap["nmap"]
 
     tls --> normalize["Normalize observations"]
     sshscan --> normalize

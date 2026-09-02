@@ -42,7 +42,6 @@ class ToolPolicy(StrEnum):
     NATIVE = "native"
     OPENSSL = "openssl"
     SSH_AUDIT = "ssh-audit"
-    NMAP = "nmap"
 
 
 class Capability(StrEnum):
