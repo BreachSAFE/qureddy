@@ -40,3 +40,14 @@ def test_all_container_signature_checks_use_the_bounded_helper() -> None:
     """Every registry verification must share the tested propagation policy."""
     assert "cosign verify" not in WORKFLOW
     assert WORKFLOW.count("scripts/verify_container_signature.sh") == 4
+
+
+def test_manifest_job_checks_out_repository_before_using_its_scripts() -> None:
+    """Artifact-only jobs must fetch source before invoking repository scripts."""
+    manifest = WORKFLOW[WORKFLOW.index("\n  manifest:\n") :]
+    checkout = manifest.index("uses: actions/checkout@")
+    no_credentials = manifest.index("persist-credentials: false", checkout)
+    download = manifest.index("uses: actions/download-artifact@")
+    verify = manifest.index("scripts/verify_container_signature.sh")
+
+    assert checkout < no_credentials < download < verify
