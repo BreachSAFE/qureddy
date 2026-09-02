@@ -34,6 +34,10 @@ versions follow [PEP 440](https://peps.python.org/pep-0440/).
 
 ### Fixed
 
+- Preserve `unknown` hygiene when TLS coverage fails instead of reporting a false clean
+  result, while retaining actionable status for observed legacy protocols
+  ([issue #672](https://github.com/BreachSAFE/qureddy/issues/672),
+  [PR #696](https://github.com/BreachSAFE/qureddy/pull/696)).
 - Keep `--json-logs` valid JSON Lines when third-party libraries emit records through
   standard-library logging ([issue #670](https://github.com/BreachSAFE/qureddy/issues/670),
   [PR #695](https://github.com/BreachSAFE/qureddy/pull/695)).
