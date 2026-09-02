@@ -9,6 +9,8 @@ the two functions that collapse per-finding values to one scan-level verdict.
 
 from __future__ import annotations
 
+import pytest
+
 from qureddy.core.models import (
     Confidence,
     Evidence,
@@ -60,7 +62,12 @@ class TestScanReadinessRollupPrecedence:
         ]
         assert _scan_readiness(findings) is Readiness.CLASSICALLY_WEAK
 
-    def test_negotiated_hybrid_outranks_classical_hygiene(self) -> None:
+    @pytest.mark.parametrize(
+        "observation_type", [ObservationType.NEGOTIATED, ObservationType.OBSERVED]
+    )
+    def test_observed_hybrid_outranks_classical_hygiene(
+        self, observation_type: ObservationType
+    ) -> None:
         """Keep observed PQ support in the scan verdict when legacy TLS is offered."""
         hybrid = self._finding(
             Readiness.TRANSITIONAL_HYBRID,
@@ -79,7 +86,7 @@ class TestScanReadinessRollupPrecedence:
                 id="ev-hybrid",
                 asset_id="asset-1",
                 evidence_type="tls.negotiation",
-                observation_type=ObservationType.NEGOTIATED,
+                observation_type=observation_type,
                 source="test",
                 protocol="tls",
             ),
