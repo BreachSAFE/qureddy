@@ -213,9 +213,7 @@ jobs:
           digest="sha256:$(printf '%s' "$raw_manifest" | sha256sum | cut -d' ' -f1)"
           test -n "$digest" && case "$digest" in sha256:*) ;; *) exit 1 ;; esac
           cosign sign --yes "$IMAGE@$digest"
-          cosign verify "$IMAGE@$digest" \
-            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-            --certificate-identity-regexp '^https://github.com/BreachSAFE/qureddy/\.github/workflows/'
+          scripts/verify_container_signature.sh "$IMAGE@$digest"
           docker buildx imagetools inspect "$IMAGE@$digest"
       - name: Promote verified digest to release tags
         env:
@@ -228,9 +226,7 @@ jobs:
           digest="sha256:${digest}"
           for tag in "$QUREDDY_VERSION" latest; do
             docker buildx imagetools create --tag "$IMAGE:$tag" "$IMAGE@$digest"
-            cosign verify "$IMAGE:$tag" \
-              --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-              --certificate-identity-regexp '^https://github.com/BreachSAFE/qureddy/\.github/workflows/'
+            scripts/verify_container_signature.sh "$IMAGE:$tag"
           done
       - name: Log in to Docker Hub
         env:
@@ -260,15 +256,11 @@ jobs:
             exit 1
           }
           cosign sign --yes "$DEST_IMAGE@$destination_digest"
-          cosign verify "$DEST_IMAGE@$destination_digest" \
-            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-            --certificate-identity-regexp '^https://github.com/BreachSAFE/qureddy/\.github/workflows/'
+          scripts/verify_container_signature.sh "$DEST_IMAGE@$destination_digest"
           for tag in "$QUREDDY_VERSION" latest; do
             docker buildx imagetools create --tag "$DEST_IMAGE:$tag" \
               "$DEST_IMAGE@$destination_digest"
             promoted_digest="sha256:$(docker buildx imagetools inspect --raw "$DEST_IMAGE:$tag" | sha256sum | cut -d' ' -f1)"
             test "$promoted_digest" = "$destination_digest"
-            cosign verify "$DEST_IMAGE:$tag" \
-              --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-              --certificate-identity-regexp '^https://github.com/BreachSAFE/qureddy/\.github/workflows/'
+            scripts/verify_container_signature.sh "$DEST_IMAGE:$tag"
           done
