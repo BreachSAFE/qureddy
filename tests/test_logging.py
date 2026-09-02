@@ -53,6 +53,19 @@ def test_json_logs_emit_valid_json(monkeypatch: pytest.MonkeyPatch) -> None:
     assert payload["target"] == "tls://example.com:443"
 
 
+def test_json_logs_wrap_third_party_stdlib_records() -> None:
+    """Foreign stdlib records must remain one valid JSON object per line."""
+    fake_stderr = io.StringIO()
+    configure_logging(verbosity=2, json_logs=True, log_stream=fake_stderr)
+
+    logging.getLogger("cyclonedx.output.json").debug("Dumping %s to JSON", "Bom")
+
+    lines = fake_stderr.getvalue().splitlines()
+    assert len(lines) == 1
+    payload = json.loads(lines[0])
+    assert payload["event"] == "Dumping Bom to JSON"
+
+
 def test_context_vars_propagate_to_nested_loggers(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
