@@ -38,6 +38,10 @@ def test_evidence_parser_uses_full_probe_output_not_excerpt() -> None:
     assert probe.stdout_excerpt
     assert "Negotiated TLS1.3 group" not in probe.stdout_excerpt
     assert evidence.negotiated_group == HYBRID_GROUP
+    assert evidence.algorithm == HYBRID_GROUP
+    assert evidence.primitive == "kem"
+    assert evidence.parameter_set_identifier == "ML-KEM-768"
+    assert evidence.nist_quantum_security_level == 3
     assert evidence.failure_category is None
 
 

@@ -87,6 +87,9 @@ def test_cipher_evidence_offered_emits_one_per_cipher() -> None:
     )
     evidence = cipher_evidence_from_legacy_result(_asset(), result)
     assert [e.negotiated_group for e in evidence] == ["AES128-SHA", "DES-CBC3-SHA"]
+    assert [e.algorithm for e in evidence] == ["AES128-SHA", "DES-CBC3-SHA"]
+    assert [e.primitive for e in evidence] == ["block-cipher", "block-cipher"]
+    assert all(e.nist_quantum_security_level is None for e in evidence)
     assert all(e.evidence_type == "tls.legacy.cipher" for e in evidence)
 
 
