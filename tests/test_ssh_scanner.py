@@ -114,6 +114,7 @@ def test_weak_hostkey_rolls_up_to_classically_weak() -> None:
     # PQ hybrid offered BUT weak ssh-dss host key -> classically_weak wins
     r = _run(("mlkem768x25519-sha256",), ("ssh-dss", "ssh-ed25519"))
     assert r.summary.readiness is Readiness.CLASSICALLY_WEAK
+    assert r.summary.interpretation.effective is Readiness.CLASSICALLY_WEAK
     rules = {f.rule_id for f in r.findings}
     assert "ssh.kex.hybrid_offered" in rules
     assert "ssh.hostkey.weak" in rules
