@@ -198,6 +198,56 @@ cryptoProperties.assetType: certificate
 See [certificate fields](#12-certificate-fields) for the populated properties and
 limits.
 
+### Illustrative capture: breachsafe.io
+
+An illustrative excerpt from a real `qureddy scan tls breachsafe.io --format cbom` run. It
+shows a leaf certificate asset and a negotiated hybrid post-quantum key exchange
+(`X25519MLKEM768`). Volatile fields (`serialNumber`, `notValidBefore`/`notValidAfter`,
+`issuerName`) vary per scan as the certificate rotates; treat them as examples, not fixed values.
+
+```json
+{
+  "bom-ref": "crypto/certificate/leaf",
+  "cryptoProperties": {
+    "assetType": "certificate",
+    "certificateProperties": {
+      "certificateFormat": "X.509",
+      "subjectName": "CN=breachsafe.io",
+      "signatureAlgorithmRef": "crypto/algorithm/sha256withrsaencryption",
+      "subjectPublicKeyRef": "crypto/algorithm/rsa-2048",
+      "serialNumber": "<varies per certificate>"
+    }
+  },
+  "name": "CN=breachsafe.io",
+  "type": "cryptographic-asset"
+}
+```
+
+```json
+{
+  "bom-ref": "crypto/algorithm/x25519mlkem768",
+  "cryptoProperties": {
+    "algorithmProperties": {
+      "primitive": "kem",
+      "parameterSetIdentifier": "ML-KEM-768",
+      "nistQuantumSecurityLevel": 3,
+      "cryptoFunctions": ["decapsulate", "encapsulate", "keygen"]
+    },
+    "assetType": "algorithm"
+  },
+  "name": "X25519MLKEM768",
+  "properties": [
+    { "name": "qureddy:observation", "value": "negotiated" },
+    { "name": "qureddy:readiness", "value": "transitional_hybrid" }
+  ],
+  "type": "cryptographic-asset"
+}
+```
+
+The `transitional_hybrid` readiness records that a hybrid post-quantum group was negotiated. The
+same scan still reports the accepted classical alternative and the certificate-chain signature, so
+the endpoint is protected today with a classical downgrade path that remains.
+
 ## 7. Findings, evidence, and verdicts
 
 Since 0.2.23 (#287) QuReddy's interpretation and provenance ride in native
