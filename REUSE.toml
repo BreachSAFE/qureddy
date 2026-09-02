@@ -93,3 +93,12 @@ SPDX-License-Identifier = "Apache-2.0"
 path = "LICENSES/Apache-2.0.txt"
 SPDX-FileCopyrightText = "2004 Apache Software Foundation"
 SPDX-License-Identifier = "Apache-2.0"
+
+# Vendored IETF RFC text: primary-source reference for the crypto registry (#708),
+# verbatim and unmodified. Copyright the IETF Trust and the document authors,
+# redistributed under the IETF Trust Legal Provisions (BCP 78).
+[[annotations]]
+path = "standards/rfc/tls/*.txt"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "The IETF Trust and the persons identified as the document authors"
+SPDX-License-Identifier = "LicenseRef-IETF-Trust"

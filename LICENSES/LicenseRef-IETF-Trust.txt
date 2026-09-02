@@ -1,0 +1,16 @@
+IETF Trust Legal Provisions (BCP 78)
+
+RFC documents are copyright (c) the IETF Trust and the persons identified as
+the document authors. They are published under the IETF Trust's Legal
+Provisions Relating to IETF Documents (the "Trust Legal Provisions", BCP 78),
+which permit reproduction and distribution of the documents in full, without
+modification.
+
+Authoritative terms:  https://trustee.ietf.org/documents/trust-legal-provisions/
+License info in each RFC's Copyright Notice: https://trustee.ietf.org/license-info
+
+The RFC text files in this repository are vendored verbatim and unmodified as
+primary-source reference for QuReddy's cryptographic ratings. Each file's own
+Copyright Notice and Trust Legal Provisions boilerplate is preserved intact.
+BreachSAFE claims no copyright over the RFC text; this reference identifier
+records the terms under which the vendored copies are redistributed.
