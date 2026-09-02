@@ -117,7 +117,7 @@ class IkeScanAdapter:
             parsed = urlparse(source.locator)
             host = parsed.hostname
             port = parsed.port
-        except KeyError, ValueError:
+        except (KeyError, ValueError):  # fmt: skip  # pylint parser lacks Python 3.14 syntax
             return self._failure(CollectionFailureKind.MALFORMED, "invalid IKE source metadata")
         if host is None or port is None:
             return self._failure(CollectionFailureKind.MALFORMED, "IKE source has no endpoint")

@@ -113,7 +113,7 @@ def _kill_process_tree(process: subprocess.Popen[bytes]) -> None:
                 shell=False,
                 timeout=_KILL_WAIT_SECONDS,
             )
-        except OSError, subprocess.TimeoutExpired:
+        except (OSError, subprocess.TimeoutExpired):  # fmt: skip  # pylint lacks 3.14 syntax
             if process.poll() is None:
                 process.kill()
         return
