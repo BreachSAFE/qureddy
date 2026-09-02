@@ -29,7 +29,7 @@ from qureddy.core.models import (
     Severity,
 )
 from qureddy.output.console import render_rich
-from qureddy.output.console._tables import _finding_crypto_detail
+from qureddy.output.console._tables import _finding_crypto_detail, _style_ssh_kex
 from qureddy.output.console._verdict import (
     _classically_weak_with_pqc_recommendation,
     _compose_headline,
@@ -213,6 +213,36 @@ def test_offered_evidence_without_probe_result_does_not_crash_renderer() -> None
     out = _render_to_string(result)
 
     assert "QuReddy" in out
+
+
+@pytest.mark.parametrize(
+    ("group", "expected"),
+    [
+        ("curve25519-sha256", "curve25519-sha256"),
+        ("mlkem768x25519-sha256", "PQ hybrid mlkem768x25519-sha256"),
+    ],
+)
+def test_ssh_key_exchange_label_matches_group_classification(
+    group: str,
+    expected: str,
+) -> None:
+    """Issue #534: classical SSH KEX must never receive the PQ-hybrid prefix."""
+    result = _build_result().model_copy(
+        update={
+            "evidence": (
+                Evidence(
+                    id="ev-ssh-kex",
+                    asset_id="asset-1",
+                    evidence_type="ssh.kex",
+                    observation_type=ObservationType.NEGOTIATED,
+                    source="qureddy.scanners.ssh.probe",
+                    negotiated_group=group,
+                ),
+            )
+        }
+    )
+
+    assert _style_ssh_kex(result).plain == expected
 
 
 def test_failed_hybrid_probe_headline_does_not_claim_classical_only() -> None:

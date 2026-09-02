@@ -11,6 +11,7 @@ from rich.table import Table
 from rich.text import Text
 
 from qureddy.core.models import ProbeRole
+from qureddy.core.pqc import is_hybrid_pq
 from qureddy.output._styles import (
     BODY_TEXT,
     style_capability,
@@ -133,9 +134,12 @@ def _style_ssh_kex(result: ScanResult) -> Text:
     """Summarize the SSH key-exchange evidence for the scan-details table."""
     for ev in result.evidence:
         if ev.evidence_type == "ssh.kex" and ev.negotiated_group:
-            out = Text("PQ hybrid ", style="green")
-            out.append(style_group(ev.negotiated_group))
-            return out
+            group = ev.negotiated_group
+            if is_hybrid_pq(group):
+                out = Text("PQ hybrid ", style="green")
+                out.append(style_group(group))
+                return out
+            return style_group(group)
     return Text("classical only", style="yellow")
 
 
