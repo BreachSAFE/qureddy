@@ -32,6 +32,8 @@ versions follow [PEP 440](https://peps.python.org/pep-0440/).
 
 ## Unreleased
 
+## [0.9.6] - 2026-09-02
+
 ### Added
 
 - Add `qureddy scan ike` as a lower-trust discovery backend over the optional stock
@@ -68,11 +70,6 @@ versions follow [PEP 440](https://peps.python.org/pep-0440/).
 - Keep `--json-logs` valid JSON Lines when third-party libraries emit records through
   standard-library logging ([issue #670](https://github.com/BreachSAFE/qureddy/issues/670),
   [PR #695](https://github.com/BreachSAFE/qureddy/pull/695)).
-
-## [0.9.6] - 2026-09-02
-
-### Fixed
-
 - Restore the source checkout in the release-only container manifest job so signature
   verification and multi-registry publication can complete
   ([issue #667](https://github.com/BreachSAFE/qureddy/issues/667),
