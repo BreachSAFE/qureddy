@@ -57,6 +57,17 @@ def _write_repo(root: Path, version: str) -> None:
     (root / "Dockerfile").write_text(
         f'FROM python:3.12\nARG QUREDDY_VERSION={version}\nLABEL x="y"\n'
     )
+    workflows = root / ".github" / "workflows"
+    workflows.mkdir(parents=True, exist_ok=True)
+    (workflows / "container.yml").write_text(
+        "on:\n"
+        "  workflow_dispatch:\n"
+        "    inputs:\n"
+        "      version:\n"
+        "        description: Image version to publish\n"
+        "        required: true\n"
+        f"        default: {version}\n"
+    )
     (root / "uv.lock").write_text(
         "[[package]]\n"
         f'name = "breachsafe-qureddy"\nversion = "{version}"\nsource = {{ editable = "." }}\n'
@@ -93,6 +104,9 @@ def repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(bump_version, "README", tmp_path / "README.md")
     monkeypatch.setattr(bump_version, "CHANGELOG", tmp_path / "CHANGELOG.md")
     monkeypatch.setattr(bump_version, "DOCKERFILE", tmp_path / "Dockerfile")
+    monkeypatch.setattr(
+        bump_version, "CONTAINER_WORKFLOW", tmp_path / ".github" / "workflows" / "container.yml"
+    )
     monkeypatch.setattr(bump_version, "UVLOCK", tmp_path / "uv.lock")
     monkeypatch.setattr(bump_version, "GOLDEN", tmp_path / "tests" / "golden")
     # ``_simple_targets()`` is rebuilt from the path globals above on each call,
@@ -111,6 +125,7 @@ def test_bump_propagates_to_every_stampable_source(repo: Path) -> None:
     assert "badge/version-0.0.1-blue" in (repo / "README.md").read_text()
     assert "badge/version-0.0.1-blue" in (repo / "CHANGELOG.md").read_text()
     assert "ARG QUREDDY_VERSION=1.2.3" in (repo / "Dockerfile").read_text()
+    assert "default: 1.2.3" in (repo / ".github/workflows/container.yml").read_text()
     assert 'version = "1.2.3"' in (repo / "uv.lock").read_text()
 
     golden = repo / "tests" / "golden"
@@ -119,7 +134,7 @@ def test_bump_propagates_to_every_stampable_source(repo: Path) -> None:
     assert '"version": "1.2.3"' in (golden / "cbom.golden").read_text()
 
     # No stale 0.0.1 left in any stampable file.
-    for name in ("pyproject.toml", "Dockerfile", "uv.lock"):
+    for name in ("pyproject.toml", "Dockerfile", ".github/workflows/container.yml", "uv.lock"):
         assert "0.0.1" not in (repo / name).read_text()
 
 
@@ -154,6 +169,15 @@ def test_check_detects_uvlock_drift(repo: Path, capsys: pytest.CaptureFixture[st
     (repo / "uv.lock").write_text('name = "breachsafe-qureddy"\nversion = "9.9.9"\n')
     assert bump_version.check() == 1
     assert "uv.lock" in capsys.readouterr().err
+
+
+def test_check_detects_container_workflow_drift(
+    repo: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    workflow = repo / ".github/workflows/container.yml"
+    workflow.write_text(workflow.read_text().replace("default: 0.0.1", "default: 9.9.9"))
+    assert bump_version.check() == 1
+    assert "container.yml" in capsys.readouterr().err
 
 
 def test_check_detects_missing_changelog_heading(
