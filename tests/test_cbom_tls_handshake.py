@@ -67,6 +67,20 @@ def test_cbom_emits_ephemeral_public_key_material() -> None:
     assert material["state"] == "active"
 
 
+def test_duplicate_ephemeral_observations_emit_one_material_asset() -> None:
+    result = _result_with_handshake_details()
+    duplicate = result.evidence[0].model_copy(update={"id": "ev-live-auth-2"})
+
+    payload = _render(result.model_copy(update={"evidence": (*result.evidence, duplicate)}))
+    materials = [
+        item
+        for item in payload["components"]
+        if item["cryptoProperties"]["assetType"] == "related-crypto-material"
+    ]
+
+    assert len(materials) == 1
+
+
 def test_handshake_cbom_passes_official_and_semantic_validation() -> None:
     payload = _render(_result_with_handshake_details())
 
