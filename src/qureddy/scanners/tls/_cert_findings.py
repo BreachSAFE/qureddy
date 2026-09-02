@@ -68,6 +68,19 @@ def evidence_from_certificate(asset: Asset, certificate: CertificateInfo | None)
     profile = classify_signature_algorithm(certificate.signature_algorithm) or AlgorithmProfile(
         "signature", None
     )
+    observation = CertificateObservation(
+        subject=certificate.subject,
+        issuer=certificate.issuer,
+        not_before=certificate.not_before,
+        not_after=certificate.not_after,
+        serial=certificate.serial,
+        signature_algorithm=certificate.signature_algorithm,
+        public_key_summary=certificate.public_key_summary,
+        public_key_algorithm=certificate.public_key_algorithm,
+        public_key_bits=certificate.public_key_bits,
+        is_self_signed=certificate.is_self_signed,
+        is_post_quantum_signature=certificate.is_post_quantum_signature,
+    )
     return Evidence(
         id=new_id("ev"),
         asset_id=asset.id,
@@ -79,19 +92,7 @@ def evidence_from_certificate(asset: Asset, certificate: CertificateInfo | None)
         parameter_set_identifier=profile.parameter_set_identifier,
         nist_quantum_security_level=profile.nist_quantum_security_level,
         notes=(f"signature algorithm: {certificate.signature_algorithm}",),
-        certificate=CertificateObservation(
-            subject=certificate.subject,
-            issuer=certificate.issuer,
-            not_before=certificate.not_before,
-            not_after=certificate.not_after,
-            serial=certificate.serial,
-            signature_algorithm=certificate.signature_algorithm,
-            public_key_summary=certificate.public_key_summary,
-            public_key_algorithm=certificate.public_key_algorithm,
-            public_key_bits=certificate.public_key_bits,
-            is_self_signed=certificate.is_self_signed,
-            is_post_quantum_signature=certificate.is_post_quantum_signature,
-        ),
+        certificate_record=observation,
     )
 
 
