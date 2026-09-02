@@ -32,7 +32,8 @@ versions follow [PEP 440](https://peps.python.org/pep-0440/).
 - Populate exact TLS negotiation, legacy-cipher, and certificate-signature identity and
   protocol-neutral classification in native JSON and JSONL evidence and findings, matching
   the core classification used by CBOM output
-  ([issue #648](https://github.com/BreachSAFE/qureddy/issues/648)).
+  ([issue #648](https://github.com/BreachSAFE/qureddy/issues/648),
+  [PR #649](https://github.com/BreachSAFE/qureddy/pull/649)).
 - Emit exact SSH algorithm identity and core-owned classification on named
   native-JSON evidence, and populate the representative algorithm on the
   classical-alternative finding ([issue #645](https://github.com/BreachSAFE/qureddy/issues/645),
