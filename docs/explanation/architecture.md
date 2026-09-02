@@ -359,6 +359,9 @@ dependency. This keeps a new source or output from multiplying scan paths.
 
 ## 10. Canonical result model
 
+> For the full generated class + enum relationship graph (all 110 classes, 28 enums),
+> see [../architecture/data-model.md](../architecture/data-model.md).
+
 ```mermaid
 classDiagram
     class ScanSource {
