@@ -88,7 +88,7 @@ jobs:
 
   # ===========================================================================
   # Phase 2 — Unit tests (hermetic, no network, no real OpenSSL).
-  # Excludes tests/live/.
+  # Excludes public-network and local-IKE-lab acceptance tests.
   # ===========================================================================
   phase-2-unit:
     name: "Phase 2: Unit (${{ matrix.os }})"
@@ -97,7 +97,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -116,13 +116,7 @@ jobs:
         run: uv sync --locked --extra dev
 
       - name: pytest (unit only, with coverage)
-        run: |
-          uv run --locked pytest --ignore=tests/live \
-            --cov=qureddy \
-            --cov-report=term-missing \
-            --cov-report=xml:coverage.xml \
-            --cov-fail-under=90 \
-            --junitxml=pytest-results.xml
+        run: uv run --locked pytest --ignore=tests/live --ignore=tests/ike_lab --cov=qureddy --cov-report=term-missing --cov-report=xml:coverage.xml --cov-fail-under=90 --junitxml=pytest-results.xml
 
       - name: Upload coverage
         if: always()
@@ -213,8 +207,8 @@ jobs:
       - name: Install project (dev extras)
         run: uv sync --locked --extra dev
 
-      - name: pytest tests/live/
-        run: uv run --locked pytest tests/live/ -v --junitxml=live-results.xml
+      - name: pytest public live targets
+        run: uv run --locked pytest tests/live/test_live_targets.py -v --junitxml=live-results.xml
 
       - name: Upload live-test results
         if: always()

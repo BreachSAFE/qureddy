@@ -530,7 +530,7 @@ The tests mirror the architecture:
 | Collector contracts/selection | `test_contracts.py`, `test_registry.py`, `test_native_collectors.py`, `test_scanner_contract.py` |
 | TLS/OpenSSL/parser | `test_openssl_*.py`, `test_tls_parse.py`, `test_scanner.py`, certificate/legacy tests |
 | SSH | `test_ssh_probe.py`, `test_ssh_scanner.py`, `test_ssh_classify.py`, peer-close/error tests |
-| IKE | `test_ike_execution.py`, parser-negative tests, policy tests, and `tests/live/test_live_ike.py` against real stock `ike-scan` |
+| IKE | `test_ike_execution.py`, parser-negative tests, policy tests, and `tests/ike_lab/test_live_ike.py` against real stock `ike-scan` |
 | Evaluation/rollup | `test_evaluation.py`, `test_posture.py`, `test_semantic_signals.py`, `test_scanner_rollup.py` |
 | Output contracts | `test_output.py`, `test_jsonl.py`, `test_cbom*.py`, `test_console_panels.py`, golden tests |
 | Architecture/docs/CI | `test_architecture_boundaries.py`, `test_docs_contract.py`, `test_ci_workflows.py` |

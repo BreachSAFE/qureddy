@@ -11,13 +11,26 @@ from __future__ import annotations
 import ipaddress
 import re
 from datetime import datetime
-from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator, model_validator
 
 from qureddy import __version__ as _version
 from qureddy.core.certificate import CertificateDetails, CertificateObservation  # noqa: TC001
 from qureddy.core.evaluation import InterpretationDisplay, PostureEvaluation  # noqa: F401, TC001
+from qureddy.core.vocabulary import (
+    LOCAL_CAPABILITY_CATEGORIES as LOCAL_CAPABILITY_CATEGORIES,  # noqa: PLC0414
+)
+from qureddy.core.vocabulary import AxisStatus as AxisStatus  # noqa: PLC0414
+from qureddy.core.vocabulary import Confidence as Confidence  # noqa: PLC0414
+from qureddy.core.vocabulary import FailureCategory as FailureCategory  # noqa: PLC0414
+from qureddy.core.vocabulary import HndlExposure as HndlExposure  # noqa: PLC0414
+from qureddy.core.vocabulary import HygieneStatus as HygieneStatus  # noqa: PLC0414
+from qureddy.core.vocabulary import ObservationType as ObservationType  # noqa: PLC0414
+from qureddy.core.vocabulary import OutputFormat as OutputFormat  # noqa: PLC0414
+from qureddy.core.vocabulary import PqcSupport as PqcSupport  # noqa: PLC0414
+from qureddy.core.vocabulary import ProbeRole as ProbeRole  # noqa: PLC0414
+from qureddy.core.vocabulary import Readiness as Readiness  # noqa: PLC0414
+from qureddy.core.vocabulary import Severity as Severity  # noqa: PLC0414
 
 FROZEN = ConfigDict(frozen=True, extra="forbid")
 
@@ -45,99 +58,6 @@ def _is_ip_literal(value: str) -> bool:
     except ValueError:
         return False
     return True
-
-
-class ObservationType(str, Enum):
-    """How a piece of evidence was obtained.
-
-    `negotiated` and `offered` come from observed TLS handshakes;
-    `observed` from passive probe output; `inferred` from policy
-    rules without direct measurement; `not_offered` when a completed
-    probe confirmed the protocol is absent; `not_testable` when the
-    local capability check prevented probing the target.
-    """
-
-    NEGOTIATED = "negotiated"
-    OFFERED = "offered"
-    OBSERVED = "observed"
-    INFERRED = "inferred"
-    NOT_OFFERED = "not_offered"
-    NOT_TESTABLE = "not_testable"
-    NO_RESPONSE = "no_response"
-
-
-class Severity(str, Enum):
-    """Severity of a finding.
-
-    `info` for routine readiness signals (e.g. transitional_hybrid
-    negotiated). `critical`/`high`/`medium`/`low` reserved for active
-    risk findings. CycloneDX-aligned vocabulary for forward CBOM compat.
-    """
-
-    CRITICAL = "critical"
-    HIGH = "high"
-    MEDIUM = "medium"
-    LOW = "low"
-    INFO = "info"
-
-
-class Readiness(str, Enum):
-    """Quantum-safe readiness verdict for a scanned asset.
-
-    `quantum_safe` reserved for future pure-PQ deployments;
-    `transitional_hybrid` is the current best-practice posture
-    (hybrid PQ + classical key exchange); `quantum_vulnerable` for
-    classical-only; `classically_weak` for broken primitives;
-    `unknown`/`not_applicable` for failed probes or scope misfit.
-    """
-
-    QUANTUM_VULNERABLE = "quantum_vulnerable"
-    CLASSICALLY_WEAK = "classically_weak"
-    TRANSITIONAL_HYBRID = "transitional_hybrid"
-    QUANTUM_SAFE = "quantum_safe"
-    UNKNOWN = "unknown"
-    NOT_APPLICABLE = "not_applicable"
-
-
-class PqcSupport(str, Enum):
-    """Observed PQ key-exchange capability, independent of overall posture."""
-
-    HYBRID_OBSERVED = "hybrid_observed"
-    PURE_PQ_OBSERVED = "pure_pq_observed"
-    CLASSICAL_ONLY_OBSERVED = "classical_only_observed"
-    UNKNOWN = "unknown"
-    NOT_TESTABLE = "not_testable"
-
-
-class AxisStatus(str, Enum):
-    """Stable status vocabulary for a posture axis."""
-
-    HYBRID = "hybrid"
-    PURE_PQ = "pure_pq"
-    CLASSICAL = "classical"
-    ACCEPTABLE = "acceptable"
-    ACTION_NEEDED = "action_needed"
-    UNKNOWN = "unknown"
-    NOT_TESTABLE = "not_testable"
-    NOT_APPLICABLE = "not_applicable"
-
-
-class HndlExposure(str, Enum):
-    """Harvest-now-decrypt-later exposure independent of present-day hygiene."""
-
-    PROTECTED = "protected"
-    PROTECTED_DEFEASIBLE = "protected_defeasible"
-    AT_RISK = "at_risk"
-    UNKNOWN = "unknown"
-
-
-class HygieneStatus(str, Enum):
-    """Present-day protocol and primitive hygiene independent of HNDL exposure."""
-
-    OK = "ok"
-    ACTION_NEEDED = "action_needed"
-    WEAK = "weak"
-    UNKNOWN = "unknown"
 
 
 class PostureAxes(BaseModel):
@@ -168,99 +88,6 @@ class ScanInterpretation(BaseModel):
     evidence_refs: tuple[str, ...] = Field(default_factory=tuple)
     policy_id: str
     policy_version: str
-
-
-class Confidence(str, Enum):
-    """Confidence level for a finding's evidence chain."""
-
-    HIGH = "high"
-    MEDIUM = "medium"
-    LOW = "low"
-
-
-class ProbeRole(str, Enum):
-    """Which purpose a TLS 1.3 key-exchange probe served — issue #232.
-
-    Distinguishes "this evidence is testing whether PQ hybrid negotiation
-    works" from "this evidence is a diagnostic control testing whether the
-    server still accepts pure classical fallback". A failure in the second
-    role is not evidence that the first role failed — confirmed live: a
-    real hybrid-only server (accepts X25519MLKEM768, rejects pure X25519)
-    correctly negotiates hybrid while its classical control is rejected by
-    design, and that rejection was previously misattributed to
-    `tls.hybrid.probe_failed`.
-    """
-
-    HYBRID_READINESS = "hybrid_readiness"
-    CLASSICAL_CONTROL = "classical_control"
-    # #337: a supplementary per-group coverage probe (SecP256r1MLKEM768, SecP384r1MLKEM1024).
-    # A negotiated hybrid still fires the positive readiness rule (structural, role-agnostic),
-    # but a rejection/failure does NOT fire the primary probe's rejected/failed rules — so
-    # forcing extra groups adds coverage without spurious quantum_vulnerable findings.
-    HYBRID_COVERAGE = "hybrid_coverage"
-
-
-class FailureCategory(str, Enum):
-    """Typed reason a scan or probe did not produce a clean finding.
-
-    Local-prefixed categories indicate problems with the operator's
-    environment (exit 3); target/TLS/parse categories indicate
-    problems with the target or its responses (exit 2). Drives both
-    the exit-code surface and the `--retry-on` allowlist.
-    """
-
-    LOCAL_OPENSSL_MISSING = "local_openssl_missing"
-    LOCAL_OPENSSL_BROKEN = "local_openssl_broken"
-    LOCAL_OPENSSL_VERSION_UNREADABLE = "local_openssl_version_unreadable"
-    LOCAL_OPENSSL_IS_LIBRESSL = "local_openssl_is_libressl"
-    LOCAL_OPENSSL_TOO_OLD = "local_openssl_too_old"
-    LOCAL_OPENSSL_VERSION_MISMATCH = "local_openssl_version_mismatch"
-    LOCAL_OPENSSL_LACKS_GROUP = "local_openssl_lacks_group"
-    LOCAL_IKE_SCAN_MISSING = "local_ike_scan_missing"
-    LOCAL_IKE_SCAN_BROKEN = "local_ike_scan_broken"
-    TARGET_SCAN_FAILED = "target_scan_failed"
-    TARGET_CONNECT_FAILED = "target_connect_failed"
-    TLS_HANDSHAKE_FAILED = "tls_handshake_failed"
-    SNI_REQUIRED_OR_WRONG = "sni_required_or_wrong"
-    MIDDLEBOX_OR_MTU_FAILURE = "middlebox_or_mtu_failure"
-    PARSE_NO_GROUP = "parse_no_group"
-    PARSE_AMBIGUOUS = "parse_ambiguous"
-    UNEXPECTED_GROUP = "unexpected_group"
-    IKE_PROBE_TIMEOUT = "ike_probe_timeout"
-    IKE_OUTPUT_LIMIT = "ike_output_limit"
-    IKE_OUTPUT_MALFORMED = "ike_output_malformed"
-
-
-# The "operator's environment is the problem" categories, defined once
-# so policy.py, _summary.py, and _styles.py import the same set instead of
-# each hand-typing an identical copy — confirmed live: adding
-# LOCAL_OPENSSL_IS_LIBRESSL required editing all three copies in the same
-# commit, with nothing enforcing they stay in sync.
-LOCAL_CAPABILITY_CATEGORIES: frozenset[FailureCategory] = frozenset(
-    {
-        FailureCategory.LOCAL_OPENSSL_MISSING,
-        FailureCategory.LOCAL_OPENSSL_BROKEN,
-        FailureCategory.LOCAL_OPENSSL_VERSION_UNREADABLE,
-        FailureCategory.LOCAL_OPENSSL_IS_LIBRESSL,
-        FailureCategory.LOCAL_OPENSSL_TOO_OLD,
-        FailureCategory.LOCAL_OPENSSL_VERSION_MISMATCH,
-        FailureCategory.LOCAL_OPENSSL_LACKS_GROUP,
-        FailureCategory.LOCAL_IKE_SCAN_MISSING,
-        FailureCategory.LOCAL_IKE_SCAN_BROKEN,
-    }
-)
-
-
-class OutputFormat(str, Enum):
-    """CLI `--format` choices: terminal-rendered `rich` or machine-readable `json`."""
-
-    RICH = "rich"
-    JSON = "json"
-    CBOM = "cbom"
-    """CycloneDX 1.7 CBOM export — see qureddy.output.cbom."""
-
-    JSONL = "jsonl"
-    """One Osmedeus/nuclei-compatible finding object per line."""
 
 
 class ScanTarget(BaseModel):

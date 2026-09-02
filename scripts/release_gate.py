@@ -37,7 +37,17 @@ def _static_commands(uv: Path, gitleaks: Path, gate: Gate) -> None:
         # CI duplicate-code gate's structural check so a clone fails before push, not only in
         # CI. The token-level jscpd half of that gate runs in CI (needs Node).
         ("pylint-dupcode", [*run, "pylint", "src/qureddy"]),
-        ("tests", [*run, "pytest", "--ignore=tests/live", "--cov=qureddy", "--cov-fail-under=90"]),
+        (
+            "tests",
+            [
+                *run,
+                "pytest",
+                "--ignore=tests/live",
+                "--ignore=tests/ike_lab",
+                "--cov=qureddy",
+                "--cov-fail-under=90",
+            ],
+        ),
         ("file-size", [*run, "python", "scripts/check_size_policy.py"]),
         ("openssl-boundary", [*run, "python", "scripts/check_openssl_boundary.py"]),
         ("bandit", [*run, "bandit", "-r", "-ll", "src/qureddy", "scripts"]),

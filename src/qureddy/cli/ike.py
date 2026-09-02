@@ -4,11 +4,10 @@
 
 from __future__ import annotations
 
-import os
-
 import typer
 
 from qureddy._branding import PROJECT_URL
+from qureddy.cli._environment import block_internal_targets
 from qureddy.cli._errors import EXIT_OK, EXIT_USAGE, _fail
 from qureddy.cli._execute import _execute_scan
 from qureddy.cli._help import _NO_WRAP_CONTEXT_SETTINGS, _OUTPUT_HELP_SECTION, _colorize_help_text
@@ -70,18 +69,9 @@ Project: {PROJECT_URL}
 """)
 
 
-def _block_internal_targets() -> bool:
-    return os.environ.get("QUREDDY_BLOCK_INTERNAL_TARGETS", "").strip().lower() not in (
-        "",
-        "0",
-        "false",
-        "no",
-    )
-
-
 def _parse_ike_scan_target(target: str) -> ScanTarget:
     try:
-        return parse_ike_target(target, block_internal=_block_internal_targets())
+        return parse_ike_target(target, block_internal=block_internal_targets())
     except TargetParseError as exc:
         _fail(f"invalid target: {exc}", EXIT_USAGE)
 

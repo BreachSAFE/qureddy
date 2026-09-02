@@ -80,6 +80,7 @@ QuReddy's capability check exits 3 with a clear message when OpenSSL is missing 
 
 Install stock `ike-scan` separately to run the live IKE path. QuReddy invokes
 the executable at runtime and does not distribute or link its GPL-licensed code.
+Use `just test-ike-live` with `QUREDDY_IKE_LIVE_TARGET` set to an authorized compatible responder.
 
 ## 4. Workflow
 

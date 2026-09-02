@@ -86,6 +86,8 @@ def summary_record(result: ScanResult) -> dict[str, Any]:
     interpretation = result.summary.interpretation
     display = interpretation.display if interpretation is not None else None
     evaluation = display.evaluation if display is not None else None
+    highest_severity = result.summary.highest_severity
+    failure_category = result.summary.failure_category
     return {
         "type": "scan_summary",
         "schema_version": result.schema_version,
@@ -95,17 +97,9 @@ def summary_record(result: ScanResult) -> dict[str, Any]:
         "status": result.scan.status,
         "target": result.target.locator,
         "readiness": result.summary.readiness.value,
-        "highest_severity": (
-            result.summary.highest_severity.value
-            if result.summary.highest_severity is not None
-            else None
-        ),
+        "highest_severity": highest_severity.value if highest_severity is not None else None,
         "finding_count": result.summary.finding_count,
-        "failure_category": (
-            result.summary.failure_category.value
-            if result.summary.failure_category is not None
-            else None
-        ),
+        "failure_category": failure_category.value if failure_category is not None else None,
         "interpretation": (
             {
                 "overall_status": display.overall_status,

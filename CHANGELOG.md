@@ -55,6 +55,10 @@ versions follow [PEP 440](https://peps.python.org/pep-0440/).
   external-tool process tree when a timeout or output bound is reached
   ([issue #719](https://github.com/BreachSAFE/qureddy/issues/719),
   [issue #720](https://github.com/BreachSAFE/qureddy/issues/720)).
+- Preserve canonical scan status in the JSONL summary and retain IKE integrity suffixes such as
+  `HMAC_MD5_96` so prohibited-transform findings include the exact observed algorithm
+  ([issue #723](https://github.com/BreachSAFE/qureddy/issues/723),
+  [issue #724](https://github.com/BreachSAFE/qureddy/issues/724)).
 - Preserve `unknown` hygiene when TLS coverage fails instead of reporting a false clean
   result, while retaining actionable status for observed legacy protocols
   ([issue #672](https://github.com/BreachSAFE/qureddy/issues/672),

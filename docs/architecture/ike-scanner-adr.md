@@ -1165,7 +1165,7 @@ duplicate the generic registry, evaluator, renderer, or CBOM path.
 | `tests/test_ike_output.py` | Rich/JSON/JSONL parity and output-dir single acquisition |
 | `tests/test_ike_cbom.py` | CycloneDX validation and consumer compatibility |
 | `tests/fixtures/ike/*.bin` | malformed/forged parser-safety inputs only; never positive negotiation evidence |
-| `tests/live/test_live_ike.py` | opt-in strongSwan/veepin lab interoperability |
+| `tests/ike_lab/test_live_ike.py` | opt-in strongSwan/veepin lab interoperability |
 | `tests/fuzz/fuzz_ike_packet.py` | parser non-crash and bounded-resource properties |
 
 These five must fail before the section 4.1 contract is implemented. Each is a

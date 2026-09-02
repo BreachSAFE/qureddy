@@ -13,7 +13,8 @@ an endpoint you are authorized to test.
 4. [Write machine output](#4-write-machine-output)
 5. [Interpret the result](#5-interpret-the-result)
 6. [Troubleshoot](#6-troubleshoot)
-7. [Related documentation](#7-related-documentation)
+7. [Verify against a local responder](#7-verify-against-a-local-responder)
+8. [Related documentation](#8-related-documentation)
 
 ## 1. Prerequisites
 
@@ -97,7 +98,23 @@ readiness, or HNDL protection. Overall IPsec HNDL exposure remains unknown.
 
 Use `-vv` for bounded process diagnostics. Diagnostic logs go to standard error.
 
-## 7. Related documentation
+## 7. Verify against a local responder
+
+The IKE acceptance suite requires stock `ike-scan` 1.9.5 and an authorized responder that
+supports the documented IKEv1, IKEv1 Aggressive Mode, IKEv2, and NAT-T observations. Select the
+responder explicitly when it is not listening on loopback:
+
+```bash
+export QUREDDY_IKE_LIVE_TARGET="192.0.2.10"
+export QUREDDY_IKE_SCAN="/absolute/path/to/ike-scan"
+just test-ike-live
+```
+
+This lab suite is separate from the scheduled public TLS tests because a generic hosted runner
+does not provide the required IPsec responder. A passing run reports every test as passed; missing
+tools or an incompatible responder fail the suite.
+
+## 8. Related documentation
 
 - [CLI reference](../reference/cli.md)
 - [Failure categories](../reference/failure-categories.md)

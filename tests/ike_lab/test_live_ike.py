@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
 # SPDX-License-Identifier: Apache-2.0
-"""Live IKE acceptance tests against the authorized local responder."""
+"""Opt-in IKE acceptance tests against the authorized local responder."""
 
 from __future__ import annotations
 
