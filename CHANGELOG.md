@@ -12,32 +12,36 @@ versions follow [PEP 440](https://peps.python.org/pep-0440/).
 ## Contents
 
 1. [Unreleased](#unreleased)
-2. [0.9.2](#092---2026-09-01)
-3. [0.9.1](#091---2026-08-31)
-4. [0.9.0.10](#09010---2026-08-30)
-5. [0.9.0.9](#0909---2026-08-26)
-6. [0.9.0.8](#0908---2026-08-26)
-7. [0.9.0.7](#0907---2026-08-26)
-8. [0.9.0.6](#0906---2026-08-26)
-9. [0.9.0.5](#0905---2026-08-26)
-10. [0.9.0.4](#0904---2026-08-26)
-11. [0.9.0.3](#0903---2026-08-25)
-12. [0.9.0.2](#0902---2026-08-25)
-13. [0.9.0.1](#0901---2026-08-24)
-14. [0.9.0.0](#0900---2026-08-24)
+2. [0.9.3](#093---2026-09-01)
+3. [0.9.2](#092---2026-09-01)
+4. [0.9.1](#091---2026-08-31)
+5. [0.9.0.10](#09010---2026-08-30)
+6. [0.9.0.9](#0909---2026-08-26)
+7. [0.9.0.8](#0908---2026-08-26)
+8. [0.9.0.7](#0907---2026-08-26)
+9. [0.9.0.6](#0906---2026-08-26)
+10. [0.9.0.5](#0905---2026-08-26)
+11. [0.9.0.4](#0904---2026-08-26)
+12. [0.9.0.3](#0903---2026-08-25)
+13. [0.9.0.2](#0902---2026-08-25)
+14. [0.9.0.1](#0901---2026-08-24)
+15. [0.9.0.0](#0900---2026-08-24)
 
 ## Unreleased
+
+### Changed
+
+- Future changes will be recorded here until the next release is cut.
+
+## [0.9.3] - 2026-09-01
 
 ### Fixed
 
 - Stage, independently sign, and verify the Docker Hub manifest digest before moving
   the version and `latest` tags, replacing the deprecated cross-registry `cosign copy`
   path that left the mirror unsigned and failed the release workflow
-  ([issue #538](https://github.com/BreachSAFE/qureddy/issues/538)).
-
-### Changed
-
-- Future changes will be recorded here until the next release is cut.
+  ([issue #538](https://github.com/BreachSAFE/qureddy/issues/538),
+  [PR #651](https://github.com/BreachSAFE/qureddy/pull/651)).
 
 ## [0.9.2] - 2026-09-01
 
