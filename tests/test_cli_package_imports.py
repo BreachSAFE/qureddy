@@ -49,8 +49,8 @@ def test_legacy_identity_re_exports_point_at_canonical_homes() -> None:
     assert MAX_RETRY_DELAY_SECONDS is retry_module.MAX_RETRY_DELAY_SECONDS
 
 
-def test_subcommands_registered_in_pre_split_order() -> None:
-    """Importing the package registers `scan tls` before `scan ssh`."""
+def test_subcommands_registered_in_display_order() -> None:
+    """Importing the package registers stable TLS, SSH, then IKE display order."""
     scan_main = importlib.import_module("qureddy.cli.main")
     registered = [command.name for command in scan_main.scan_app.registered_commands]
-    assert registered == ["tls", "ssh"]
+    assert registered == ["tls", "ssh", "ike"]

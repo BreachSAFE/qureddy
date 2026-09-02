@@ -22,7 +22,7 @@ from cyclonedx.model.crypto import (
 
 from qureddy.core import ssh_algorithms
 from qureddy.output.cbom_assets import add_algorithm_assets, select_by_evidence_type
-from qureddy.output.cbom_cipher import cipher_classical_bits, cipher_primitive
+from qureddy.output.cbom_cipher import cipher_algorithm_properties, mac_algorithm_properties
 from qureddy.output.cbom_components import signature_algorithm_properties
 
 if TYPE_CHECKING:
@@ -120,29 +120,6 @@ def add_ssh_host_key_components(
     )
 
 
-def _ssh_cipher_properties(name: str) -> AlgorithmProperties:
-    """Build algorithmProperties for an SSH cipher (#286).
-
-    Symmetric ciphers are quantum-resistant, so emit ``classicalSecurityLevel`` — the
-    same representation the TLS AEAD cipher suites use — rather than a misleading
-    ``nistQuantumSecurityLevel: 0`` that reads as "no quantum resistance". Classification
-    is shared with the TLS 1.3 and legacy cipher emitters (#315).
-    """
-    return AlgorithmProperties(
-        primitive=cipher_primitive(name),
-        classical_security_level=cipher_classical_bits(name),
-    )
-
-
-def _ssh_mac_properties(_name: str) -> AlgorithmProperties:
-    """Build algorithmProperties for an SSH MAC: primitive only (#286).
-
-    A MAC has no meaningful ``classicalSecurityLevel`` in key bits and is not a PQC
-    algorithm, so neither level is emitted rather than a misleading ``0``.
-    """
-    return AlgorithmProperties(primitive=CryptoPrimitive.MAC)
-
-
 def add_ssh_transport_components(
     bom: Bom, result: ScanResult, provides_edges: dict[str, list[str]]
 ) -> None:
@@ -158,12 +135,12 @@ def add_ssh_transport_components(
         result,
         provides_edges,
         select=select_by_evidence_type("ssh.cipher"),
-        algorithm_properties=_ssh_cipher_properties,
+        algorithm_properties=cipher_algorithm_properties,
     )
     add_algorithm_assets(
         bom,
         result,
         provides_edges,
         select=select_by_evidence_type("ssh.mac"),
-        algorithm_properties=_ssh_mac_properties,
+        algorithm_properties=mac_algorithm_properties,
     )

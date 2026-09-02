@@ -43,7 +43,7 @@ PROJECT_VERSION = _qureddy_version
 
 # One-line description, used in CLI help (root + callback). Single source so
 # the two help strings can't drift.
-DESCRIPTION = "post-quantum readiness scanner for TLS and SSH endpoints"
+DESCRIPTION = "post-quantum readiness scanner for TLS, SSH, and IKE endpoints"
 
 # Used by `qureddy --version` / `qureddy -V`. Single line, branded.
 VERSION_BANNER = f"{PROJECT_NAME} {_qureddy_version} -- {PROJECT_URL}"

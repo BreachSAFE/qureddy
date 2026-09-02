@@ -18,14 +18,12 @@ from qureddy.core.models import (
     ObservationType,
     Readiness,
     ScanResult,
-    ScanSummary,
     ScanTarget,
     Severity,
 )
 from qureddy.scanners.common.assets import build_endpoint_asset
 from qureddy.scanners.common.metadata import build_scan_metadata
-from qureddy.scanners.common.posture import build_interpretation
-from qureddy.scanners.common.rollup import highest_severity, scan_readiness
+from qureddy.scanners.common.posture import build_scan_summary
 from qureddy.scanners.ssh import classify
 from qureddy.scanners.ssh._identity import server_identity_observations
 from qureddy.scanners.ssh._observations import (
@@ -99,13 +97,12 @@ def build_ssh_failure_result(
         assets=(asset,),
         evidence=(evidence,),
         findings=(),
-        summary=ScanSummary(
-            target=target.locator,
-            finding_count=0,
-            highest_severity=None,
-            readiness=Readiness.UNKNOWN,
-            failure_category=failure_category,
-            interpretation=build_interpretation([], [evidence], failure_category, protocol="ssh"),
+        summary=build_scan_summary(
+            target,
+            [],
+            [evidence],
+            failure_category,
+            protocol="ssh",
         ),
     )
 
@@ -333,9 +330,6 @@ def _build_ssh_success_result(
     started: datetime,
 ) -> ScanResult:
     """Build the completed SSH result and deterministic rollup."""
-    # Shared, complete, None-safe rollup (#248) — was a forked 4-tier copy + bare max().
-    readiness = scan_readiness(findings)
-    highest = highest_severity(findings)
     completed = datetime.now(UTC)
 
     return ScanResult(
@@ -352,14 +346,7 @@ def _build_ssh_success_result(
         assets=(asset,),
         evidence=tuple(evidence),
         findings=tuple(findings),
-        summary=ScanSummary(
-            target=target.locator,
-            finding_count=len(findings),
-            highest_severity=highest,
-            readiness=readiness,
-            failure_category=None,
-            interpretation=build_interpretation(findings, evidence, None, protocol="ssh"),
-        ),
+        summary=build_scan_summary(target, findings, evidence, None, protocol="ssh"),
     )
 
 

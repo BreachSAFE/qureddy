@@ -27,7 +27,7 @@ from qureddy.output.cbom_interpretation import add_interpretation_properties
 if TYPE_CHECKING:
     from cyclonedx.model.bom import Bom
 
-    from qureddy.core.models import Evidence, OpenSSLDependency, ScanResult
+    from qureddy.core.models import Evidence, ExternalToolDependency, OpenSSLDependency, ScanResult
 
 
 def openssl_tool_properties(
@@ -54,6 +54,16 @@ def openssl_tool_properties(
     ]
     if dependency.path is not None and not reproducible:
         properties.append(Property(name="qureddy:openssl.path", value=dependency.path))
+    return properties
+
+
+def tool_dependency_properties(
+    dependency: ExternalToolDependency, *, reproducible: bool = False
+) -> list[Property]:
+    """Carry generic external-tool provenance without host paths in deterministic mode."""
+    properties = [Property(name="qureddy:collector.role", value="external-tool-adapter")]
+    if dependency.path is not None and not reproducible:
+        properties.append(Property(name="qureddy:collector.path", value=dependency.path))
     return properties
 
 

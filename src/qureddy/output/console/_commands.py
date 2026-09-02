@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
 # SPDX-License-Identifier: Apache-2.0
-"""The `-vvv` Commands panel: the exact OpenSSL invocations the scanner issued."""
+"""The `-vvv` Commands panel for exact local probe invocations."""
 
 from __future__ import annotations
 
@@ -64,7 +64,7 @@ def _commands_body(lines: list[Text]) -> Text:
 
 
 def _commands_panel(result: ScanResult) -> Panel | None:
-    """At `-vvv` only: dump the exact OpenSSL invocations.
+    """At `-vvv` only: dump the exact local probe invocations.
 
     Returns None when no probe was run (e.g., capability-failure path
     that exited before any subprocess), so the panel doesn't render

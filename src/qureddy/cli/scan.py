@@ -7,7 +7,6 @@ The TLS scanner has a dedicated public entry point alongside `cli/ssh.py`.
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 from typing import IO, TextIO
 
@@ -15,6 +14,7 @@ import structlog
 import typer
 
 from qureddy._branding import PROJECT_URL
+from qureddy.cli._environment import block_internal_targets
 from qureddy.cli._errors import (
     EXIT_INTERNAL_ERROR,
     EXIT_LOCAL_DEPENDENCY,
@@ -343,23 +343,9 @@ def _parse_retry_args(
     return retry_set
 
 
-def _block_internal_targets() -> bool:
-    """Read the opt-in SSRF guard from the environment (Rule 5.6: env at the boundary).
-
-    Off by default: a CLI operator deliberately chooses the target. An embedder that
-    accepts an untrusted target sets QUREDDY_BLOCK_INTERNAL_TARGETS=1 (#134).
-    """
-    return os.environ.get("QUREDDY_BLOCK_INTERNAL_TARGETS", "").strip().lower() not in (
-        "",
-        "0",
-        "false",
-        "no",
-    )
-
-
 def _parse_cli_target(target: str, sni: str | None) -> ScanTarget:
     """Parse the positional target arg; exit 4 on a malformed target."""
     try:
-        return parse_target(target, sni_override=sni, block_internal=_block_internal_targets())
+        return parse_target(target, sni_override=sni, block_internal=block_internal_targets())
     except TargetParseError as exc:
         _fail(f"invalid target: {exc}", EXIT_USAGE)

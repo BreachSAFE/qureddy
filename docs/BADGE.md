@@ -38,7 +38,7 @@ on the form.
 
 | id | status | evidence |
 |---|---|---|
-| `description_good` | Met | `README.md` opening paragraph: "QuReddy is an open-source command line scanner for post-quantum readiness at TLS and SSH endpoints." |
+| `description_good` | Met | `README.md` opening paragraph describes post-quantum readiness scanning for TLS, SSH, and IKE endpoints. |
 | `interact` | Met | GitHub Issues + Discussions enabled on `breachsafe/qureddy`; `CONTRIBUTING.md` §4 "Open an issue first". |
 | `contribution` | Met | `CONTRIBUTING.md` documents the full workflow. |
 | `contribution_requirements` | Met | `CONTRIBUTING.md` §5 "Coding style" points to `docs/contributors/coding-rules.md` as the "Source of truth"; Conventional Commits, ruff/mypy requirements. |

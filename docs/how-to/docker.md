@@ -42,10 +42,15 @@ docker run --rm ghcr.io/breachsafe/qureddy:latest scan tls mozilla.org
 docker run --rm ghcr.io/breachsafe/qureddy:latest scan ssh github.com
 ```
 
+The current image does not bundle the GPL-licensed stock `ike-scan`
+executable. Run `qureddy scan ike` from a local installation that can resolve
+`ike-scan`; do not treat the container's missing executable as absent IKE
+support in the Python package.
+
 To download the image without running a scan:
 
 ```bash
-docker pull docker.io/breachsafe/qureddy:latest
+docker pull ghcr.io/breachsafe/qureddy:latest
 ```
 
 The GHCR image is also available:

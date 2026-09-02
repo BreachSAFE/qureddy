@@ -43,13 +43,17 @@ typecheck:
 test:
     uv run --locked pytest --cov=qureddy --cov-fail-under=90
 
-# Run only unit tests (excludes tests/live/).
+# Run only hermetic tests (excludes network and local-lab suites).
 test-unit:
-    uv run --locked pytest --ignore=tests/live --cov=qureddy --cov-fail-under=90
+    uv run --locked pytest --ignore=tests/live --ignore=tests/ike_lab --cov=qureddy --cov-fail-under=90
 
 # Run only live tests (network required).
 test-live:
-    uv run --locked pytest tests/live/
+    uv run --locked pytest tests/live/test_live_targets.py
+
+# Run the opt-in IKE acceptance suite against an authorized local responder.
+test-ike-live:
+    uv run --locked pytest tests/ike_lab/test_live_ike.py
 
 # Static security analysis.
 bandit:

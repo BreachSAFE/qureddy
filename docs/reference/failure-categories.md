@@ -26,6 +26,11 @@ the process exit code. TLS retries accept a strict subset.
 | `local_openssl_too_old` | `3` | no | OpenSSL version is below 3.5.7 |
 | `local_openssl_version_mismatch` | `3` | no | The OpenSSL executable or linked library does not match the exact supported 3.5.7 LTS release |
 | `local_openssl_lacks_group` | `3` | no | OpenSSL does not list `X25519MLKEM768` as a TLS 1.3 group |
+| `local_ike_scan_missing` | `3` | no | No `ike-scan` executable resolved |
+| `local_ike_scan_broken` | `3` | no | `ike-scan` could not execute or exited nonzero |
+| `ike_probe_timeout` | `2` | no | A bounded IKE subprocess exceeded its deadline |
+| `ike_output_limit` | `2` | no | Combined `ike-scan` output exceeded the configured byte limit |
+| `ike_output_malformed` | `2` | no | Completed `ike-scan` output could not be interpreted safely |
 | `target_scan_failed` | `2` | no | The scanner caught a typed target failure without a more specific category |
 | `target_connect_failed` | `2` | yes for TLS | DNS, TCP connection, route, refusal, or timeout failure |
 | `tls_handshake_failed` | `2` | yes | TLS handshake failed without a more specific classification |
@@ -35,8 +40,8 @@ the process exit code. TLS retries accept a strict subset.
 | `parse_ambiguous` | `2` | no | Response contained conflicting group evidence or a malformed SSH KEXINIT |
 | `unexpected_group` | `2` | no | TLS selected a group other than the requested group |
 
-The `local_openssl_*` categories apply only to TLS. SSH does not resolve or run
-OpenSSL.
+The `local_openssl_*` categories apply only to TLS. The `local_ike_scan_*` and
+`ike_*` categories apply only to IKE. SSH does not resolve or run either executable.
 
 ## 2. SSH failure mapping
 

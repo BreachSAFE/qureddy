@@ -20,7 +20,12 @@ WEAK_CIPHER_MARKERS: tuple[str, ...] = (
 def _aes_classical_bits(lowered: str) -> int | None:
     """Return AES key strength for an already-lowercased cipher name."""
     for size in (256, 192, 128):
-        if f"aes{size}" in lowered or f"aes-{size}" in lowered or f"aes_{size}" in lowered:
+        if (
+            f"aes{size}" in lowered
+            or f"aes-{size}" in lowered
+            or f"aes_{size}" in lowered
+            or ("aes" in lowered and lowered.endswith(f"_{size}"))
+        ):
             return size
     return None
 

@@ -20,6 +20,7 @@ def test_source_and_tool_contract_are_protocol_neutral() -> None:
     assert source.kind is SourceKind.CERTIFICATE
     assert {policy.value for policy in ToolPolicy} == {
         "auto",
+        "ike-scan",
         "native",
         "openssl",
         "ssh-audit",

@@ -12,12 +12,13 @@ installed help output.
 2. [`qureddy scan`](#2-qureddy-scan)
 3. [`qureddy scan ssh`](#3-qureddy-scan-ssh)
 4. [`qureddy scan tls`](#4-qureddy-scan-tls)
-5. [Target syntax](#5-target-syntax)
-6. [Output formats](#6-output-formats)
-7. [Output streams](#7-output-streams)
-8. [Exit codes](#8-exit-codes)
-9. [Environment variables](#9-environment-variables)
-10. [Related documentation](#10-related-documentation)
+5. [`qureddy scan ike`](#5-qureddy-scan-ike)
+6. [Target syntax](#6-target-syntax)
+7. [Output formats](#7-output-formats)
+8. [Output streams](#8-output-streams)
+9. [Exit codes](#9-exit-codes)
+10. [Environment variables](#10-environment-variables)
+11. [Related documentation](#11-related-documentation)
 
 ## 1. Root command
 
@@ -33,7 +34,7 @@ qureddy [OPTIONS] COMMAND [ARGS]...
 | Command | Meaning |
 | --- | --- |
 | `help` | Print root help and exit |
-| `scan` | Select the TLS or SSH endpoint scanner |
+| `scan` | Select the TLS, SSH, or IKE endpoint scanner |
 
 The version line is:
 
@@ -55,6 +56,7 @@ qureddy scan [OPTIONS] COMMAND [ARGS]...
 | --- | --- |
 | `tls` | Scan a TLS endpoint |
 | `ssh` | Scan an SSH or SFTP endpoint |
+| `ike` | Scan an IKE endpoint through stock `ike-scan` |
 
 ## 3. `qureddy scan ssh`
 
@@ -64,7 +66,7 @@ qureddy scan ssh [OPTIONS] TARGET
 
 | Argument | Requirement |
 | --- | --- |
-| `TARGET` | Required SSH target; see [target syntax](#5-target-syntax) |
+| `TARGET` | Required SSH target; see [target syntax](#6-target-syntax) |
 
 | Option | Type | Default | Meaning |
 | --- | --- | --- | --- |
@@ -100,7 +102,7 @@ qureddy scan tls [OPTIONS] TARGET
 
 | Argument | Requirement |
 | --- | --- |
-| `TARGET` | Required TLS target; see [target syntax](#5-target-syntax) |
+| `TARGET` | Required TLS target; see [target syntax](#6-target-syntax) |
 
 | Option | Type | Default | Meaning |
 | --- | --- | --- | --- |
@@ -138,7 +140,47 @@ qureddy scan tls example.com --openssl /absolute/path/to/openssl
 qureddy scan tls flaky.example --retry-on tls_handshake_failed --retries 3
 ```
 
-## 5. Target syntax
+## 5. `qureddy scan ike`
+
+```text
+qureddy scan ike [OPTIONS] TARGET
+```
+
+| Argument | Requirement |
+| --- | --- |
+| `TARGET` | Required IKE target; see [target syntax](#6-target-syntax) |
+
+| Option | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--ike-scan` | path or command | `ike-scan` | Select the stock executable |
+| `--nat-t` | flag | off | Probe RFC 3947 framing on UDP/4500 first and use the target port as fallback per exchange mode |
+| `--source-port` | integer `0..65535` | `0` | Override the UDP source port; `0` selects 500 direct or 4500 with NAT-T, and binding 500 may require privilege |
+| `--format` | `rich`, `json`, `cbom`, or `jsonl` | `rich` | Select output; repeated values use the last occurrence |
+| `--output`, `-o` | path | standard output | Write one rendered document to a file |
+| `--output-dir` | directory | none | Run one scan and write JSON, CBOM, JSONL, and Rich projections |
+| `--compact` | flag | off | Minify JSON or CBOM output |
+| `--min-severity` | severity | none | Filter the Rich findings table only |
+| `--timeout` | integer `1..300` | `8` | Per-probe timeout in seconds |
+| `-v`, `--verbose` | count | `0` | Select INFO, DEBUG, or command traceability detail |
+| `--json-logs` | flag | off | Write structured diagnostic logs to standard error |
+| `-q`, `--quiet` | flag | off | Suppress non-error diagnostic logs |
+| `--deterministic` | flag | off | Omit per-run CBOM identity for stable bytes |
+| `-h`, `--help` | flag | n/a | Print IKE help and exit |
+
+Examples:
+
+```bash
+qureddy scan ike vpn.example.com
+qureddy scan ike vpn.example.com --nat-t
+qureddy scan ike vpn.example.com --nat-t --format cbom
+qureddy scan ike 192.0.2.10 --source-port 500 --format json
+```
+
+The stock backend emits low-confidence, tool-reported discovery evidence. It does not establish
+an accepted proposal, authentication, Child-SA/ESP/AH posture, favorable post-quantum readiness,
+or overall IPsec HNDL protection.
+
+## 6. Target syntax
 
 ### TLS
 
@@ -173,7 +215,21 @@ SSH defaults to port `22`. Only `ssh://` and `sftp://` schemes are accepted.
 Credentials, paths, query strings, fragments, and foreign schemes are rejected
 before DNS or socket access.
 
-## 6. Output formats
+### IKE
+
+Accepted forms:
+
+```text
+vpn.example.com
+vpn.example.com:4500
+ike://vpn.example.com
+ike://[2001:db8::1]:500
+```
+
+IKE defaults to UDP/500. Credentials, paths, query strings, fragments, and foreign schemes are
+rejected before the external tool runs.
+
+## 7. Output formats
 
 | Value | Contract |
 | --- | --- |
@@ -193,7 +249,7 @@ same `scan.scan_id`, timestamps, target, findings, and evidence. The bundle
 contains `scan.json` (`qureddy.scan.v1`), `scan.cdx.json` (CycloneDX 1.7),
 `scan.jsonl` (one finding per line), and `scan.rich.txt` (human-readable output).
 
-## 7. Output streams
+## 8. Output streams
 
 Human output and machine documents go to standard output. Diagnostic logs and
 operator hints go to standard error.
@@ -208,31 +264,33 @@ Under shell-level `2>&1`, the default machine modes suppress the courtesy hint
 so the merged stream remains parseable. Explicit `-v`, `-vv`, or `-vvv` logs
 are diagnostics and must remain on a separate stream.
 
-## 8. Exit codes
+## 9. Exit codes
 
-| Code | TLS | SSH | Meaning |
-| --- | --- | --- | --- |
-| `0` | yes | yes | Scan completed |
-| `2` | yes | yes | Target connection, handshake, or parse failed |
-| `3` | yes | no | Local OpenSSL is missing or unusable |
-| `4` | yes | yes | Usage or configuration error |
-| `70` | yes | process fallback | Internal QuReddy error |
+| Code | TLS | SSH | IKE | Meaning |
+| --- | --- | --- | --- | --- |
+| `0` | yes | yes | yes | Scan completed |
+| `2` | yes | yes | yes | Target connection, handshake, timeout, or parse failed |
+| `3` | yes | no | yes | Required local executable is missing or unusable |
+| `4` | yes | yes | yes | Usage or configuration error |
+| `70` | yes | process fallback | process fallback | Internal QuReddy error |
 
 See the [exit code reference](exit-codes.md) for branching examples.
 
-## 9. Environment variables
+## 10. Environment variables
 
 | Variable | Scope | Meaning |
 | --- | --- | --- |
 | `QUREDDY_OPENSSL` | TLS | OpenSSL path used when `--openssl` is absent |
+| `QUREDDY_BLOCK_INTERNAL_TARGETS` | TLS, SSH, and IKE | Set to `1` to reject literal internal, loopback, link-local, reserved, multicast, unspecified, and known metadata-hostname targets before probing |
 | `NO_COLOR` | Rich output and logs | Any value disables ANSI color |
 
 OpenSSL selection order is `--openssl`, then `QUREDDY_OPENSSL`, then
 `openssl` on `PATH`.
 
-## 10. Related documentation
+## 11. Related documentation
 
 - [Install and troubleshoot](../how-to/install.md)
+- [Scan an IKE endpoint](../how-to/scan-ike.md)
 - [Exit codes](exit-codes.md)
 - [Failure categories](failure-categories.md)
 - [JSON output](json-schema.md)

@@ -21,6 +21,19 @@ def test_help_lists_scan_subcommand() -> None:
     assert "scan" in result.stdout
 
 
+def test_root_and_scan_help_link_to_ike_help() -> None:
+    """Expose IKE from the first two help levels, not only command discovery."""
+    runner = CliRunner()
+    root = runner.invoke(app, ["--help"])
+    scan = runner.invoke(app, ["scan", "--help"])
+
+    assert root.exit_code == 0
+    assert "qureddy scan ike vpn.example.com" in root.stdout
+    assert "qureddy scan ike --help" in root.stdout
+    assert scan.exit_code == 0
+    assert "qureddy scan ike --help" in scan.stdout
+
+
 def test_scan_help_lists_documented_options() -> None:
     runner = CliRunner()
     result = runner.invoke(app, ["scan", "tls", "--help"])
@@ -38,7 +51,7 @@ def test_scan_help_lists_documented_options() -> None:
     assert "--reproducible" not in result.stdout
 
 
-@pytest.mark.parametrize("protocol", ["tls", "ssh"])
+@pytest.mark.parametrize("protocol", ["tls", "ssh", "ike"])
 def test_scan_help_documents_distinct_verbosity_levels(protocol: str) -> None:
     """Issue #498: -vvv must not be documented as an alias for -vv."""
     result = CliRunner().invoke(app, ["scan", protocol, "--help"])
