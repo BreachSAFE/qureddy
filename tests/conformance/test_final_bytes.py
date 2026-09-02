@@ -163,7 +163,7 @@ def test_certificate_fixture_matches_current_emitter() -> None:
         evidence_type="tls.cert.signature",
         observation_type=ObservationType.OBSERVED,
         source="qureddy.scanners.tls.cert_sig",
-        certificate=certificate,
+        certificate_record=certificate,
     )
     rendered = _render(result.model_copy(update={"evidence": (*result.evidence, evidence)}))
     emitted_certificate = next(

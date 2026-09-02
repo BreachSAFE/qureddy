@@ -10,10 +10,8 @@ the rendered CBOM is unchanged (#171).
 
 from __future__ import annotations
 
-import re
-from datetime import UTC, datetime
 from types import MappingProxyType
-from typing import TYPE_CHECKING, NamedTuple
+from typing import TYPE_CHECKING
 
 from cyclonedx.model import Property
 from cyclonedx.model.bom_ref import BomRef
@@ -30,7 +28,8 @@ from cyclonedx.model.crypto import (
     ProtocolPropertiesType,
 )
 
-from qureddy.core.signatures import classify_pqc_signature
+from qureddy.core.algorithm_profile import classify_key_exchange, classify_signature_algorithm
+from qureddy.core.certificate import parse_openssl_date
 from qureddy.output.cbom_assets import (
     POSITIVE_OBSERVATIONS,
     add_algorithm_assets,
@@ -108,30 +107,12 @@ def add_cipher_suite_components(
     )
 
 
-# Structured classification for the key-exchange groups qureddy positively observes, so a
-# CBOM consumer doesn't have to string-match the component name (#146). Values verified:
-# ML-KEM-768 is NIST security category 3 (FIPS 203); X25519 is classical (no PQ resistance,
-# level 0). Only groups we can classify with confidence are listed; anything else keeps a
-# minimal (empty) algorithmProperties rather than fabricating a primitive/level.
-# CONFORMANCE: expanding this table (SSH groups, signature algorithms) and re-checking every
-# nistQuantumSecurityLevel is a breachsafe-conformance follow-up before claiming full coverage.
-class _AlgorithmSpec(NamedTuple):
-    primitive: CryptoPrimitive
-    nist_quantum_security_level: int
-    crypto_functions: tuple[CryptoFunction, ...]
-    parameter_set_identifier: str | None = None
-    curve: str | None = None
-
-
 _KEM_FUNCTIONS = (CryptoFunction.KEYGEN, CryptoFunction.ENCAPSULATE, CryptoFunction.DECAPSULATE)
-_ALGORITHM_PROFILE: MappingProxyType[str, _AlgorithmSpec] = MappingProxyType(
+_KEY_EXCHANGE_FUNCTIONS = MappingProxyType(
     {
-        "X25519MLKEM768": _AlgorithmSpec(
-            CryptoPrimitive.KEM, 3, _KEM_FUNCTIONS, parameter_set_identifier="ML-KEM-768"
-        ),
-        "X25519": _AlgorithmSpec(
-            CryptoPrimitive.KEY_AGREE, 0, (CryptoFunction.KEYGEN,), curve="curve25519"
-        ),
+        "kem": _KEM_FUNCTIONS,
+        "key-agree": (CryptoFunction.KEYGEN,),
+        "pke": (CryptoFunction.ENCAPSULATE, CryptoFunction.DECAPSULATE),
     }
 )
 
@@ -141,22 +122,19 @@ def _algorithm_properties(group: str) -> AlgorithmProperties | None:
 
     A fresh instance per call keeps CycloneDX's mutable model out of shared module state.
     """
-    spec = _ALGORITHM_PROFILE.get(group)
+    spec = classify_key_exchange(group)
     if spec is None:
         return None
     return AlgorithmProperties(
-        primitive=spec.primitive,
+        primitive=CryptoPrimitive(spec.primitive),
         parameter_set_identifier=spec.parameter_set_identifier,
         curve=spec.curve,
-        crypto_functions=list(spec.crypto_functions),
+        crypto_functions=list(_KEY_EXCHANGE_FUNCTIONS[spec.primitive]),
         nist_quantum_security_level=spec.nist_quantum_security_level,
     )
 
 
 _SIGNATURE_FUNCTIONS = (CryptoFunction.SIGN, CryptoFunction.VERIFY)
-# Substrings that identify a classical (non-PQ) signature algorithm, drawn from X.509
-# signatureAlgorithm names and SSH host-key identifiers.
-_CLASSICAL_SIGNATURE_MARKERS = ("ecdsa", "rsa", "ed25519", "ed448", "dsa", "dss")
 
 
 def signature_algorithm_properties(name: str) -> AlgorithmProperties | None:
@@ -170,22 +148,15 @@ def signature_algorithm_properties(name: str) -> AlgorithmProperties | None:
     fabricating a level. The PQC check runs before the classical-marker scan
     because both ML-DSA and SLH-DSA names contain the classical substring ``dsa``.
     """
-    classified = classify_pqc_signature(name)
-    if classified is not None:
-        parameter_set, level = classified
-        return AlgorithmProperties(
-            primitive=CryptoPrimitive.SIGNATURE,
-            parameter_set_identifier=parameter_set.upper(),
-            crypto_functions=list(_SIGNATURE_FUNCTIONS),
-            nist_quantum_security_level=level,
-        )
-    if any(marker in name.lower() for marker in _CLASSICAL_SIGNATURE_MARKERS):
-        return AlgorithmProperties(
-            primitive=CryptoPrimitive.SIGNATURE,
-            crypto_functions=list(_SIGNATURE_FUNCTIONS),
-            nist_quantum_security_level=0,
-        )
-    return None
+    profile = classify_signature_algorithm(name)
+    if profile is None:
+        return None
+    return AlgorithmProperties(
+        primitive=CryptoPrimitive(profile.primitive),
+        parameter_set_identifier=profile.parameter_set_identifier,
+        crypto_functions=list(_SIGNATURE_FUNCTIONS),
+        nist_quantum_security_level=profile.nist_quantum_security_level,
+    )
 
 
 def add_protocol_components(
@@ -291,60 +262,6 @@ def _bare_protocol_version(protocol: str, protocol_version: str) -> str:
     return protocol_version
 
 
-# OpenSSL prints certificate dates in the C locale regardless of the host locale
-# ("Jul 17 07:18:11 2026 GMT"), so the English month abbreviations are fixed. We map
-# them ourselves instead of using strptime's `%b`, which is LC_TIME-dependent and
-# silently fails on a non-English host (e.g. de_DE), dropping the cert dates (#116).
-_OPENSSL_MONTHS = MappingProxyType(
-    {
-        month: index
-        for index, month in enumerate(
-            ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"),
-            start=1,
-        )
-    }
-)
-# Day is `\d{1,2}` because OpenSSL space-pads single-digit days ("Jul  7 ..."), which
-# `%d` also mishandles. Only GMT/UTC is accepted (OpenSSL always reports these in GMT).
-_OPENSSL_DATE = re.compile(
-    r"^(?P<mon>[A-Z][a-z]{2})\s+(?P<day>\d{1,2})\s+"
-    r"(?P<hour>\d{2}):(?P<minute>\d{2}):(?P<second>\d{2})\s+"
-    r"(?P<year>\d{4})\s+(?P<tz>GMT|UTC)$"
-)
-
-
-def _parse_openssl_date(text: str) -> datetime | None:
-    """Parse `openssl x509 -dates` output (e.g. "Jul 17 07:18:11 2026 GMT").
-
-    Returns None on anything unparseable rather than raising — a date
-    the CBOM can't represent should degrade to "absent from this CBOM",
-    not abort rendering the rest of a real, otherwise-valid certificate.
-    Parsing is locale-independent (see ``_OPENSSL_MONTHS``); OpenSSL always
-    reports GMT (== UTC), which is attached explicitly to satisfy the
-    project's timezone-aware-datetime rule.
-    """
-    if not text:
-        return None
-    match = _OPENSSL_DATE.match(text.strip())
-    if not match:
-        return None
-    month = _OPENSSL_MONTHS.get(match.group("mon"))
-    if month is None:
-        return None
-    try:
-        return datetime(
-            int(match.group("year")),
-            month,
-            int(match.group("day")),
-            int(match.group("hour")),
-            int(match.group("minute")),
-            int(match.group("second")),
-            tzinfo=UTC,
-        )
-    except ValueError:
-        return None
-
-
 def _add_signature_algorithm_component(
     bom: Bom, signature_algorithm: str, provides_edges: dict[str, list[str]]
 ) -> BomRef | None:
@@ -403,8 +320,8 @@ def add_certificate_component(
                     subject_name=certificate.subject,
                     issuer_name=certificate.issuer,
                     certificate_format="X.509",
-                    not_valid_before=_parse_openssl_date(certificate.not_before),
-                    not_valid_after=_parse_openssl_date(certificate.not_after),
+                    not_valid_before=parse_openssl_date(certificate.not_before),
+                    not_valid_after=parse_openssl_date(certificate.not_after),
                     signature_algorithm_ref=sig_alg_ref,
                     subject_public_key_ref=subject_key_ref,
                 ),

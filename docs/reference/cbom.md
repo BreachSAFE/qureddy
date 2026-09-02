@@ -152,6 +152,27 @@ bom-ref: crypto/algorithm/<lowercase-observed-name>
 cryptoProperties.assetType: algorithm
 ```
 
+The signature used by the live TLS CertificateVerify message is a separate
+algorithm observation from the CA signature over the leaf certificate. It
+carries `qureddy:signature.role=tls.handshake.certificate_verify` and the
+reported hash in `qureddy:signature.hash`.
+
+### Ephemeral key material
+
+When OpenSSL reports a temporary public-key size, the CBOM links native
+CycloneDX related cryptographic material to the negotiated algorithm:
+
+```text
+bom-ref: crypto/related-material/tls-ephemeral-<lowercase-group>
+cryptoProperties.assetType: related-crypto-material
+relatedCryptoMaterialProperties.type: public-key
+relatedCryptoMaterialProperties.algorithmRef: crypto/algorithm/<lowercase-group>
+relatedCryptoMaterialProperties.size: <observed-bits>
+relatedCryptoMaterialProperties.state: active
+```
+
+The public key value is never captured or emitted.
+
 ### Protocols
 
 Each unique observed protocol and version becomes a component with:

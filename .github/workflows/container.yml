@@ -18,7 +18,7 @@ on:
       version:
         description: Image version to publish
         required: true
-        default: 0.9.1
+        default: 0.9.5
       publish:
         description: Push the multi-architecture image to GHCR and Docker Hub
         required: true
@@ -184,6 +184,9 @@ jobs:
       packages: write
       id-token: write
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           path: digests
@@ -213,9 +216,7 @@ jobs:
           digest="sha256:$(printf '%s' "$raw_manifest" | sha256sum | cut -d' ' -f1)"
           test -n "$digest" && case "$digest" in sha256:*) ;; *) exit 1 ;; esac
           cosign sign --yes "$IMAGE@$digest"
-          cosign verify "$IMAGE@$digest" \
-            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-            --certificate-identity-regexp '^https://github.com/BreachSAFE/qureddy/\.github/workflows/'
+          scripts/verify_container_signature.sh "$IMAGE@$digest"
           docker buildx imagetools inspect "$IMAGE@$digest"
       - name: Promote verified digest to release tags
         env:
@@ -228,9 +229,7 @@ jobs:
           digest="sha256:${digest}"
           for tag in "$QUREDDY_VERSION" latest; do
             docker buildx imagetools create --tag "$IMAGE:$tag" "$IMAGE@$digest"
-            cosign verify "$IMAGE:$tag" \
-              --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-              --certificate-identity-regexp '^https://github.com/BreachSAFE/qureddy/\.github/workflows/'
+            scripts/verify_container_signature.sh "$IMAGE:$tag"
           done
       - name: Log in to Docker Hub
         env:
@@ -250,19 +249,21 @@ jobs:
         run: |
           set -euo pipefail
           digest="sha256:$(docker buildx imagetools inspect --raw "$SOURCE_IMAGE:sha-${GITHUB_SHA::12}" | sha256sum | cut -d' ' -f1)"
-          # Promote the already-built manifest; do not rebuild per registry.
-          for tag in "$QUREDDY_VERSION" latest; do
-            docker buildx imagetools create --tag "$DEST_IMAGE:$tag" "$SOURCE_IMAGE@$digest"
-          done
-          destination_digest="sha256:$(docker buildx imagetools inspect --raw "$DEST_IMAGE:$QUREDDY_VERSION" | sha256sum | cut -d' ' -f1)"
+          # Copy the already-built manifest to an immutable staging tag. Sign and
+          # verify that destination digest before moving either mutable release tag.
+          docker buildx imagetools create \
+            --tag "$DEST_IMAGE:sha-${GITHUB_SHA::12}" "$SOURCE_IMAGE@$digest"
+          destination_digest="sha256:$(docker buildx imagetools inspect --raw "$DEST_IMAGE:sha-${GITHUB_SHA::12}" | sha256sum | cut -d' ' -f1)"
           test "$destination_digest" = "$digest" || {
             echo "Docker Hub manifest digest mismatch: expected $digest, got $destination_digest" >&2
             exit 1
           }
-          # Transfer the signed image reference and its signature to the same digest.
-          # The default copy mode targets the signed index; --only on an index can
-          # incorrectly resolve platform children that do not carry the signature.
-          cosign copy "$SOURCE_IMAGE@$digest" "$DEST_IMAGE@$destination_digest"
-          cosign verify "$DEST_IMAGE@$destination_digest" \
-            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-            --certificate-identity-regexp '^https://github.com/BreachSAFE/qureddy/\.github/workflows/'
+          cosign sign --yes "$DEST_IMAGE@$destination_digest"
+          scripts/verify_container_signature.sh "$DEST_IMAGE@$destination_digest"
+          for tag in "$QUREDDY_VERSION" latest; do
+            docker buildx imagetools create --tag "$DEST_IMAGE:$tag" \
+              "$DEST_IMAGE@$destination_digest"
+            promoted_digest="sha256:$(docker buildx imagetools inspect --raw "$DEST_IMAGE:$tag" | sha256sum | cut -d' ' -f1)"
+            test "$promoted_digest" = "$destination_digest"
+            scripts/verify_container_signature.sh "$DEST_IMAGE:$tag"
+          done

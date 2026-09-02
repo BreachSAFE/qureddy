@@ -8,9 +8,10 @@
 ## Contents
 
 1. [Instruction hierarchy](#instruction-hierarchy)
-2. [Deliberate QuReddy divergences](#deliberate-qureddy-divergences)
-3. [Temporary workspace policy](#temporary-workspace-policy)
-4. [Change procedure](#change-procedure)
+2. [Architecture](#architecture)
+3. [Deliberate QuReddy divergences](#deliberate-qureddy-divergences)
+4. [Temporary workspace policy](#temporary-workspace-policy)
+5. [Change procedure](#change-procedure)
 
 ## Instruction hierarchy
 
@@ -30,6 +31,35 @@ Read and apply these sources in order:
    library.** Use the narrowest applicable skill and follow its audit/implementation
    boundary. If a skill conflicts with platform or repository guidance, stop and
    resolve the conflict explicitly.
+
+## Architecture
+
+The engine is a layered package under `src/qureddy/`. `import-linter` (contract `#360`,
+run with `lint-imports`) enforces the dependency direction: a lower layer importing a
+higher one fails the gate. Read the direction as "imports downward only".
+
+```text
+cli  ->  output  ->  scanners  ->  core        (import-linter layers)
+                                     ^
+                        collectors  -+          (adapter: imports core only)
+```
+
+| Layer (`qureddy.<pkg>`) | Holds | May import |
+|---|---|---|
+| `cli` | Typer app and subcommands: `main` (app assembly, exit-code wrapper), `scan`, `ssh`, plus `_options`, `_render`, `_errors`, `_help`, `_execute` | `output`, `scanners`, `collectors`, `core` |
+| `output` | Result rendering: `console/` (tables, verdict, evidence), `json`, `jsonl`, and the `cbom*` CycloneDX emitters | `scanners`, `core` |
+| `scanners` | Probing engines by protocol: `tls/`, `ssh/`, and shared `common/` (posture, rollup, findings) | `core` |
+| `core` | Domain foundation: `models`, `contracts`, `policy`, `evaluation`, `targets`, `certificate`, `ciphers`, `signatures`, `pqc`, `registry`, `logging`. Imports nothing above it | none |
+
+`collectors/` (`native.py`: `NativeSSHCollector`, `NativeTLSCollector`) is a target-acquisition
+adapter that imports only `core.contracts`, `core.errors`, and `core.targets`, and is consumed
+by `cli.ssh`. It sits outside the four-layer `import-linter` contract.
+
+**CLI entry point.** `[project.scripts]` in `pyproject.toml` binds the console script
+`qureddy = "qureddy.cli:main"`. It points at `main()` (in `cli/main.py`), not the Typer `app`
+object, because the `main()` wrapper translates `click.UsageError` to exit code 4; binding
+`:app` would let Click return exit 2 for usage errors and collide with the target-scan-failure
+code. `python -m qureddy` reaches the same `main()` via `__main__.py`.
 
 ## Deliberate QuReddy divergences
 

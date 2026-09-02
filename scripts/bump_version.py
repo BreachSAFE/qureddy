@@ -12,6 +12,7 @@ already agree):
 * ``pyproject.toml`` ``[project] version`` (the source of truth itself)
 * the ``Dockerfile`` ``ARG QUREDDY_VERSION`` default (feeds the OCI
   ``image.version`` label and selects the wheel to install)
+* the manual container-publication workflow's version input default
 * the ``uv.lock`` entry for this package
 * the golden output contracts (``tests/golden/*.golden``)
 * The general documentation is intentionally version-agnostic. Release-specific
@@ -43,12 +44,20 @@ PYPROJECT = ROOT / "pyproject.toml"
 README = ROOT / "README.md"
 CHANGELOG = ROOT / "CHANGELOG.md"
 DOCKERFILE = ROOT / "Dockerfile"
+CONTAINER_WORKFLOW = ROOT / ".github" / "workflows" / "container.yml"
 UVLOCK = ROOT / "uv.lock"
 GOLDEN = ROOT / "tests" / "golden"
 
 _PYPROJECT_VERSION = re.compile(r'^version = "(?P<v>[^"]+)"', re.MULTILINE)
 # Dockerfile default that stamps the OCI image.version label and picks the wheel.
 _DOCKER_ARG = re.compile(r"^ARG QUREDDY_VERSION=(?P<v>\d+(?:\.\d+){2,3}[^\s]*)$", re.MULTILINE)
+_CONTAINER_INPUT = re.compile(
+    r"(?P<pre>^      version:\n"
+    r"        description: Image version to publish\n"
+    r"        required: true\n"
+    r"        default: )(?P<v>\d+(?:\.\d+){2,3}[^\s]*)(?P<post>$)",
+    re.MULTILINE,
+)
 # The editable entry for this package in the resolved lockfile.
 _UVLOCK_VERSION = re.compile(
     r'(?P<pre>name = "breachsafe-qureddy"\nversion = ")(?P<v>[^"]+)(?P<post>")'
@@ -64,6 +73,7 @@ def _simple_targets() -> list[tuple[Path, re.Pattern[str]]]:
     """
     return [
         (DOCKERFILE, _DOCKER_ARG),
+        (CONTAINER_WORKFLOW, _CONTAINER_INPUT),
         (UVLOCK, _UVLOCK_VERSION),
     ]
 

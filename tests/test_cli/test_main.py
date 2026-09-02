@@ -38,6 +38,29 @@ def test_scan_help_lists_documented_options() -> None:
     assert "--reproducible" not in result.stdout
 
 
+@pytest.mark.parametrize("protocol", ["tls", "ssh"])
+def test_scan_help_documents_distinct_verbosity_levels(protocol: str) -> None:
+    """Issue #498: -vvv must not be documented as an alias for -vv."""
+    result = CliRunner().invoke(app, ["scan", protocol, "--help"])
+    help_text = " ".join(result.stdout.split())
+
+    assert result.exit_code == 0
+    assert "-v INFO logs" in help_text
+    assert "-vv DEBUG logs including subprocess boundaries" in help_text
+    assert "-vvv also shows exact commands in Rich output" in help_text
+    assert "internal-error tracebacks" in help_text
+
+
+def test_scan_tls_help_assigns_subprocess_boundaries_to_vv() -> None:
+    """The detailed TLS epilog names the level that already emits these logs."""
+    result = CliRunner().invoke(app, ["scan", "tls", "--help"])
+    help_text = " ".join(result.stdout.split())
+
+    assert result.exit_code == 0
+    assert "Use `-vv` to see every subprocess start and completion" in help_text
+    assert "Use `-vvv` to see every subprocess start and completion" not in help_text
+
+
 def test_deterministic_flag_and_deprecated_alias_enable_same_mode(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

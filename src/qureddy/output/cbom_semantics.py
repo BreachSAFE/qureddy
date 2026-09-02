@@ -144,13 +144,16 @@ def _intra_component_crypto_refs(payload: dict[str, Any]) -> Iterator[str]:
 
 
 def _component_crypto_refs(component: dict[str, Any]) -> Iterator[str]:
-    """Yield one component's certificate and cipher-suite algorithm references."""
+    """Yield one component's certificate, material, and cipher-suite references."""
     crypto_properties = component.get("cryptoProperties", {})
     certificate_properties = crypto_properties.get("certificateProperties", {})
     for ref_field in ("signatureAlgorithmRef", "subjectPublicKeyRef"):
         reference = certificate_properties.get(ref_field)
         if isinstance(reference, str):
             yield reference
+    material_ref = crypto_properties.get("relatedCryptoMaterialProperties", {}).get("algorithmRef")
+    if isinstance(material_ref, str):
+        yield material_ref
     for suite in crypto_properties.get("protocolProperties", {}).get("cipherSuites", []):
         yield from _str_values(suite.get("algorithms", []))
 

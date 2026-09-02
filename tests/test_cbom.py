@@ -114,7 +114,10 @@ class TestCycloneDx17Contract:
             _build_result()
             .evidence[0]
             .model_copy(
-                update={"observation_type": ObservationType.OBSERVED, "certificate": certificate}
+                update={
+                    "observation_type": ObservationType.OBSERVED,
+                    "certificate_record": certificate,
+                }
             )
         )
         result = _build_result().model_copy(update={"evidence": (evidence, evidence)})
@@ -209,9 +212,11 @@ class TestCycloneDx17Contract:
             evidence_type="tls.cert.signature",
             observation_type=ObservationType.OBSERVED,
             source="qureddy.scanners.tls.cert_sig",
-            certificate=certificate,
+            certificate_record=certificate,
         )
-        assert "certificate" not in certificate_evidence.model_dump(mode="json")
+        assert certificate_evidence.model_dump(mode="json")["certificate"]["serial_number"] == (
+            "0123456789ABCDEF"
+        )
         result = _build_result().model_copy(
             update={"evidence": (*_build_result().evidence, certificate_evidence)}
         )
@@ -259,7 +264,7 @@ class TestCycloneDx17Contract:
             evidence_type="tls.cert.signature",
             observation_type=ObservationType.OBSERVED,
             source="qureddy.scanners.tls.cert_sig",
-            certificate=certificate,
+            certificate_record=certificate,
         )
         return _build_result().model_copy(
             update={"evidence": (*_build_result().evidence, certificate_evidence)}
@@ -351,7 +356,7 @@ class TestCycloneDx17Contract:
             evidence_type="tls.cert.signature",
             observation_type=ObservationType.OBSERVED,
             source="qureddy.scanners.tls.cert_sig",
-            certificate=certificate,
+            certificate_record=certificate,
         )
         result = _build_result().model_copy(
             update={"evidence": (*_build_result().evidence, certificate_evidence)}
@@ -388,7 +393,7 @@ class TestCycloneDx17Contract:
             evidence_type="tls.cert.signature",
             observation_type=ObservationType.OBSERVED,
             source="qureddy.scanners.tls.cert_sig",
-            certificate=certificate,
+            certificate_record=certificate,
         )
         result = _build_result().model_copy(
             update={"evidence": (*_build_result().evidence, certificate_evidence)}

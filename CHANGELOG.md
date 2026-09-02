@@ -12,24 +12,114 @@ versions follow [PEP 440](https://peps.python.org/pep-0440/).
 ## Contents
 
 1. [Unreleased](#unreleased)
-2. [0.9.1](#091---2026-08-31)
-3. [0.9.0.10](#09010---2026-08-30)
-4. [0.9.0.9](#0909---2026-08-26)
-5. [0.9.0.8](#0908---2026-08-26)
-6. [0.9.0.7](#0907---2026-08-26)
-7. [0.9.0.6](#0906---2026-08-26)
-8. [0.9.0.5](#0905---2026-08-26)
-9. [0.9.0.4](#0904---2026-08-26)
-10. [0.9.0.3](#0903---2026-08-25)
-11. [0.9.0.2](#0902---2026-08-25)
-12. [0.9.0.1](#0901---2026-08-24)
-13. [0.9.0.0](#0900---2026-08-24)
+2. [0.9.5](#095---2026-09-02)
+3. [0.9.4](#094---2026-09-02)
+4. [0.9.3](#093---2026-09-01)
+5. [0.9.2](#092---2026-09-01)
+6. [0.9.1](#091---2026-08-31)
+7. [0.9.0.10](#09010---2026-08-30)
+8. [0.9.0.9](#0909---2026-08-26)
+9. [0.9.0.8](#0908---2026-08-26)
+10. [0.9.0.7](#0907---2026-08-26)
+11. [0.9.0.6](#0906---2026-08-26)
+12. [0.9.0.5](#0905---2026-08-26)
+13. [0.9.0.4](#0904---2026-08-26)
+14. [0.9.0.3](#0903---2026-08-25)
+15. [0.9.0.2](#0902---2026-08-25)
+16. [0.9.0.1](#0901---2026-08-24)
+17. [0.9.0.0](#0900---2026-08-24)
 
 ## Unreleased
 
-### Changed
+### Fixed
 
-- Future changes will be recorded here until the next release is cut.
+- Keep negotiated or observed post-quantum protection in the top-level readiness verdict
+  while reporting deprecated protocols and weak algorithms on the independent hygiene axis
+  ([issue #663](https://github.com/BreachSAFE/qureddy/issues/663),
+  [PR #677](https://github.com/BreachSAFE/qureddy/pull/677)).
+
+## [0.9.5] - 2026-09-02
+
+### Fixed
+
+- Retry Docker Hub signature verification after staging a manifest, while preserving
+  fail-closed issuer and identity checks, so registry propagation delay does not fail an
+  otherwise valid release ([issue #659](https://github.com/BreachSAFE/qureddy/issues/659),
+  [PR #660](https://github.com/BreachSAFE/qureddy/pull/660)).
+- Label an SSH key exchange as post-quantum hybrid in Rich output only when the canonical
+  classifier confirms a hybrid algorithm
+  ([issue #534](https://github.com/BreachSAFE/qureddy/issues/534),
+  [PR #661](https://github.com/BreachSAFE/qureddy/pull/661)).
+- Preserve bracketed IPv6 targets, including zone identifiers, in the Rich verdict title
+  ([issue #495](https://github.com/BreachSAFE/qureddy/issues/495),
+  [PR #662](https://github.com/BreachSAFE/qureddy/pull/662)).
+- Omit the unsupported RSA-4096 `classicalSecurityLevel` from CBOM instead of attributing
+  an interpolated 152-bit value to NIST SP 800-57 Table 2
+  ([issue #531](https://github.com/BreachSAFE/qureddy/issues/531),
+  [PR #664](https://github.com/BreachSAFE/qureddy/pull/664)).
+- Document the distinct verbosity levels accurately: `-vv` emits debug subprocess
+  boundaries, while `-vvv` adds exact commands to Rich output and internal-error tracebacks
+  ([issue #498](https://github.com/BreachSAFE/qureddy/issues/498),
+  [PR #665](https://github.com/BreachSAFE/qureddy/pull/665)).
+
+## [0.9.4] - 2026-09-02
+
+### Added
+
+- Emit typed leaf-certificate subject, issuer, validity, serial, signature, and
+  public-key facts in JSON certificate evidence
+  ([issue #640](https://github.com/BreachSAFE/qureddy/issues/640),
+  [PR #655](https://github.com/BreachSAFE/qureddy/pull/655)).
+- Record the observed TLS ephemeral public-key size in JSON and as native CycloneDX
+  related cryptographic material ([issue #638](https://github.com/BreachSAFE/qureddy/issues/638),
+  [PR #654](https://github.com/BreachSAFE/qureddy/pull/654)).
+
+### Fixed
+
+- Preserve the live TLS CertificateVerify signature and hash in JSON and emit the
+  signature as a distinct CBOM algorithm observation
+  ([issue #637](https://github.com/BreachSAFE/qureddy/issues/637),
+  [PR #654](https://github.com/BreachSAFE/qureddy/pull/654)).
+
+## [0.9.3] - 2026-09-01
+
+### Fixed
+
+- Stage, independently sign, and verify the Docker Hub manifest digest before moving
+  the version and `latest` tags, replacing the deprecated cross-registry `cosign copy`
+  path that left the mirror unsigned and failed the release workflow
+  ([issue #538](https://github.com/BreachSAFE/qureddy/issues/538),
+  [PR #651](https://github.com/BreachSAFE/qureddy/pull/651)).
+
+## [0.9.2] - 2026-09-01
+
+### Added
+
+- Add an authorization-first guided scan example for TLS and SSH targets
+  ([PR #548](https://github.com/BreachSAFE/qureddy/pull/548)).
+
+### Fixed
+
+- Populate exact TLS negotiation, legacy-cipher, and certificate-signature identity and
+  protocol-neutral classification in native JSON and JSONL evidence and findings, matching
+  the core classification used by CBOM output
+  ([issue #648](https://github.com/BreachSAFE/qureddy/issues/648),
+  [PR #649](https://github.com/BreachSAFE/qureddy/pull/649)).
+- Emit exact SSH algorithm identity and core-owned classification on named
+  native-JSON evidence, and populate the representative algorithm on the
+  classical-alternative finding ([issue #645](https://github.com/BreachSAFE/qureddy/issues/645),
+  [PR #647](https://github.com/BreachSAFE/qureddy/pull/647)).
+- Populate key-exchange `primitive`, parameter-set, and NIST quantum security
+  classifications in native JSON and JSONL findings from the same protocol-neutral
+  classifier used by CBOM output ([issue #639](https://github.com/BreachSAFE/qureddy/issues/639),
+  [PR #644](https://github.com/BreachSAFE/qureddy/pull/644)).
+- Require canonical finding-type and readiness-state pairs before evidence can affect
+  endpoint HNDL posture, preventing structurally invalid observations from producing a
+  global posture ([issue #598](https://github.com/BreachSAFE/qureddy/issues/598),
+  [PR #614](https://github.com/BreachSAFE/qureddy/pull/614)).
+- Normalize explicit, inferred, and mixed-case IKE protocol values before HNDL
+  classification so equivalent observations cannot produce conflicting posture states
+  ([PR #622](https://github.com/BreachSAFE/qureddy/pull/622)).
 
 ## [0.9.1] - 2026-08-31
 

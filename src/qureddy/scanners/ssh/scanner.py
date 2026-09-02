@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 
 from qureddy.core.contracts import Scanner
 from qureddy.core.ids import new_id
@@ -40,6 +40,26 @@ if TYPE_CHECKING:
     from qureddy.core.errors import SSHProbeError
 
 _DEFAULT_SSH_PORT = 22
+
+
+class _KexClassification(TypedDict):
+    primitive: str | None
+    parameter_set_identifier: str | None
+    nist_quantum_security_level: int | None
+
+
+def _kex_classification(name: str) -> _KexClassification:
+    """Return Finding fields derived from the shared KEX classifier."""
+    profile = classify.classify_kex(name)
+    return {
+        "primitive": profile.primitive if profile is not None else None,
+        "parameter_set_identifier": (
+            profile.parameter_set_identifier if profile is not None else None
+        ),
+        "nist_quantum_security_level": (
+            profile.nist_quantum_security_level if profile is not None else None
+        ),
+    }
 
 
 def build_ssh_failure_result(
@@ -120,6 +140,7 @@ def _hybrid_kex_finding(
         readiness=Readiness.TRANSITIONAL_HYBRID,
         confidence=Confidence.HIGH,
         algorithm=pq[0],
+        **_kex_classification(pq[0]),
         negotiated_group=pq[0],
         protocol="ssh",
     )
@@ -171,6 +192,8 @@ def _classical_alternative_finding(
         severity=Severity.LOW,
         readiness=Readiness.QUANTUM_VULNERABLE,
         confidence=Confidence.HIGH,
+        algorithm=first_classical,
+        **_kex_classification(first_classical),
         negotiated_group=first_classical,
         protocol="ssh",
     )

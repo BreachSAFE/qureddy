@@ -194,6 +194,9 @@ def _referenced_refs(payload: dict[str, Any]) -> set[str]:
         signature_ref = crypto.get("certificateProperties", {}).get("signatureAlgorithmRef")
         if isinstance(signature_ref, str):
             refs.add(signature_ref)
+        algorithm_ref = crypto.get("relatedCryptoMaterialProperties", {}).get("algorithmRef")
+        if isinstance(algorithm_ref, str):
+            refs.add(algorithm_ref)
     return refs
 
 

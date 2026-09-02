@@ -125,7 +125,15 @@ It is not a favorable or unfavorable result.
 | `protocol` | string | `tls` or `ssh` |
 | `protocol_version` | string or null | Observed protocol version |
 | `cipher_suite` | string or null | Observed cipher suite |
+| `algorithm` | string or null | Exact algorithm name for a named observation |
+| `primitive` | string or null | Primitive classification when known |
+| `parameter_set_identifier` | string or null | Standard parameter identifier when known |
+| `nist_quantum_security_level` | integer `0..5` or null | Security level when established |
 | `negotiated_group` | string or null | Negotiated or offered group |
+| `handshake_signature` | string or null | Live TLS CertificateVerify signature algorithm |
+| `handshake_hash` | string or null | Hash reported for the live TLS CertificateVerify signature |
+| `key_bits` | positive integer or null | Observed ephemeral public-key size |
+| `certificate` | object or absent | Typed leaf-certificate facts for observed `tls.cert.signature` evidence |
 | `probe_role` | string or null | `hybrid_readiness` or `classical_control` for relevant TLS probes |
 | `expected_group` | string or null | Group requested by a TLS probe |
 | `probe_result` | object or null | Local OpenSSL invocation record |
@@ -133,9 +141,32 @@ It is not a favorable or unfavorable result.
 | `confidence` | enum | `high`, `medium`, or `low` |
 | `notes` | array of strings | Bounded human-readable annotations |
 
-The internal typed certificate observation is intentionally excluded from
-this JSON contract. Certificate facts appear through public evidence and
-finding fields and through the CycloneDX certificate component.
+Named SSH KEX, host-key, cipher, and MAC evidence populates `algorithm`.
+Recognized algorithms also populate the classification fields. Classical
+signatures and key exchange use NIST level `0`; symmetric ciphers and MACs
+leave that field null because the PQC category does not apply. Unknown names
+retain their exact identity and leave classification fields null.
+
+The `certificate` object is present only when the TLS certificate probe
+produces an observed leaf certificate. Other evidence records omit the field.
+Its public fields are:
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `subject` | string | Leaf certificate subject distinguished name |
+| `issuer` | string | Issuer distinguished name |
+| `not_valid_before` | RFC 3339 string or null | Validity start; null when OpenSSL text is unparseable |
+| `not_valid_after` | RFC 3339 string or null | Validity end; null when OpenSSL text is unparseable |
+| `serial_number` | string | Certificate serial number |
+| `signature_algorithm` | string | Issuer signature algorithm over the leaf certificate |
+| `public_key_algorithm` | string or null | Leaf subject-public-key algorithm |
+| `public_key_bits` | positive integer or null | Leaf subject-public-key size |
+| `is_self_signed` | boolean or null | Verified self-signature state; null means the check was unavailable |
+| `is_post_quantum_signature` | boolean | Whether the issuer signature is a recognized PQ signature |
+
+QuReddy derives this public object from its internal certificate observation.
+The CBOM renderer consumes the same observation, so JSON and CycloneDX fields
+have one acquisition source.
 
 ## 8. Probe result
 
@@ -188,6 +219,13 @@ The parser's internal input field is excluded from serialized JSON.
 | `bom_ref` | string or null | Cross-format reference |
 | `oid` | string or null | Object identifier |
 | `nist_quantum_security_level` | integer `0..5` or null | Established security level |
+
+Key-exchange findings populate `primitive`, `parameter_set_identifier`, and
+`nist_quantum_security_level` from QuReddy's protocol-neutral classifier when
+the negotiated or representative offered group is recognized. Classical key
+agreement and key transport use level `0`. Recognized post-quantum KEM parameter
+sets use their assigned NIST category. An unknown group remains null instead of
+receiving a fabricated classification.
 
 ## 10. Summary
 
@@ -311,6 +349,10 @@ not a captured current posture for the target.
       "protocol": "ssh",
       "protocol_version": "2.0",
       "cipher_suite": null,
+      "algorithm": "sntrup761x25519-sha512",
+      "primitive": "kem",
+      "parameter_set_identifier": "sntrup761",
+      "nist_quantum_security_level": 2,
       "negotiated_group": "sntrup761x25519-sha512",
       "probe_role": null,
       "expected_group": null,
@@ -337,15 +379,15 @@ not a captured current posture for the target.
       "readiness": "transitional_hybrid",
       "confidence": "high",
       "algorithm": "sntrup761x25519-sha512",
-      "primitive": null,
-      "parameter_set_identifier": null,
+      "primitive": "kem",
+      "parameter_set_identifier": "sntrup761",
       "key_size": null,
       "protocol": "ssh",
       "protocol_version": null,
       "negotiated_group": "sntrup761x25519-sha512",
       "bom_ref": null,
       "oid": null,
-      "nist_quantum_security_level": null
+      "nist_quantum_security_level": 2
     }
   ],
   "summary": {

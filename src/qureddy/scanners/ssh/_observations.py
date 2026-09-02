@@ -25,6 +25,7 @@ def ssh_offered_evidence(
     name: str | None = None,
 ) -> Evidence:
     """Build one OFFERED SSH evidence record from the KEXINIT probe."""
+    profile = classify.classify_offered_algorithm(evidence_type, name) if name else None
     return Evidence(
         id=new_id("ev"),
         asset_id=asset.id,
@@ -33,6 +34,14 @@ def ssh_offered_evidence(
         source="qureddy.scanners.ssh.probe",
         protocol="ssh",
         protocol_version="2.0",
+        algorithm=name,
+        primitive=profile.primitive if profile is not None else None,
+        parameter_set_identifier=(
+            profile.parameter_set_identifier if profile is not None else None
+        ),
+        nist_quantum_security_level=(
+            profile.nist_quantum_security_level if profile is not None else None
+        ),
         negotiated_group=name,
         notes=notes,
     )

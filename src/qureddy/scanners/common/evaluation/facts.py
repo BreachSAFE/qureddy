@@ -16,6 +16,7 @@ from qureddy.core.models import (
     HygieneStatus,
     PqcSupport,
     ProbeRole,
+    Readiness,
 )
 from qureddy.core.signals import SemanticSignal
 
@@ -106,30 +107,41 @@ SignalPredicate = Callable[[list[Finding], set[str], set[str], set[str]], bool]
 
 def _hybrid_signal(findings: list[Finding], *_: set[str]) -> bool:
     """Return whether a transitional hybrid finding was observed."""
-    return any(
-        finding.readiness.value == "transitional_hybrid"
-        and (
-            _has_suffix({finding.finding_type}, "kex.hybrid")
-            or _has_suffix({finding.rule_id}, "kex.hybrid")
-        )
-        for finding in findings
+    return _finding_pair_signal(
+        findings,
+        finding_type_suffix="kex.hybrid",
+        readiness=Readiness.TRANSITIONAL_HYBRID,
     )
 
 
 def _pure_pq_signal(findings: list[Finding], *_: set[str]) -> bool:
     """Return whether a pure post-quantum finding was observed."""
-    return any(finding.readiness.value == "quantum_safe" for finding in findings)
+    return _finding_pair_signal(
+        findings,
+        finding_type_suffix="kex.pure_pq",
+        readiness=Readiness.QUANTUM_SAFE,
+    )
 
 
-def _classical_kex_signal(_: list[Finding], types: set[str], rules: set[str], __: set[str]) -> bool:
+def _classical_kex_signal(findings: list[Finding], *_: set[str]) -> bool:
     """Return whether a classical key-exchange path was observed."""
+    return _finding_pair_signal(
+        findings,
+        finding_type_suffix="kex.classical",
+        readiness=Readiness.QUANTUM_VULNERABLE,
+    )
+
+
+def _finding_pair_signal(
+    findings: list[Finding],
+    *,
+    finding_type_suffix: str,
+    readiness: Readiness,
+) -> bool:
+    """Require the canonical finding-type and readiness pair for a KEX signal."""
     return any(
-        (
-            _has_suffix(types, "kex.classical"),
-            _has_suffix(rules, "classical.negotiated_x25519"),
-            _has_suffix(rules, "kex.classical_only"),
-            _has_suffix(rules, "kex.classical_alternative"),
-        )
+        finding.readiness is readiness and _has_suffix({finding.finding_type}, finding_type_suffix)
+        for finding in findings
     )
 
 

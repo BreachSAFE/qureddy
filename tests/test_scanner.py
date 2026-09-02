@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import UTC, datetime
 
 import pytest
@@ -136,13 +137,15 @@ class TestTLSScannerOrchestration:
         certificate = CertificateInfo(
             subject="CN=test",
             issuer="CN=issuer",
-            not_before="before",
-            not_after="after",
+            not_before="Jul 23 16:01:49 2026 GMT",
+            not_after="Oct 21 16:55:01 2026 GMT",
             serial="01",
             signature_algorithm="sha256WithRSAEncryption",
             public_key_summary="Public-Key: (2048 bit)",
             is_self_signed=False,
             is_post_quantum_signature=False,
+            public_key_algorithm="rsaEncryption",
+            public_key_bits=2048,
         )
         monkeypatch.setattr(
             scanner_module, "fetch_certificate_pem", lambda *_args, **_kwargs: "fixture pem"
@@ -157,7 +160,44 @@ class TestTLSScannerOrchestration:
             timeout_seconds=1,
         )
         assert evidence.observation_type is ObservationType.OBSERVED
+        assert evidence.algorithm == "sha256WithRSAEncryption"
+        assert evidence.primitive == "signature"
+        assert evidence.nist_quantum_security_level == 0
+        assert evidence.model_dump(mode="json")["certificate"] == {
+            "subject": "CN=test",
+            "issuer": "CN=issuer",
+            "not_valid_before": "2026-07-23T16:01:49+00:00",
+            "not_valid_after": "2026-10-21T16:55:01+00:00",
+            "serial_number": "01",
+            "signature_algorithm": "sha256WithRSAEncryption",
+            "public_key_algorithm": "rsaEncryption",
+            "public_key_bits": 2048,
+            "is_self_signed": False,
+            "is_post_quantum_signature": False,
+        }
         assert finding is not None
+        assert finding.algorithm == "sha256WithRSAEncryption"
+        assert finding.primitive == "signature"
+        assert finding.nist_quantum_security_level == 0
+
+        unknown_certificate = replace(certificate, signature_algorithm="vendorSignature42")
+        monkeypatch.setattr(
+            scanner_module, "parse_certificate", lambda *_args, **_kwargs: unknown_certificate
+        )
+        evidence, finding = TLSScanner._collect_cert_evidence(  # noqa: SLF001
+            target=target,
+            asset=asset,
+            openssl_path="/fixture/openssl",
+            timeout_seconds=1,
+        )
+        assert evidence.algorithm == "vendorSignature42"
+        assert evidence.primitive == "signature"
+        assert evidence.parameter_set_identifier is None
+        assert evidence.nist_quantum_security_level is None
+        assert finding is not None
+        assert finding.algorithm == "vendorSignature42"
+        assert finding.primitive == "signature"
+        assert finding.nist_quantum_security_level is None
 
         def missing_openssl(*_args: object, **_kwargs: object) -> str:
             raise LocalOpenSSLMissing("fixture openssl missing")
