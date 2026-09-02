@@ -24,7 +24,7 @@
       }
     },
     "probe_plan": {
-      "plan_id": "qureddy.tls.pqc",
+      "plan_id": "qureddy.tls.full",
       "plan_version": "2026.09.0",
       "integrity": {
         "state": "unpublished-proposal"
@@ -71,7 +71,7 @@
       ]
     },
     "symmetric_security": {
-      "level": "quantum_category_5_or_256_bit",
+      "level": "nist_level_5_or_symmetric_256_bit",
       "evidence_refs": [
         "evidence:tls:cipher:1"
       ],
@@ -85,7 +85,7 @@
         "evidence:tls:downgrade:1"
       ],
       "reason_codes": [
-        "pqc_downgrade_not_observed"
+        "pqc_downgrade_resistance_observed"
       ]
     },
     "classical_hygiene": {
@@ -117,7 +117,7 @@
       },
       {
         "id": "symmetric_security",
-        "level": "quantum_category_5_or_256_bit",
+        "level": "nist_level_5_or_symmetric_256_bit",
         "points": 15,
         "maximum_points": 15
       },

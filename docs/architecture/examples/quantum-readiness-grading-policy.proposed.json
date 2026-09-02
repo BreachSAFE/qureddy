@@ -108,8 +108,9 @@
       "maximum_points": 15,
       "assessment_field": "symmetric_posture",
       "levels": {
-        "quantum_category_5_or_256_bit": 15,
-        "quantum_category_1_to_4_or_128_bit": 10,
+        "nist_level_5_or_symmetric_256_bit": 15,
+        "nist_level_3_or_4": 13,
+        "nist_level_1_or_2_or_symmetric_128_bit": 10,
         "below_128_bit_or_known_weak": 0,
         "unknown": null
       }
@@ -184,7 +185,7 @@
       "id": "symmetric-128-bit-ceiling",
       "when_dimension_level_in": {
         "symmetric_security": [
-          "quantum_category_1_to_4_or_128_bit"
+          "nist_level_1_or_2_or_symmetric_128_bit"
         ]
       },
       "maximum_score": 84,
