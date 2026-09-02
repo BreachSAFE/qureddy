@@ -31,7 +31,8 @@ versions follow [PEP 440](https://peps.python.org/pep-0440/).
 
 - Emit exact SSH algorithm identity and core-owned classification on named
   native-JSON evidence, and populate the representative algorithm on the
-  classical-alternative finding ([issue #645](https://github.com/BreachSAFE/qureddy/issues/645)).
+  classical-alternative finding ([issue #645](https://github.com/BreachSAFE/qureddy/issues/645),
+  [PR #647](https://github.com/BreachSAFE/qureddy/pull/647)).
 - Populate key-exchange `primitive`, parameter-set, and NIST quantum security
   classifications in native JSON and JSONL findings from the same protocol-neutral
   classifier used by CBOM output ([issue #639](https://github.com/BreachSAFE/qureddy/issues/639),
