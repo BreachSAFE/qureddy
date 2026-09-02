@@ -18,7 +18,7 @@ QuReddy's OpenSSL probe asks whether a target negotiates the one strongest suite
 enumerate the weak suites a target still offers, so a server exposing TLS 1.0/1.1 or a
 SWEET32-vulnerable 3DES cipher can read `hygiene=ok` (issue #672). Two audit findings compound
 this: the summary and the CBOM disagree about a detected weak cipher (#705), and suites the
-pinned OpenSSL 3.5.7 build compiles out are silently absent rather than reported unknown (#706).
+pinned OpenSSL 3.5.7 build compiles out are silently absent from the report, carrying no not-testable marker (#706).
 
 This ADR defines how QuReddy classifies a cipher suite as weak and how it detects one on the
 wire. It is the policy behind the native probe (#700), the rating registry (#708), and the
@@ -42,7 +42,7 @@ is vendored:
 | RFC 5469 | DES and IDEA cipher suites deprecated |
 | RFC 7465 | RC4 prohibited |
 
-A rating that cannot cite one of these is a bug, not a default.
+A rating that cannot cite one of these sources is a bug.
 
 ## 3. The classification policy
 
@@ -116,8 +116,8 @@ same ratings, so they cannot disagree (this closes the #705 drift by constructio
   (#706).
 - `N` suites are not mislabelled weak, so QuReddy does not over-report where the IETF took no
   position.
-- The weak set tracks IANA and the RFCs by re-vendoring the registry, not by editing source
-  literals.
+- The weak set tracks IANA and the RFCs by re-vendoring the registry; source literals are
+  never edited to add a suite.
 
 ## 7. References
 
