@@ -413,6 +413,10 @@ class Evidence(BaseModel):
     protocol: str = "tls"
     protocol_version: str | None = None
     cipher_suite: str | None = None
+    algorithm: str | None = None
+    primitive: str | None = None
+    parameter_set_identifier: str | None = None
+    nist_quantum_security_level: int | None = Field(default=None, ge=0, le=5)
     negotiated_group: str | None = None
     server_software: str | None = None
     server_version: str | None = None

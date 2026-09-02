@@ -7,6 +7,7 @@ from __future__ import annotations
 from qureddy.core.ssh_algorithms import (
     KexClass,
     classify_kex,
+    classify_offered_algorithm,
     is_classical_kex,
     is_pq_hybrid_kex,
     pq_hybrid_kex,
@@ -22,6 +23,7 @@ from qureddy.core.ssh_algorithms import (
 __all__ = [
     "KexClass",
     "classify_kex",
+    "classify_offered_algorithm",
     "is_classical_kex",
     "is_pq_hybrid_kex",
     "pq_hybrid_kex",

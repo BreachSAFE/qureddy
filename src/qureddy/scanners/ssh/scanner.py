@@ -192,6 +192,7 @@ def _classical_alternative_finding(
         severity=Severity.LOW,
         readiness=Readiness.QUANTUM_VULNERABLE,
         confidence=Confidence.HIGH,
+        algorithm=first_classical,
         **_kex_classification(first_classical),
         negotiated_group=first_classical,
         protocol="ssh",
