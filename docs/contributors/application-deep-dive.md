@@ -227,7 +227,7 @@ findings.
 
 - `SourceKind`: `endpoint`, `ssh_public_key`, `ssh_config`, `certificate`,
   `static_inventory`.
-- `ToolPolicy`: `auto`, `native`, `openssl`, `ssh-audit`, `nmap`.
+- `ToolPolicy`: `auto`, `native`, `openssl`, `ssh-audit`.
 - `Capability`: TLS endpoint, SSH endpoint/key/config, and X.509 certificate.
 - `ScanSource`: frozen validated locator plus protocol and string metadata.
 - `CollectionFailure`: typed kind/message/retryable value.

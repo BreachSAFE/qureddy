@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 """Output ergonomics (issue #133): --output FILE, --compact, --min-severity.
 
-These options add peer-scanner conventions (testssl/ssh-audit/nmap) without
+These options add established peer-scanner conventions without
 weakening the machine-output purity contract (issue #30): the json/cbom stdout
 document stays exactly one complete, parseable document. The severity filter is
 a rich-display convenience only — it never trims a machine document.
