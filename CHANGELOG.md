@@ -31,9 +31,12 @@ versions follow [PEP 440](https://peps.python.org/pep-0440/).
 
 ## Unreleased
 
-### Changed
+### Fixed
 
-- Future changes will be recorded here until the next release is cut.
+- Keep negotiated or observed post-quantum protection in the top-level readiness verdict
+  while reporting deprecated protocols and weak algorithms on the independent hygiene axis
+  ([issue #663](https://github.com/BreachSAFE/qureddy/issues/663),
+  [PR #677](https://github.com/BreachSAFE/qureddy/pull/677)).
 
 ## [0.9.5] - 2026-09-02
 

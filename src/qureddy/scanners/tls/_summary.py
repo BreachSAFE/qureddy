@@ -34,13 +34,14 @@ def build_summary(
 ) -> ScanSummary:
     """Build the top-level `ScanSummary` from the scan's findings + evidence."""
     failure_category = summary_failure_category(findings, evidence)
+    interpretation = build_interpretation(findings, evidence, failure_category, protocol="tls")
     return ScanSummary(
         target=target.locator,
         finding_count=len(findings),
         highest_severity=highest_severity(findings),
-        readiness=scan_readiness(findings),
+        readiness=interpretation.effective,
         failure_category=failure_category,
-        interpretation=build_interpretation(findings, evidence, failure_category, protocol="tls"),
+        interpretation=interpretation,
     )
 
 
