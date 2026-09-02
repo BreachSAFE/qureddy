@@ -125,6 +125,10 @@ It is not a favorable or unfavorable result.
 | `protocol` | string | `tls` or `ssh` |
 | `protocol_version` | string or null | Observed protocol version |
 | `cipher_suite` | string or null | Observed cipher suite |
+| `algorithm` | string or null | Exact algorithm name for a named observation |
+| `primitive` | string or null | Primitive classification when known |
+| `parameter_set_identifier` | string or null | Standard parameter identifier when known |
+| `nist_quantum_security_level` | integer `0..5` or null | Security level when established |
 | `negotiated_group` | string or null | Negotiated or offered group |
 | `probe_role` | string or null | `hybrid_readiness` or `classical_control` for relevant TLS probes |
 | `expected_group` | string or null | Group requested by a TLS probe |
@@ -132,6 +136,12 @@ It is not a favorable or unfavorable result.
 | `failure_category` | string or null | Failure that prevented or qualified observation |
 | `confidence` | enum | `high`, `medium`, or `low` |
 | `notes` | array of strings | Bounded human-readable annotations |
+
+Named SSH KEX, host-key, cipher, and MAC evidence populates `algorithm`.
+Recognized algorithms also populate the classification fields. Classical
+signatures and key exchange use NIST level `0`; symmetric ciphers and MACs
+leave that field null because the PQC category does not apply. Unknown names
+retain their exact identity and leave classification fields null.
 
 The internal typed certificate observation is intentionally excluded from
 this JSON contract. Certificate facts appear through public evidence and
@@ -318,6 +328,10 @@ not a captured current posture for the target.
       "protocol": "ssh",
       "protocol_version": "2.0",
       "cipher_suite": null,
+      "algorithm": "sntrup761x25519-sha512",
+      "primitive": "kem",
+      "parameter_set_identifier": "sntrup761",
+      "nist_quantum_security_level": 2,
       "negotiated_group": "sntrup761x25519-sha512",
       "probe_role": null,
       "expected_group": null,

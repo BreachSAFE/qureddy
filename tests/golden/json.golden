@@ -29,6 +29,7 @@
   ],
   "evidence": [
     {
+      "algorithm": null,
       "asset_id": "asset-1",
       "cipher_suite": "TLS_AES_256_GCM_SHA384",
       "confidence": "high",
@@ -37,8 +38,11 @@
       "failure_category": null,
       "id": "ev-hybrid",
       "negotiated_group": "X25519MLKEM768",
+      "nist_quantum_security_level": null,
       "notes": [],
       "observation_type": "negotiated",
+      "parameter_set_identifier": null,
+      "primitive": null,
       "probe_result": {
         "attempt_number": 1,
         "command": {
@@ -70,6 +74,7 @@
       "source": "qureddy.scanners.tls.parse"
     },
     {
+      "algorithm": null,
       "asset_id": "asset-1",
       "cipher_suite": "TLS_AES_256_GCM_SHA384",
       "confidence": "high",
@@ -78,8 +83,11 @@
       "failure_category": null,
       "id": "ev-classical",
       "negotiated_group": "X25519",
+      "nist_quantum_security_level": null,
       "notes": [],
       "observation_type": "negotiated",
+      "parameter_set_identifier": null,
+      "primitive": null,
       "probe_result": {
         "attempt_number": 1,
         "command": {

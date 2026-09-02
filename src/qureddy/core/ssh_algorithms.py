@@ -7,7 +7,12 @@ from __future__ import annotations
 from types import MappingProxyType
 
 from qureddy.core import pqc
-from qureddy.core.algorithm_profile import AlgorithmProfile, classify_key_exchange
+from qureddy.core.algorithm_profile import (
+    AlgorithmProfile,
+    classify_key_exchange,
+    classify_signature_algorithm,
+)
+from qureddy.core.ciphers import cipher_primitive
 
 # PQ KEM token/category tables live in the shared qureddy.core.pqc classifier (#330), so
 # TLS and SSH classify post-quantum groups through one structural source instead of copies.
@@ -126,6 +131,19 @@ def pq_hybrid_kex(offer_kex: tuple[str, ...]) -> tuple[str, ...]:
 def classify_kex(name: str) -> KexClass | None:
     """Preserve the SSH classifier API through the protocol-neutral owner."""
     return classify_key_exchange(name)
+
+
+def classify_offered_algorithm(evidence_type: str, name: str) -> AlgorithmProfile | None:
+    """Classify one named SSH offer for the canonical evidence model."""
+    if evidence_type in {"ssh.kex", "ssh.kex.weak"}:
+        return classify_key_exchange(name)
+    if evidence_type == "ssh.hostkey":
+        return classify_signature_algorithm(name)
+    if evidence_type == "ssh.cipher":
+        return AlgorithmProfile(cipher_primitive(name), None)
+    if evidence_type == "ssh.mac":
+        return AlgorithmProfile("mac", None)
+    return None
 
 
 _PSEUDO_KEX_MARKERS = ("ext-info-", "kex-strict-")

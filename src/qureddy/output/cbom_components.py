@@ -30,8 +30,7 @@ from cyclonedx.model.crypto import (
     ProtocolPropertiesType,
 )
 
-from qureddy.core.algorithm_profile import classify_key_exchange
-from qureddy.core.signatures import classify_pqc_signature
+from qureddy.core.algorithm_profile import classify_key_exchange, classify_signature_algorithm
 from qureddy.output.cbom_assets import (
     POSITIVE_OBSERVATIONS,
     add_algorithm_assets,
@@ -137,9 +136,6 @@ def _algorithm_properties(group: str) -> AlgorithmProperties | None:
 
 
 _SIGNATURE_FUNCTIONS = (CryptoFunction.SIGN, CryptoFunction.VERIFY)
-# Substrings that identify a classical (non-PQ) signature algorithm, drawn from X.509
-# signatureAlgorithm names and SSH host-key identifiers.
-_CLASSICAL_SIGNATURE_MARKERS = ("ecdsa", "rsa", "ed25519", "ed448", "dsa", "dss")
 
 
 def signature_algorithm_properties(name: str) -> AlgorithmProperties | None:
@@ -153,22 +149,15 @@ def signature_algorithm_properties(name: str) -> AlgorithmProperties | None:
     fabricating a level. The PQC check runs before the classical-marker scan
     because both ML-DSA and SLH-DSA names contain the classical substring ``dsa``.
     """
-    classified = classify_pqc_signature(name)
-    if classified is not None:
-        parameter_set, level = classified
-        return AlgorithmProperties(
-            primitive=CryptoPrimitive.SIGNATURE,
-            parameter_set_identifier=parameter_set.upper(),
-            crypto_functions=list(_SIGNATURE_FUNCTIONS),
-            nist_quantum_security_level=level,
-        )
-    if any(marker in name.lower() for marker in _CLASSICAL_SIGNATURE_MARKERS):
-        return AlgorithmProperties(
-            primitive=CryptoPrimitive.SIGNATURE,
-            crypto_functions=list(_SIGNATURE_FUNCTIONS),
-            nist_quantum_security_level=0,
-        )
-    return None
+    profile = classify_signature_algorithm(name)
+    if profile is None:
+        return None
+    return AlgorithmProperties(
+        primitive=CryptoPrimitive(profile.primitive),
+        parameter_set_identifier=profile.parameter_set_identifier,
+        crypto_functions=list(_SIGNATURE_FUNCTIONS),
+        nist_quantum_security_level=profile.nist_quantum_security_level,
+    )
 
 
 def add_protocol_components(
