@@ -32,6 +32,12 @@ versions follow [PEP 440](https://peps.python.org/pep-0440/).
 
 ## Unreleased
 
+### Fixed
+
+- Keep `--json-logs` valid JSON Lines when third-party libraries emit records through
+  standard-library logging ([issue #670](https://github.com/BreachSAFE/qureddy/issues/670),
+  [PR #695](https://github.com/BreachSAFE/qureddy/pull/695)).
+
 ## [0.9.6] - 2026-09-02
 
 ### Fixed

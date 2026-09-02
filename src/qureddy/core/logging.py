@@ -48,15 +48,13 @@ def configure_logging(
     """
     level = _level_for(verbosity, quiet=quiet)
     stream = _STDERR if log_stream is None else log_stream
-    logging.basicConfig(stream=stream, level=level, format="%(message)s", force=True)
-    logging.getLogger().setLevel(level)
     processors: list[Any] = [
         structlog.contextvars.merge_contextvars,
         structlog.processors.add_log_level,
         structlog.processors.TimeStamper(fmt="iso", utc=True),
     ]
     if json_logs:
-        processors.append(structlog.processors.JSONRenderer())
+        renderer: Any = structlog.processors.JSONRenderer()
     else:
         # Match the Rich console adapter: color when stderr is a real
         # terminal AND NO_COLOR is unset. The previous revision hardcoded
@@ -72,7 +70,19 @@ def configure_logging(
         # process stderr happened to be a terminal. `getattr` guards
         # test doubles that don't implement `isatty` at all.
         honor_color = getattr(stream, "isatty", bool)() and "NO_COLOR" not in os.environ
-        processors.append(structlog.dev.ConsoleRenderer(colors=honor_color))
+        renderer = structlog.dev.ConsoleRenderer(colors=honor_color)
+    processors.append(renderer)
+
+    # Third-party libraries use stdlib logging, so give those records the same
+    # renderer rather than letting a raw message break the JSONL contract.
+    foreign_formatter = structlog.stdlib.ProcessorFormatter(
+        foreign_pre_chain=processors[:-1],
+        processors=[structlog.stdlib.ProcessorFormatter.remove_processors_meta, renderer],
+    )
+    handler = logging.StreamHandler(stream)
+    handler.setFormatter(foreign_formatter)
+    logging.basicConfig(handlers=[handler], level=level, force=True)
+    logging.getLogger().setLevel(level)
 
     structlog.configure(
         processors=processors,
