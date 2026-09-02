@@ -27,6 +27,12 @@ versions follow [PEP 440](https://peps.python.org/pep-0440/).
 
 ## Unreleased
 
+### Fixed
+
+- Populate key-exchange `primitive`, parameter-set, and NIST quantum security
+  classifications in native JSON and JSONL findings from the same protocol-neutral
+  classifier used by CBOM output ([issue #639](https://github.com/BreachSAFE/qureddy/issues/639)).
+
 ### Changed
 
 - Future changes will be recorded here until the next release is cut.
