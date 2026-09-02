@@ -1,0 +1,127 @@
+{
+  "$schema": "https://qureddy.io/schemas/probe-plan/v1/schema.json",
+  "schema_version": "1.0.0",
+  "status": "proposal",
+  "plan_id": "qureddy.tls.weak-ciphers",
+  "plan_version": "2026.09.0",
+  "effective_date": "2026-09-02",
+  "registry_ref": {
+    "registry_id": "qureddy-crypto-registry",
+    "registry_version": "2026.09.0",
+    "integrity": {
+      "state": "unpublished-proposal"
+    }
+  },
+  "profile": {
+    "id": "weak-ciphers",
+    "title": "Reviewed weak TLS cipher acceptance",
+    "protocol": "tls",
+    "transport_contract": "tls-ready-byte-stream"
+  },
+  "candidate_selection": {
+    "include": {
+      "all": [
+        {
+          "field": "allocation",
+          "operator": "equals",
+          "value": "assigned"
+        },
+        {
+          "field": "posture_ids",
+          "operator": "contains_any",
+          "values": [
+            "crypto.classically_weak",
+            "crypto.discouraged"
+          ]
+        }
+      ]
+    },
+    "exclude": {
+      "field": "allocation",
+      "operator": "in",
+      "values": [
+        "unassigned",
+        "reserved",
+        "private-use",
+        "grease"
+      ]
+    },
+    "resolution": {
+      "time": "before-network-access",
+      "order": [
+        "protocol_numeric_id_ascending",
+        "registry_entry_id_ascending"
+      ],
+      "record_resolved_candidates": true,
+      "reject_unresolved_references": true
+    }
+  },
+  "execution": {
+    "connection": {
+      "fresh_tls_ready_transport_per_attempt": true,
+      "send_one_candidate_per_client_hello": true,
+      "stop_after": "server-hello-or-terminal-error",
+      "follow_redirects": false
+    },
+    "backend_routing": [
+      {
+        "priority": 10,
+        "backend": "openssl",
+        "when": {
+          "provider_can_offer_candidate": true
+        }
+      },
+      {
+        "priority": 20,
+        "backend": "native-serverhello-selector",
+        "when": {
+          "provider_can_offer_candidate": false,
+          "registry_entry_reviewed_for_native_probe": true
+        }
+      }
+    ],
+    "bounds": {
+      "max_attempts": 256,
+      "per_attempt_timeout_ms": 5000,
+      "overall_timeout_ms": 120000,
+      "max_response_bytes_per_attempt": 65536,
+      "retries_per_candidate": 0,
+      "max_concurrency": 1
+    },
+    "input_validation": {
+      "reject_unknown_fields": true,
+      "reject_duplicate_candidate_ids": true,
+      "reject_candidates_not_in_registry": true,
+      "reject_registry_digest_mismatch": true
+    }
+  },
+  "coverage_contract": {
+    "terminal_states": [
+      "offered",
+      "not_offered",
+      "not_testable",
+      "ambiguous",
+      "not_attempted"
+    ],
+    "requirements": [
+      "Every resolved candidate receives exactly one terminal state.",
+      "Budget exhaustion records remaining candidates as not_attempted.",
+      "Backend absence records affected candidates as not_testable.",
+      "A protocol response that cannot prove acceptance or rejection records ambiguous."
+    ]
+  },
+  "output_contract": {
+    "record": [
+      "plan_id",
+      "plan_version",
+      "registry_id",
+      "registry_version",
+      "registry_sha256",
+      "resolved_candidate_ids",
+      "attempts",
+      "coverage_summary"
+    ],
+    "stdout": "result-data-only",
+    "diagnostics": "stderr-only"
+  }
+}

@@ -1,0 +1,151 @@
+{
+  "$schema": "https://qureddy.io/schemas/quantum-readiness-result/v1/schema.json",
+  "schema_version": "1.0.0",
+  "status": "proposal-example",
+  "subject": {
+    "type": "network-service",
+    "asset_ref": "service:example.org:443/tls",
+    "protocol": "tls",
+    "endpoint": {
+      "host": "example.org",
+      "port": 443
+    }
+  },
+  "provenance": {
+    "scanner": {
+      "name": "qureddy",
+      "version": "0.20.0"
+    },
+    "registry": {
+      "registry_id": "qureddy-crypto-registry",
+      "registry_version": "2026.09.0",
+      "integrity": {
+        "state": "unpublished-proposal"
+      }
+    },
+    "probe_plan": {
+      "plan_id": "qureddy.tls.pqc",
+      "plan_version": "2026.09.0",
+      "integrity": {
+        "state": "unpublished-proposal"
+      }
+    },
+    "grading_policy": {
+      "policy_id": "qureddy.quantum-readiness-score",
+      "policy_version": "2026.09.0",
+      "integrity": {
+        "state": "unpublished-proposal"
+      }
+    }
+  },
+  "coverage": {
+    "state": "complete",
+    "resolved_candidates": 12,
+    "terminal_states": {
+      "offered": 2,
+      "not_offered": 10,
+      "not_testable": 0,
+      "ambiguous": 0,
+      "not_attempted": 0
+    },
+    "required_dimensions_observed": 5,
+    "required_dimensions_total": 5
+  },
+  "canonical_assessments": {
+    "quantum_key_establishment": {
+      "level": "hybrid",
+      "evidence_refs": [
+        "evidence:tls:key-establishment:1"
+      ],
+      "reason_codes": [
+        "hybrid_key_establishment_observed"
+      ]
+    },
+    "quantum_authentication": {
+      "level": "classical_current",
+      "evidence_refs": [
+        "evidence:x509:leaf-signature:1"
+      ],
+      "reason_codes": [
+        "classical_signature_observed"
+      ]
+    },
+    "symmetric_security": {
+      "level": "quantum_category_5_or_256_bit",
+      "evidence_refs": [
+        "evidence:tls:cipher:1"
+      ],
+      "reason_codes": [
+        "aes_256_observed"
+      ]
+    },
+    "downgrade_resistance": {
+      "level": "resistant",
+      "evidence_refs": [
+        "evidence:tls:downgrade:1"
+      ],
+      "reason_codes": [
+        "pqc_downgrade_not_observed"
+      ]
+    },
+    "classical_hygiene": {
+      "level": "ok",
+      "evidence_refs": [
+        "evidence:tls:hygiene:1"
+      ],
+      "reason_codes": []
+    }
+  },
+  "score": {
+    "name": "QuReddy Quantum Readiness Score",
+    "score_before_caps": 85,
+    "score": 85,
+    "grade": "A",
+    "assurance": "high",
+    "dimensions": [
+      {
+        "id": "quantum_key_establishment",
+        "level": "hybrid",
+        "points": 35,
+        "maximum_points": 35
+      },
+      {
+        "id": "quantum_authentication",
+        "level": "classical_current",
+        "points": 10,
+        "maximum_points": 25
+      },
+      {
+        "id": "symmetric_security",
+        "level": "quantum_category_5_or_256_bit",
+        "points": 15,
+        "maximum_points": 15
+      },
+      {
+        "id": "downgrade_resistance",
+        "level": "resistant",
+        "points": 15,
+        "maximum_points": 15
+      },
+      {
+        "id": "classical_hygiene",
+        "level": "ok",
+        "points": 10,
+        "maximum_points": 10
+      }
+    ],
+    "applied_caps": [
+      {
+        "id": "classical-authentication",
+        "maximum_score": 94,
+        "maximum_grade": "A",
+        "reason": "The observed authentication remains classical."
+      }
+    ]
+  },
+  "claim_limits": {
+    "csa_qri_level_derived": false,
+    "compliance_certification": false,
+    "summary": "This is an endpoint capability score, not an organizational maturity rating."
+  }
+}

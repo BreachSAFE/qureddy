@@ -1,0 +1,188 @@
+{
+  "$schema": "https://qureddy.io/schemas/crypto-registry/v1/schema.json",
+  "schema_version": "1.0.0",
+  "status": "proposal",
+  "registry_id": "qureddy-crypto-registry",
+  "registry_version": "2026.09.0",
+  "effective_date": "2026-09-02",
+  "vocabularies": {
+    "cyclonedx": {
+      "spec_version": "1.7",
+      "crypto_properties_schema": "https://cyclonedx.org/schema/bom-1.7.schema.json"
+    }
+  },
+  "sources": {
+    "iana-tls-2026-08-10": {
+      "kind": "iana-registry",
+      "title": "TLS Cipher Suites",
+      "uri": "https://www.iana.org/assignments/tls-parameters/tls-parameters-4.csv",
+      "release": "2026-08-10",
+      "retrieved": "2026-08-31",
+      "sha256": "4fe36f25017ed2882bf1c4a24493af83ed98526c0869881934cb968803489ed3",
+      "license": "IANA terms of use"
+    },
+    "rfc7465": {
+      "kind": "rfc",
+      "title": "Prohibiting RC4 Cipher Suites",
+      "uri": "https://www.rfc-editor.org/rfc/rfc7465.txt",
+      "release": "RFC 7465",
+      "retrieved": "2026-09-02",
+      "sha256": "0c619db38176f199f739dc696a2d3faabbe658ee82d59621c6d040d0b7cce2dd",
+      "license": "IETF Trust Legal Provisions"
+    },
+    "rfc10015": {
+      "kind": "rfc",
+      "title": "Deprecating Obsolete Key Exchange Methods in TLS 1.2",
+      "uri": "https://www.rfc-editor.org/rfc/rfc10015.txt",
+      "release": "RFC 10015",
+      "retrieved": "2026-09-02",
+      "sha256": "1cc53f068b7c02e7c49c77816d16d6453b6f094762fb16e361d358da96ac1086",
+      "license": "IETF Trust Legal Provisions"
+    },
+    "nist-ir-8547-ipd": {
+      "kind": "nist-publication",
+      "title": "Transition to Post-Quantum Cryptography Standards",
+      "uri": "https://nvlpubs.nist.gov/nistpubs/ir/2024/NIST.IR.8547.ipd.pdf",
+      "release": "Initial Public Draft, 2024-11-12",
+      "retrieved": "2026-09-02",
+      "sha256": "6b551b4ff9858a19c1ab48d7deef2ee52d615066b7d187aaf992cb50c5ca0ed6",
+      "license": "U.S. public domain"
+    }
+  },
+  "postures": {
+    "crypto.classically_weak": {
+      "axis": "classical",
+      "verdict": "classically_weak",
+      "summary": "At least one constituent is prohibited, broken, or below current classical policy."
+    },
+    "crypto.quantum_vulnerable": {
+      "axis": "quantum",
+      "verdict": "quantum_vulnerable",
+      "summary": "A cryptographically relevant quantum computer is expected to break a constituent."
+    },
+    "crypto.discouraged": {
+      "axis": "deployment",
+      "verdict": "discouraged",
+      "summary": "An authoritative source discourages deployment without necessarily proving a break."
+    }
+  },
+  "evidence_types": {
+    "tls.cipher.selected": {
+      "subject_type": "network-service",
+      "observation": "ServerHello selected the exact offered TLS cipher suite.",
+      "confidence_semantics": "Confidence applies to the observation, not to static algorithm facts."
+    }
+  },
+  "algorithms": {
+    "rsa-key-establishment": {
+      "name": "RSA key establishment",
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "pke",
+          "nistQuantumSecurityLevel": 0
+        }
+      },
+      "ratings": {
+        "quantum": {
+          "verdict": "quantum_vulnerable",
+          "reason_codes": [
+            "classical_public_key_algorithm"
+          ],
+          "source_refs": [
+            {
+              "source_id": "nist-ir-8547-ipd",
+              "locator": "table-4"
+            }
+          ]
+        }
+      },
+      "posture_ids": [
+        "crypto.quantum_vulnerable"
+      ]
+    },
+    "rc4-128": {
+      "name": "RC4-128",
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "stream-cipher",
+          "parameterSetIdentifier": "128"
+        }
+      },
+      "ratings": {
+        "classical": {
+          "verdict": "classically_weak",
+          "reason_codes": [
+            "rc4_prohibited"
+          ],
+          "source_refs": [
+            {
+              "source_id": "rfc7465",
+              "locator": "section-2"
+            }
+          ]
+        }
+      },
+      "posture_ids": [
+        "crypto.classically_weak"
+      ]
+    },
+    "hmac-sha1": {
+      "name": "HMAC-SHA-1",
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "mac"
+        }
+      }
+    }
+  },
+  "protocols": {
+    "tls": {
+      "cipher_suites": {
+        "0x0005": {
+          "name": "TLS_RSA_WITH_RC4_128_SHA",
+          "allocation": "assigned",
+          "iana": {
+            "recommended": "D",
+            "dtls_ok": false,
+            "source_ref": {
+              "source_id": "iana-tls-2026-08-10",
+              "locator": "0x00,0x05"
+            }
+          },
+          "algorithm_refs": {
+            "key_establishment": "rsa-key-establishment",
+            "confidentiality": "rc4-128",
+            "authentication": "hmac-sha1"
+          },
+          "ratings": {
+            "deployment": {
+              "verdict": "discouraged",
+              "reason_codes": [
+                "iana_recommended_discouraged"
+              ],
+              "source_refs": [
+                {
+                  "source_id": "iana-tls-2026-08-10",
+                  "locator": "0x00,0x05"
+                }
+              ]
+            }
+          },
+          "posture_ids": [
+            "crypto.classically_weak",
+            "crypto.quantum_vulnerable",
+            "crypto.discouraged"
+          ]
+        }
+      }
+    }
+  },
+  "integrity": {
+    "state": "unpublished-proposal",
+    "digest_algorithm": "sha256",
+    "digest_scope": "published-canonical-json-document"
+  }
+}

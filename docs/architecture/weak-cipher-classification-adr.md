@@ -1,155 +1,398 @@
-# ADR: Weak cipher classification and detection
+<!--
+SPDX-FileCopyrightText: 2026 BreachSAFE
+SPDX-License-Identifier: Apache-2.0
+-->
+
+# ADR: Separate crypto facts, probe plans, and grading policy
 
 **Status:** Proposed
 
 ## Contents
 
 1. [Context](#1-context)
-2. [Sources of truth, vendored and cited](#2-sources-of-truth-vendored-and-cited)
-3. [The classification policy](#3-the-classification-policy)
-4. [Detection: the ClientHello probe](#4-detection-the-clienthello-probe)
-5. [One registry, every reader rates from it](#5-one-registry-every-reader-rates-from-it)
-6. [Consequences](#6-consequences)
-7. [References](#7-references)
+2. [Requirements](#2-requirements)
+3. [Decision](#3-decision)
+4. [Authoritative sources](#4-authoritative-sources)
+5. [Classification policy](#5-classification-policy)
+6. [Detection and probe profiles](#6-detection-and-probe-profiles)
+7. [Alternatives considered](#7-alternatives-considered)
+8. [Registry and policy ownership](#8-registry-and-policy-ownership)
+9. [Grading and index alignment](#9-grading-and-index-alignment)
+10. [Consequences](#10-consequences)
+11. [Revisit when](#11-revisit-when)
+12. [References](#12-references)
 
 ## 1. Context
 
-QuReddy's OpenSSL probe asks whether a target negotiates the one strongest suite. It does not
-enumerate the weak suites a target still offers, so a server exposing TLS 1.0/1.1 or a
-SWEET32-vulnerable 3DES cipher can read `hygiene=ok` (issue #672). Two audit findings compound
-this: the summary and the CBOM disagree about a detected weak cipher (#705), and suites the
-pinned OpenSSL 3.5.7 build compiles out are silently absent from the report, carrying no not-testable marker (#706).
+QuReddy's OpenSSL probe asks whether a target negotiates the strongest offered suite. It does not
+fully enumerate weak suites that a target still accepts. A server exposing TLS 1.0, TLS 1.1, or a
+SWEET32-vulnerable 3DES suite can therefore report `hygiene=ok` (#672).
 
-This ADR defines how QuReddy classifies a cipher suite as weak and how it detects one on the
-wire. It is the policy behind the native probe (#700), the rating registry (#708), and the
-vendored weak-set import (#709), under milestone 0.16.0 (master #591).
+Two related gaps increase the impact. The summary and CBOM can disagree about a detected weak
+cipher (#705), and suites compiled out of pinned OpenSSL 3.5.7 are absent without a user-visible
+coverage state (#706).
 
-## 2. Sources of truth, vendored and cited
+This ADR defines the source, classification, acquisition, output, and grading boundaries behind the
+native selector (#700), registry (#708), source import (#709), probe plans (#599), and score (#669).
 
-A weak verdict records the source that assigns it. QuReddy never enumerates the weak set from
-memory. The IKE side already learned this: a finding once cited "RFC 8247 classifies IKEv1 as
-Historic," which that RFC never says (the status is RFC 9395). The same discipline applies here.
+## 2. Requirements
 
-Vendor these, each with its release, `updated` date, and digest, the way `standards/rfc/iana-ike/`
-is vendored:
+The design must:
 
-| Source | Assigns |
+1. detect reviewed weak suites that pinned OpenSSL cannot offer;
+2. distinguish a wire observation from its sourced rating;
+3. use one fact and rating source for Rich, JSON, JSONL, and CBOM;
+4. preserve exact registry and probe-plan provenance;
+5. represent incomplete acquisition explicitly;
+6. support direct TLS and future TLS-ready transports without copying TLS policy;
+7. keep framework mappings and OSCAL out of the QuReddy runtime;
+8. support protocol-neutral grading after canonical assessments exist;
+9. remain bounded and deterministic; and
+10. add no Nmap, EOL OpenSSL, or external legacy-scanner runtime dependency.
+
+## 3. Decision
+
+QuReddy will use a compact CBOM-aligned crypto registry for facts and ratings, separate versioned
+probe plans for acquisition, and a separate versioned grading policy over canonical capability
+assessments. Mint-oscal will own framework mappings and OSCAL construction.
+
+## 4. Authoritative sources
+
+A rating records the source that assigns it. QuReddy does not enumerate a weak set from memory.
+Vendor each enabled source with its URI, release or update date, digest, license, and exact row or
+clause.
+
+| Source | Purpose |
 |---|---|
-| IANA TLS Cipher Suite registry (structure per RFC 9847) | the `Recommended` column: `Y`, `N`, `D` |
-| RFC 9325, BCP 195 (obsoletes RFC 7525) | forward-secrecy requirement and the MUST-NOT suites in section 4.2 |
-| RFC 8996 | TLS 1.0 and TLS 1.1 deprecated |
-| RFC 9155 | MD5 and SHA-1 signature hashes deprecated in TLS 1.2 |
-| RFC 5469 | DES and IDEA cipher suites deprecated |
-| RFC 7465 | RC4 prohibited |
+| IANA TLS Cipher Suites registry | Wire identity, DTLS status, and `Recommended` value |
+| RFC 9847 | Current `Y`, `N`, and `D` recommendation semantics |
+| RFC 9325 / BCP 195 | Current TLS deployment recommendations |
+| RFC 8996 | TLS 1.0 and TLS 1.1 deprecation |
+| RFC 9155 | MD5 and SHA-1 signature-hash deprecation in TLS 1.2 |
+| RFC 5469 | DES and IDEA suite deprecation |
+| RFC 7465 | RC4 prohibition |
+| RFC 10015 | Obsolete TLS 1.2 key-establishment methods |
+| NIST IR 8547 initial public draft | Quantum-vulnerable key-establishment and signature schemes |
+| CycloneDX 1.7 JSON Schema | CBOM crypto-property names and enums |
 
-A rating that cannot cite one of these sources is a bug.
+An individual Internet-Draft, including `draft-dev-xipher-cbom-extension-00`, is a design input.
+It does not become a registry contract without field-level review.
 
-## 3. The classification policy
+## 5. Classification policy
 
-RFC 9847 (2025) is the change that makes this precise. It expanded the IANA `Recommended` column
-beyond `Y`/`N` and added `D`. The three values do not mean what a reader assumes:
+IANA `Recommended` values have distinct meanings:
 
-| `Recommended` | Meaning | QuReddy verdict |
+| Value | Source meaning | QuReddy treatment |
 |---|---|---|
-| `Y` | IETF-endorsed at registration | not weak on this axis |
-| `N` | no IETF consensus. The IETF takes no position | **not a weakness verdict.** Do NOT flag `N` as weak |
-| `D` | Discouraged, an explicit signal added by RFC 9847 | weak: report it |
+| `Y` | Recommended | No weakness inferred from this field |
+| `N` | No general IETF recommendation | No weakness inferred from this field alone |
+| `D` | Discouraged | Sourced discouraged rating |
 
-The trap to avoid: treating `N` as "weak." Most `N` suites simply never went through IETF
-consensus and can be cryptographically sound. Only `D`, plus the RFC-deprecated set, are a
-weakness verdict:
+Treating every `N` entry as weak creates false findings. A suite may have limited applicability or
+lack IETF consensus while remaining suitable for its defined use case. QuReddy rates a suite from
+the complete cited evidence, including `D` status and algorithm-specific RFCs.
 
-- **RFC-deprecated (definitively weak):** EXPORT, anonymous (no authentication), RC4, DES, IDEA,
-  MD5 and SHA-1 signature hashes, and the TLS 1.0/1.1 protocol versions.
-- **`D` in the registry:** actively discouraged by IETF consensus.
+Classical and quantum posture remain independent axes:
 
-Two independent axes, never merged (issue #616, mirroring the IKE rule):
+- Classical weakness covers defects relevant today, including RC4, DES, 3DES/SWEET32, NULL,
+  EXPORT, and applicable MD5 uses.
+- Quantum vulnerability covers classical key establishment or authentication exposed to a future
+  cryptographically relevant quantum computer.
 
-- **Classical weakness:** the suite is broken or weakened today (3DES/SWEET32, RC4, DES, NULL,
-  EXPORT, MD5). Record the specific defect. SWEET32 is a 64-bit **block** weakness, distinct from
-  key bits: 3DES has 112-bit key strength yet is SWEET32-exposed, so `block_bits` is a separate
-  field from `classical_bits`.
-- **Quantum vulnerability:** the key exchange is classical, hybrid, or pure post-quantum. A
-  classically-sound suite can still be quantum-vulnerable at key establishment, and saying so
-  precisely is the product's value.
+SWEET32 illustrates why facts must remain precise. Effective key strength and block size are
+different properties. CycloneDX `classicalSecurityLevel` can represent a classical security level.
+QuReddy retains `block_bits` as a custom fact because CycloneDX 1.7 has no direct block-size field.
 
-## 4. Detection: the ClientHello probe
+## 6. Detection and probe profiles
 
-Detection does not require OpenSSL to support the cipher. QuReddy offers the suite's two-byte
-IANA id in a ClientHello and reads which suite the server selects. Selection is not negotiation:
-the probe stops after the ServerHello, so it needs no key exchange and no crypto library support
-for the offered suite. This is the native ServerHello selector of #700.
+The native selector offers reviewed two-byte IANA suite identifiers in a ClientHello, reads one
+bounded TLS record, validates any selected suite against the offer, and stops after ServerHello.
+It performs no key exchange.
 
-```
-for suite_id in weak_set (from the vendored registry):
-    send ClientHello{ cipher_suites: [suite_id, ...] }   # raw bytes; batched to bound round-trips
-    read the first response record:
-        ServerHello selected in offered   -> OFFERED     -> finding, rated from the registry
-        handshake_failure / alert / none  -> NOT_OFFERED
-        selected outside the offered set  -> AMBIGUOUS    -> never accepted as evidence
-    stop after ServerHello
-```
-
-A suite the local build cannot enumerate is reported `NOT_TESTABLE`, never silently omitted
-(#706). The existing timeout path already models this honest state.
-
-## 5. One registry, every reader rates from it
-
-The classification and the detection share a single canonical cipher-suite registry (#708):
-
-```
-weak_ciphers.json  (one vendored, digest-pinned file, many consumers):
-  meta:   { source (IANA registry + RFC clause), updated, sha256 }
-  suites: [ { id (IANA), name, recommended (Y|N|D), weak (bool),
-              classical_bits, block_bits, kex_axis (classical|hybrid|pure_pq) } ]
+```text
+resolved candidate IDs
+        |
+        +--> pinned OpenSSL when the provider can offer the candidate
+        |
+        +--> native ServerHello selector for reviewed excluded candidates
+        |
+        v
+canonical attempt observation
+        |
+        v
+OFFERED | NOT_OFFERED | NOT_TESTABLE | AMBIGUOUS | NOT_ATTEMPTED
 ```
 
-Facts only. No control ids, no framework versions, no OSCAL. The mapping from a verdict to a
-control lives in the OSCAL lane described below.
+Probe execution uses a separate strict JSON plan (#599). The plan pins the registry identity and
+digest and owns selectors, backends, bounds, ordering, timeouts, and coverage. Selectors resolve to
+an immutable ordered candidate list before network access. The result records that list.
 
-The probe reads `suite_id` to know what to offer. The classifier, CBOM, and CISO summary read the
-same ratings, so they cannot disagree (this closes the #705 drift by construction).
+Planned built-in profiles are:
 
-**Facts and verdict are separated, the way a CBOM separates them.** The probe emits what it
-observed on the wire as fact (OFFERED, NOT_OFFERED, NOT_TESTABLE, AMBIGUOUS) and rates nothing.
-The weak verdict lives in the registry, vendored from IANA and the RFCs with its release,
-`updated` date, and digest, so a new suite enters the weak set by re-vendoring that file while the
-scanner code stays fixed. This mirrors IBM's CBOM tooling, where detection records the
-cryptographic asset and a separate versioned compliance policy decides whether it is quantum-safe
-or weak. The registry file is that policy for QuReddy: a vendored, digest-pinned JSON file read at load
-time. Only the loader and the row type are Python; the ratings themselves stay in the file.
+| Profile | Scope |
+|---|---|
+| `default` | Current bounded production scan |
+| `weak-ciphers` | Reviewed discouraged and classically weak candidates |
+| `pqc` | Reviewed PQC and hybrid candidates |
+| `full` | Every assigned, eligible, probeable registry entry for enabled TLS axes |
+| `atm` | Planned deployment-context schedule owned by #623 |
 
-**Control-framework mapping reuses the SCF QTS OSCAL catalog; it is not built into this file.**
-The cipher registry holds crypto facts. Mapping a verdict to a control is a separate concern that
-already exists in the OSCAL lane: mint-oscal carries a readiness crosswalk onto the SCF 2026.2 QTS
-catalog, keyed by crypto property (`quantum_vulnerable -> qts-04.3`, `classically_weak -> qts-06.5`,
-`transitional_hybrid -> qts-06.9`, `quantum_ready -> qts-06.3`). QuReddy emits CBOM from this
-registry; the OSCAL lane consumes that CBOM, selects the PQC-pack profile, and with a customer
-scope mints an OSCAL Assessment Plan and Results, where an unobserved control is NOT_ASSESSED. SCF
-owns the QTS controls, attributed to SCF's namespace with control text unchanged; BreachSAFE owns
-the crosswalk and profile, stamped provisional until the mapping is reviewed. Frameworks that move
-on their own cadence (NIST SP 800-53, PCI DSS) attach as further crosswalk entries in the OSCAL
-registry, so a framework revision never touches this file. This mapping path is out of scope for
-the native probe (#700) and the first registry import (#708); it is recorded here to fix the
-boundary: crypto facts in `weak_ciphers.json`, control mapping in the OSCAL lane.
+`full` excludes unassigned, reserved, private-use, and GREASE values. It never disables budgets.
+A budget stop produces `NOT_ATTEMPTED` entries and a partial coverage receipt.
 
-## 6. Consequences
+The transport contract is `tls-ready-byte-stream`. Direct TLS satisfies it directly. STARTTLS
+requires a fresh upgraded transport for every attempt. Until #710 approves that ownership seam,
+OpenSSL-excluded STARTTLS candidates remain explicit incomplete coverage.
 
-- QuReddy can report a server that offers only a weak suite, including one OpenSSL 3.5.7 compiles
-  out, closing the #672 blind spot.
-- The summary, CBOM, and hygiene axes agree, because they rate from one table (#705).
-- Coverage is honest: OFFERED, NOT_OFFERED, NOT_TESTABLE, or AMBIGUOUS, never a silent omission
-  (#706).
-- `N` suites are not mislabelled weak, so QuReddy does not over-report where the IETF took no
-  position.
-- The weak set tracks IANA and the RFCs by re-vendoring the registry; source literals are
-  never edited to add a suite.
+## 7. Alternatives considered
 
-## 7. References
+Two designs were pressure-tested. Scores are 1 through 5, multiplied by the stated weight.
 
-- IANA TLS Parameters, TLS Cipher Suite registry.
-- RFC 9847, IANA Registry Updates for TLS and DTLS (the `Y`/`N`/`D` structure).
-- RFC 9325 / BCP 195, Recommendations for Secure Use of TLS and DTLS (obsoletes RFC 7525).
-- RFC 8996 (TLS 1.0/1.1), RFC 9155 (MD5/SHA-1), RFC 5469 (DES/IDEA), RFC 7465 (RC4).
-- RFC 10015, obsolete TLS 1.2 key-exchange classifications (issue #701).
-- QuReddy issues: #672, #700, #701, #705, #706, #708, #709, #616. Milestone 0.16.0, master #591.
+| Criterion | Weight | Combined crypto and compliance file | Compact registry plus downstream policy packs |
+|---|---:|---:|---:|
+| QuReddy runtime independence | 25 | 2 | 5 |
+| One owner per crypto fact | 20 | 5 | 5 |
+| Framework churn and licensing isolation | 20 | 2 | 5 |
+| Policy review and OSCAL validation | 20 | 3 | 5 |
+| Cross-product identity integrity | 15 | 5 | 4 |
+| **Weighted score** | **100** | **3.30** | **4.85** |
+
+The compact registry with downstream policy packs is selected. A combined file simplifies local
+cross-reference validation. It also makes the scanner distribute framework-derived content and
+validate data it never consumes. Stable IDs, pinned digests, and cross-product contract tests
+preserve identity across the selected boundary.
+
+## 8. Registry and policy ownership
+
+```text
+qureddy-crypto-registry.json
+  algorithms, wire identities, ratings, postures, evidence types, sources
+                  |
+                  +--> probe-plan JSON
+                  |
+                  +--> ScanResult
+                            |
+                            v
+mint-oscal policy packs
+  framework sources, mappings, Catalog/Profile resolution, AP/AR/POA&M
+                            |
+                            v
+Enterprise
+  customer scope, applicability, approvals, presentation
+```
+
+The compact registry shape appears below. Complete review fixtures in `docs/architecture/examples/`
+cover the registry, probe plan, grading policy, result receipt, and CSA QRI evidence map.
+
+```json
+{
+  "$schema": "https://qureddy.io/schemas/crypto-registry/v1/schema.json",
+  "schema_version": "1.0.0",
+  "registry_id": "qureddy-crypto-registry",
+  "registry_version": "2026.09.0",
+  "effective_date": "2026-09-02",
+  "sources": {
+    "iana-tls-2026-08-10": {
+      "kind": "iana-registry",
+      "uri": "https://www.iana.org/assignments/tls-parameters/tls-parameters-4.csv",
+      "release": "2026-08-10",
+      "sha256": "4fe36f25017ed2882bf1c4a24493af83ed98526c0869881934cb968803489ed3"
+    },
+    "rfc7465": {
+      "kind": "rfc",
+      "uri": "https://www.rfc-editor.org/rfc/rfc7465",
+      "release": "RFC 7465"
+    },
+    "rfc10015": {
+      "kind": "rfc",
+      "uri": "https://www.rfc-editor.org/rfc/rfc10015",
+      "release": "RFC 10015"
+    },
+    "nist-ir-8547-ipd": {
+      "kind": "nist-publication",
+      "uri": "https://doi.org/10.6028/NIST.IR.8547.ipd",
+      "release": "Initial Public Draft, 2024-11-12"
+    }
+  },
+  "postures": {
+    "crypto.classically_weak": {
+      "axis": "classical",
+      "verdict": "classically_weak"
+    },
+    "crypto.quantum_vulnerable": {
+      "axis": "quantum",
+      "verdict": "quantum_vulnerable"
+    }
+  },
+  "evidence_types": {
+    "tls.cipher.selected": {
+      "description": "ServerHello selected the exact offered TLS cipher suite."
+    }
+  },
+  "algorithms": {
+    "rsa-key-establishment": {
+      "name": "RSA key establishment",
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "pke",
+          "nistQuantumSecurityLevel": 0
+        }
+      },
+      "ratings": {
+        "quantum": {
+          "verdict": "quantum_vulnerable",
+          "reason_codes": ["classical_public_key_algorithm"],
+          "source_refs": [
+            {"source_id": "nist-ir-8547-ipd", "locator": "table-4"}
+          ]
+        }
+      },
+      "posture_ids": ["crypto.quantum_vulnerable"]
+    },
+    "rc4-128": {
+      "name": "RC4-128",
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "stream-cipher",
+          "parameterSetIdentifier": "128"
+        }
+      },
+      "ratings": {
+        "classical": {
+          "verdict": "classically_weak",
+          "reason_codes": ["rc4_prohibited"],
+          "source_refs": [
+            {"source_id": "rfc7465", "locator": "section-2"}
+          ]
+        }
+      },
+      "posture_ids": ["crypto.classically_weak"]
+    },
+    "hmac-sha1": {
+      "name": "HMAC-SHA-1",
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "mac"
+        }
+      }
+    }
+  },
+  "tls": {
+    "cipher_suites": {
+      "0x0005": {
+        "name": "TLS_RSA_WITH_RC4_128_SHA",
+        "iana": {
+          "recommended": "D",
+          "dtls_ok": false,
+          "source_ref": {
+            "source_id": "iana-tls-2026-08-10",
+            "locator": "0x00,0x05"
+          }
+        },
+        "algorithm_refs": {
+          "key_establishment": "rsa-key-establishment",
+          "confidentiality": "rc4-128",
+          "authentication": "hmac-sha1"
+        },
+        "posture_ids": [
+          "crypto.classically_weak",
+          "crypto.quantum_vulnerable"
+        ]
+      }
+    }
+  }
+}
+```
+
+The example is abbreviated. Production validation rejects unknown fields, malformed IDs,
+duplicates, unresolved references, invalid CycloneDX enums, and unsupported IANA recommendation
+values. Unknown optional CBOM properties are omitted. `certificationLevel` requires evidence about
+an implementation certification. Confidence belongs to scan evidence, outside static
+`algorithmProperties`.
+
+QuReddy emits stable registry ID, registry version, digest, plan ID, plan version, posture ID,
+evidence type, asset reference, and observation state. Mint-oscal owns framework mappings and OSCAL
+construction (#630, #718). Enterprise owns organizational scope and approvals.
+
+## 9. Grading and index alignment
+
+The registry and canonical assessments enable a deterministic endpoint score (#669). The score is
+a third policy file because weights, caps, and grade bands are interpretation rules. Probe profiles
+cannot change the score for identical observations.
+
+The proposed QuReddy Quantum Readiness Score aligns its bands to the published `open-quantum-secure`
+scale:
+
+| Score | Grade |
+|---:|:---|
+| 95 through 100 | A+ |
+| 85 through 94 | A |
+| 70 through 84 | B |
+| 50 through 69 | C |
+| 30 through 49 | D |
+| 0 through 29 | F |
+| omitted | U, insufficient evidence |
+
+The source at commit `db003740b3d1cccd443ee2750f75bc332747751e` supplies the bands and a
+reproducible finding-count algorithm. QuReddy adopts only the bands. The source algorithm returns
+`100/A+` for zero findings, changes score with the number of findings, and has no acquisition
+coverage gate. Those properties can reward an empty or under-covered scan. QuReddy instead uses
+canonical dimensions, coverage gates, and visible caps in its own versioned policy. The result
+reports score, grade, assurance, coverage, dimension reasons, caps, evidence references, and
+grading-policy version. Unknown or untested input cannot be converted to zero.
+
+The Singapore Cyber Security Agency Quantum Readiness Index V1 is a different model. It assesses
+organizational maturity at L0 through L3 across Risk Assessment, Governance, Technology, Training and
+Capability, and External Engagements. QuReddy can supply evidence for parts of Risk Assessment
+and Technology, but cannot determine an overall CSA QRI level. Enterprise may map that evidence into
+a full organizational assessment without presenting the endpoint grade as CSA QRI.
+
+CBOM remains a crypto inventory. JSON and Rich may present the score directly. A CBOM projection
+requires a reviewed namespaced CycloneDX property and cannot appear inside standard
+`algorithmProperties`.
+
+## 10. Consequences
+
+- The design permits native testing of reviewed RC4, DES, and 3DES suites excluded by OpenSSL.
+- The coverage contract adds a terminal state for every resolved candidate.
+- Summary, CBOM, and hygiene will derive classification from one registry.
+- IANA `N` entries will not create weak-cipher findings without separate evidence.
+- TLS, SSH, IKE, and future TLS-ready transports can reuse algorithm facts and posture IDs.
+- Profiles can select bounded acquisition schedules without changing interpretation.
+- QuReddy keeps OSCAL and framework release cadences outside its runtime.
+- Endpoint scoring remains attributable and versioned. CSA QRI remains an organizational
+  assessment owned by the downstream product lane.
+- The design introduces three versioned data contracts and requires cross-contract compatibility
+  tests, source pinning, and release review.
+
+## 11. Revisit when
+
+Revisit this decision when any of these conditions occurs:
+
+1. CycloneDX adds standard fields that replace a QuReddy extension.
+2. The IETF adopts a CBOM extension with compatible registry or assessment semantics.
+3. STARTTLS cannot satisfy the `tls-ready-byte-stream` contract without duplicated upgrade code.
+4. A supported consumer requires framework mappings in the scanner artifact.
+5. The selected score bands change or a standards body publishes a reproducible endpoint scale.
+6. CSA publishes a machine-readable QRI model suitable for governed downstream ingestion.
+
+## 12. References
+
+- [IANA TLS Parameters](https://www.iana.org/assignments/tls-parameters/), TLS Cipher Suites.
+- [RFC 9847](https://www.rfc-editor.org/rfc/rfc9847), IANA registry updates for TLS and DTLS.
+- [RFC 9325](https://www.rfc-editor.org/rfc/rfc9325), recommendations for TLS and DTLS.
+- [RFC 8996](https://www.rfc-editor.org/rfc/rfc8996), TLS 1.0 and TLS 1.1 deprecation.
+- [RFC 9155](https://www.rfc-editor.org/rfc/rfc9155), MD5 and SHA-1 signature-hash deprecation.
+- [RFC 5469](https://www.rfc-editor.org/rfc/rfc5469), DES and IDEA suite deprecation.
+- [RFC 7465](https://www.rfc-editor.org/rfc/rfc7465), RC4 prohibition.
+- [RFC 10015](https://www.rfc-editor.org/rfc/rfc10015), obsolete TLS 1.2 key establishment.
+- [NIST IR 8547 initial public draft](https://doi.org/10.6028/NIST.IR.8547.ipd), transition to
+  post-quantum cryptography standards.
+- [CycloneDX 1.7 JSON Schema](https://cyclonedx.org/schema/bom-1.7.schema.json).
+- [`draft-dev-xipher-cbom-extension-00`](https://datatracker.ietf.org/doc/draft-dev-xipher-cbom-extension/).
+- [Open Quantum Secure at the reviewed commit](https://github.com/jimbo111/open-quantum-secure/blob/db003740b3d1cccd443ee2750f75bc332747751e/pkg/quantum/score.go), published Quantum Readiness Score bands and reference calculation.
+- [Singapore CSA Quantum Readiness Index V1](https://www.csa.gov.sg/resources/publications/quantum-safe-handbook-and-quantum-readiness-index/).
+- QuReddy issues #591, #599, #616, #623, #630, #669, #671, #672, #700, #701, #705, #706, #708, #709, #710, and #718.

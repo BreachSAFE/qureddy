@@ -1,0 +1,234 @@
+{
+  "$schema": "https://qureddy.io/schemas/grading-policy/v1/schema.json",
+  "schema_version": "1.0.0",
+  "status": "proposal",
+  "policy_id": "qureddy.quantum-readiness-score",
+  "policy_version": "2026.09.0",
+  "effective_date": "2026-09-02",
+  "subject_type": "network-service",
+  "input_contract": {
+    "model": "qureddy-canonical-capability-assessment",
+    "minimum_version": "1.0.0",
+    "required_dimensions": [
+      "quantum_key_establishment",
+      "quantum_authentication",
+      "symmetric_security",
+      "downgrade_resistance",
+      "classical_hygiene"
+    ],
+    "unknown_is_zero": false,
+    "profile_may_change_observations_not_scoring_rules": true
+  },
+  "scale": {
+    "name": "QuReddy Quantum Readiness Score",
+    "range": {
+      "minimum": 0,
+      "maximum": 100
+    },
+    "bands": [
+      {
+        "grade": "A+",
+        "minimum": 95,
+        "maximum": 100
+      },
+      {
+        "grade": "A",
+        "minimum": 85,
+        "maximum": 94
+      },
+      {
+        "grade": "B",
+        "minimum": 70,
+        "maximum": 84
+      },
+      {
+        "grade": "C",
+        "minimum": 50,
+        "maximum": 69
+      },
+      {
+        "grade": "D",
+        "minimum": 30,
+        "maximum": 49
+      },
+      {
+        "grade": "F",
+        "minimum": 0,
+        "maximum": 29
+      },
+      {
+        "grade": "U",
+        "score": null,
+        "meaning": "insufficient-evidence"
+      }
+    ],
+    "band_source": {
+      "project": "open-quantum-secure",
+      "source_file": "pkg/quantum/score.go",
+      "commit": "db003740b3d1cccd443ee2750f75bc332747751e",
+      "uri": "https://github.com/jimbo111/open-quantum-secure/blob/db003740b3d1cccd443ee2750f75bc332747751e/pkg/quantum/score.go",
+      "license": "MIT",
+      "adoption_scope": "grade-bands-only",
+      "rejected_behavior": [
+        "zero-findings-returns-100",
+        "finding-count-dependent-score",
+        "no-acquisition-coverage-gate"
+      ]
+    }
+  },
+  "dimensions": [
+    {
+      "id": "quantum_key_establishment",
+      "maximum_points": 35,
+      "assessment_field": "key_establishment_posture",
+      "levels": {
+        "post_quantum_only": 35,
+        "hybrid": 35,
+        "classical_forward_secret": 15,
+        "classical_static": 5,
+        "classically_weak": 0,
+        "unknown": null
+      }
+    },
+    {
+      "id": "quantum_authentication",
+      "maximum_points": 25,
+      "assessment_field": "authentication_posture",
+      "levels": {
+        "post_quantum": 25,
+        "hybrid": 25,
+        "classical_current": 10,
+        "classical_deprecated": 5,
+        "classically_weak": 0,
+        "unknown": null
+      }
+    },
+    {
+      "id": "symmetric_security",
+      "maximum_points": 15,
+      "assessment_field": "symmetric_posture",
+      "levels": {
+        "quantum_category_5_or_256_bit": 15,
+        "quantum_category_1_to_4_or_128_bit": 10,
+        "below_128_bit_or_known_weak": 0,
+        "unknown": null
+      }
+    },
+    {
+      "id": "downgrade_resistance",
+      "maximum_points": 15,
+      "assessment_field": "downgrade_posture",
+      "levels": {
+        "resistant": 15,
+        "defeasible": 8,
+        "action_needed": 0,
+        "unknown": null
+      }
+    },
+    {
+      "id": "classical_hygiene",
+      "maximum_points": 10,
+      "assessment_field": "classical_hygiene",
+      "levels": {
+        "ok": 10,
+        "action_needed": 5,
+        "classically_weak": 0,
+        "unknown": null
+      }
+    }
+  ],
+  "coverage_gate": {
+    "required_dimension_count": 5,
+    "on_missing_or_unknown_dimension": {
+      "grade": "U",
+      "score": null,
+      "assurance": "insufficient",
+      "reason_code": "insufficient_assessment_coverage"
+    }
+  },
+  "caps": [
+    {
+      "id": "critical-classical-break",
+      "when_reason_codes_contain_any": [
+        "rc4_prohibited",
+        "null_encryption",
+        "export_grade",
+        "known_practical_key_recovery"
+      ],
+      "maximum_score": 29,
+      "maximum_grade": "F"
+    },
+    {
+      "id": "classical-only-key-establishment",
+      "when_dimension_level_in": {
+        "quantum_key_establishment": [
+          "classical_forward_secret",
+          "classical_static"
+        ]
+      },
+      "maximum_score": 69,
+      "maximum_grade": "C"
+    },
+    {
+      "id": "classical-authentication",
+      "when_dimension_level_in": {
+        "quantum_authentication": [
+          "classical_current",
+          "classical_deprecated"
+        ]
+      },
+      "maximum_score": 94,
+      "maximum_grade": "A"
+    },
+    {
+      "id": "symmetric-128-bit-ceiling",
+      "when_dimension_level_in": {
+        "symmetric_security": [
+          "quantum_category_1_to_4_or_128_bit"
+        ]
+      },
+      "maximum_score": 84,
+      "maximum_grade": "B"
+    },
+    {
+      "id": "defeasible-downgrade-protection",
+      "when_dimension_level_in": {
+        "downgrade_resistance": [
+          "defeasible"
+        ]
+      },
+      "maximum_score": 84,
+      "maximum_grade": "B"
+    }
+  ],
+  "calculation": {
+    "score_before_caps": "sum(dimension.points)",
+    "score_after_caps": "min(score_before_caps, every_applied_cap.maximum_score)",
+    "grade": "band_containing(score_after_caps)",
+    "rounding": "none",
+    "deterministic": true
+  },
+  "assurance": {
+    "separate_from_score": true,
+    "levels": [
+      "high",
+      "moderate",
+      "low",
+      "insufficient"
+    ],
+    "inputs": [
+      "acquisition-coverage",
+      "observation-confidence",
+      "source-freshness",
+      "assessment-completeness"
+    ]
+  },
+  "claim_boundaries": {
+    "not_equivalent_to": [
+      "Singapore CSA Quantum Readiness Index organizational maturity level",
+      "a compliance certification",
+      "a guarantee of post-quantum security"
+    ],
+    "external_framework_mappings_owned_by": "mint-oscal-and-enterprise"
+  }
+}

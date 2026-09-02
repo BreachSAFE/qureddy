@@ -1,0 +1,101 @@
+{
+  "$schema": "https://mint-oscal.breachsafe.io/schemas/evidence-map/v1/schema.json",
+  "schema_version": "1.0.0",
+  "status": "proposal",
+  "map_id": "mint-oscal.sg-csa-qri-v1.qureddy",
+  "map_version": "2026.09.0",
+  "owner": "mint-oscal-and-enterprise",
+  "source_framework": {
+    "id": "sg-csa-qri-v1",
+    "title": "Singapore CSA Quantum Readiness Index V1",
+    "scope": "organizational-maturity-self-assessment",
+    "uri": "https://www.csa.gov.sg/resources/publications/quantum-safe-handbook-and-quantum-readiness-index/",
+    "release": "Version 1, July 2026",
+    "retrieved": "2026-09-02",
+    "maturity_levels": [
+      {
+        "id": "L0",
+        "title": "Not Started"
+      },
+      {
+        "id": "L1",
+        "title": "Initial"
+      },
+      {
+        "id": "L2",
+        "title": "Defined"
+      },
+      {
+        "id": "L3",
+        "title": "Operational"
+      }
+    ],
+    "domains": [
+      "Risk Assessment",
+      "Governance",
+      "Technology",
+      "Training and Capability",
+      "External Engagements"
+    ]
+  },
+  "input_contract": {
+    "producer": "qureddy",
+    "accepted_schema": "https://qureddy.io/schemas/quantum-readiness-result/v1/schema.json",
+    "minimum_schema_version": "1.0.0",
+    "required_provenance": [
+      "registry",
+      "probe_plan",
+      "grading_policy",
+      "coverage"
+    ]
+  },
+  "mappings": [
+    {
+      "mapping_id": "qri-risk-assessment.crypto-inventory",
+      "target": {
+        "domain": "Risk Assessment",
+        "topic": "cryptographic inventory and exposure"
+      },
+      "source_evidence": [
+        "tls.cipher.selected",
+        "canonical_assessment.quantum_key_establishment",
+        "canonical_assessment.quantum_authentication"
+      ],
+      "relation": "contributes-evidence",
+      "standalone_sufficient": false,
+      "limitations": [
+        "Covers only assets and protocols actually scanned.",
+        "Does not prove an organization-wide inventory or risk process."
+      ]
+    },
+    {
+      "mapping_id": "qri-technology.quantum-capability",
+      "target": {
+        "domain": "Technology",
+        "topic": "quantum-safe capability and migration evidence"
+      },
+      "source_evidence": [
+        "canonical_assessment.quantum_key_establishment",
+        "canonical_assessment.quantum_authentication",
+        "canonical_assessment.symmetric_security",
+        "canonical_assessment.downgrade_resistance"
+      ],
+      "relation": "contributes-evidence",
+      "standalone_sufficient": false,
+      "limitations": [
+        "Observed endpoint capability does not prove governed deployment.",
+        "A passing endpoint does not establish migration planning or lifecycle controls."
+      ]
+    }
+  ],
+  "prohibited_derivations": [
+    "Do not convert a QuReddy score or grade directly into L0, L1, L2, or L3.",
+    "Do not infer Governance, Training and Capability, or External Engagements from endpoint scans.",
+    "Do not claim CSA certification or endorsement."
+  ],
+  "assessment_output": {
+    "consumer": "enterprise",
+    "requires_human_or_governed_evidence_review": true,
+    "may_emit_overall_qri_level": "only-after-all-required-domains-are-assessed"
+  }
+}
