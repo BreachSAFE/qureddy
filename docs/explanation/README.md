@@ -14,3 +14,4 @@ reasoning behind QuReddy. Return to [the documentation index](../README.md).
 3. [Why hybrid post-quantum key exchange](why-hybrid-pq.md)
 4. [CBOM design and CycloneDX interoperability](cbom-design.md)
 5. [Threat model and scope](threat-model.md)
+6. [Posture status model](posture-status-model.md)
