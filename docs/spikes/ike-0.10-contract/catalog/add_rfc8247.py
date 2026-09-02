@@ -38,45 +38,54 @@ def verify_rfc(path: Path) -> None:
         raise SystemExit(f"input digest mismatch for {path}: expected {RFC_SHA256}, got {actual}")
 
 
+def parse_requirements(text: str) -> dict[str, dict]:
+    """Parse the first requirement for each RFC table algorithm."""
+    lines = text.split("\n")  # NOT splitlines(): \x0c would shift every citation
+    requirements: dict[str, dict] = {}
+    for line_number, line in enumerate(lines, 1):
+        match = ROW.match(line)
+        if match:
+            name, level = match.group(1), match.group(2).strip()
+            # First occurrence wins; later tables restate AH/ESP context.
+            requirements.setdefault(name, {"requirement": level, "line": line_number})
+    return requirements
+
+
+def apply_requirements(doc: dict, requirements: dict[str, dict]) -> tuple[int, int]:
+    """Add the independent RFC requirement axis to catalog entries."""
+    matched = unmatched = 0
+    for entry in doc["entries"]:
+        requirement = requirements.get(entry["name"])
+        if requirement and entry["ike_version"] == "2":
+            entry["rfc8247_requirement"] = requirement["requirement"]
+            entry["rfc8247_citation"] = f"rfc8247/rfc8247.txt:{requirement['line']}"
+            matched += 1
+        else:
+            entry["rfc8247_requirement"] = None
+            entry["rfc8247_citation"] = None
+            unmatched += 1
+    return matched, unmatched
+
+
 def main() -> int:
     """Generate the catalog and write it to the given path."""
     args = parse_args()
     verify_rfc(args.rfc_path)
-    lines = args.rfc_path.read_text(encoding="utf-8").split(
-        "\n"
-    )  # NOT splitlines(): \x0c would shift every citation
-    reqs: dict[str, dict] = {}
-    for i, line in enumerate(lines, 1):
-        m = ROW.match(line)
-        if not m:
-            continue
-        name, level = m.group(1), m.group(2).strip()
-        # first occurrence wins; later tables restate for AH/ESP context
-        reqs.setdefault(name, {"requirement": level, "line": i})
+    requirements = parse_requirements(args.rfc_path.read_text(encoding="utf-8"))
     doc = json.loads(args.catalog.read_text(encoding="utf-8"))
-    hit = miss = 0
-    for e in doc["entries"]:
-        r = reqs.get(e["name"])
-        if r and e["ike_version"] == "2":
-            e["rfc8247_requirement"] = r["requirement"]
-            e["rfc8247_citation"] = f"rfc8247/rfc8247.txt:{r['line']}"
-            hit += 1
-        else:
-            e["rfc8247_requirement"] = None
-            e["rfc8247_citation"] = None
-            miss += 1
+    matched, unmatched = apply_requirements(doc, requirements)
     doc["rfc8247_axis"] = {
         "note": "IANA status and RFC 8247 requirement are independent axes",
         "source_url": RFC_URL,
         "sha256": RFC_SHA256,
-        "rows_parsed": len(reqs),
-        "entries_matched": hit,
-        "entries_unmatched": miss,
+        "rows_parsed": len(requirements),
+        "entries_matched": matched,
+        "entries_unmatched": unmatched,
     }
     args.catalog.write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
-    print(f"  parsed {len(reqs)} RFC 8247 rows; matched {hit} entries")
+    print(f"  parsed {len(requirements)} RFC 8247 rows; matched {matched} entries")
     for n in ("ENCR_NULL", "ENCR_3DES", "ENCR_DES", "PRF_HMAC_MD5"):
-        r = reqs.get(n)
+        r = requirements.get(n)
         print(
             f"    {n:20} {r['requirement'] if r else 'not in tables':10} {('rfc8247:' + str(r['line'])) if r else ''}"
         )
