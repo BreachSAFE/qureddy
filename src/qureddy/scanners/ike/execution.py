@@ -37,36 +37,54 @@ class ProcessOutput:
 class _BoundedCapture:
     """Own the synchronized combined-output budget for two pipe readers."""
 
-    def __init__(self, limit: int) -> None:
+    def __init__(self, limit: int, reader_count: int) -> None:
         self._limit = limit
         self._buffers = {"stdout": bytearray(), "stderr": bytearray()}
         self._total = 0
-        self._lock = threading.Lock()
-        self._stop = threading.Event()
-        self.output_limited = threading.Event()
+        self._active_readers = reader_count
+        self._condition = threading.Condition()
+        self._stopped = False
+        self._output_limited = False
 
     def append(self, name: StreamName, chunk: bytes) -> bool:
         """Append within the shared limit and return whether reading may continue."""
-        with self._lock:
-            if self._stop.is_set():
+        with self._condition:
+            if self._stopped:
                 return False
             remaining = max(self._limit - self._total, 0)
             keep = min(len(chunk), remaining)
             self._buffers[name].extend(chunk[:keep])
             self._total += keep
             if keep != len(chunk):
-                self.output_limited.set()
+                self._output_limited = True
+                self._condition.notify_all()
                 return False
             return True
 
+    def reader_finished(self) -> None:
+        """Record a closed child pipe and wake the controller."""
+        with self._condition:
+            self._active_readers -= 1
+            self._condition.notify_all()
+
+    def wait(self, timeout: float) -> tuple[bool, bool]:
+        """Wait for all readers or the output limit and return both states."""
+        with self._condition:
+            self._condition.wait_for(
+                lambda: self._active_readers == 0 or self._output_limited,
+                timeout=max(timeout, 0),
+            )
+            return self._active_readers == 0, self._output_limited
+
     def stop(self) -> None:
         """Prevent readers from mutating the final snapshot."""
-        with self._lock:
-            self._stop.set()
+        with self._condition:
+            self._stopped = True
+            self._condition.notify_all()
 
     def snapshot(self, name: StreamName) -> bytes:
         """Return immutable bytes captured for one child stream."""
-        with self._lock:
+        with self._condition:
             return bytes(self._buffers[name])
 
 
@@ -128,6 +146,7 @@ def _drain_pipe(stream: IO[bytes], name: StreamName, capture: _BoundedCapture) -
         return
     finally:
         stream.close()
+        capture.reader_finished()
 
 
 def _start_readers(
@@ -193,40 +212,31 @@ def _collect_process_output(
     output_limit: int,
 ) -> ProcessOutput:
     """Drain a child process under combined runtime and output limits."""
-    capture = _BoundedCapture(output_limit)
+    reader_count = sum(stream is not None for stream in (process.stdout, process.stderr))
+    capture = _BoundedCapture(output_limit, reader_count)
     readers = _start_readers(process, capture)
     timed_out = False
-    output_limited = False
     deadline = started + timeout_seconds
-    return_code = 0
-    tree_stopped = False
+    return_code: int | None = None
     try:
-        while any(reader.is_alive() for reader in readers):
-            if capture.output_limited.is_set():
-                output_limited = True
-                _terminate(process, tree=True)
-                tree_stopped = True
-                break
-            if time.monotonic() >= deadline:
+        readers_done, output_limited = capture.wait(deadline - time.monotonic())
+        if output_limited:
+            return_code = _terminate(process, tree=True)
+        elif not readers_done:
+            timed_out = True
+            return_code = _terminate(process, tree=True)
+        else:
+            try:
+                return_code = process.wait(timeout=max(deadline - time.monotonic(), 0))
+            except subprocess.TimeoutExpired:
                 timed_out = True
-                _terminate(process, tree=True)
-                tree_stopped = True
-                break
-            if process.poll() is not None:
-                for reader in readers:
-                    reader.join(timeout=0.01)
-                if not tree_stopped and any(reader.is_alive() for reader in readers):
-                    _kill_process_tree(process)
-                    tree_stopped = True
-            else:
-                time.sleep(0.01)
+                return_code = _terminate(process, tree=True)
     finally:
-        limit_reached = capture.output_limited.is_set()
-        return_code = _terminate(process, tree=timed_out or output_limited or limit_reached)
+        if return_code is None:
+            return_code = _terminate(process, tree=True)
         capture.stop()
         for reader in readers:
             reader.join(timeout=_KILL_WAIT_SECONDS)
-    output_limited = output_limited or limit_reached
     return ProcessOutput(
         return_code=return_code,
         stdout=capture.snapshot("stdout"),

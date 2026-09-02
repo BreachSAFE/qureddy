@@ -205,6 +205,7 @@ class IkeScanAdapter:
         return self._binary
 
     def _failure(self, kind: CollectionFailureKind, message: str) -> CollectionResult:
+        """Return one typed collector failure with adapter provenance."""
         return CollectionResult(
             collector=self.tool_id,
             collector_version=self.version,
@@ -213,6 +214,7 @@ class IkeScanAdapter:
 
 
 def _output_failure_category(output: ProcessOutput) -> FailureCategory | None:
+    """Map bounded process state onto the stable scan failure vocabulary."""
     if output.timed_out:
         return FailureCategory.IKE_PROBE_TIMEOUT
     if output.output_limited:

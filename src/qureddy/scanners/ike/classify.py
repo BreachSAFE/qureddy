@@ -66,6 +66,7 @@ def _finding(
 
 
 def _responding_modes(evidence: list[Evidence]) -> list[Evidence]:
+    """Return clean mode-level observations that prove responder presence."""
     return [
         record
         for record in evidence
@@ -76,6 +77,7 @@ def _responding_modes(evidence: list[Evidence]) -> list[Evidence]:
 
 
 def _algorithm_name(record: Evidence) -> str:
+    """Normalize cipher key lengths while preserving integrity name suffixes."""
     name = record.algorithm or ""
     if record.evidence_type != "ike.cipher":
         return name
@@ -84,6 +86,7 @@ def _algorithm_name(record: Evidence) -> str:
 
 
 def _protocol_findings(asset: Asset, evidence: list[Evidence]) -> list[Finding]:
+    """Build protocol-version findings from observed responder modes."""
     modes = _responding_modes(evidence)
     ikev1 = [record for record in modes if record.protocol_version == "IKEv1"]
     ikev2 = [record for record in modes if record.protocol_version == "IKEv2"]
@@ -124,6 +127,7 @@ def _protocol_findings(asset: Asset, evidence: list[Evidence]) -> list[Finding]:
 
 
 def _identity_finding(asset: Asset, evidence: list[Evidence]) -> Finding | None:
+    """Report an identity only when the adapter emitted exposure evidence."""
     records = [record for record in evidence if record.evidence_type == "ike.identity_exposed"]
     if not records:
         return None
@@ -143,6 +147,7 @@ def _identity_finding(asset: Asset, evidence: list[Evidence]) -> Finding | None:
 
 
 def _prohibited_transport_finding(asset: Asset, records: list[Evidence]) -> Finding | None:
+    """Build the RFC 8247 prohibited-transform finding when evidence exists."""
     if not records:
         return None
     names = sorted({record.algorithm or "unknown" for record in records})
@@ -162,6 +167,7 @@ def _prohibited_transport_finding(asset: Asset, records: list[Evidence]) -> Find
 
 
 def _legacy_transport_finding(asset: Asset, records: list[Evidence]) -> Finding | None:
+    """Build the legacy 3DES finding when evidence exists."""
     if not records:
         return None
     return _finding(
@@ -180,6 +186,7 @@ def _legacy_transport_finding(asset: Asset, records: list[Evidence]) -> Finding 
 
 
 def _transport_findings(asset: Asset, evidence: list[Evidence]) -> list[Finding]:
+    """Classify reported encryption, PRF, and integrity transforms."""
     algorithms = [
         record
         for record in evidence
@@ -199,6 +206,7 @@ def _transport_findings(asset: Asset, evidence: list[Evidence]) -> list[Finding]
 
 
 def _weak_dh_finding(asset: Asset, records: list[Evidence], *, prohibited: bool) -> Finding | None:
+    """Build one severity-calibrated weak Diffie-Hellman finding."""
     if not records:
         return None
     identifiers = _sorted_group_identifiers(records)
@@ -218,6 +226,7 @@ def _weak_dh_finding(asset: Asset, records: list[Evidence], *, prohibited: bool)
 
 
 def _pq_dh_finding(asset: Asset, records: list[Evidence]) -> Finding | None:
+    """Inventory reported ML-KEM identifiers without upgrading readiness."""
     if not records:
         return None
     labels = sorted(
@@ -310,6 +319,7 @@ def _dh_findings(asset: Asset, evidence: list[Evidence]) -> list[Finding]:
 
 
 def _notify_finding(asset: Asset, evidence: list[Evidence]) -> Finding | None:
+    """Report explicit proposal rejection without inferring accepted posture."""
     records = [record for record in evidence if record.evidence_type == "ike.notify"]
     if not records:
         return None

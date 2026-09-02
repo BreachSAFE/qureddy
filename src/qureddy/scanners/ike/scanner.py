@@ -95,6 +95,7 @@ class IKEScanner:
     def _collect(
         self, target: ScanTarget, *, asset_id: str, timeout_seconds: int
     ) -> tuple[list[Evidence], list[FailureCategory], int]:
+        """Collect the bounded probe plan and preserve each typed failure."""
         evidence: list[Evidence] = []
         categories: list[FailureCategory] = []
         plan = _probe_plan(target, nat_t=self._nat_t)
@@ -123,6 +124,7 @@ class IKEScanner:
 
 
 def _probe_plan(target: ScanTarget, *, nat_t: bool) -> tuple[tuple[IKEMode, int, bool], ...]:
+    """Return the ordered direct or NAT-T-first probe plan."""
     standard = tuple((mode, target.port, False) for mode in _MODES)
     if not nat_t:
         return standard
@@ -139,6 +141,7 @@ def _probe_plan(target: ScanTarget, *, nat_t: bool) -> tuple[tuple[IKEMode, int,
 def _scan_source(
     target: ScanTarget, *, asset_id: str, mode: IKEMode, port: int, nat_t: bool
 ) -> ScanSource:
+    """Build one registry-compatible source for an IKE mode and transport."""
     rendered = f"[{target.host}]" if ":" in target.host else target.host
     return ScanSource(
         kind=SourceKind.ENDPOINT,
@@ -154,6 +157,7 @@ def _summary_failure(
     *,
     dependency: ExternalToolDependency,
 ) -> FailureCategory | None:
+    """Select the summary failure unless positive evidence supersedes it."""
     if dependency.failure_category is not None:
         return dependency.failure_category
     if any(record.observation_type is ObservationType.OBSERVED for record in evidence):
@@ -174,6 +178,7 @@ def _collection_failure_category(failure: CollectionFailure | None) -> FailureCa
 
 
 def _scan_status(evidence: list[Evidence], failure: FailureCategory | None) -> str:
+    """Derive canonical scan status from failures and responder evidence."""
     if failure is not None:
         return failure.value
     modes = [record for record in evidence if record.evidence_type.startswith("ike.mode.")]

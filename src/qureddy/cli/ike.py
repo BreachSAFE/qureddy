@@ -70,6 +70,7 @@ Project: {PROJECT_URL}
 
 
 def _parse_ike_scan_target(target: str) -> ScanTarget:
+    """Parse one CLI target and convert validation errors to usage exits."""
     try:
         return parse_ike_target(target, block_internal=block_internal_targets())
     except TargetParseError as exc:
@@ -79,6 +80,7 @@ def _parse_ike_scan_target(target: str) -> ScanTarget:
 def _select_ike_scanner(
     target: ScanTarget, *, binary_name: str, source_port: int, nat_t: bool
 ) -> IKEScanner:
+    """Select the configured IKE scanner through the canonical registry."""
     scanner = IKEScanner(
         IkeScanAdapter(binary_name, source_port=source_port),
         nat_t=nat_t,
