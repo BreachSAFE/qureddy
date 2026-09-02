@@ -40,6 +40,7 @@ versions follow [PEP 440](https://peps.python.org/pep-0440/).
   explicit NOTIFY responses, and Aggressive Mode identity exposure without claiming
   authenticated tunnel or Child-SA posture
   ([issue #633](https://github.com/BreachSAFE/qureddy/issues/633),
+  [PR #729](https://github.com/BreachSAFE/qureddy/pull/729),
   [IKE backend ADR](docs/architecture/ike-scan-backend-adr.md)).
 
 ### Fixed
@@ -49,7 +50,8 @@ versions follow [PEP 440](https://peps.python.org/pep-0440/).
   evidence when the same mode answers through NAT-T on UDP/4500
   ([issue #713](https://github.com/BreachSAFE/qureddy/issues/713),
   [issue #715](https://github.com/BreachSAFE/qureddy/issues/715),
-  [issue #716](https://github.com/BreachSAFE/qureddy/issues/716)).
+  [issue #716](https://github.com/BreachSAFE/qureddy/issues/716),
+  [PR #729](https://github.com/BreachSAFE/qureddy/pull/729)).
 - Use the protocol-required UDP source port defaults (500 direct and 4500 NAT-T) so
   gateways do not disappear behind ephemeral source ports, and terminate the full
   external-tool process tree when a timeout or output bound is reached
