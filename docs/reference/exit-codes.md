@@ -15,17 +15,17 @@ The `qureddy` CLI uses POSIX exit codes to signal what happened. Scripts and CI 
 
 ## 1. Applicability by scanner
 
-Exit 3 is specific to `scan tls`, because the SSH scanner does not use
-OpenSSL. `scan ssh` uses exits 0, 2, and 4; exit 70 remains the process-wide
-last-resort internal-error code.
+Exit 3 applies to `scan tls` when OpenSSL is unusable and to `scan ike` when
+`ike-scan` is unusable. `scan ssh` uses exits 0, 2, and 4; exit 70 remains the
+process-wide last-resort internal-error code.
 
 ## 2. The codes
 
 | Code | Name | Meaning | When it fires |
 |---|---|---|---|
-| **0** | `EXIT_OK` | Scan succeeded | Both probes ran, evidence parsed, summary built. The target may still be `quantum_vulnerable`; that's a finding, not a failure. |
-| **2** | `EXIT_TARGET_FAILED` | Target scan failed | Probes ran but the target is unreachable, refused TLS, MTU-blackholed, parser-rejected, etc. The target's problem (or the network between you and it). |
-| **3** | `EXIT_LOCAL_DEPENDENCY` | Local OpenSSL is missing or unsupported | `openssl` not found on PATH, the binary or linked library is outside the supported 3.5.x LTS series, or the binary doesn't list `X25519MLKEM768` as a TLS 1.3 group. Install OpenSSL 3.5.x LTS and re-run. |
+| **0** | `EXIT_OK` | Scan succeeded | The scan produced a canonical result. IKE silence and explicit rejection also exit `0` with unknown posture because neither is a process failure. |
+| **2** | `EXIT_TARGET_FAILED` | Target scan failed | A target probe timed out, failed, or produced malformed or over-limit output. |
+| **3** | `EXIT_LOCAL_DEPENDENCY` | Required local executable is missing or unsupported | TLS requires the supported OpenSSL 3.5.7 LTS capability. IKE requires a usable stock `ike-scan` executable. |
 | **4** | `EXIT_USAGE` | Usage or configuration error | Bad flag value (e.g. `--format yaml`), unknown retry category, `--retries` without `--retry-on`, malformed target string. |
 | **70** | `EXIT_INTERNAL_ERROR` | Internal qureddy bug | An unhandled exception escaped to `main()`'s last-resort catch (e.g., a programming error in qureddy itself, an unhandled dependency failure). **This is qureddy's problem, not yours.** Open an issue with the printed error message and a reproducer. Code 70 is BSD `sysexits.h` `EX_SOFTWARE`. |
 

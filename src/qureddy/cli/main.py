@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 """Typer app assembly and the installed `qureddy` entry point.
 
-Glue only — no command logic. The `scan tls` / `scan ssh` command bodies
-live in `scan.py` / `ssh.py` and register themselves onto `scan_app` when
+Glue only — no command logic. The `scan tls`, `scan ssh`, and `scan ike` command bodies
+live in `scan.py`, `ssh.py`, and `ike.py` and register themselves onto `scan_app` when
 the package `__init__` imports them.
 """
 
@@ -55,6 +55,10 @@ qureddy scan tls google.com
 qureddy scan ssh github.com
 
 \b
+# Scan an IKE gateway (requires stock ike-scan).
+qureddy scan ike vpn.example.com
+
+\b
 # Machine-readable, for CI pipelines (real PQ hybrid endpoint).
 qureddy scan tls pq.cloudflareresearch.com --format json
 
@@ -78,6 +82,8 @@ MORE HELP:
 
 \b
 qureddy scan tls --help    # full options, examples, exit codes
+qureddy scan ssh --help    # SSH options, examples, exit codes
+qureddy scan ike --help    # IKE options, trust boundary, exit codes
 qureddy --version          # show version
 
 Project: {PROJECT_URL}
@@ -86,14 +92,16 @@ Project: {PROJECT_URL}
 # Issue #266: `qureddy scan --help` names the available scanner commands and
 # explains why the CLI uses a scan command group.
 _SCAN_EPILOG = _colorize_help_text("""\
-qureddy scans TLS and SSH endpoints. "scan" is a command group so each
+qureddy scans TLS, SSH, and IKE endpoints. "scan" is a command group so each
 scanner has its own options, output formats, and exit-code behavior.
 
 \b
 qureddy scan tls <target>            # TLS endpoint (OpenSSL handshakes)
 qureddy scan ssh <target>            # SSH endpoint (reads the KEXINIT offer)
+qureddy scan ike <target>            # IKE endpoint (stock ike-scan adapter)
 qureddy scan tls --help              # full options, examples, exit codes
 qureddy scan ssh --help              # SSH options and examples
+qureddy scan ike --help              # IKE options and trust boundary
 """)
 
 # Issue #125: Typer's completion (`add_completion=True`) is what powers
@@ -141,7 +149,7 @@ scan_app = typer.Typer(
     # group, and the only line a user who doesn't read the epilog ever
     # sees on `qureddy --help`'s "Commands:" table. Now self-sufficient
     # without requiring the epilog below to explain what's being scanned.
-    help="Scan a TLS or SSH endpoint for post-quantum readiness.",
+    help="Scan a TLS, SSH, or IKE endpoint for post-quantum readiness.",
     epilog=_SCAN_EPILOG,
     no_args_is_help=True,
     rich_markup_mode=None,

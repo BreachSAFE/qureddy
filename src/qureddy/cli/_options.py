@@ -50,6 +50,10 @@ SshTargetArg = Annotated[
     str,
     typer.Argument(help="SSH endpoint: host[:port], bracketed IPv6, ssh://host, or sftp://host."),
 ]
+IkeTargetArg = Annotated[
+    str,
+    typer.Argument(help="IKE endpoint: host[:port], bracketed IPv6, or ike://host."),
+]
 SniOpt = Annotated[
     str | None,
     typer.Option("--sni", help="SNI override (recommended for name-based virtual hosts)."),
@@ -179,5 +183,30 @@ MinSeverityOpt = Annotated[
         help="Rich output only: hide findings below this severity "
         "(critical | high | medium | low | info). Machine formats (json/cbom) stay complete.",
         case_sensitive=False,
+    ),
+]
+IkeScanOpt = Annotated[
+    str,
+    typer.Option("--ike-scan", help="Path or command name for the stock ike-scan executable."),
+]
+NatTOpt = Annotated[
+    bool,
+    typer.Option(
+        "--nat-t",
+        help=(
+            "Probe RFC 3947 NAT-T framing on UDP/4500 first; use the target port only as fallback."
+        ),
+    ),
+]
+SourcePortOpt = Annotated[
+    int,
+    typer.Option(
+        "--source-port",
+        help=(
+            "UDP source port override. Default 0 selects 500 direct or 4500 with NAT-T; "
+            "binding 500 may require privilege."
+        ),
+        min=0,
+        max=65535,
     ),
 ]

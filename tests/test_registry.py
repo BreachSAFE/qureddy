@@ -71,3 +71,12 @@ def test_registry_select_scanner_requires_executable_collector() -> None:
     registry.register(FakeCollector("native-tls", Capability.TLS_ENDPOINT))
     with pytest.raises(CollectorSelectionError, match="cannot execute a scan"):
         registry.select_scanner(source)
+
+
+def test_registry_selects_ike_endpoint_collector() -> None:
+    """Keep the live IKE command connected to its registered capability."""
+    registry = CollectorRegistry()
+    registry.register(FakeScanCollector("ike-scan", Capability.IKE_ENDPOINT))
+    source = ScanSource(kind=SourceKind.ENDPOINT, protocol="ike", locator="ike://vpn:500")
+
+    assert registry.select_scanner(source).collector_name == "ike-scan"

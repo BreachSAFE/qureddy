@@ -35,7 +35,7 @@ from cyclonedx.model.tool import ToolRepository
 from cyclonedx.output.json import JsonV1Dot7
 
 from qureddy.core.errors import CbomError
-from qureddy.core.models import ObservationType, ScanResult
+from qureddy.core.models import ObservationType, OpenSSLDependency, ScanResult
 from qureddy.output.cbom_assets import ENDPOINT_REF
 from qureddy.output.cbom_components import (
     CERTIFICATE_REF,
@@ -44,6 +44,7 @@ from qureddy.output.cbom_components import (
     add_cipher_suite_components,
     add_protocol_components,
 )
+from qureddy.output.cbom_ike import add_ike_transport_components
 from qureddy.output.cbom_legacy import add_legacy_cipher_components
 from qureddy.output.cbom_metadata import (
     add_scan_status_properties,
@@ -51,6 +52,7 @@ from qureddy.output.cbom_metadata import (
     evidence_occurrences,
     finding_annotations,
     openssl_tool_properties,
+    tool_dependency_properties,
 )
 from qureddy.output.cbom_semantics import validate_cbom_semantics
 from qureddy.output.cbom_ssh import (
@@ -65,7 +67,6 @@ if TYPE_CHECKING:
     from qureddy.core.certificate import CertificateObservation
 
 _QUREDDY_TOOL_REF = "tool/qureddy"
-_OPENSSL_TOOL_REF = "tool/openssl"
 
 
 def render_cbom(
@@ -131,6 +132,7 @@ def _add_observed_components(
     add_ssh_host_key_components(bom, result, provides_edges)
     add_ssh_kex_components(bom, result, provides_edges)
     add_ssh_transport_components(bom, result, provides_edges)
+    add_ike_transport_components(bom, result, provides_edges)
     add_cipher_suite_components(bom, result, provides_edges)
     add_legacy_cipher_components(bom, result, provides_edges)
     add_protocol_components(bom, result, algorithm_refs, provides_edges)
@@ -180,15 +182,20 @@ def _add_tool_provenance(bom: Bom, result: ScanResult, *, reproducible: bool = F
             version=result.scan.scanner_version,
         )
     ]
-    if result.dependencies and result.dependencies[0].failure_category is None:
-        dependency = result.dependencies[0]
+    for dependency in result.dependencies:
+        if dependency.failure_category is not None:
+            continue
+        if isinstance(dependency, OpenSSLDependency):
+            properties = openssl_tool_properties(dependency, reproducible=reproducible)
+        else:
+            properties = tool_dependency_properties(dependency, reproducible=reproducible)
         tools.append(
             Component(
                 name=dependency.name,
                 type=ComponentType.APPLICATION,
-                bom_ref=_OPENSSL_TOOL_REF,
+                bom_ref=f"tool/{dependency.name}",
                 version=dependency.version,
-                properties=openssl_tool_properties(dependency, reproducible=reproducible),
+                properties=properties,
             )
         )
     bom.metadata.tools = ToolRepository(components=tools)

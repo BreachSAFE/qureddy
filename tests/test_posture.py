@@ -17,9 +17,10 @@ from qureddy.core.models import (
     ObservationType,
     PqcSupport,
     Readiness,
+    ScanTarget,
     Severity,
 )
-from qureddy.scanners.common.posture import build_interpretation
+from qureddy.scanners.common.posture import build_interpretation, build_scan_summary
 
 
 def _finding(
@@ -376,3 +377,37 @@ def test_ssh_hostkey_evidence_marks_classical_authentication_without_weak_findin
     interpretation = build_interpretation([], [_ssh_evidence()], None)
 
     assert interpretation.axes.authentication is AxisStatus.CLASSICAL
+
+
+def test_shared_summary_builder_preserves_ike_posture() -> None:
+    """Keep every scanner on one evidence-aware summary construction path."""
+    target = ScanTarget(
+        original_input="vpn.example",
+        host="vpn.example",
+        port=500,
+        sni=None,
+        scheme="ike",
+        locator="ike://vpn.example:500",
+    )
+    evidence = Evidence(
+        id="ev-1",
+        asset_id="asset-1",
+        evidence_type="ike.dh_group",
+        observation_type=ObservationType.OBSERVED,
+        source="test",
+        protocol="ike",
+    )
+    finding = _finding(
+        "ike.kex.classical",
+        "ike.kex.classical",
+        Readiness.QUANTUM_VULNERABLE,
+        protocol="ike",
+    )
+
+    summary = build_scan_summary(target, [finding], [evidence], None, protocol="ike")
+
+    assert summary.target == target.locator
+    assert summary.finding_count == 1
+    assert summary.readiness is Readiness.QUANTUM_VULNERABLE
+    assert summary.interpretation is not None
+    assert summary.interpretation.hndl_exposure is HndlExposure.UNKNOWN

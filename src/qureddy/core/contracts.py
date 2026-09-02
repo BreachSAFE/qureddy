@@ -42,6 +42,7 @@ class ToolPolicy(StrEnum):
     NATIVE = "native"
     OPENSSL = "openssl"
     SSH_AUDIT = "ssh-audit"
+    IKE_SCAN = "ike-scan"
 
 
 class Capability(StrEnum):
@@ -52,6 +53,7 @@ class Capability(StrEnum):
     SSH_PUBLIC_KEY = "ssh.public_key"
     SSH_CONFIG = "ssh.config"
     X509_CERTIFICATE = "x509.certificate"
+    IKE_ENDPOINT = "ike.endpoint"
 
 
 class CollectionFailureKind(StrEnum):

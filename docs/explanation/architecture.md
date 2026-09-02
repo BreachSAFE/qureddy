@@ -4,18 +4,18 @@
 
 [![Diátaxis explanation](https://img.shields.io/badge/Di%C3%A1taxis-explanation-8250df?style=flat-square)](https://diataxis.fr/explanation/)
 
-QuReddy has two endpoint scanners behind one typed result model. The TLS path
-uses local OpenSSL subprocesses. The SSH path uses a direct socket. Rich, JSON,
-JSONL, and CycloneDX renderers consume the same `ScanResult` and do not perform
-collection. `--output-dir` executes one scan and fans that result out to all
-supported projections.
+QuReddy has three endpoint scanners behind one typed result model. The TLS path
+uses local OpenSSL subprocesses, SSH uses a direct socket, and IKE uses a bounded
+stock `ike-scan` adapter. Rich, JSON, JSONL, and CycloneDX renderers consume the
+same `ScanResult` and do not perform collection. `--output-dir` executes one scan
+and fans that result out to all supported projections.
 
 ## Contents
 
 1. [Component map](#1-component-map)
 2. [Dependency direction](#2-dependency-direction)
 3. [TLS scan flow](#3-tls-scan-flow)
-4. [SSH scan flow](#4-ssh-scan-flow)
+4. [SSH and IKE scan flows](#4-ssh-and-ike-scan-flows)
 5. [Output flow](#5-output-flow)
 6. [Evidence boundary](#6-evidence-boundary)
 7. [Failure routing](#7-failure-routing)
@@ -35,6 +35,7 @@ flowchart TB
         main["main.py"]
         tls_cli["scan.py"]
         ssh_cli["ssh.py"]
+        ike_cli["ike.py"]
         execute["_execute.py"]
         render["_render.py"]
         errors["_errors.py"]
@@ -70,6 +71,14 @@ flowchart TB
         ssh_classify["classify.py"]
     end
 
+    subgraph ike ["src/qureddy/scanners/ike/"]
+        ike_scanner["scanner.py"]
+        ike_adapter["adapter.py"]
+        ike_process["execution.py"]
+        ike_parse["parser.py"]
+        ike_classify["classify.py"]
+    end
+
     subgraph common ["src/qureddy/scanners/common/"]
         rollup["rollup.py"]
         assets["assets.py"]
@@ -85,12 +94,16 @@ flowchart TB
 
     main --> tls_cli
     main --> ssh_cli
+    main --> ike_cli
     tls_cli --> execute
     ssh_cli --> execute
+    ike_cli --> execute
     tls_cli --> contracts
     ssh_cli --> contracts
+    ike_cli --> contracts
     execute --> registry
     registry --> native
+    registry --> ike_scanner
     native --> tls_scanner
     native --> ssh_scanner
     execute --> render
@@ -105,15 +118,23 @@ flowchart TB
 
     ssh_scanner --> ssh_probe
     ssh_scanner --> ssh_classify
+    ike_scanner --> ike_adapter
+    ike_adapter --> ike_process
+    ike_adapter --> ike_parse
+    ike_scanner --> ike_classify
     tls_scanner --> rollup
     tls_scanner --> assets
     ssh_scanner --> rollup
     ssh_scanner --> assets
+    ike_scanner --> rollup
+    ike_scanner --> assets
 
     tls_cli --> targets
     ssh_cli --> targets
+    ike_cli --> targets
     tls_scanner --> models
     ssh_scanner --> models
+    ike_scanner --> models
     cert_probe --> certificate
 
     render --> rich
@@ -134,7 +155,7 @@ The dependency direction is:
 ```text
 CLI orchestration
     -> target parsing and scanner selection
-    -> TLS or SSH collection
+    -> TLS, SSH, or IKE collection
     -> typed evidence and findings
     -> Rich, JSON, or CBOM rendering
 ```
@@ -186,7 +207,9 @@ The TLS scan can contain partial evidence. Certificate collection, forced key
 exchange probes, and legacy protocol probes are separate operations. One
 successful operation does not erase another operation's failure.
 
-## 4. SSH scan flow
+## 4. SSH and IKE scan flows
+
+### SSH
 
 ```mermaid
 sequenceDiagram
@@ -208,6 +231,36 @@ sequenceDiagram
 
 The probe does not authenticate, invoke an SSH client, open a channel, or
 modify the endpoint. It reads the cleartext offer and closes the socket.
+
+### IKE
+
+```mermaid
+sequenceDiagram
+    participant C as CLI
+    participant T as Target parser
+    participant S as IKEScanner
+    participant A as IkeScanAdapter
+    participant P as stock ike-scan
+    participant R as Renderer
+
+    C->>T: parse IKE endpoint
+    T-->>C: normalized ScanTarget
+    C->>S: scan target
+    S->>A: bounded mode and port probes
+    A->>P: argument-vector subprocess
+    P-->>A: untrusted stdout and status
+    A->>A: parse and normalize evidence
+    A-->>S: Evidence and typed failures
+    S->>S: classify and roll up one ScanResult
+    S-->>C: ScanResult
+    C->>R: render selected format
+```
+
+The stock backend is discovery, not authenticated negotiation. It reports
+responder modes, transform identifiers, explicit NOTIFY responses, and bounded
+process provenance. It does not establish IKE_AUTH, peer identity, Child-SA
+creation, RFC 9370 additional key exchange, or an installed SA. The detailed
+decision is in the [IKE backend ADR](../architecture/ike-scan-backend-adr.md).
 
 ## 5. Output flow
 
@@ -252,10 +305,11 @@ cryptographic assets as components provided by the endpoint.
 | Failure class | Scanner | Exit | Retry |
 | --- | --- | --- | --- |
 | Local OpenSSL capability | TLS | `3` | never |
-| Target connection | TLS and SSH | `2` | TLS allowlist only |
+| Target connection or silence | TLS, SSH, and IKE | `2` for target failure; IKE silence is a completed unknown result | TLS allowlist only |
 | TLS handshake or middlebox | TLS | `2` | selected allowlist categories |
-| Parse failure | TLS and SSH | `2` | TLS `parse_no_group` only |
-| Usage or target syntax | TLS and SSH | `4` | never |
+| Parse failure | TLS, SSH, and IKE | `2` | TLS `parse_no_group` only |
+| Usage or target syntax | TLS, SSH, and IKE | `4` | never |
+| Local stock `ike-scan` dependency | IKE | `3` | never |
 | Unhandled internal error | process | `70` | never |
 
 The exact categories and retry state machine are documented in the
@@ -275,7 +329,7 @@ not collection or policy evaluation.
 
 ```mermaid
 flowchart TB
-    user["Operator or CI"] --> cli["qureddy scan tls|ssh"]
+    user["Operator or CI"] --> cli["qureddy scan tls|ssh|ike"]
     cli --> parse["Target and option validation"]
     parse --> request["ScanSource\n(kind, endpoint, policy, retry)"]
     request --> registry["CollectorRegistry\n(deterministic selection)"]
@@ -284,7 +338,8 @@ flowchart TB
         registry --> collector["Collector"]
         collector --> tlsprobe["OpenSSL probe set"]
         collector --> sshprobe["Native SSH socket probe"]
-        collector --> future["Future tool adapter\n(ssh-audit, PKI)"]
+        collector --> ikeprobe["Bounded stock ike-scan adapter"]
+        collector --> future["Future collector\n(PKI or static inventory)"]
     end
 
     acquisition --> result["CollectionResult\nobservations + findings + failures + provenance"]
@@ -353,13 +408,13 @@ not invent a new readiness or severity calculation.
 flowchart LR
     registry["CollectorRegistry"] --> native["NativeTLSCollector"]
     registry --> ssh["NativeSSHCollector"]
-    registry -. future .-> adapter["ExternalToolCollector"]
+    registry --> adapter["IKEScanner"]
 
     native --> tls["TLSScanner"]
     ssh --> sshscan["SSHScanner"]
     adapter --> port["ToolAdapter protocol"]
     port --> openssl["OpenSSL"]
-    port --> sshaudit["ssh-audit"]
+    port --> ikescan["stock ike-scan"]
 
     tls --> normalize["Normalize observations"]
     sshscan --> normalize
@@ -372,8 +427,8 @@ contract. The adapter records command identity, version, arguments policy,
 exit status, timeout, and parsed observations in provenance. Tool output is
 untrusted input and crosses the same parser boundary as native probe output.
 
-Adding a tool therefore changes one collector and its tests. It does not add a
-new CLI command, policy engine, or renderer.
+Adding a tool therefore changes one collector and its tests. A protocol command
+may select that collector, but it does not add a second policy engine or renderer.
 
 ## 12. Partial-failure state machine
 
@@ -407,7 +462,7 @@ flowchart TB
     contracts["Contract tests\nregistry, models, failure typing"] --> unit["Unit tests"]
     scanners["Scanner tests\nreal parsers and probe fixtures"] --> unit
     cli["CLI subprocess tests\nreal executable, exit codes, streams"] --> integration["Integration tests"]
-    endpoints["Live endpoint probes\nTLS + SSH corpus"] --> integration
+    endpoints["Live endpoint probes\nTLS + SSH + IKE"] --> integration
     projections["JSON / JSONL / CBOM parity"] --> integration
     integration --> gates["Quality gates"]
     unit --> gates

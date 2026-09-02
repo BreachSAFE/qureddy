@@ -3,7 +3,7 @@
 [![Diátaxis explanation](https://img.shields.io/badge/Di%C3%A1taxis-explanation-8250df?style=flat-square)](https://diataxis.fr/explanation/)
 
 QuReddy is a read-only endpoint measurement tool. It assumes an authorized
-operator and a trustworthy scanner host. It reports what its TLS and SSH
+operator and a trustworthy scanner host. It reports what its TLS, SSH, and IKE
 probes observe; it is not a penetration test, trust validator, or defensive
 control.
 
@@ -35,7 +35,8 @@ QuReddy does not scan stealthily or discover targets automatically.
 ## 2. Scanner host assumptions
 
 The Python interpreter, installed package, dependencies, operating system,
-network resolver, and selected OpenSSL binary are trusted.
+network resolver, selected OpenSSL binary, and selected `ike-scan` binary are
+trusted.
 
 TLS collector selection is explicit: `--openssl`, then `QUREDDY_OPENSSL`, then
 `openssl` on `PATH`. A malicious or replaced binary can fabricate output or
@@ -45,11 +46,18 @@ the binary's supply-chain integrity at runtime.
 
 SSH scanning does not run OpenSSL.
 
+IKE collector selection resolves the value of `--ike-scan` as an executable
+path or command on `PATH`. A replaced executable can fabricate output or run
+with the operator's privileges. QuReddy executes it without a shell, bounds its
+runtime and combined output, terminates its isolated process tree on failure,
+and records its resolved path, version, command, duration, return code, and
+output digests. The raw parser input is excluded from serialized results.
+
 ## 3. Network assumptions
 
 The network path:
 
-- permits outbound TCP to the named target;
+- permits outbound TCP for TLS and SSH, and UDP/500 or UDP/4500 for IKE;
 - does not transparently redirect the connection to a different endpoint;
 - may contain firewalls, proxies, load balancers, or middleboxes that affect
   the observed result;
@@ -62,7 +70,8 @@ observation. QuReddy does not use an out-of-band endpoint identity channel.
 
 TLS targets return protocol output that the supported OpenSSL collector can
 parse. SSH targets return an SSH identification string and KEXINIT packet
-within the configured timeout.
+within the configured timeout. IKE targets may return a stock `ike-scan`
+handshake summary, an explicit NOTIFY rejection, silence, or malformed output.
 
 Malformed or conflicting responses become typed target or parse failures.
 Target-controlled text is treated as untrusted data and is not evaluated as
@@ -76,7 +85,8 @@ metadata endpoint such as `169.254.169.254` is intended behavior for the CLI: th
 operator deliberately chooses the target.
 
 That default is unsafe for an embedder that passes an untrusted, user-supplied
-target into `parse_target`/`parse_ssh_target` (for example a hosted scan service).
+target into `parse_target`, `parse_ssh_target`, or `parse_ike_target` (for
+example a hosted scan service).
 There, an attacker-supplied `169.254.169.254` or `metadata.google.internal` turns
 the scanner into a server-side request forgery pivot into instance metadata or
 internal services.
@@ -98,6 +108,7 @@ QuReddy provides:
 - allowlisted URI schemes;
 - explicit ports and bounded timeouts;
 - subprocess argument vectors without a shell;
+- isolated subprocess-tree termination and bounded combined output;
 - bounded output excerpts and full output digests;
 - typed failure and unknown states;
 - standard output separation from diagnostics;
@@ -112,18 +123,19 @@ secure the target.
 
 QuReddy does not defend against:
 
-- a compromised scanner host, Python environment, or selected OpenSSL binary;
+- a compromised scanner host, Python environment, selected OpenSSL binary, or
+  selected `ike-scan` binary;
 - DNS, routing, or active network interception;
 - endpoint compromise or deliberate deceptive responses;
 - denial of service against the scanner or target;
 - side-channel attacks on the scanner host;
-- TLS or SSH vulnerability exploitation;
+- TLS, SSH, or IKE vulnerability exploitation;
 - decryption or key recovery;
 - certificate path, trust, hostname, revocation, or transparency validation;
 - complete application, source, binary, key, or certificate inventory;
 - automated remediation or blocking.
 
-Use a dedicated TLS vulnerability scanner for vulnerability assessment.
+Use a dedicated protocol vulnerability scanner for vulnerability assessment.
 QuReddy's scope is post-quantum readiness evidence.
 
 ## 8. Privacy and data handling

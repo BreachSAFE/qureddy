@@ -88,7 +88,7 @@ jobs:
 
   # ===========================================================================
   # Phase 2 — Unit tests (hermetic, no network, no real OpenSSL).
-  # Excludes tests/live/.
+  # Excludes public-network and local-IKE-lab acceptance tests.
   # ===========================================================================
   phase-2-unit:
     name: "Phase 2: Unit (${{ matrix.os }})"
@@ -116,13 +116,7 @@ jobs:
         run: uv sync --locked --extra dev
 
       - name: pytest (unit only, with coverage)
-        run: |
-          uv run --locked pytest --ignore=tests/live \
-            --cov=qureddy \
-            --cov-report=term-missing \
-            --cov-report=xml:coverage.xml \
-            --cov-fail-under=90 \
-            --junitxml=pytest-results.xml
+        run: uv run --locked pytest --ignore=tests/live --ignore=tests/ike_lab --cov=qureddy --cov-report=term-missing --cov-report=xml:coverage.xml --cov-fail-under=90 --junitxml=pytest-results.xml
 
       - name: Upload coverage
         if: always()
@@ -137,6 +131,40 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  # Windows support is scoped to the IKE subprocess boundary. The legacy full
+  # suite still contains POSIX-only OpenSSL, console, and signing fixtures.
+  phase-2-ike-windows:
+    name: "Phase 2: IKE unit (windows-latest)"
+    runs-on: windows-latest
+    needs: phase-1-static
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python 3.14
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+
+      - name: Install project (dev extras)
+        run: uv sync --locked --extra dev
+
+      - name: Exercise IKE parser, adapter, subprocess, scanner, and CLI
+        run: uv run --locked pytest tests/test_ike_*.py --junitxml=pytest-ike-windows.xml
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: pytest-ike-windows
+          path: pytest-ike-windows.xml
+          if-no-files-found: error
+          retention-days: 14
+
   # ===========================================================================
   # Phase 3 — Integration tests (real OpenSSL 3.5.7 LTS subprocess, no network).
   # OpenSSL is installed per Linux and macOS runner.
@@ -144,7 +172,7 @@ jobs:
   phase-3-integration:
     name: "Phase 3: Integration (${{ matrix.os }}, OpenSSL ${{ matrix.openssl.version }})"
     runs-on: ${{ matrix.os }}
-    needs: phase-2-unit
+    needs: [phase-2-unit, phase-2-ike-windows]
     strategy:
       fail-fast: false
       matrix:
@@ -213,8 +241,8 @@ jobs:
       - name: Install project (dev extras)
         run: uv sync --locked --extra dev
 
-      - name: pytest tests/live/
-        run: uv run --locked pytest tests/live/ -v --junitxml=live-results.xml
+      - name: pytest public live targets
+        run: uv run --locked pytest tests/live/test_live_targets.py -v --junitxml=live-results.xml
 
       - name: Upload live-test results
         if: always()

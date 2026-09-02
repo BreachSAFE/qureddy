@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
 # SPDX-License-Identifier: Apache-2.0
-"""Scan execution and failure-to-exit-code mapping for `scan tls`."""
+"""Shared scan execution and failure-to-exit-code mapping."""
 
 from __future__ import annotations
 
@@ -25,7 +25,11 @@ from qureddy.core.errors import (
     QureddyError,
 )
 from qureddy.core.logging import get_logger
-from qureddy.core.models import FailureCategory, OpenSSLDependency
+from qureddy.core.models import (
+    LOCAL_CAPABILITY_CATEGORIES,
+    FailureCategory,
+    OpenSSLDependency,
+)
 from qureddy.scanners.tls.scanner import (
     build_capability_failure_result,
     build_scan_failure_result,
@@ -113,6 +117,8 @@ def _execute_scan(
         result = _handle_scan_failure(exc, scan_target, machine_format=machine_format)
         exit_code = EXIT_TARGET_FAILED
 
-    if exit_code == EXIT_OK and result.summary.failure_category is not None:
+    if exit_code == EXIT_OK and result.summary.failure_category in LOCAL_CAPABILITY_CATEGORIES:
+        exit_code = EXIT_LOCAL_DEPENDENCY
+    elif exit_code == EXIT_OK and result.summary.failure_category is not None:
         exit_code = EXIT_TARGET_FAILED
     return result, exit_code

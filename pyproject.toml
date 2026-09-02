@@ -1,18 +1,18 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
 # SPDX-License-Identifier: Apache-2.0
-# Release metadata and quality-tool configuration for the shipped TLS and SSH
+# Release metadata and quality-tool configuration for the TLS, SSH, and IKE
 # scanner package. Keep the project table aligned with the tested wheel.
 
 [project]
 name = "breachsafe-qureddy"
-version = "0.9.6"
-description = "Open-source post-quantum readiness scanner for TLS and SSH endpoints."
+version = "0.9.7"
+description = "Open-source post-quantum readiness scanner for TLS, SSH, and IKE endpoints."
 readme = "README.md"
 requires-python = ">=3.14"
 license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE", "LICENSES/*"]
 authors = [{name = "BreachSAFE QuReddy contributors"}]
-keywords = ["pqc", "post-quantum", "cryptography", "tls", "scanner", "cbom"]
+keywords = ["pqc", "post-quantum", "cryptography", "tls", "ssh", "ike", "scanner", "cbom"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "License :: OSI Approved :: Apache Software License",
@@ -265,6 +265,7 @@ max-statements = 50
 "src/qureddy/cli/main.py" = ["TC001"]
 "src/qureddy/cli/scan.py" = ["TC001"]
 "src/qureddy/cli/ssh.py" = ["TC001"]
+"src/qureddy/cli/ike.py" = ["TC001"]
 "tests/**/*.py" = [
     "S101",     # asserts allowed in tests
     "PLR2004",  # magic numbers allowed in tests

@@ -52,6 +52,7 @@ Task-oriented recipes for someone who already knows the basics.
 - [Install and troubleshoot QuReddy](how-to/install.md)
 - [Scan an IP target with a custom SNI](how-to/scan-ip-with-sni.md)
 - [Scan an SSH or SFTP endpoint](how-to/scan-ssh.md)
+- [Scan an IKE endpoint](how-to/scan-ike.md)
 - [Capture machine-readable output for CI](how-to/json-output-for-ci.md)
 - [Generate a CBOM](how-to/generate-a-cbom.md)
 - [Run QuReddy with a GUI](how-to/run-with-a-gui.md)

@@ -10,7 +10,7 @@ from rich import box
 from rich.table import Table
 from rich.text import Text
 
-from qureddy.core.models import ProbeRole
+from qureddy.core.models import OpenSSLDependency, ProbeRole
 from qureddy.core.pqc import is_hybrid_pq
 from qureddy.output._styles import (
     BODY_TEXT,
@@ -126,7 +126,8 @@ def _run_details_table(result: ScanResult) -> Table:
     for dep in result.dependencies:
         table.add_row(f"{dep.name}_path", style_path(dep))
         table.add_row(f"{dep.name}_version", styled_or_dash(dep.version))
-        table.add_row(f"{dep.name}_hybrid_support", style_capability(dep))
+        if isinstance(dep, OpenSSLDependency):
+            table.add_row(f"{dep.name}_hybrid_support", style_capability(dep))
     return table
 
 

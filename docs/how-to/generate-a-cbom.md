@@ -2,16 +2,17 @@
 
 [![Diátaxis how-to](https://img.shields.io/badge/Di%C3%A1taxis-how--to-2ea44f?style=flat-square)](https://diataxis.fr/how-to-guides/)
 
-Use `--format cbom` with either scanner to write a CycloneDX Cryptography
+Use `--format cbom` with a scanner to write a CycloneDX Cryptography
 Bill of Materials to standard output.
 
 ## Contents
 
 1. [TLS endpoint](#1-tls-endpoint)
 2. [SSH endpoint](#2-ssh-endpoint)
-3. [Validate the final bytes](#3-validate-the-final-bytes)
-4. [Evidence limits](#4-evidence-limits)
-5. [Related documentation](#5-related-documentation)
+3. [IKE endpoint](#3-ike-endpoint)
+4. [Validate the final bytes](#4-validate-the-final-bytes)
+5. [Evidence limits](#5-evidence-limits)
+6. [Related documentation](#6-related-documentation)
 
 ## 1. TLS endpoint
 
@@ -33,7 +34,18 @@ QuReddy writes the CBOM document to stdout. Redirect it to a file as shown
 above, and use the process exit code to distinguish a successful scan from a
 target, local-dependency, usage, or internal failure.
 
-## 3. Validate the final bytes
+## 3. IKE endpoint
+
+IKE scanning requires stock `ike-scan` and emits low-confidence inventory evidence:
+
+```bash
+qureddy scan ike vpn.example.com --nat-t --format cbom > vpn-ike.cbom.json
+```
+
+The CBOM inventories tool-reported IKE protocol and algorithm assets. It does not claim
+an accepted proposal, authenticated tunnel, Child-SA/ESP/AH posture, or HNDL protection.
+
+## 4. Validate the final bytes
 
 QuReddy emits CycloneDX 1.7. The release gate validates the final bytes against
 the pinned CycloneDX 1.7.1 JSON schemas, `cyclonedx-cli` 0.33.1, and QuReddy's
@@ -71,13 +83,13 @@ python -c 'import json; print(json.load(open("github-ssh.cbom.json"))["specVersi
 
 The expected value is `1.7`.
 
-## 4. Evidence limits
+## 5. Evidence limits
 
 The CBOM reports observations made by QuReddy. It is not a claim of complete
 cryptographic inventory, remote implementation identity, certificate trust,
 or revocation validation.
 
-## 5. Related documentation
+## 6. Related documentation
 
 - [CLI options](../reference/cli.md)
 - [Exit codes](../reference/exit-codes.md)

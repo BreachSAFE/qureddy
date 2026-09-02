@@ -26,6 +26,7 @@ from rich.text import Text
 
 from qureddy.core.models import (
     LOCAL_CAPABILITY_CATEGORIES,
+    ExternalToolDependency,
     FailureCategory,
     HndlExposure,
     HygieneStatus,
@@ -174,7 +175,7 @@ def style_group(group: str | None) -> Text:
     return Text(group)
 
 
-def style_path(dep: OpenSSLDependency) -> Text:
+def style_path(dep: OpenSSLDependency | ExternalToolDependency) -> Text:
     """Render `dep.path`, marking missing paths in red `(missing)`."""
     if not dep.path:
         return Text("(missing)", style="red")

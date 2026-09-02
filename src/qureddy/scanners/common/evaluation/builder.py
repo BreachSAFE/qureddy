@@ -35,6 +35,12 @@ def _summary(facts: PostureFacts) -> str:
     if facts.support is PqcSupport.PURE_PQ_OBSERVED:
         return f"{protocol} pure post-quantum protection was observed."
     if facts.support is PqcSupport.CLASSICAL_ONLY_OBSERVED:
+        if facts.hndl_exposure is HndlExposure.UNKNOWN:
+            scope = "IPsec" if protocol == "IKE" else protocol
+            return (
+                f"Only classical {protocol} key exchange was observed. "
+                f"Overall {scope} HNDL exposure could not be determined."
+            )
         return (
             f"Only classical {protocol} key exchange was observed. "
             "The endpoint remains exposed to harvest-now/decrypt-later risk."
@@ -69,7 +75,7 @@ def _hardening(status: HygieneStatus) -> str:
 
 
 def build_evaluation(facts: PostureFacts) -> PostureEvaluation:
-    """Build CISO language without protocol-specific branching."""
+    """Build CISO language from normalized protocol facts."""
     protocol = facts.protocol.upper()
     observed: list[str] = []
     if facts.negotiated_algorithm:
