@@ -140,13 +140,19 @@ def _authentication_axis(signals: PostureSignals, *, not_testable: bool) -> Axis
 
 
 def _protocol_axis(
-    signals: PostureSignals, *, has_findings: bool, not_testable: bool
+    signals: PostureSignals,
+    *,
+    failure_category: FailureCategory | None,
+    has_findings: bool,
+    not_testable: bool,
 ) -> AxisStatus:
     return (
         AxisStatus.NOT_TESTABLE
         if not_testable
         else AxisStatus.ACTION_NEEDED
-        if signals.protocol_action_needed
+        if signals.protocol_action_needed or signals.legacy_protocol
+        else AxisStatus.UNKNOWN
+        if failure_category is FailureCategory.TLS_HANDSHAKE_FAILED
         else AxisStatus.ACCEPTABLE
         if has_findings
         else AxisStatus.UNKNOWN
@@ -269,7 +275,7 @@ def _build_axes(
     findings: list[Finding],
     evidence: list[Evidence],
     failure_category: FailureCategory | None,
-) -> PostureAxes:
+) -> tuple[PostureAxes, PostureSignals, bool]:
     signals = derive_signals(findings, evidence)
     not_testable = _is_not_testable(failure_category)
 
@@ -284,15 +290,19 @@ def _build_axes(
     downgrade = _downgrade_axis(signals, not_testable=not_testable)
     authentication = _authentication_axis(signals, not_testable=not_testable)
     protocol_hygiene = _protocol_axis(
-        signals, has_findings=bool(findings), not_testable=not_testable
+        signals,
+        failure_category=failure_category,
+        has_findings=bool(findings),
+        not_testable=not_testable,
     )
-    return PostureAxes(
+    axes = PostureAxes(
         pqc_support=pqc_support,
         key_exchange=key_exchange,
         downgrade_resistance=downgrade,
         authentication=authentication,
         protocol_hygiene=protocol_hygiene,
     )
+    return axes, signals, not_testable
 
 
 def build_interpretation(
@@ -303,10 +313,8 @@ def build_interpretation(
 ) -> ScanInterpretation:
     """Build stable posture axes and provenance from observed findings."""
     resolved_protocol = _resolve_protocol(findings, evidence, protocol)
-    axes = _build_axes(findings, evidence, failure_category)
+    axes, signals, not_testable = _build_axes(findings, evidence, failure_category)
     reason_codes = build_reason_codes(findings, failure_category)
-    signals = derive_signals(findings, evidence)
-    not_testable = _is_not_testable(failure_category)
     headline, recommended_action = _ciso_text(axes, reason_codes)
     hndl_exposure = _hndl_exposure(
         protocol=resolved_protocol,

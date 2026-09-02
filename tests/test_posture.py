@@ -133,6 +133,7 @@ def test_handshake_failure_without_hygiene_evidence_is_unknown() -> None:
     )
 
     assert interpretation.hygiene_status is HygieneStatus.UNKNOWN
+    assert interpretation.axes.protocol_hygiene is AxisStatus.UNKNOWN
     assert interpretation.display.current_hygiene == "Security hygiene could not be assessed"
 
 
@@ -155,6 +156,7 @@ def test_observed_legacy_hygiene_wins_over_handshake_failure() -> None:
     )
 
     assert interpretation.hygiene_status is HygieneStatus.ACTION_NEEDED
+    assert interpretation.axes.protocol_hygiene is AxisStatus.ACTION_NEEDED
     assert interpretation.display.current_hygiene == "Protocol hardening is required"
 
 
