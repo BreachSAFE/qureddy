@@ -9,39 +9,44 @@ the two functions that collapse per-finding values to one scan-level verdict.
 
 from __future__ import annotations
 
+import pytest
+
 from qureddy.core.models import (
     Confidence,
+    Evidence,
     Finding,
+    ObservationType,
     Readiness,
+    ScanTarget,
     Severity,
 )
-from qureddy.scanners.tls._summary import highest_severity
+from qureddy.scanners.tls._summary import build_summary, highest_severity
 from qureddy.scanners.tls.scanner import _scan_readiness
 
 
 class TestScanReadinessRollupPrecedence:
     """`_scan_readiness` rolls multiple findings to one scan-level value.
 
-    Precedence (highest first):
-      CLASSICALLY_WEAK > TRANSITIONAL_HYBRID > QUANTUM_VULNERABLE >
-      UNKNOWN > QUANTUM_SAFE > NOT_APPLICABLE
-
-    Reviewer-flagged latent issue: CLASSICALLY_WEAK was unreachable in
-    The current policy emits this finding when certificate evidence supports it,
-    but the rollup branch was previously falling through to a
-    nondeterministic `next(iter(...))`. These tests pin the precedence
-    so certificate findings cannot be silently downgraded by
-    a coexisting hybrid finding.
+    Conclusively observed PQ support takes precedence in this PQ-readiness field.
+    Without negotiated or observed evidence, present-day classical weakness keeps
+    precedence so an offered-only capability cannot overstate endpoint posture.
     """
 
     @staticmethod
-    def _finding(readiness: Readiness, suffix: str = "") -> Finding:
+    def _finding(
+        readiness: Readiness,
+        suffix: str = "",
+        *,
+        evidence_id: str | None = None,
+        rule_id: str | None = None,
+        finding_type: str = "test",
+    ) -> Finding:
         return Finding(
             id=f"f-{readiness.value}{suffix}",
             asset_id="asset-1",
-            evidence_ids=(f"ev-{readiness.value}{suffix}",),
-            rule_id=f"test.{readiness.value}",
-            finding_type="test",
+            evidence_ids=(evidence_id or f"ev-{readiness.value}{suffix}",),
+            rule_id=rule_id or f"test.{readiness.value}",
+            finding_type=finding_type,
             title="t",
             description="d",
             severity=Severity.INFO,
@@ -49,13 +54,64 @@ class TestScanReadinessRollupPrecedence:
             confidence=Confidence.HIGH,
         )
 
-    def test_classically_weak_trumps_transitional_hybrid(self) -> None:
-
+    def test_unproven_hybrid_does_not_override_classical_weakness(self) -> None:
+        """Require conclusive evidence before a PQ finding changes the rollup."""
         findings = [
             self._finding(Readiness.TRANSITIONAL_HYBRID),
             self._finding(Readiness.CLASSICALLY_WEAK),
         ]
         assert _scan_readiness(findings) is Readiness.CLASSICALLY_WEAK
+
+    @pytest.mark.parametrize(
+        "observation_type", [ObservationType.NEGOTIATED, ObservationType.OBSERVED]
+    )
+    def test_observed_hybrid_outranks_classical_hygiene(
+        self, observation_type: ObservationType
+    ) -> None:
+        """Keep observed PQ support in the scan verdict when legacy TLS is offered."""
+        hybrid = self._finding(
+            Readiness.TRANSITIONAL_HYBRID,
+            evidence_id="ev-hybrid",
+            rule_id="tls.hybrid.negotiated_pq",
+            finding_type="tls.kex.hybrid",
+        )
+        legacy = self._finding(
+            Readiness.CLASSICALLY_WEAK,
+            evidence_id="ev-legacy",
+            rule_id="tls.legacy.protocol_offered",
+            finding_type="tls.legacy.protocol_offered",
+        )
+        evidence = [
+            Evidence(
+                id="ev-hybrid",
+                asset_id="asset-1",
+                evidence_type="tls.negotiation",
+                observation_type=observation_type,
+                source="test",
+                protocol="tls",
+            ),
+            Evidence(
+                id="ev-legacy",
+                asset_id="asset-1",
+                evidence_type="tls.legacy.protocol",
+                observation_type=ObservationType.OFFERED,
+                source="test",
+                protocol="tls",
+            ),
+        ]
+        target = ScanTarget(
+            original_input="example.test",
+            host="example.test",
+            port=443,
+            sni=None,
+            locator="tls://example.test:443",
+        )
+
+        summary = build_summary(target, [hybrid, legacy], evidence)
+
+        assert summary.readiness is Readiness.TRANSITIONAL_HYBRID
+        assert summary.interpretation is not None
+        assert summary.interpretation.effective is Readiness.TRANSITIONAL_HYBRID
 
     def test_classically_weak_trumps_quantum_vulnerable(self) -> None:
 
