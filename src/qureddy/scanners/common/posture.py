@@ -139,6 +139,13 @@ def _authentication_axis(signals: PostureSignals, *, not_testable: bool) -> Axis
     )
 
 
+def _has_unresolved_probe_failure(signals: PostureSignals) -> bool:
+    """Return whether failed coverage lacks any successful KEX observation."""
+    return signals.hybrid_failed and not (
+        signals.classical_kex or signals.hybrid or signals.pure_pq
+    )
+
+
 def _protocol_axis(
     signals: PostureSignals,
     *,
@@ -151,7 +158,7 @@ def _protocol_axis(
         else AxisStatus.ACTION_NEEDED
         if signals.protocol_action_needed or signals.legacy_protocol
         else AxisStatus.UNKNOWN
-        if signals.hybrid_failed
+        if _has_unresolved_probe_failure(signals)
         else AxisStatus.ACCEPTABLE
         if has_findings
         else AxisStatus.UNKNOWN
@@ -199,7 +206,7 @@ def _hygiene_status(
         or signals.protocol_action_needed
     ):
         return HygieneStatus.ACTION_NEEDED
-    if signals.hybrid_failed:
+    if _has_unresolved_probe_failure(signals):
         return HygieneStatus.UNKNOWN
     return HygieneStatus.OK if has_findings else HygieneStatus.UNKNOWN
 

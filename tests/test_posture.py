@@ -160,6 +160,30 @@ def test_observed_legacy_hygiene_wins_over_handshake_failure() -> None:
     assert interpretation.display.current_hygiene == "Protocol hardening is required"
 
 
+def test_successful_retry_supersedes_retained_probe_failure() -> None:
+    interpretation = build_interpretation(
+        [
+            _finding(
+                "tls.hybrid.probe_failed",
+                "tls.kex.probe_failed",
+                Readiness.UNKNOWN,
+            ),
+            _finding(
+                "tls.hybrid.negotiated_pq",
+                "tls.kex.hybrid",
+                Readiness.TRANSITIONAL_HYBRID,
+            ),
+        ],
+        [],
+        None,
+    )
+
+    assert interpretation.axes.pqc_support is PqcSupport.HYBRID_OBSERVED
+    assert interpretation.hygiene_status is HygieneStatus.OK
+    assert interpretation.axes.protocol_hygiene is AxisStatus.ACCEPTABLE
+    assert interpretation.display.overall_status == "Hybrid PQC protection observed"
+
+
 def test_interpretation_covers_positive_and_classical_paths() -> None:
     hybrid_legacy = build_interpretation(
         [
