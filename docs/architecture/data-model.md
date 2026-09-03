@@ -135,7 +135,7 @@ The generated table shows both Python member names and serialized values.
 | `ObservationType` | `core.vocabulary` | `NEGOTIATED = "negotiated"`, `OFFERED = "offered"`, `OBSERVED = "observed"`, `INFERRED = "inferred"`, `NOT_OFFERED = "not_offered"`, `NOT_TESTABLE = "not_testable"`, `NO_RESPONSE = "no_response"` |
 | `OutputFormat` | `core.vocabulary` | `RICH = "rich"`, `JSON = "json"`, `CBOM = "cbom"`, `JSONL = "jsonl"` |
 | `PqcSupport` | `core.vocabulary` | `HYBRID_OBSERVED = "hybrid_observed"`, `PURE_PQ_OBSERVED = "pure_pq_observed"`, `CLASSICAL_ONLY_OBSERVED = "classical_only_observed"`, `UNKNOWN = "unknown"`, `NOT_TESTABLE = "not_testable"` |
-| `ProbeRole` | `core.vocabulary` | `HYBRID_READINESS = "hybrid_readiness"`, `CLASSICAL_CONTROL = "classical_control"`, `HYBRID_COVERAGE = "hybrid_coverage"` |
+| `ProbeRole` | `core.vocabulary` | `HYBRID_READINESS = "hybrid_readiness"`, `CLASSICAL_CONTROL = "classical_control"`, `HYBRID_COVERAGE = "hybrid_coverage"`, `PURE_PQ_COVERAGE = "pure_pq_coverage"` |
 | `Protocol` | `core.crypto_catalog.models` | `TLS = "tls"`, `SSH = "ssh"`, `IKE = "ike"`, `CERTIFICATE = "certificate"` |
 | `RatingAxis` | `core.crypto_catalog.models` | `CLASSICAL = "classical"`, `QUANTUM = "quantum"`, `DEPLOYMENT = "deployment"` |
 | `RatingVerdict` | `core.crypto_catalog.models` | `CLASSICALLY_WEAK = "classically_weak"`, `QUANTUM_VULNERABLE = "quantum_vulnerable"`, `QUANTUM_SAFE = "quantum_safe"`, `DISCOURAGED = "discouraged"`, `PROHIBITED = "prohibited"`, `UNKNOWN = "unknown"` |

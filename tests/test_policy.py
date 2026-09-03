@@ -60,6 +60,23 @@ class TestCoverageProbeRole:
         )
         assert classify_evidence(_asset(), [ev]) == []
 
+    def test_pure_pq_coverage_negotiation_is_quantum_safe(self) -> None:
+        ev = _evidence(negotiated_group="MLKEM768", probe_role=ProbeRole.PURE_PQ_COVERAGE)
+
+        findings = classify_evidence(_asset(), [ev])
+
+        assert [finding.readiness for finding in findings] == [Readiness.QUANTUM_SAFE]
+
+    def test_failed_pure_pq_coverage_does_not_report_hybrid_failure(self) -> None:
+        ev = _evidence(
+            negotiated_group=None,
+            observation_type=ObservationType.NOT_TESTABLE,
+            probe_role=ProbeRole.PURE_PQ_COVERAGE,
+            failure_category=FailureCategory.TLS_HANDSHAKE_FAILED,
+        )
+
+        assert classify_evidence(_asset(), [ev]) == []
+
 
 class TestHybridNegotiatedRule:
     def test_negotiated_pq_hybrid_produces_transitional_hybrid(self) -> None:

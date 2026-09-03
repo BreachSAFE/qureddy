@@ -244,6 +244,21 @@ def test_pure_pq_with_classical_fallback_is_protected_but_defeasible() -> None:
     assert interpretation.model_dump(mode="json")["hndl_exposure"] == "protected_defeasible"
 
 
+def test_pure_pq_success_outweighs_a_failed_hybrid_probe_in_headline() -> None:
+    interpretation = build_interpretation(
+        [
+            _finding("tls.hybrid.probe_failed", "tls.kex.probe_failed", Readiness.UNKNOWN),
+            _finding("tls.pq.negotiated_pure", "tls.kex.pure_pq", Readiness.QUANTUM_SAFE),
+        ],
+        [],
+        None,
+    )
+
+    assert interpretation.axes.pqc_support is PqcSupport.PURE_PQ_OBSERVED
+    assert interpretation.headline == "Pure post-quantum key exchange was observed."
+    assert "hybrid_probe_failed" not in interpretation.reason_codes
+
+
 @pytest.mark.parametrize(
     ("finding_type", "readiness"),
     [

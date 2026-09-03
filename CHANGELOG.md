@@ -35,6 +35,9 @@ versions follow [PEP 440](https://peps.python.org/pep-0440/).
 
 ### Fixed
 
+- Detect OpenSSL-supported pure ML-KEM TLS endpoints as quantum-safe instead of
+  collapsing them into the same unknown result as an unreachable target
+  ([issue #521](https://github.com/BreachSAFE/qureddy/issues/521)).
 - Report pure-PQ key exchange with an observed classical fallback as HNDL-protected but
   defeasible, with consistent executive wording, instead of over-claiming unconditional
   protection

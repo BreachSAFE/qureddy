@@ -45,7 +45,10 @@ def _ciso_text(
             "Hybrid PQC is available, but legacy protocol exposure remains.",
             "Disable TLS 1.0/1.1 and remove classical fallback where compatible.",
         )
-    if "hybrid_probe_failed" in reasons:
+    if "hybrid_probe_failed" in reasons and axes.pqc_support not in {
+        PqcSupport.HYBRID_OBSERVED,
+        PqcSupport.PURE_PQ_OBSERVED,
+    }:
         return (
             "PQC support could not be confirmed; classical key exchange was observed.",
             "Verify the target TLS terminator supports the requested hybrid group and re-scan.",

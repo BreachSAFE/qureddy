@@ -12,6 +12,7 @@ from qureddy.scanners.tls.openssl_probe._constants import (
     HYBRID_GROUP,
     HYBRID_GROUPS,
     MIN_OPENSSL_VERSION,
+    PURE_PQ_GROUPS,
 )
 from qureddy.scanners.tls.openssl_probe.capability import (
     probe_capability,
@@ -20,6 +21,7 @@ from qureddy.scanners.tls.openssl_probe.capability import (
 )
 from qureddy.scanners.tls.openssl_probe.probe import (
     run_classical_probe,
+    run_group_probe,
     run_hybrid_probe,
 )
 
@@ -30,10 +32,12 @@ __all__ = [
     "HYBRID_GROUP",
     "HYBRID_GROUPS",
     "MIN_OPENSSL_VERSION",
+    "PURE_PQ_GROUPS",
     "_classify_failure",
     "probe_capability",
     "raise_if_unusable",
     "resolve_openssl_path",
     "run_classical_probe",
+    "run_group_probe",
     "run_hybrid_probe",
 ]

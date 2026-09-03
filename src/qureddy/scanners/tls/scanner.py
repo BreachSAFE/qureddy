@@ -60,8 +60,9 @@ from qureddy.scanners.tls.openssl_probe import (
     CLASSICAL_GROUP,
     DEFAULT_TIMEOUT_SECONDS,
     HYBRID_GROUPS,
+    PURE_PQ_GROUPS,
     run_classical_probe,
-    run_hybrid_probe,
+    run_group_probe,
 )
 from qureddy.scanners.tls.openssl_probe.capability import resolve_openssl_with_capability
 
@@ -71,6 +72,12 @@ from qureddy.scanners.tls.openssl_probe.capability import resolve_openssl_with_c
 _build_summary = build_summary
 _scan_readiness = scan_readiness
 _summary_failure_category = summary_failure_category
+
+_GROUP_PROBE_PLAN: tuple[tuple[str, ProbeRole, str], ...] = (
+    (HYBRID_GROUPS[0], ProbeRole.HYBRID_READINESS, "tls13_hybrid"),
+    *((group, ProbeRole.HYBRID_COVERAGE, "tls13_hybrid") for group in HYBRID_GROUPS[1:]),
+    *((group, ProbeRole.PURE_PQ_COVERAGE, "tls13_pure_pq") for group in PURE_PQ_GROUPS),
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -251,21 +258,19 @@ class TLSScanner(Scanner[ScanTarget]):
         log = get_logger(__name__)
         evidence: list[Evidence] = []
         probe_count = 0
-        # #337: force each standardized PQ hybrid group. The first (X25519MLKEM768) is the
-        # primary readiness probe (drives the not-testable/rejected/failed rules); the rest are
-        # supplementary coverage — a negotiated hybrid still fires the positive rule, but a
-        # rejection does not spawn a spurious quantum_vulnerable finding.
-        for index, group in enumerate(HYBRID_GROUPS):
-            role = ProbeRole.HYBRID_READINESS if index == 0 else ProbeRole.HYBRID_COVERAGE
-            log.info("probe.phase.start", phase="tls13_hybrid", group=group)
+        # The primary hybrid attempt owns readiness failures. Supplementary hybrid and pure-PQ
+        # attempts are positive-only coverage: negotiation fires the structural policy rule,
+        # while rejection does not fabricate a negative finding (#337, #521).
+        for group, role, phase in _GROUP_PROBE_PLAN:
+            log.info("probe.phase.start", phase=phase, group=group)
             results = self._probe_with_retries(
-                run_hybrid_probe,
+                run_group_probe,
                 target=target,
                 openssl_path=openssl_path,
                 timeout_seconds=timeout_seconds,
                 group=group,
             )
-            log.info("probe.phase.complete", phase="tls13_hybrid", group=group)
+            log.info("probe.phase.complete", phase=phase, group=group)
             probe_count += len(results)
             evidence.extend(
                 evidence_from_probe(asset=asset, probe=r, expected_group=group, probe_role=role)

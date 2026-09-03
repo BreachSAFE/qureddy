@@ -99,8 +99,8 @@ MVP_POLICY: tuple[PolicyRule, ...] = (
         ),
     ),
     PolicyRule(
-        # #330: a pure post-quantum group (KEM with no classical half) is quantum_safe, not
-        # transitional. No such TLS group is standardized yet; this is future-proofing.
+        # #330/#521: an OpenSSL-supported pure post-quantum TLS group (KEM with no
+        # classical half) is quantum_safe, not transitional.
         id="tls.pq.negotiated_pure",
         finding_type="tls.kex.pure_pq",
         title="TLS 1.3 negotiated a pure post-quantum group",
