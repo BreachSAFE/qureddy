@@ -35,6 +35,9 @@ versions follow [PEP 440](https://peps.python.org/pep-0440/).
 
 ### Fixed
 
+- Deduplicate exact component verdict properties in CBOM output while preserving distinct
+  rule identifiers and conflicting values for diagnosis
+  ([issue #714](https://github.com/BreachSAFE/qureddy/issues/714)).
 - Keep silent IKE probes within the requested retry budget so a completed scan reports
   `no_response` with unknown readiness instead of being killed and mislabeled as a probe
   timeout ([issue #738](https://github.com/BreachSAFE/qureddy/issues/738)).

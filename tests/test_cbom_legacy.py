@@ -13,7 +13,7 @@ import json
 
 import pytest
 
-from qureddy.core.models import Asset, Evidence, ObservationType
+from qureddy.core.models import Asset, Evidence, ObservationType, Readiness, Severity
 from qureddy.output import cbom_legacy
 from qureddy.output.cbom import render_cbom
 from qureddy.output.cbom_cipher import cipher_classical_bits, cipher_primitive
@@ -123,15 +123,37 @@ def test_render_emits_legacy_cipher_components_with_verdict() -> None:
         negotiated_group="AES256-GCM-SHA384",
         notes=("accepted on TLSv1.2",),
     )
-    result = base.model_copy(update={"evidence": (*base.evidence, weak, strong)})
+    weak_finding = base.findings[0].model_copy(
+        update={
+            "id": "finding-weak",
+            "evidence_ids": (weak.id,),
+            "rule_id": "tls.legacy.cipher_weak",
+            "finding_type": "tls.legacy.cipher_weak",
+            "severity": Severity.HIGH,
+            "readiness": Readiness.CLASSICALLY_WEAK,
+            "protocol_version": "TLSv1.2",
+            "negotiated_group": "DES-CBC3-SHA",
+        }
+    )
+    result = base.model_copy(
+        update={
+            "evidence": (*base.evidence, weak, strong),
+            "findings": (*base.findings, weak_finding),
+        }
+    )
     stream = io.StringIO()
     render_cbom(result, stream)
     components = {c["name"]: c for c in json.loads(stream.getvalue())["components"]}
 
     assert "DES-CBC3-SHA" in components
     assert "AES256-GCM-SHA384" in components
-    weak_props = {p["name"]: p["value"] for p in components["DES-CBC3-SHA"]["properties"]}
-    assert weak_props["qureddy:readiness"] == "classically_weak"
-    assert weak_props["qureddy:severity"] == "high"
+    weak_props = [
+        (prop["name"], prop["value"])
+        for prop in components["DES-CBC3-SHA"]["properties"]
+        if prop["name"].startswith("qureddy:")
+    ]
+    assert weak_props.count(("qureddy:readiness", "classically_weak")) == 1
+    assert weak_props.count(("qureddy:severity", "high")) == 1
+    assert weak_props.count(("qureddy:rule_id", "tls.legacy.cipher_weak")) == 1
     strong_props = {p["name"]: p["value"] for p in components["AES256-GCM-SHA384"]["properties"]}
     assert strong_props["qureddy:readiness"] == "quantum_vulnerable"

@@ -211,7 +211,13 @@ def _apply_native_to_component(
     if ref in occurrences:
         component["evidence"] = {"occurrences": occurrences[ref]}
     if ref in verdicts:
-        component.setdefault("properties", []).extend(verdicts[ref])
+        properties = component.setdefault("properties", [])
+        existing = {(item.get("name"), item.get("value")) for item in properties}
+        for verdict in verdicts[ref]:
+            pair = (verdict["name"], verdict["value"])
+            if pair not in existing:
+                properties.append(verdict)
+                existing.add(pair)
 
 
 def _reanchor_annotations(payload: dict[str, Any], annotations: list[dict[str, Any]]) -> None:
