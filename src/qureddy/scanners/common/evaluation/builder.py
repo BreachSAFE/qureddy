@@ -17,7 +17,8 @@ def _hndl_risk(exposure: HndlExposure) -> str:
     return {
         HndlExposure.AT_RISK: "At risk of harvest-now/decrypt-later exposure",
         HndlExposure.PROTECTED_DEFEASIBLE: (
-            "Protected when hybrid protection is negotiated, but a classical downgrade path remains"
+            "Protected by observed post-quantum key exchange, "
+            "but a classical downgrade path remains"
         ),
         HndlExposure.PROTECTED: "Protected against observed harvest-now/decrypt-later exposure",
     }.get(exposure, "Exposure could not be determined")
