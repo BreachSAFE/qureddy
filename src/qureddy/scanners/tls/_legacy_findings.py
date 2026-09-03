@@ -29,6 +29,7 @@ from qureddy.core.models import (
 from qureddy.scanners.common.finding_types import (
     FINDING_TYPE_CLASSICAL_PROTOCOL,
     FINDING_TYPE_LEGACY_PROTOCOL_OFFERED,
+    FINDING_TYPE_WEAK_TRANSPORT,
 )
 
 if TYPE_CHECKING:
@@ -209,6 +210,10 @@ def _deprecated_or_weak_finding(
 ) -> Finding:
     """Finding for a deprecated protocol or one accepting a known-weak cipher."""
     severity = Severity.HIGH if weak else Severity.MEDIUM
+    rule_id = (
+        FINDING_TYPE_LEGACY_PROTOCOL_OFFERED if deprecated_protocol else FINDING_TYPE_WEAK_TRANSPORT
+    )
+    finding_type = FINDING_TYPE_WEAK_TRANSPORT if weak else FINDING_TYPE_LEGACY_PROTOCOL_OFFERED
     reason = (
         f"{result.protocol_version} is deprecated per PCI-DSS/NIST SP 800-52"
         if deprecated_protocol
@@ -218,8 +223,8 @@ def _deprecated_or_weak_finding(
         id=new_id("finding"),
         asset_id=asset.id,
         evidence_ids=(evidence.id,),
-        rule_id="tls.legacy.protocol_offered",
-        finding_type=FINDING_TYPE_LEGACY_PROTOCOL_OFFERED,
+        rule_id=rule_id,
+        finding_type=finding_type,
         title=f"{result.protocol_version} offered" + (" with a known-weak cipher" if weak else ""),
         description=f"{reason}. Accepted ciphers: {cipher_list}.",
         severity=severity,
