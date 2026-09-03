@@ -183,7 +183,7 @@ def _hndl_exposure(
     if hybrid:
         return HndlExposure.PROTECTED_DEFEASIBLE if classical else HndlExposure.PROTECTED
     if pure_pq:
-        return HndlExposure.PROTECTED
+        return HndlExposure.PROTECTED_DEFEASIBLE if classical else HndlExposure.PROTECTED
     if classical:
         return HndlExposure.AT_RISK
     return HndlExposure.UNKNOWN

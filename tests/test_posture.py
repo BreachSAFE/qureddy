@@ -220,6 +220,30 @@ def test_interpretation_covers_positive_and_classical_paths() -> None:
     assert pure.display.overall_status == "Post-quantum protection observed"
 
 
+def test_pure_pq_with_classical_fallback_is_protected_but_defeasible() -> None:
+    interpretation = build_interpretation(
+        [
+            _finding("tls.pq.negotiated_pure", "tls.kex.pure_pq", Readiness.QUANTUM_SAFE),
+            _finding(
+                "tls.classical.negotiated_x25519",
+                "tls.kex.classical",
+                Readiness.QUANTUM_VULNERABLE,
+            ),
+        ],
+        [],
+        None,
+    )
+
+    assert interpretation.hndl_exposure is HndlExposure.PROTECTED_DEFEASIBLE
+    assert interpretation.display.future_quantum_risk == (
+        "Protected today, but a classical downgrade path remains"
+    )
+    assert interpretation.display.evaluation.hndl_risk == (
+        "Protected by observed post-quantum key exchange, but a classical downgrade path remains"
+    )
+    assert interpretation.model_dump(mode="json")["hndl_exposure"] == "protected_defeasible"
+
+
 @pytest.mark.parametrize(
     ("finding_type", "readiness"),
     [

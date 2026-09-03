@@ -35,6 +35,10 @@ versions follow [PEP 440](https://peps.python.org/pep-0440/).
 
 ### Fixed
 
+- Report pure-PQ key exchange with an observed classical fallback as HNDL-protected but
+  defeasible, with consistent executive wording, instead of over-claiming unconditional
+  protection
+  ([issue #530](https://github.com/BreachSAFE/qureddy/issues/530)).
 - Preserve weak TLS cipher exposure as an independent semantic signal so hygiene, reason
   codes, and CISO summaries agree with the per-cipher CBOM classification
   ([issue #705](https://github.com/BreachSAFE/qureddy/issues/705)).
