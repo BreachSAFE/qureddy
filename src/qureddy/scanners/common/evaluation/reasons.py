@@ -21,7 +21,7 @@ def reason_codes(
         (signals.hybrid, "hybrid_pqc_observed"),
         (signals.pure_pq, "pure_pq_observed"),
         (
-            signals.hybrid_failed and not (signals.hybrid or signals.pure_pq),
+            signals.hybrid_failed and not any((signals.hybrid, signals.pure_pq)),
             "hybrid_probe_failed",
         ),
         (signals.classical_kex, "classical_kex_negotiated"),
