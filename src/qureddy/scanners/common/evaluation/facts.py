@@ -162,6 +162,13 @@ def _weak_signal(_: list[Finding], types: set[str], _rules: set[str], __: set[st
     )
 
 
+def _legacy_protocol_signal(
+    _: list[Finding], types: set[str], rules: set[str], __: set[str]
+) -> bool:
+    """Preserve legacy-protocol posture when a finding also carries a weak-algorithm type."""
+    return any(_has_suffix(values, "legacy.protocol_offered") for values in (types, rules))
+
+
 def _authentication_classical_signal(
     _: list[Finding], types: set[str], _rules: set[str], evidence_types: set[str]
 ) -> bool:
@@ -180,7 +187,7 @@ _SIGNAL_PREDICATES: tuple[tuple[SemanticSignal, SignalPredicate], ...] = (
     (SemanticSignal.PURE_PQC, _pure_pq_signal),
     (SemanticSignal.CLASSICAL_KEX, _classical_kex_signal),
     (SemanticSignal.HYBRID_PROBE_FAILED, _rule_signal("hybrid.probe_failed")),
-    (SemanticSignal.LEGACY_PROTOCOL, _type_signal("legacy.protocol_offered")),
+    (SemanticSignal.LEGACY_PROTOCOL, _legacy_protocol_signal),
     (SemanticSignal.DOWNGRADE_ACTION_NEEDED, _rule_signal("classical.protocol_offered")),
     (SemanticSignal.WEAK_ALGORITHM, _weak_signal),
     (

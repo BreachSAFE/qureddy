@@ -35,6 +35,9 @@ versions follow [PEP 440](https://peps.python.org/pep-0440/).
 
 ### Fixed
 
+- Preserve weak TLS cipher exposure as an independent semantic signal so hygiene, reason
+  codes, and CISO summaries agree with the per-cipher CBOM classification
+  ([issue #705](https://github.com/BreachSAFE/qureddy/issues/705)).
 - Deduplicate exact component verdict properties in CBOM output while preserving distinct
   rule identifiers and conflicting values for diagnosis
   ([issue #714](https://github.com/BreachSAFE/qureddy/issues/714)).
