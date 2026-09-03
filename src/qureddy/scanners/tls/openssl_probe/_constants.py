@@ -28,6 +28,9 @@ HYBRID_GROUP = "X25519MLKEM768"
 # probe; the rest are supplementary coverage probes so a server that supports only a
 # non-default hybrid is still detected. Order = primary first.
 HYBRID_GROUPS = ("X25519MLKEM768", "SecP256r1MLKEM768", "SecP384r1MLKEM1024")
+# OpenSSL 3.5 supports these pure ML-KEM TLS groups independently of the hybrid groups.
+# Force each one so server preference cannot hide support for another parameter set (#521).
+PURE_PQ_GROUPS = ("MLKEM512", "MLKEM768", "MLKEM1024")
 CLASSICAL_GROUP = "X25519"
 ENV_OVERRIDE = "QUREDDY_OPENSSL"
 EXCERPT_LIMIT = 4096

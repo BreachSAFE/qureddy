@@ -134,6 +134,14 @@ class TestScanReadinessRollupPrecedence:
         ]
         assert _scan_readiness(findings) is Readiness.TRANSITIONAL_HYBRID
 
+    def test_hybrid_remains_the_conservative_verdict_when_pure_pq_is_also_observed(self) -> None:
+        findings = [
+            self._finding(Readiness.QUANTUM_SAFE),
+            self._finding(Readiness.TRANSITIONAL_HYBRID),
+        ]
+
+        assert _scan_readiness(findings) is Readiness.TRANSITIONAL_HYBRID
+
     def test_quantum_vulnerable_trumps_unknown(self) -> None:
 
         findings = [

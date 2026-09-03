@@ -27,16 +27,16 @@ SEVERITY_ORDER: dict[Severity, int] = {
 # verdict while the independent hygiene axis carries present-day weakness.
 READINESS_PRECEDENCE: tuple[Readiness, ...] = (
     Readiness.CLASSICALLY_WEAK,
-    Readiness.QUANTUM_SAFE,
     Readiness.TRANSITIONAL_HYBRID,
+    Readiness.QUANTUM_SAFE,
     Readiness.QUANTUM_VULNERABLE,
     Readiness.UNKNOWN,
     Readiness.NOT_APPLICABLE,
 )
 
 _POSITIVE_READINESS: tuple[Readiness, ...] = (
-    Readiness.QUANTUM_SAFE,
     Readiness.TRANSITIONAL_HYBRID,
+    Readiness.QUANTUM_SAFE,
 )
 _POSITIVE_OBSERVATIONS: frozenset[ObservationType] = frozenset(
     {ObservationType.NEGOTIATED, ObservationType.OBSERVED}

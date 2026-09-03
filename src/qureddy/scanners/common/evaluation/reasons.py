@@ -20,7 +20,10 @@ def reason_codes(
     candidates = (
         (signals.hybrid, "hybrid_pqc_observed"),
         (signals.pure_pq, "pure_pq_observed"),
-        (signals.hybrid_failed, "hybrid_probe_failed"),
+        (
+            signals.hybrid_failed and not any((signals.hybrid, signals.pure_pq)),
+            "hybrid_probe_failed",
+        ),
         (signals.classical_kex, "classical_kex_negotiated"),
         (signals.classical_certificate, "classical_certificate_signature"),
         (signals.legacy_protocol, "deprecated_protocol_observed"),

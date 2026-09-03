@@ -116,8 +116,8 @@ qureddy scan tls example.com --min-severity medium
 SCAN BEHAVIOR:
 
 \b
-A full scan runs separate probes for TLS 1.3 hybrid key exchange, a TLS 1.3
-classical control, legacy TLS protocols, and certificate evidence. The
+A full scan runs separate probes for TLS 1.3 hybrid and pure post-quantum key
+exchange, a TLS 1.3 classical control, legacy TLS protocols, and certificate evidence. The
 `--timeout` value applies to each probe, so total wall time can be several
 times the timeout. Use `-vv` to see every subprocess start and completion;
 `-vvv` also adds the exact commands to Rich output.

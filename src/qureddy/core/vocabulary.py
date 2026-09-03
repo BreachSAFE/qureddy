@@ -95,6 +95,7 @@ class ProbeRole(str, Enum):
     HYBRID_READINESS = "hybrid_readiness"
     CLASSICAL_CONTROL = "classical_control"
     HYBRID_COVERAGE = "hybrid_coverage"
+    PURE_PQ_COVERAGE = "pure_pq_coverage"
 
 
 class FailureCategory(str, Enum):

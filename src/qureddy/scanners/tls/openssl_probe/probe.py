@@ -30,7 +30,7 @@ if TYPE_CHECKING:
     from qureddy.core.models import ProbeResult
 
 
-def run_hybrid_probe(
+def run_group_probe(
     openssl_path: str,
     host: str,
     port: int,
@@ -40,13 +40,17 @@ def run_hybrid_probe(
     attempt_number: int = 1,
     group: str = HYBRID_GROUP,
 ) -> ProbeResult:
-    """Probe the endpoint forcing one hybrid key-exchange group.
+    """Probe the endpoint forcing one TLS 1.3 key-exchange group.
 
-    #337: defaults to X25519MLKEM768, or a supplementary standardized group for per-group
-    coverage.
+    Defaults to the primary hybrid readiness group for backward compatibility. Callers may
+    force supplementary hybrid or pure-PQ groups through the same bounded OpenSSL path.
     """
     args = _build_probe_args(openssl_path, host, port, sni, group=group)
     return _run_probe(args, timeout_seconds=timeout_seconds, attempt_number=attempt_number)
+
+
+# Public compatibility name retained from the original single-hybrid probe API.
+run_hybrid_probe = run_group_probe
 
 
 def run_classical_probe(
