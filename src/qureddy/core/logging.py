@@ -83,6 +83,9 @@ def configure_logging(
     handler.setFormatter(foreign_formatter)
     logging.basicConfig(handlers=[handler], level=level, force=True)
     logging.getLogger().setLevel(level)
+    # cyclonedx-python-lib emits verbose DEBUG serialization chatter (e.g. "Dumping <Bom ...>")
+    # on every CBOM render. Pin it above DEBUG so QuReddy's own -vvv output never surfaces it.
+    logging.getLogger("cyclonedx").setLevel(logging.WARNING)
 
     structlog.configure(
         processors=processors,
