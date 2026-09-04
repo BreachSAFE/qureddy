@@ -277,6 +277,10 @@ class Evidence(BaseModel):
     certificate_record: CertificateObservation | None = Field(
         default=None, exclude=True, repr=False
     )
+    # Raw leaf PEM is retained only in-memory so --output-dir can write the
+    # exact certificate fetched by the probe. It is excluded from every result
+    # serialization and never enters logs, JSONL, or CBOM.
+    certificate_pem: str | None = Field(default=None, exclude=True, repr=False)
 
     @computed_field(exclude_if=lambda value: value is None)  # type: ignore[prop-decorator]
     @property

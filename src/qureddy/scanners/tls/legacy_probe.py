@@ -68,7 +68,7 @@ import subprocess
 from dataclasses import dataclass
 
 from qureddy.core.logging import get_logger
-from qureddy.scanners.tls._net import build_connect_target
+from qureddy.scanners.tls.connection import StartTLSMode, build_s_client_args
 from qureddy.scanners.tls.openssl_probe.executor import LaunchStatus, raise_for_launch
 from qureddy.scanners.tls.openssl_probe.executor import run_openssl as execute
 
@@ -189,6 +189,7 @@ def _handshake_with_cipher_list(
     cipher_list: list[str],
     *,
     timeout_seconds: int,
+    starttls: StartTLSMode | None = None,
 ) -> tuple[str | None, bool]:
     """One handshake offering `cipher_list`.
 
@@ -197,18 +198,18 @@ def _handshake_with_cipher_list(
     look identical to the server cleanly rejecting every remaining
     candidate.
     """
-    args = [
+    args = build_s_client_args(
         openssl_path,
-        "s_client",
-        "-connect",
-        build_connect_target(host, port),
-        protocol_flag,
-        "-cipher",
-        ":".join([*cipher_list, _SECLEVEL_OVERRIDE]),
-        "-brief",
-    ]
-    if sni is not None and sni.strip():
-        args.extend(["-servername", sni])
+        host,
+        port,
+        sni,
+        extra=(
+            protocol_flag,
+            "-cipher",
+            ":".join([*cipher_list, _SECLEVEL_OVERRIDE]),
+        ),
+        starttls=starttls,
+    )
     completed = _run_openssl(
         args, event_prefix="legacy_probe.handshake", timeout_seconds=timeout_seconds
     )
@@ -236,6 +237,7 @@ def probe_legacy_protocol(
     protocol_version: str,
     *,
     timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS,
+    starttls: StartTLSMode | None = None,
 ) -> LegacyProtocolResult:
     """Iterative-exclusion cipher enumeration for one legacy protocol version.
 
@@ -257,6 +259,7 @@ def probe_legacy_protocol(
             protocol_flag,
             remaining,
             timeout_seconds=timeout_seconds,
+            starttls=starttls,
         )
         if timed_out:
             incomplete = True
@@ -288,6 +291,7 @@ def probe_all_legacy_protocols(
     sni: str | None,
     *,
     timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS,
+    starttls: StartTLSMode | None = None,
 ) -> tuple[LegacyProtocolResult, ...]:
     """Run `probe_legacy_protocol` for every version in `LEGACY_PROTOCOLS`."""
     return tuple(
@@ -299,6 +303,7 @@ def probe_all_legacy_protocols(
             flag,
             version,
             timeout_seconds=timeout_seconds,
+            starttls=starttls,
         )
         for flag, version in LEGACY_PROTOCOLS
     )

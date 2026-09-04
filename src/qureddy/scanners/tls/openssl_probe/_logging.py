@@ -30,6 +30,9 @@ def log_subprocess_complete(
     duration_ms: int,
     attempt_number: int,
     failure: FailureCategory | None,
+    *,
+    stdout: str = "",
+    stderr: str = "",
 ) -> None:
     _log.debug(
         "subprocess.complete",
@@ -39,4 +42,6 @@ def log_subprocess_complete(
         duration_ms=duration_ms,
         attempt_number=attempt_number,
         failure_category=failure.value if failure else None,
+        stdout=stdout,
+        stderr=stderr,
     )

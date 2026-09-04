@@ -90,6 +90,7 @@ def _summary_table(result: ScanResult) -> Table:
         table.add_row("cipher_suite", styled_or_dash(_first_cipher_suite(result.evidence)))
         table.add_row("hybrid_probe", _style_probe_status(hybrid_evidence))
         table.add_row("classical_probe", _style_probe_status(classical_evidence))
+        _add_certificate_rows(table, result)
     table.add_row("findings", Text(str(summary.finding_count)))
     table.add_row("attempts", Text(str(scan.total_attempts)))
     if summary.failure_category is not None:
@@ -98,6 +99,29 @@ def _summary_table(result: ScanResult) -> Table:
             Text(summary.failure_category.value, style="red"),
         )
     return table
+
+
+def _add_certificate_rows(table: Table, result: ScanResult) -> None:
+    """Add parsed certificate facts without fetching or reinterpreting evidence."""
+    certificate = next((e.certificate for e in result.evidence if e.certificate is not None), None)
+    if certificate is None:
+        return
+    table.add_row("certificate_subject", Text(certificate.subject))
+    table.add_row("certificate_issuer", Text(certificate.issuer))
+    table.add_row("certificate_valid_from", styled_or_dash(certificate.not_valid_before))
+    table.add_row("certificate_valid_until", styled_or_dash(certificate.not_valid_after))
+    table.add_row("certificate_serial", Text(certificate.serial_number))
+    table.add_row("certificate_signature", Text(certificate.signature_algorithm))
+    public_key = certificate.public_key_algorithm or "unknown"
+    if certificate.public_key_bits is not None:
+        public_key = f"{public_key} ({certificate.public_key_bits} bits)"
+    table.add_row("certificate_public_key", Text(public_key))
+    table.add_row(
+        "certificate_self_signed",
+        styled_or_dash(
+            None if certificate.is_self_signed is None else str(certificate.is_self_signed).lower()
+        ),
+    )
 
 
 def _run_details_table(result: ScanResult) -> Table:

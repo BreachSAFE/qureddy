@@ -38,8 +38,8 @@ from pathlib import Path
 
 from qureddy.core.errors import CertificateParseError
 from qureddy.core.logging import get_logger
-from qureddy.scanners.tls._net import build_connect_target
 from qureddy.scanners.tls.cert_sig import parse_certificate_signature
+from qureddy.scanners.tls.connection import StartTLSMode, build_s_client_args
 from qureddy.scanners.tls.openssl_probe.executor import LaunchStatus, raise_for_launch
 from qureddy.scanners.tls.openssl_probe.executor import run_openssl as execute
 
@@ -108,7 +108,12 @@ def _run_openssl(
     if outcome.launch is not LaunchStatus.OK:
         _log.error(f"{event_prefix}.openssl_unlaunchable", openssl_path=args[0])
     raise_for_launch(outcome, args[0])
-    _log.info(f"{event_prefix}.complete", return_code=outcome.returncode)
+    _log.info(
+        f"{event_prefix}.complete",
+        return_code=outcome.returncode,
+        stdout=outcome.stdout,
+        stderr=outcome.stderr,
+    )
     return outcome.stdout
 
 
@@ -119,6 +124,7 @@ def fetch_certificate_pem(
     sni: str | None,
     *,
     timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS,
+    starttls: StartTLSMode | None = None,
 ) -> str:
     """Fetch the leaf certificate as PEM text via `openssl s_client`. Analysis mode: no -verify flags are set, so s_client will not abort the handshake over an invalid chain (expired/self-signed/untrusted certs are still captured via -showcerts).
 
@@ -128,9 +134,14 @@ def fetch_certificate_pem(
     On timeout, returns "" (same as "no certificate observed") — see
     `_run_openssl`.
     """
-    args = [openssl_path, "s_client", "-connect", build_connect_target(host, port), "-showcerts"]
-    if sni is not None and sni.strip():
-        args.extend(["-servername", sni])
+    args = build_s_client_args(
+        openssl_path,
+        host,
+        port,
+        sni,
+        extra=("-showcerts",),
+        starttls=starttls,
+    )
     stdout = _run_openssl(args, event_prefix="cert_probe.fetch", timeout_seconds=timeout_seconds)
     pem_start = stdout.find("-----BEGIN CERTIFICATE-----")
     pem_end = stdout.find("-----END CERTIFICATE-----")

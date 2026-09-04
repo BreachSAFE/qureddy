@@ -9,7 +9,8 @@ validated baseline) from live
   - Hybrid PQ negotiation announces via ``Negotiated TLS1.3 group: <name>``.
     `Peer Temp Key:` does not appear in `-brief` mode for hybrid groups.
   - Classical X25519 negotiation announces via ``Peer Temp Key: X25519, <n> bits``.
-    `Negotiated TLS1.3 group:` does not appear in `-brief` for classical.
+    NIST curves use ``Peer Temp Key: ECDH, <curve>, <n> bits``. `Negotiated
+    TLS1.3 group:` does not appear in `-brief` for classical.
 
 The historical spec referred to the second line as ``Server Temp Key:``;
 The pinned baseline emits ``Peer Temp Key:``. The parser accepts both for
@@ -35,7 +36,8 @@ NEGOTIATED_LINE = re.compile(
 )
 PEER_OR_SERVER_TEMP_KEY = re.compile(
     r"^[^\S\r\n]*(?:Peer|Server)[^\S\r\n]+Temp[^\S\r\n]+Key:"
-    r"[^\S\r\n]*(?P<group>[A-Za-z0-9_]+)"
+    r"[^\S\r\n]*(?:(?:ECDH|DH)[^\S\r\n]*,[^\S\r\n]*"
+    r"(?P<curve>[A-Za-z0-9_.-]+)|(?P<group>[A-Za-z0-9_]+))"
     r"(?:[^\S\r\n]*,[^\S\r\n]*(?P<bits>\d{1,7})[^\S\r\n]+bits)?",
     re.MULTILINE,
 )
@@ -99,7 +101,7 @@ def parse_brief_output(stdout: str, *, expected_group: str) -> ParsedNegotiation
     protocol = _first_match(PROTOCOL_VERSION, stdout, "protocol")
     cipher = _first_match(CIPHERSUITE, stdout, "cipher")
     negotiated = _first_match(NEGOTIATED_LINE, stdout, "group")
-    temp_key = _first_match(PEER_OR_SERVER_TEMP_KEY, stdout, "group")
+    temp_key = _temp_key_group(stdout)
 
     if negotiated is not None and temp_key is not None and negotiated != temp_key:
         return _ambiguous(protocol, cipher, negotiated, temp_key)
@@ -179,6 +181,17 @@ def _temp_key_bits(text: str) -> int | None:
     bits = match.group("bits") if match else None
     value = int(bits) if bits else 0
     return value if value > 0 else None
+
+
+def _temp_key_group(text: str) -> str | None:
+    """Return the curve name from OpenSSL's ECDH-prefixed form."""
+    match = PEER_OR_SERVER_TEMP_KEY.search(text)
+    if match is None:
+        return None
+    curve = match.group("curve")
+    if curve is not None:
+        return {"prime256v1": "secp256r1"}.get(curve, curve)
+    return match.group("group")
 
 
 def _has_clienthello_context(stdout: str, group: str) -> bool:

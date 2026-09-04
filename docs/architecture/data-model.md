@@ -144,6 +144,7 @@ The generated table shows both Python member names and serialized values.
 | `SemanticSignal` | `core.signals` | `HYBRID_PQC = "kex.hybrid_pqc"`, `PURE_PQC = "kex.pure_pqc"`, `CLASSICAL_KEX = "kex.classical"`, `HYBRID_PROBE_FAILED = "kex.hybrid_probe_failed"`, `DOWNGRADE_ACTION_NEEDED = "downgrade.action_needed"`, `AUTHENTICATION_CLASSICAL = "authentication.classical"`, `AUTHENTICATION_PQ = "authentication.pq"`, `CLASSICAL_CERTIFICATE = "certificate.signature.classical"`, `LEGACY_PROTOCOL = "protocol.legacy"`, `WEAK_ALGORITHM = "algorithm.weak"`, `PROTOCOL_ACTION_NEEDED = "protocol.action_needed"`, `HYGIENE_WEAK = "hygiene.weak"` |
 | `Severity` | `core.vocabulary` | `CRITICAL = "critical"`, `HIGH = "high"`, `MEDIUM = "medium"`, `LOW = "low"`, `INFO = "info"` |
 | `SourceKind` | `core.contracts` | `ENDPOINT = "endpoint"`, `SSH_PUBLIC_KEY = "ssh_public_key"`, `SSH_CONFIG = "ssh_config"`, `CERTIFICATE = "certificate"`, `STATIC_INVENTORY = "static_inventory"` |
+| `StartTLSMode` | `scanners.tls.connection` | `SMTP = "smtp"`, `POP3 = "pop3"`, `IMAP = "imap"`, `FTP = "ftp"`, `XMPP = "xmpp"`, `XMPP_SERVER = "xmpp-server"`, `TELNET = "telnet"`, `IRC = "irc"`, `MYSQL = "mysql"`, `POSTGRES = "postgres"`, `LMTP = "lmtp"`, `NNTP = "nntp"`, `SIEVE = "sieve"`, `LDAP = "ldap"` |
 | `ToolPolicy` | `core.contracts` | `AUTO = "auto"`, `NATIVE = "native"`, `OPENSSL = "openssl"`, `SSH_AUDIT = "ssh-audit"`, `IKE_SCAN = "ike-scan"` |
 <!-- END GENERATED: enum-table -->
 
@@ -257,6 +258,7 @@ class Severity { <<enum>> }
 class SourceKind { <<enum>> }
 class SourceRecord
 class SourceRef
+class StartTLSMode { <<enum>> }
 class TLSScanner
 class TargetParseError
 class ToolAdapter
