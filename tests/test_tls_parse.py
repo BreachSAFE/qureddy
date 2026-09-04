@@ -134,6 +134,22 @@ class TestServerTempKeyFallback:
         assert result.key_bits == 253
 
 
+class TestNistTempKeyForms:
+    """OpenSSL's ECDH-prefixed NIST output remains exact and lossless."""
+
+    def test_nist_curve_names_and_sizes(self) -> None:
+        for wire_name, canonical, bits in (
+            ("prime256v1", "secp256r1", 256),
+            ("secp384r1", "secp384r1", 384),
+            ("secp521r1", "secp521r1", 521),
+        ):
+            stdout = f"Peer Temp Key: ECDH, {wire_name}, {bits} bits\n"
+            result = parse_brief_output(stdout, expected_group=canonical)
+            assert result.negotiated_group == canonical
+            assert result.key_bits == bits
+            assert result.failure_category is None
+
+
 class TestMissingHandshakeDetails:
     """Missing optional OpenSSL lines stay unknown without inventing values."""
 
