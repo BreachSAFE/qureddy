@@ -39,9 +39,14 @@ RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
       build-essential ca-certificates curl perl make \
     && rm -rf /var/lib/apt/lists/* \
-    && curl --fail --location --proto '=https' --connect-timeout 30 --max-time 300 \
-      "https://www.openssl.org/source/old/1.0.2/openssl-${LEGACY_OPENSSL_VERSION}.tar.gz" \
+    # Prefer the signed upstream release mirror; retain openssl.org as a fallback because
+    # either public endpoint can be transiently unavailable in a hosted builder.
+    && (curl --fail --location --proto '=https' --connect-timeout 30 --max-time 300 \
+      "https://github.com/openssl/openssl/releases/download/OpenSSL_${LEGACY_OPENSSL_VERSION}/openssl-${LEGACY_OPENSSL_VERSION}.tar.gz" \
       --output /tmp/openssl-legacy.tar.gz \
+      || curl --fail --location --proto '=https' --connect-timeout 30 --max-time 300 \
+      "https://www.openssl.org/source/old/1.0.2/openssl-${LEGACY_OPENSSL_VERSION}.tar.gz" \
+      --output /tmp/openssl-legacy.tar.gz) \
     && echo "${LEGACY_OPENSSL_SHA256}  /tmp/openssl-legacy.tar.gz" | sha256sum --check --strict \
     && mkdir /tmp/openssl-legacy-src \
     && tar --extract --gzip --strip-components=1 --file /tmp/openssl-legacy.tar.gz --directory /tmp/openssl-legacy-src \
