@@ -43,6 +43,10 @@ versions follow [PEP 440](https://peps.python.org/pep-0440/).
 - Suppress CycloneDX serializer debug chatter from verbose scan logs while preserving JSON
   wrapping for other third-party standard-library log records.
 
+### Added
+
+- `scan tls --starttls` routes OpenSSL-supported application protocols through the existing TLS evidence pipeline.
+
 ## [0.9.8] - 2026-09-02
 
 ### Fixed

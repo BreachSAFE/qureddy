@@ -176,7 +176,7 @@ def _run_tls_scan(
 ) -> ScanResult:
     """Run the TLS phases while keeping the public method a thin entrypoint."""
     started = datetime.now(UTC)
-    scan_id = scanner._begin(target)  # noqa: SLF001
+    scan_id = _begin_scan(target)
     openssl_path, dependency = scanner._check_capability(timeout_seconds)  # noqa: SLF001
     asset = build_asset(target)
     evidence, total_attempts = scanner._collect_evidence(  # noqa: SLF001
@@ -207,6 +207,15 @@ def _run_tls_scan(
     )
 
 
+def _begin_scan(target: ScanTarget) -> str:
+    """Bind correlation context and record the start of one scan."""
+    scan_id = new_id("scan")
+    structlog.contextvars.clear_contextvars()
+    structlog.contextvars.bind_contextvars(scan_id=scan_id, target=target.locator)
+    get_logger(__name__).info("scan.start", host=target.host, port=target.port)
+    return scan_id
+
+
 class TLSScanner(Scanner[ScanTarget]):
     """Orchestrate one TLS scan from capability check through classification."""
 
@@ -228,7 +237,12 @@ class TLSScanner(Scanner[ScanTarget]):
         """
         self._openssl_path_override = openssl_path
         self._retry = retry or RetryConfig()
-        self.starttls: StartTLSMode | None = starttls
+        self._starttls = starttls
+
+    @property
+    def starttls(self) -> StartTLSMode | None:
+        """Return the configured application-protocol upgrade mode."""
+        return self._starttls
 
     def scan(
         self,
@@ -238,17 +252,6 @@ class TLSScanner(Scanner[ScanTarget]):
     ) -> ScanResult:
         """Run a full TLS scan against the target."""
         return _run_tls_scan(self, target, timeout_seconds)
-
-    @staticmethod
-    def _begin(target: ScanTarget) -> str:
-        # Bind scan_id and target into structlog contextvars so every log
-        # call from any module reached during this scan carries the same
-        # correlation tags. CLI tests verify these propagate.
-        scan_id = new_id("scan")
-        structlog.contextvars.clear_contextvars()
-        structlog.contextvars.bind_contextvars(scan_id=scan_id, target=target.locator)
-        get_logger(__name__).info("scan.start", host=target.host, port=target.port)
-        return scan_id
 
     def _check_capability(self, timeout_seconds: int) -> tuple[str, OpenSSLDependency]:
         return resolve_openssl_with_capability(

@@ -70,6 +70,7 @@ def test_scan_tls_help_assigns_subprocess_boundaries_to_vv() -> None:
     help_text = " ".join(result.stdout.split())
 
     assert result.exit_code == 0
+    assert "--starttls" in help_text
     assert "Use `-vv` to see every subprocess start and completion" in help_text
     assert "Use `-vvv` to see every subprocess start and completion" not in help_text
 
