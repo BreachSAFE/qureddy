@@ -177,8 +177,9 @@ def evidence_occurrences(
     role, expected group, return code, command digest) rides in ``additionalContext`` as a
     strict ``key=value`` grammar (#307) — see docs/reference/cbom-occurrence-provenance.md;
     the per-run duration is omitted in reproducible mode (#162). Evidence with no
-    algorithm/protocol subject (e.g. a bare failure record) is skipped rather than
-    fabricating a subject.
+    algorithm/protocol subject (e.g. a bare failure record) attaches to the endpoint.
+    Each occurrence location names the scanned target; scanner provenance remains
+    available as the ``source`` additional-context field.
     """
     occurrences: dict[str, list[dict[str, str]]] = {}
     for evidence in result.evidence:
@@ -193,7 +194,7 @@ def evidence_occurrences(
             ref = ENDPOINT_REF
         fields = _provenance_fields(evidence, name, reproducible=reproducible)
         occurrences.setdefault(ref, []).append(
-            {"location": evidence.source, "additionalContext": "; ".join(fields)}
+            {"location": result.target.locator, "additionalContext": "; ".join(fields)}
         )
     return occurrences
 
@@ -210,6 +211,7 @@ def _provenance_fields(evidence: Evidence, name: str | None, *, reproducible: bo
         f"observation={evidence.observation_type.value}",
         f"evidence_type={evidence.evidence_type}",
         f"confidence={evidence.confidence.value}",  # #326: preserve confidence as a field
+        f"source={evidence.source}",
     ]
     # #326: co-observed cipher suite as a field (when it isn't already the occurrence subject).
     if evidence.cipher_suite and evidence.cipher_suite != name:

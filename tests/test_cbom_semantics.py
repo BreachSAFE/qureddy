@@ -182,6 +182,14 @@ class TestOccurrenceProvenanceGrammar:
         for occurrence in _all_occurrences(_render(_build_result_with_probe("/usr/bin/openssl"))):
             assert "confidence" in _parse_occurrence_context(occurrence["additionalContext"])
 
+    def test_occurrence_separates_target_location_from_scanner_source(self) -> None:
+        occurrences = _all_occurrences(_render(_build_result()))
+        assert occurrences, "expected at least one evidence occurrence"
+        for occurrence in occurrences:
+            assert occurrence["location"] == "tls://example.com:443"
+            fields = _parse_occurrence_context(occurrence["additionalContext"])
+            assert fields["source"] == "qureddy.scanners.tls.parse"
+
     def test_subjectless_evidence_attaches_to_endpoint(self) -> None:
         # #326: evidence with no crypto subject (a bare cert/failure record) is no longer
         # dropped — it becomes an occurrence on the endpoint, so every evidence item maps.

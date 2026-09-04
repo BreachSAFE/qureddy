@@ -34,6 +34,15 @@ versions follow [PEP 440](https://peps.python.org/pep-0440/).
 
 ## Unreleased
 
+### Fixed
+
+- Record each CBOM occurrence `location` as the scanned target and preserve the scanner
+  module in the `source` provenance field, so inventory viewers no longer present an
+  implementation module as the asset location
+  ([viewer issue #31](https://github.com/BreachSAFE/breachsafe-cbom-kit-viewer/issues/31)).
+- Suppress CycloneDX serializer debug chatter from verbose scan logs while preserving JSON
+  wrapping for other third-party standard-library log records.
+
 ## [0.9.8] - 2026-09-02
 
 ### Fixed

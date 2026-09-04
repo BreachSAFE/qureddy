@@ -89,8 +89,8 @@
       "evidence": {
         "occurrences": [
           {
-            "additionalContext": "observation=negotiated; evidence_type=tls.negotiation; confidence=high; cipher_suite=TLS_AES_256_GCM_SHA384; return_code=0; command_sha256=8cc515802eb656257c6ef03fde9bf7fb8c1732e8cdcd9f9c75e33bbf2e5ed206; duration_ms=110",
-            "location": "qureddy.scanners.tls.parse"
+            "additionalContext": "observation=negotiated; evidence_type=tls.negotiation; confidence=high; source=qureddy.scanners.tls.parse; cipher_suite=TLS_AES_256_GCM_SHA384; return_code=0; command_sha256=8cc515802eb656257c6ef03fde9bf7fb8c1732e8cdcd9f9c75e33bbf2e5ed206; duration_ms=110",
+            "location": "tls://example.com:443"
           }
         ]
       },
@@ -133,8 +133,8 @@
       "evidence": {
         "occurrences": [
           {
-            "additionalContext": "observation=negotiated; evidence_type=tls.negotiation; confidence=high; cipher_suite=TLS_AES_256_GCM_SHA384; return_code=0; command_sha256=3f4a610b5eaa690523372a81f1afde9f1b98fc25648735580c5705519f987448; duration_ms=120",
-            "location": "qureddy.scanners.tls.parse"
+            "additionalContext": "observation=negotiated; evidence_type=tls.negotiation; confidence=high; source=qureddy.scanners.tls.parse; cipher_suite=TLS_AES_256_GCM_SHA384; return_code=0; command_sha256=3f4a610b5eaa690523372a81f1afde9f1b98fc25648735580c5705519f987448; duration_ms=120",
+            "location": "tls://example.com:443"
           }
         ]
       },
