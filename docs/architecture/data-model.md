@@ -189,6 +189,7 @@ class CryptoPrimitive { <<enum>> }
 class DigestScope { <<enum>> }
 class EntryKind { <<enum>> }
 class Evidence
+class ExternalProcessOutput
 class ExternalToolDependency
 class FailureCategory { <<enum>> }
 class Finding
@@ -259,6 +260,8 @@ class SourceKind { <<enum>> }
 class SourceRecord
 class SourceRef
 class StartTLSMode { <<enum>> }
+class TLSScanAdapter
+class TLSScanObservation
 class TLSScanner
 class TargetParseError
 class ToolAdapter

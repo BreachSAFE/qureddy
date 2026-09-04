@@ -23,6 +23,7 @@ from qureddy.core.logging import get_logger
 from qureddy.core.models import (
     Asset,
     Evidence,
+    ExternalToolDependency,
     FailureCategory,
     Finding,
     OpenSSLDependency,
@@ -35,20 +36,22 @@ from qureddy.core.policy import classify_evidence
 from qureddy.core.retry import run_with_retries
 from qureddy.core.status import STATUS_COMPLETED
 from qureddy.scanners.common.metadata import build_scan_metadata
+from qureddy.scanners.external.tls_scan import TLSScanAdapter
 from qureddy.scanners.tls._cert_findings import (
     evidence_from_certificate,
     finding_from_certificate,
 )
 from qureddy.scanners.tls._evidence import build_asset, evidence_from_probe
+from qureddy.scanners.tls._external import collect_and_classify_external
 from qureddy.scanners.tls._legacy_findings import (
     cipher_evidence_from_legacy_result,
     evidence_from_legacy_result,
     finding_from_legacy_result,
 )
+from qureddy.scanners.tls._optional import collect_optional_axes
 from qureddy.scanners.tls._scan_failures import (
     build_capability_failure_result,
     build_scan_failure_result,
-    target_appears_unreachable,
 )
 from qureddy.scanners.tls._summary import (
     build_summary,
@@ -93,44 +96,6 @@ class RetryConfig:
     retry_on: frozenset[FailureCategory] = frozenset()
 
 
-def _collect_optional_axes(
-    scanner: TLSScanner,
-    target: ScanTarget,
-    asset: Asset,
-    openssl_path: str,
-    timeout_seconds: int,
-    evidence: list[Evidence],
-    findings: list[Finding],
-) -> int:
-    """Collect legacy and certificate axes unless the target is unreachable."""
-    if target_appears_unreachable(evidence):
-        get_logger(__name__).info(
-            "scan.legacy_and_cert_probes_skipped",
-            reason="target_appears_unreachable",
-        )
-        return 0
-    legacy_evidence, legacy_findings = scanner._collect_legacy_evidence(  # noqa: SLF001
-        target=target,
-        asset=asset,
-        openssl_path=openssl_path,
-        timeout_seconds=timeout_seconds,
-        starttls=scanner.starttls,
-    )
-    evidence.extend(legacy_evidence)
-    findings.extend(legacy_findings)
-    cert_evidence, cert_finding = scanner._collect_cert_evidence(  # noqa: SLF001
-        target=target,
-        asset=asset,
-        openssl_path=openssl_path,
-        timeout_seconds=timeout_seconds,
-        starttls=scanner.starttls,
-    )
-    evidence.append(cert_evidence)
-    if cert_finding is not None:
-        findings.append(cert_finding)
-    return len(legacy_evidence) + 1
-
-
 def _completed_scan_result(
     target: ScanTarget,
     asset: Asset,
@@ -140,6 +105,7 @@ def _completed_scan_result(
     scan_id: str,
     started: datetime,
     total_attempts: int,
+    external_dependency: ExternalToolDependency | None = None,
 ) -> ScanResult:
     """Roll up and build a completed TLS scan result."""
     completed = datetime.now(UTC)
@@ -151,6 +117,9 @@ def _completed_scan_result(
         readiness=summary.readiness.value,
     )
     status = summary.failure_category.value if summary.failure_category else STATUS_COMPLETED
+    dependencies: tuple[OpenSSLDependency | ExternalToolDependency, ...] = (dependency,)
+    if external_dependency is not None:
+        dependencies += (external_dependency,)
     return ScanResult(
         scan=build_scan_metadata(
             scan_id=scan_id,
@@ -161,7 +130,7 @@ def _completed_scan_result(
             completed_at=completed,
         ),
         target=target,
-        dependencies=(dependency,),
+        dependencies=dependencies,
         assets=(asset,),
         evidence=tuple(evidence),
         findings=tuple(findings),
@@ -186,7 +155,7 @@ def _run_tls_scan(
         timeout_seconds=timeout_seconds,
     )
     findings = classify_evidence(asset, evidence)
-    total_attempts += _collect_optional_axes(
+    total_attempts += collect_optional_axes(
         scanner,
         target,
         asset,
@@ -194,6 +163,15 @@ def _run_tls_scan(
         timeout_seconds,
         evidence,
         findings,
+    )
+    external_dependency = collect_and_classify_external(
+        scanner._tls_scan_adapter,  # noqa: SLF001 -- scanner owns optional adapter
+        target,
+        asset,
+        evidence,
+        findings,
+        timeout_seconds,
+        scanner.starttls.value if scanner.starttls else None,
     )
     return _completed_scan_result(
         target,
@@ -204,6 +182,7 @@ def _run_tls_scan(
         scan_id,
         started,
         total_attempts,
+        external_dependency,
     )
 
 
@@ -227,6 +206,7 @@ class TLSScanner(Scanner[ScanTarget]):
         openssl_path: str | None = None,
         retry: RetryConfig | None = None,
         starttls: StartTLSMode | None = None,
+        tls_scan_adapter: TLSScanAdapter | None = None,
     ) -> None:
         """Initialize the scanner with optional OpenSSL path + retry config.
 
@@ -238,6 +218,7 @@ class TLSScanner(Scanner[ScanTarget]):
         self._openssl_path_override = openssl_path
         self._retry = retry or RetryConfig()
         self._starttls = starttls
+        self._tls_scan_adapter = tls_scan_adapter or TLSScanAdapter()
 
     @property
     def starttls(self) -> StartTLSMode | None:
