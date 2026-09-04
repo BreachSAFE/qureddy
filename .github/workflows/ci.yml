@@ -166,7 +166,7 @@ jobs:
           retention-days: 14
 
   # ===========================================================================
-  # Phase 3 — Integration tests (real OpenSSL 3.5.7 LTS subprocess, no network).
+  # Phase 3 — Integration tests (real, checksum-verified OpenSSL 3.5 LTS subprocess, no network).
   # OpenSSL is installed per Linux and macOS runner.
   # ===========================================================================
   phase-3-integration:
@@ -178,8 +178,8 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
         openssl:
-          - version: "3.5.7"
-            sha256: "a8c0d28a529ca480f9f36cf5792e2cd21984552a3c8e4aa11a24aa31aeac98e8"
+          - version: "3.5.8"
+            sha256: "a8f84a39918ec6415ce765d9b429d313ba97b8143169c172e734b9514464f5b2"
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -194,7 +194,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
 
-      - name: Set up pinned OpenSSL ${{ matrix.openssl.version }}
+      - name: Set up verified OpenSSL ${{ matrix.openssl.version }}
         timeout-minutes: 30
         uses: ./.github/actions/setup-openssl
         with:
@@ -234,7 +234,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
 
-      - name: Set up pinned OpenSSL 3.5.7 LTS
+      - name: Set up verified OpenSSL 3.5 LTS
         timeout-minutes: 30
         uses: ./.github/actions/setup-openssl
 
@@ -275,7 +275,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
 
-      - name: Set up pinned OpenSSL 3.5.7 LTS
+      - name: Set up verified OpenSSL 3.5 LTS
         timeout-minutes: 30
         uses: ./.github/actions/setup-openssl
 

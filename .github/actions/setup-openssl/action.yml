@@ -1,17 +1,17 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
 # SPDX-License-Identifier: Apache-2.0
-name: Set up pinned OpenSSL
-description: Build or restore a checksum-pinned OpenSSL used by QuReddy tests
+name: Set up verified OpenSSL
+description: Build or restore a checksum-verified OpenSSL 3.5 LTS release used by QuReddy tests
 
 inputs:
   version:
     description: OpenSSL release to build
     required: false
-    default: "3.5.7"
+    default: "3.5.8"
   sha256:
     description: SHA-256 digest of the OpenSSL source archive
     required: false
-    default: "a8c0d28a529ca480f9f36cf5792e2cd21984552a3c8e4aa11a24aa31aeac98e8"
+    default: "a8f84a39918ec6415ce765d9b429d313ba97b8143169c172e734b9514464f5b2"
 
 runs:
   using: composite
