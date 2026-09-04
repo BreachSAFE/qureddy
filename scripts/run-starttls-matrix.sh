@@ -8,6 +8,7 @@ set -u -o pipefail
 QUREDDY_BIN="${QUREDDY_BIN:-qureddy}"
 QUREDDY_OUT="${QUREDDY_OUT:-./starttls-evidence-$(date +%Y%m%dT%H%M%S)}"
 QUREDDY_TIMEOUT="${QUREDDY_TIMEOUT:-3}"
+overall_exit=0
 
 mkdir -p "$QUREDDY_OUT"
 
@@ -30,6 +31,9 @@ run_scan() {
   if [[ -f "$dir/scan.json" ]] && command -v jq >/dev/null 2>&1; then
     jq -r '[.scan.status, (.summary.readiness // "unknown"), (.summary.hndl_exposure // "unknown")] | @tsv' \
       "$dir/scan.json"
+  fi
+  if (( code != 0 )); then
+    overall_exit=1
   fi
   return 0
 }
@@ -54,3 +58,4 @@ run_scan mysql 127.0.0.1:3306 mysql
 
 printf '\nEvidence root: %s\n' "$QUREDDY_OUT"
 printf 'Each attempted target has stdout.txt, stderr.txt, run.log, and any generated scan artifacts.\n'
+exit "$overall_exit"
