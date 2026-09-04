@@ -4,11 +4,6 @@ QuReddy keeps OpenSSL 1.0.2u as an isolated compatibility helper for explicit
 legacy-cipher and STARTTLS evidence collection. It is not the production TLS
 implementation and is not placed on `PATH`.
 
-## Contents
-
-1. [Provenance](#provenance)
-2. [Coverage and limits](#coverage-and-limits)
-
 ## Provenance
 
 - Source: <https://www.openssl.org/source/old/1.0.2/openssl-1.0.2u.tar.gz>
