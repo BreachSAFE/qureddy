@@ -46,6 +46,7 @@ from qureddy.cli._options import (
     RetryDelayOpt,
     RetryOnOpt,
     SniOpt,
+    StartTLSOpt,
     TargetArg,
     TimeoutOpt,
     VerboseOpt,
@@ -60,6 +61,7 @@ from qureddy.core.models import FailureCategory, OutputFormat, ScanTarget, Sever
 from qureddy.core.registry import CollectorRegistry
 from qureddy.core.retry import parse_retry_on, validate_retry_args
 from qureddy.core.targets import parse_target
+from qureddy.scanners.tls.connection import StartTLSMode
 from qureddy.scanners.tls.openssl_probe import DEFAULT_TIMEOUT_SECONDS
 from qureddy.scanners.tls.scanner import (
     RetryConfig,
@@ -193,6 +195,7 @@ def _open_run_log(
 def scan_tls(
     target: TargetArg,
     sni: SniOpt = None,
+    starttls: StartTLSOpt = None,
     openssl: OpenSSLOpt = None,
     output_format: FormatOpt = OutputFormat.RICH,
     output: OutputOpt = None,
@@ -222,6 +225,7 @@ def scan_tls(
         exit_code = _scan_and_render(
             target=target,
             sni=sni,
+            starttls=starttls,
             openssl=openssl,
             output_format=output_format,
             output=output,
@@ -246,6 +250,7 @@ def _scan_and_render(
     *,
     target: str,
     sni: str | None,
+    starttls: StartTLSMode | None,
     openssl: str | None,
     output_format: OutputFormat,
     output: Path | None,
@@ -266,7 +271,7 @@ def _scan_and_render(
         retry_set = _parse_retry_args(retry_on, retries, retry_delay)
         scan_target = _parse_cli_target(target, sni)
         structlog.contextvars.bind_contextvars(target=scan_target.locator)
-        scanner = _build_tls_scanner(openssl, retries, retry_delay, retry_set)
+        scanner = _build_tls_scanner(openssl, retries, retry_delay, retry_set, starttls)
         result, exit_code = _execute_scan(
             _select_tls_scanner(scanner, scan_target),
             scan_target,
@@ -308,11 +313,13 @@ def _build_tls_scanner(
     retries: int,
     retry_delay: float,
     retry_set: frozenset[FailureCategory],
+    starttls: StartTLSMode | None = None,
 ) -> TLSScanner:
     """Build the configured native scanner before registry selection."""
     return TLSScanner(
         openssl_path=openssl,
         retry=RetryConfig(retries=retries, retry_delay=retry_delay, retry_on=retry_set),
+        starttls=starttls,
     )
 
 

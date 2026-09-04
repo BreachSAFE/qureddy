@@ -12,6 +12,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
 import structlog
 
@@ -66,6 +67,9 @@ from qureddy.scanners.tls.openssl_probe import (
 )
 from qureddy.scanners.tls.openssl_probe.capability import resolve_openssl_with_capability
 
+if TYPE_CHECKING:
+    from qureddy.scanners.tls.connection import StartTLSMode
+
 # Re-exported for tests that pin the rollup behavior. Canonical impls
 # live in `_summary.py`; the public test surface stays on this module
 # for backward compat across the file split.
@@ -110,6 +114,7 @@ def _collect_optional_axes(
         asset=asset,
         openssl_path=openssl_path,
         timeout_seconds=timeout_seconds,
+        starttls=scanner.starttls,
     )
     evidence.extend(legacy_evidence)
     findings.extend(legacy_findings)
@@ -118,6 +123,7 @@ def _collect_optional_axes(
         asset=asset,
         openssl_path=openssl_path,
         timeout_seconds=timeout_seconds,
+        starttls=scanner.starttls,
     )
     evidence.append(cert_evidence)
     if cert_finding is not None:
@@ -211,6 +217,7 @@ class TLSScanner(Scanner[ScanTarget]):
         *,
         openssl_path: str | None = None,
         retry: RetryConfig | None = None,
+        starttls: StartTLSMode | None = None,
     ) -> None:
         """Initialize the scanner with optional OpenSSL path + retry config.
 
@@ -221,6 +228,12 @@ class TLSScanner(Scanner[ScanTarget]):
         """
         self._openssl_path_override = openssl_path
         self._retry = retry or RetryConfig()
+        self._starttls = starttls
+
+    @property
+    def starttls(self) -> StartTLSMode | None:
+        """Return the immutable application-protocol upgrade mode."""
+        return self._starttls
 
     def scan(
         self,
@@ -269,6 +282,7 @@ class TLSScanner(Scanner[ScanTarget]):
                 openssl_path=openssl_path,
                 timeout_seconds=timeout_seconds,
                 group=group,
+                starttls=self.starttls,
             )
             log.info("probe.phase.complete", phase=phase, group=group)
             probe_count += len(results)
@@ -282,6 +296,7 @@ class TLSScanner(Scanner[ScanTarget]):
             target=target,
             openssl_path=openssl_path,
             timeout_seconds=timeout_seconds,
+            starttls=self.starttls,
         )
         log.info("probe.phase.complete", phase="tls13_classical")
         probe_count += len(classical_results)
@@ -303,6 +318,7 @@ class TLSScanner(Scanner[ScanTarget]):
         asset: Asset,
         openssl_path: str,
         timeout_seconds: int,
+        starttls: StartTLSMode | None = None,
     ) -> tuple[list[Evidence], list[Finding]]:
         """Legacy TLS 1.0/1.1/1.2 protocol + cipher enumeration (issue #192).
 
@@ -319,6 +335,7 @@ class TLSScanner(Scanner[ScanTarget]):
             target.port,
             target.sni,
             timeout_seconds=timeout_seconds,
+            starttls=starttls,
         )
         log.info("probe.phase.complete", phase="legacy_tls1_tls11_tls12")
         evidence = [evidence_from_legacy_result(asset, r) for r in results]
@@ -341,6 +358,7 @@ class TLSScanner(Scanner[ScanTarget]):
         asset: Asset,
         openssl_path: str,
         timeout_seconds: int,
+        starttls: StartTLSMode | None = None,
     ) -> tuple[Evidence, Finding | None]:
         """Certificate issuer-signature axis (issue #183): PQ vs classical signature.
 
@@ -361,7 +379,12 @@ class TLSScanner(Scanner[ScanTarget]):
         log.info("probe.phase.start", phase="certificate")
         try:
             pem = fetch_certificate_pem(
-                openssl_path, target.host, target.port, target.sni, timeout_seconds=timeout_seconds
+                openssl_path,
+                target.host,
+                target.port,
+                target.sni,
+                timeout_seconds=timeout_seconds,
+                starttls=starttls,
             )
             certificate = (
                 parse_certificate(openssl_path, pem, timeout_seconds=timeout_seconds)
@@ -383,6 +406,7 @@ class TLSScanner(Scanner[ScanTarget]):
         openssl_path: str,
         timeout_seconds: int,
         group: str | None = None,
+        starttls: StartTLSMode | None = None,
     ) -> list[ProbeResult]:
         extra = {"group": group} if group is not None else {}
         return run_with_retries(
@@ -394,6 +418,7 @@ class TLSScanner(Scanner[ScanTarget]):
                 timeout_seconds=timeout_seconds,
                 attempt_number=n,
                 **extra,
+                starttls=starttls,
             ),
             retries=self._retry.retries,
             retry_delay=self._retry.retry_delay,

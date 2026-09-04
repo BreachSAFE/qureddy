@@ -18,6 +18,7 @@ from qureddy._branding import VERSION_BANNER
 from qureddy.cli._errors import EXIT_OK
 from qureddy.core.models import OutputFormat, Severity
 from qureddy.core.retry import MAX_RETRIES, MAX_RETRY_DELAY_SECONDS, RETRYABLE_CATEGORY_VALUES
+from qureddy.scanners.tls.connection import StartTLSMode
 
 _MAX_TIMEOUT_SECONDS = 300
 
@@ -60,6 +61,14 @@ SniOpt = Annotated[
 ]
 OpenSSLOpt = Annotated[
     str | None, typer.Option("--openssl", help="Path to an OpenSSL 3.5.x LTS binary.")
+]
+StartTLSOpt = Annotated[
+    StartTLSMode | None,
+    typer.Option(
+        "--starttls",
+        help="Application protocol upgrade handled by OpenSSL 3.5.7.",
+        case_sensitive=False,
+    ),
 ]
 FormatOpt = Annotated[
     OutputFormat,

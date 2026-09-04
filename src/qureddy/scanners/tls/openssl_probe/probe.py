@@ -8,7 +8,7 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from qureddy.scanners.tls._classify import classify_failure
-from qureddy.scanners.tls._net import build_connect_target
+from qureddy.scanners.tls.connection import StartTLSMode, build_s_client_args
 from qureddy.scanners.tls.openssl_probe._constants import (
     CLASSICAL_GROUP,
     DEFAULT_TIMEOUT_SECONDS,
@@ -39,13 +39,14 @@ def run_group_probe(
     timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS,
     attempt_number: int = 1,
     group: str = HYBRID_GROUP,
+    starttls: StartTLSMode | None = None,
 ) -> ProbeResult:
     """Probe the endpoint forcing one TLS 1.3 key-exchange group.
 
     Defaults to the primary hybrid readiness group for backward compatibility. Callers may
     force supplementary hybrid or pure-PQ groups through the same bounded OpenSSL path.
     """
-    args = _build_probe_args(openssl_path, host, port, sni, group=group)
+    args = _build_probe_args(openssl_path, host, port, sni, group=group, starttls=starttls)
     return _run_probe(args, timeout_seconds=timeout_seconds, attempt_number=attempt_number)
 
 
@@ -61,9 +62,12 @@ def run_classical_probe(
     *,
     timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS,
     attempt_number: int = 1,
+    starttls: StartTLSMode | None = None,
 ) -> ProbeResult:
     """Probe the endpoint with the classical fallback key-exchange group."""
-    args = _build_probe_args(openssl_path, host, port, sni, group=CLASSICAL_GROUP)
+    args = _build_probe_args(
+        openssl_path, host, port, sni, group=CLASSICAL_GROUP, starttls=starttls
+    )
     return _run_probe(args, timeout_seconds=timeout_seconds, attempt_number=attempt_number)
 
 
@@ -74,20 +78,16 @@ def _build_probe_args(
     sni: str | None,
     *,
     group: str,
+    starttls: StartTLSMode | None = None,
 ) -> list[str]:
-    args = [
+    return build_s_client_args(
         openssl_path,
-        "s_client",
-        "-connect",
-        build_connect_target(host, port),
-        "-tls1_3",
-        "-groups",
-        group,
-        "-brief",
-    ]
-    if sni is not None:
-        args.extend(["-servername", sni])
-    return args
+        host,
+        port,
+        sni,
+        extra=("-tls1_3", "-groups", group, "-brief"),
+        starttls=starttls,
+    )
 
 
 def _run_probe(
