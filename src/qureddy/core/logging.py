@@ -73,8 +73,20 @@ def configure_logging(
         renderer = structlog.dev.ConsoleRenderer(colors=honor_color)
     processors.append(renderer)
 
-    # Third-party libraries use stdlib logging, so give those records the same
-    # renderer rather than letting a raw message break the JSONL contract.
+    _configure_stdlib_logging(stream, processors, renderer, level)
+
+    structlog.configure(
+        processors=processors,
+        wrapper_class=structlog.make_filtering_bound_logger(level),
+        logger_factory=structlog.PrintLoggerFactory(file=stream),
+        cache_logger_on_first_use=True,
+    )
+
+
+def _configure_stdlib_logging(
+    stream: TextIO, processors: list[Any], renderer: Any, level: int
+) -> None:
+    """Use the structlog renderer for dependency logs and suppress serializer chatter."""
     foreign_formatter = structlog.stdlib.ProcessorFormatter(
         foreign_pre_chain=processors[:-1],
         processors=[structlog.stdlib.ProcessorFormatter.remove_processors_meta, renderer],
@@ -86,13 +98,6 @@ def configure_logging(
     # cyclonedx-python-lib emits verbose DEBUG serialization chatter (e.g. "Dumping <Bom ...>")
     # on every CBOM render. Pin it above DEBUG so QuReddy's own -vvv output never surfaces it.
     logging.getLogger("cyclonedx").setLevel(logging.WARNING)
-
-    structlog.configure(
-        processors=processors,
-        wrapper_class=structlog.make_filtering_bound_logger(level),
-        logger_factory=structlog.PrintLoggerFactory(file=stream),
-        cache_logger_on_first_use=True,
-    )
 
 
 def start_run_logging(
