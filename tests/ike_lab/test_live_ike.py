@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -21,6 +22,8 @@ from qureddy.scanners.ike.adapter import IkeScanAdapter
 from qureddy.scanners.ike.parser import parse_ike_scan_output
 from qureddy.scanners.ike.scanner import IKEScanner
 from qureddy.scanners.ike.types import IKEMode, IKEParseStatus
+
+_PSKCRACK_MATERIAL = re.compile(r"(?i)(?:[0-9a-f]{2,}:){8}[0-9a-f]{2,}")
 
 
 def _ike_scan_path() -> str:
@@ -49,6 +52,15 @@ def direct_live_result() -> ScanResult:
     """Run direct IKE with the production source-port default."""
     scanner = IKEScanner(IkeScanAdapter(_ike_scan_path()))
     return scanner.scan(parse_ike_target(_target()), timeout_seconds=2)
+
+
+@pytest.fixture(scope="module")
+def psk_live_result() -> ScanResult:
+    """Probe the authorized plain-IKE weak responder used for PSK exposure."""
+    target = os.environ.get("QUREDDY_IKE_PSK_TARGET", "127.0.0.1:4500")
+    source_port = int(os.environ.get("QUREDDY_IKE_PSK_SOURCE_PORT", "40501"))
+    scanner = IKEScanner(IkeScanAdapter(_ike_scan_path(), source_port=source_port))
+    return scanner.scan(parse_ike_target(target), timeout_seconds=2)
 
 
 def test_live_direct_probe_uses_udp_500_and_detects_responder(
@@ -142,6 +154,23 @@ def test_live_ikev1_findings_require_identity_and_cite_rfc9395(
     assert all(
         evidence[item].evidence_type == "ike.identity_exposed" for item in identity.evidence_ids
     )
+
+
+def test_live_psk_hash_exposure_is_canonical_but_material_is_omitted(
+    psk_live_result: ScanResult,
+) -> None:
+    """Prove stock ike-scan drives #763 without leaking its nine-field output."""
+    findings = {finding.rule_id: finding for finding in psk_live_result.findings}
+    exposed = findings["ike.v1.aggressive.psk_hash_exposed"]
+    evidence = {record.id: record for record in psk_live_result.evidence}
+    serialized = psk_live_result.model_dump_json()
+
+    assert exposed.severity.value == "high"
+    assert all(
+        evidence[item].evidence_type == "ike.psk_hash_exposed" for item in exposed.evidence_ids
+    )
+    assert _PSKCRACK_MATERIAL.search(serialized) is None
+    assert "qureddy-ike-" not in serialized
 
 
 def test_live_findings_only_reference_emitted_evidence(live_result: ScanResult) -> None:
