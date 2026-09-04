@@ -17,6 +17,7 @@ from datetime import UTC, datetime
 
 import pytest
 
+from qureddy.core.certificate import CertificateObservation
 from qureddy.core.models import (
     Asset,
     Evidence,
@@ -62,6 +63,29 @@ def _evidence(ev_id: str, probe: ProbeResult | None) -> Evidence:
         observation_type=ObservationType.NEGOTIATED,
         source="qureddy.scanners.tls.parse",
         probe_result=probe,
+    )
+
+
+def _certificate_evidence() -> Evidence:
+    return Evidence(
+        id="ev-cert",
+        asset_id="asset-1",
+        evidence_type="tls.certificate",
+        observation_type=ObservationType.OBSERVED,
+        source="qureddy.scanners.tls.cert_probe",
+        certificate_record=CertificateObservation(
+            subject="CN=mail.example",
+            issuer="CN=Example CA",
+            not_before="Jan  1 00:00:00 2026 GMT",
+            not_after="Jan  1 00:00:00 2027 GMT",
+            serial="01AB",
+            signature_algorithm="sha256WithRSAEncryption",
+            public_key_summary="Public-Key: (2048 bit)",
+            public_key_algorithm="rsaEncryption",
+            public_key_bits=2048,
+            is_self_signed=False,
+            is_post_quantum_signature=False,
+        ),
     )
 
 
@@ -206,3 +230,13 @@ class TestCommandsPanel:
         ev = _evidence("ev-none", None)
         out = _render(_result_with_probes((ev,)), verbosity=3)
         assert "Commands run" not in out
+
+
+class TestCertificateSummary:
+    def test_rich_output_includes_certificate_facts(self) -> None:
+        out = _render(_result_with_probes((_certificate_evidence(),)))
+        assert "certificate_subject" in out
+        assert "CN=mail.example" in out
+        assert "certificate_signature" in out
+        assert "sha256WithRSAEncryption" in out
+        assert "rsaEncryption (2048 bits)" in out

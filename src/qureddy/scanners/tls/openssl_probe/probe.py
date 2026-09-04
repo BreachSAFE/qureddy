@@ -85,7 +85,9 @@ def _build_probe_args(
         host,
         port,
         sni,
-        extra=("-tls1_3", "-groups", group, "-brief"),
+        # Keep the complete OpenSSL transcript. The parser extracts the
+        # negotiated facts, while -vvv/output-dir preserve the raw evidence.
+        extra=("-tls1_3", "-groups", group),
         starttls=starttls,
     )
 
@@ -108,7 +110,15 @@ def _run_probe(
     assert return_code is not None  # noqa: S101 -- OK launch guarantees an exit code
     duration_ms = int((datetime.now(UTC) - started).total_seconds() * 1000)
     failure = classify_failure(outcome.stderr) if return_code else None
-    log_subprocess_complete(args, return_code, duration_ms, attempt_number, failure)
+    log_subprocess_complete(
+        args,
+        return_code,
+        duration_ms,
+        attempt_number,
+        failure,
+        stdout=outcome.stdout,
+        stderr=outcome.stderr,
+    )
     parser_input = combined_probe_output(outcome.stdout, outcome.stderr)
     return build_probe_result(
         args=args,

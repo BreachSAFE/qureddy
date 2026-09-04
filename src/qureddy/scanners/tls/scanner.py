@@ -375,6 +375,7 @@ class TLSScanner(Scanner[ScanTarget]):
         """
         log = get_logger(__name__)
         log.info("probe.phase.start", phase="certificate")
+        pem = ""
         try:
             pem = fetch_certificate_pem(
                 openssl_path,
@@ -391,7 +392,9 @@ class TLSScanner(Scanner[ScanTarget]):
             )
         except (LocalOpenSSLMissing, ValueError):  # fmt: skip
             certificate = None
-        evidence = evidence_from_certificate(asset, certificate)
+        evidence = evidence_from_certificate(asset, certificate).model_copy(
+            update={"certificate_pem": pem or None}
+        )
         finding = finding_from_certificate(asset, evidence, certificate)
         log.info("probe.phase.complete", phase="certificate", observed=certificate is not None)
         return evidence, finding

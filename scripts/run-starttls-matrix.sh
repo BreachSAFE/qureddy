@@ -29,7 +29,19 @@ run_scan() {
   code=$?
   printf 'exit=%s\n' "$code"
   if [[ -f "$dir/scan.json" ]] && command -v jq >/dev/null 2>&1; then
-    jq -r '[.scan.status, (.summary.readiness // "unknown"), (.summary.hndl_exposure // "unknown")] | @tsv' \
+    printf 'status\treadiness\thndl\tprotocol\tcipher\thybrid\tclassical\tcert_subject\tcert_signature\tcert_key\n'
+    jq -r '[
+      (.scan.status // "unknown"),
+      (.summary.readiness // "unknown"),
+      (.summary.interpretation.hndl_exposure // "unknown"),
+      ([.evidence[]?.protocol_version // empty] | map(select(. != null)) | .[0] // "unknown"),
+      ([.evidence[]?.cipher_suite // empty] | map(select(. != null)) | .[0] // "unknown"),
+      ([.evidence[]? | select(.probe_role == "hybrid_readiness") | .negotiated_group // empty] | .[0] // "unknown"),
+      ([.evidence[]? | select(.probe_role == "classical_control") | .negotiated_group // empty] | .[0] // "unknown"),
+      ([.evidence[]?.certificate // empty] | .[0].subject // "unknown"),
+      ([.evidence[]?.certificate // empty] | .[0].signature_algorithm // "unknown"),
+      ([.evidence[]?.certificate // empty] | .[0] | if . == null then "unknown" else ((.public_key_algorithm // "unknown") + (if .public_key_bits == null then "" else " (" + (.public_key_bits|tostring) + " bits)" end)) end)
+    ] | @tsv' \
       "$dir/scan.json"
   fi
   if (( code != 0 )); then
@@ -57,5 +69,5 @@ run_scan postgres 127.0.0.1:5432 postgres
 run_scan mysql 127.0.0.1:3306 mysql
 
 printf '\nEvidence root: %s\n' "$QUREDDY_OUT"
-printf 'Each attempted target has stdout.txt, stderr.txt, run.log, and any generated scan artifacts.\n'
+printf 'Each target has stdout.txt, stderr.txt, run.log, scan artifacts, and certificate.pem when observed.\n'
 exit "$overall_exit"

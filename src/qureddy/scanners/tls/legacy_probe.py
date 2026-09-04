@@ -207,7 +207,6 @@ def _handshake_with_cipher_list(
             protocol_flag,
             "-cipher",
             ":".join([*cipher_list, _SECLEVEL_OVERRIDE]),
-            "-brief",
         ),
         starttls=starttls,
     )

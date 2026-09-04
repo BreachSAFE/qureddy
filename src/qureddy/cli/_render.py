@@ -65,8 +65,18 @@ def _render_bundle(
         (output_dir / "scan.cdx.json").write_text(cbom_stream.getvalue(), encoding="utf-8")
         (output_dir / "scan.jsonl").write_text(jsonl_stream.getvalue(), encoding="utf-8")
         (output_dir / "scan.rich.txt").write_text(rich_stream.getvalue(), encoding="utf-8")
+        _write_certificate_artifact(result, output_dir)
     except OSError as exc:
         _fail(f"cannot write scan bundle in {output_dir}: {exc.strerror or exc}", EXIT_USAGE)
+
+
+def _write_certificate_artifact(result: ScanResult, output_dir: Path) -> None:
+    """Write the observed leaf PEM without adding it to machine results."""
+    certificate_pem = next(
+        (e.certificate_pem for e in result.evidence if e.certificate_pem is not None), None
+    )
+    if certificate_pem is not None:
+        (output_dir / "certificate.pem").write_text(certificate_pem + "\n", encoding="utf-8")
 
 
 def _render(

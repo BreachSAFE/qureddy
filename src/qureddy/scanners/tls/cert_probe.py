@@ -108,7 +108,12 @@ def _run_openssl(
     if outcome.launch is not LaunchStatus.OK:
         _log.error(f"{event_prefix}.openssl_unlaunchable", openssl_path=args[0])
     raise_for_launch(outcome, args[0])
-    _log.info(f"{event_prefix}.complete", return_code=outcome.returncode)
+    _log.info(
+        f"{event_prefix}.complete",
+        return_code=outcome.returncode,
+        stdout=outcome.stdout,
+        stderr=outcome.stderr,
+    )
     return outcome.stdout
 
 
