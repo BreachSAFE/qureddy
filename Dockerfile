@@ -3,8 +3,11 @@
 
 FROM debian:bookworm-slim@sha256:88200866dfff7ea7f5cbcb6ec7c8a701889efe6fe859fe64d6990e4b07ea4171 AS openssl-build
 
-ARG OPENSSL_VERSION=3.5.7
-ARG OPENSSL_SHA256=a8c0d28a529ca480f9f36cf5792e2cd21984552a3c8e4aa11a24aa31aeac98e8
+# Keep the source archive reproducible, but track the current patched release in
+# the supported 3.5 LTS series. Override both values together for a reviewed
+# rebuild; the runtime validator accepts any supported 3.5.x patch release.
+ARG OPENSSL_VERSION=3.5.8
+ARG OPENSSL_SHA256=a8f84a39918ec6415ce765d9b429d313ba97b8143169c172e734b9514464f5b2
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends build-essential ca-certificates curl perl \
@@ -72,11 +75,13 @@ FROM python:3.14-slim-bookworm@sha256:9ab8d9c8514b44f90cf0029dd42fdd7e9e211e639c
 
 ARG QUREDDY_VERSION=0.9.8
 ARG IKE_SCAN_VERSION=1.9.5-1+b1
+ARG OPENSSL_VERSION=3.5.8
 LABEL org.opencontainers.image.title="QuReddy" \
       org.opencontainers.image.description="Post-quantum readiness scanner for TLS, SSH, and IKE endpoints" \
       org.opencontainers.image.source="https://github.com/breachsafe/qureddy" \
       org.opencontainers.image.licenses="Apache-2.0 AND (GPL-3.0-or-later WITH openvpn-openssl-exception)" \
       org.opencontainers.image.version="${QUREDDY_VERSION}" \
+      io.breachsafe.qureddy.openssl.version="${OPENSSL_VERSION}" \
       io.breachsafe.qureddy.openssl-legacy.version="1.0.2u" \
       io.breachsafe.qureddy.ike-scan.version="${IKE_SCAN_VERSION}"
 
