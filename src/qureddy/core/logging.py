@@ -53,24 +53,7 @@ def configure_logging(
         structlog.processors.add_log_level,
         structlog.processors.TimeStamper(fmt="iso", utc=True),
     ]
-    if json_logs:
-        renderer: Any = structlog.processors.JSONRenderer()
-    else:
-        # Match the Rich console adapter: color when stderr is a real
-        # terminal AND NO_COLOR is unset. The previous revision hardcoded
-        # `colors=False`, which suppressed structlog's color output even
-        # on real TTYs and was inconsistent with the Rich adapter's
-        # NO_COLOR handling. Reviewer-flagged correctness fix.
-        #
-        # Issue #231: the color decision must be based on the actual
-        # destination `stream` (which is `log_stream` when the caller
-        # passes one), not `sys.stderr` — those diverge whenever
-        # `log_stream` is set, and a non-tty log_stream (e.g. a test's
-        # io.StringIO) got polluted with ANSI codes whenever the real
-        # process stderr happened to be a terminal. `getattr` guards
-        # test doubles that don't implement `isatty` at all.
-        honor_color = getattr(stream, "isatty", bool)() and "NO_COLOR" not in os.environ
-        renderer = structlog.dev.ConsoleRenderer(colors=honor_color)
+    renderer = _build_renderer(stream, json_logs)
     processors.append(renderer)
 
     _configure_stdlib_logging(stream, processors, renderer, level)
@@ -98,6 +81,15 @@ def _configure_stdlib_logging(
     # cyclonedx-python-lib emits verbose DEBUG serialization chatter (e.g. "Dumping <Bom ...>")
     # on every CBOM render. Pin it above DEBUG so QuReddy's own -vvv output never surfaces it.
     logging.getLogger("cyclonedx").setLevel(logging.WARNING)
+
+
+def _build_renderer(stream: TextIO, json_logs: bool) -> Any:
+    """Build the renderer for the actual destination stream."""
+    if json_logs:
+        return structlog.processors.JSONRenderer()
+    # Issue #231: honor color only for a real destination TTY and NO_COLOR unset.
+    honor_color = getattr(stream, "isatty", bool)() and "NO_COLOR" not in os.environ
+    return structlog.dev.ConsoleRenderer(colors=honor_color)
 
 
 def start_run_logging(

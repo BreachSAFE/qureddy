@@ -228,12 +228,7 @@ class TLSScanner(Scanner[ScanTarget]):
         """
         self._openssl_path_override = openssl_path
         self._retry = retry or RetryConfig()
-        self._starttls = starttls
-
-    @property
-    def starttls(self) -> StartTLSMode | None:
-        """Return the immutable application-protocol upgrade mode."""
-        return self._starttls
+        self.starttls: StartTLSMode | None = starttls
 
     def scan(
         self,
@@ -241,7 +236,7 @@ class TLSScanner(Scanner[ScanTarget]):
         *,
         timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS,
     ) -> ScanResult:
-        """Run a full TLS scan against `target` and return a ScanResult."""
+        """Run a full TLS scan against the target."""
         return _run_tls_scan(self, target, timeout_seconds)
 
     @staticmethod

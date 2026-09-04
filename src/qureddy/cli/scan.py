@@ -57,7 +57,7 @@ from qureddy.collectors import NativeTLSCollector
 from qureddy.core.contracts import ScanCollector, ScanSource, SourceKind
 from qureddy.core.errors import CbomError, RetryConfigError, TargetParseError
 from qureddy.core.logging import start_run_logging
-from qureddy.core.models import FailureCategory, OutputFormat, ScanTarget, Severity
+from qureddy.core.models import FailureCategory, OutputFormat, ScanResult, ScanTarget, Severity
 from qureddy.core.registry import CollectorRegistry
 from qureddy.core.retry import parse_retry_on, validate_retry_args
 from qureddy.core.targets import parse_target
@@ -241,9 +241,7 @@ def scan_tls(
         )
         raise typer.Exit(code=exit_code)
     finally:
-        structlog.contextvars.clear_contextvars()
-        if log_stream is not None:
-            log_stream.close()
+        _finish_run(log_stream)
 
 
 def _scan_and_render(
@@ -278,21 +276,17 @@ def _scan_and_render(
             timeout,
             machine_format=machine_format,
         )
-        try:
-            _render(
-                result,
-                output_format,
-                verbose,
-                reproducible=reproducible,
-                compact=compact,
-                min_severity=min_severity,
-                stream=output_stream,
-                output_dir=output_dir,
-            )
-        except CbomError as exc:
-            _echo_operator_diagnostic(
-                f"internal error rendering output: {exc}", machine_format=machine_format
-            )
+        if not _render_result(
+            result,
+            output_format,
+            verbose,
+            reproducible=reproducible,
+            compact=compact,
+            min_severity=min_severity,
+            stream=output_stream,
+            output_dir=output_dir,
+            machine_format=machine_format,
+        ):
             return EXIT_INTERNAL_ERROR
         return exit_code
     finally:
@@ -306,6 +300,38 @@ def _is_machine_format(output_dir: Path | None, output_format: OutputFormat) -> 
         OutputFormat.CBOM,
         OutputFormat.JSONL,
     )
+
+
+def _render_result(
+    result: ScanResult,
+    output_format: OutputFormat,
+    verbose: int,
+    *,
+    reproducible: bool,
+    compact: bool,
+    min_severity: Severity | None,
+    stream: IO[str] | None,
+    output_dir: Path | None,
+    machine_format: bool,
+) -> bool:
+    """Render one result and convert renderer failures to an operator diagnostic."""
+    try:
+        _render(
+            result,
+            output_format,
+            verbose,
+            reproducible=reproducible,
+            compact=compact,
+            min_severity=min_severity,
+            stream=stream,
+            output_dir=output_dir,
+        )
+    except CbomError as exc:
+        _echo_operator_diagnostic(
+            f"internal error rendering output: {exc}", machine_format=machine_format
+        )
+        return False
+    return True
 
 
 def _build_tls_scanner(
@@ -334,6 +360,12 @@ def _close_output_stream(stream: IO[str] | None) -> None:
     """Close an optional output stream owned by the scan command."""
     if stream is not None:
         stream.close()
+
+
+def _finish_run(log_stream: TextIO | None) -> None:
+    """Clear per-run context and close the owned diagnostic stream."""
+    structlog.contextvars.clear_contextvars()
+    _close_output_stream(log_stream)
 
 
 def _parse_retry_args(
