@@ -39,14 +39,15 @@ No value contains `"; "` or `"="`, so this split never loses data.
 
 ## 2. Fields
 
-The pairs are emitted in this order. Only `observation` and `evidence_type` are always
-present; the rest appear when the underlying evidence carries them.
+The pairs are emitted in this order. `observation`, `evidence_type`, `confidence`, and
+`source` are always present; the rest appear when the underlying evidence carries them.
 
 | Key | Always | Meaning |
 |---|---|---|
 | `observation` | yes | Observation type: `negotiated`, `offered`, `observed`, `not_offered`, `not_testable`. |
 | `evidence_type` | yes | Source signal, e.g. `tls.negotiation`, `tls.legacy.cipher`, `ssh.kex`. |
 | `confidence` | yes | Evidence confidence: `high`, `medium`, `low` (#326). |
+| `source` | yes | QuReddy scanner module that produced the observation. The occurrence `location` separately names the scanned target where the asset was found. |
 | `cipher_suite` | when co-observed | The negotiated TLS cipher suite, when it is not itself the occurrence subject (#326). |
 | `role` | when probed | Probe role, e.g. `hybrid_readiness`, `classical_control`. |
 | `expected` | when probed | Group the probe forced, e.g. `X25519MLKEM768`. |
@@ -57,13 +58,13 @@ present; the rest appear when the underlying evidence carries them.
 ## 3. Example
 
 ```
-observation=negotiated; evidence_type=tls.negotiation; role=hybrid_readiness; expected=X25519MLKEM768; return_code=0; command_sha256=25b212e8621b880aeb82ad7143dfb3ba93c4553d9618a6f4c9367e7880e364e1
+observation=negotiated; evidence_type=tls.negotiation; confidence=high; source=qureddy.scanners.tls.parse; role=hybrid_readiness; expected=X25519MLKEM768; return_code=0; command_sha256=25b212e8621b880aeb82ad7143dfb3ba93c4553d9618a6f4c9367e7880e364e1
 ```
 
 The minimal form, for a signal with no probe record:
 
 ```
-observation=offered; evidence_type=ssh.cipher
+observation=offered; evidence_type=ssh.cipher; confidence=high; source=qureddy.scanners.ssh.probe
 ```
 
 ## 4. Stability
