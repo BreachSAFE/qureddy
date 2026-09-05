@@ -37,6 +37,10 @@ versions follow [PEP 440](https://peps.python.org/pep-0440/).
 
 ### Fixed
 
+- Normalize OpenSSL's `mldsa44`, `mldsa65`, and `mldsa87` TLS handshake names to their
+  canonical FIPS 204 spellings, preventing classical misclassification and duplicate CBOM
+  algorithm assets ([issue #793](https://github.com/BreachSAFE/qureddy/issues/793),
+  [PR #794](https://github.com/BreachSAFE/qureddy/pull/794)).
 - Record each CBOM occurrence `location` as the scanned target and preserve the scanner
   module in the `source` provenance field, so inventory viewers no longer present an
   implementation module as the asset location
