@@ -141,4 +141,4 @@ jobs:
     with:
       module: qureddy
       coverage_min: 90
-      container_tag: 3.14-openssl3.5.7
+      container_tag: 3.14-openssl3.5.8
