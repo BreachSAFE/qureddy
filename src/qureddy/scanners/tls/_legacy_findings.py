@@ -52,7 +52,9 @@ def _legacy_protocol_notes(result: LegacyProtocolResult) -> tuple[str, ...]:
     return notes
 
 
-def evidence_from_legacy_result(asset: Asset, result: LegacyProtocolResult) -> Evidence:
+def evidence_from_legacy_result(
+    asset: Asset, result: LegacyProtocolResult, *, runtime: str = "openssl"
+) -> Evidence:
     """One Evidence record per legacy-protocol sweep, offered or not.
 
     Generated regardless of outcome (unlike the Finding below) so a
@@ -78,7 +80,7 @@ def evidence_from_legacy_result(asset: Asset, result: LegacyProtocolResult) -> E
             protocol_version=result.protocol_version,
             notes=("probe did not complete (timeout) — protocol support undetermined",),
         )
-    notes = _legacy_protocol_notes(result)
+    notes = (*_legacy_protocol_notes(result), f"runtime={runtime}")
     # A completed sweep with zero accepted ciphers is a confirmed "not offered", not an
     # OFFERED observation; tagging it OFFERED made the CBOM's positive-observation filter
     # claim the endpoint *provides* TLS 1.0/1.1 for essentially every modern target (#137).
@@ -95,7 +97,7 @@ def evidence_from_legacy_result(asset: Asset, result: LegacyProtocolResult) -> E
 
 
 def cipher_evidence_from_legacy_result(
-    asset: Asset, result: LegacyProtocolResult
+    asset: Asset, result: LegacyProtocolResult, *, runtime: str = "openssl"
 ) -> list[Evidence]:
     """One Evidence per accepted legacy cipher (#303).
 
@@ -119,7 +121,7 @@ def cipher_evidence_from_legacy_result(
             algorithm=cipher,
             primitive=cipher_primitive(cipher),
             negotiated_group=cipher,
-            notes=(f"accepted on {result.protocol_version}",),
+            notes=(f"accepted on {result.protocol_version}", f"runtime={runtime}"),
         )
         for cipher in result.accepted_ciphers
     ]

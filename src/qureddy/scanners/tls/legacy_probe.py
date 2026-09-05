@@ -84,7 +84,7 @@ _log = get_logger(__name__)
 # during development of this module. Two genuinely different name
 # grammars, not one regex two ways to write it.
 _LEGACY_CIPHERSUITE = re.compile(
-    r"^[^\S\r\n]*Ciphersuite:[^\S\r\n]*(?P<cipher>[A-Z0-9_-]+)[^\S\r\n]*$",
+    r"(?:Ciphersuite:|Cipher is)[^\S\r\n]*(?P<cipher>[A-Za-z0-9_-]+)",
     re.MULTILINE,
 )
 
@@ -148,7 +148,11 @@ def _run_openssl(
 
 
 def _candidate_ciphers(
-    openssl_path: str, protocol_flag: str, *, timeout_seconds: int
+    openssl_path: str,
+    protocol_flag: str,
+    *,
+    timeout_seconds: int,
+    legacy_compat: bool = False,
 ) -> tuple[list[str], bool]:
     """List every cipher name this OpenSSL build knows for `protocol_flag`.
 
@@ -168,7 +172,7 @@ def _candidate_ciphers(
         "ciphers",
         "-s",
         protocol_flag,
-        f"ALL:COMPLEMENTOFALL:{_SECLEVEL_OVERRIDE}",
+        "ALL:COMPLEMENTOFALL" if legacy_compat else f"ALL:COMPLEMENTOFALL:{_SECLEVEL_OVERRIDE}",
     ]
     completed = _run_openssl(
         args, event_prefix="legacy_probe.candidates", timeout_seconds=timeout_seconds
@@ -190,6 +194,7 @@ def _handshake_with_cipher_list(
     *,
     timeout_seconds: int,
     starttls: StartTLSMode | None = None,
+    legacy_compat: bool = False,
 ) -> tuple[str | None, bool]:
     """One handshake offering `cipher_list`.
 
@@ -206,7 +211,7 @@ def _handshake_with_cipher_list(
         extra=(
             protocol_flag,
             "-cipher",
-            ":".join([*cipher_list, _SECLEVEL_OVERRIDE]),
+            ":".join(cipher_list if legacy_compat else [*cipher_list, _SECLEVEL_OVERRIDE]),
         ),
         starttls=starttls,
     )
@@ -238,6 +243,7 @@ def probe_legacy_protocol(
     *,
     timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS,
     starttls: StartTLSMode | None = None,
+    legacy_compat: bool = False,
 ) -> LegacyProtocolResult:
     """Iterative-exclusion cipher enumeration for one legacy protocol version.
 
@@ -247,7 +253,10 @@ def probe_legacy_protocol(
     """
     _log.info("legacy_probe.protocol.start", protocol=protocol_version)
     remaining, incomplete = _candidate_ciphers(
-        openssl_path, protocol_flag, timeout_seconds=timeout_seconds
+        openssl_path,
+        protocol_flag,
+        timeout_seconds=timeout_seconds,
+        legacy_compat=legacy_compat,
     )
     accepted: list[str] = []
     while remaining:
@@ -260,6 +269,7 @@ def probe_legacy_protocol(
             remaining,
             timeout_seconds=timeout_seconds,
             starttls=starttls,
+            legacy_compat=legacy_compat,
         )
         if timed_out:
             incomplete = True
@@ -268,13 +278,7 @@ def probe_legacy_protocol(
             break
         accepted.append(cipher)
         remaining.remove(cipher)
-    result = LegacyProtocolResult(
-        protocol_flag=protocol_flag,
-        protocol_version=protocol_version,
-        offered=bool(accepted),
-        accepted_ciphers=tuple(accepted),
-        probe_incomplete=incomplete,
-    )
+    result = _legacy_protocol_result(protocol_flag, protocol_version, accepted, incomplete)
     _log.info(
         "legacy_probe.protocol.complete",
         protocol=protocol_version,
@@ -282,6 +286,18 @@ def probe_legacy_protocol(
         incomplete=result.probe_incomplete,
     )
     return result
+
+
+def _legacy_protocol_result(
+    protocol_flag: str, protocol_version: str, accepted: list[str], incomplete: bool
+) -> LegacyProtocolResult:
+    return LegacyProtocolResult(
+        protocol_flag=protocol_flag,
+        protocol_version=protocol_version,
+        offered=bool(accepted),
+        accepted_ciphers=tuple(accepted),
+        probe_incomplete=incomplete,
+    )
 
 
 def probe_all_legacy_protocols(
@@ -292,6 +308,7 @@ def probe_all_legacy_protocols(
     *,
     timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS,
     starttls: StartTLSMode | None = None,
+    legacy_compat: bool = False,
 ) -> tuple[LegacyProtocolResult, ...]:
     """Run `probe_legacy_protocol` for every version in `LEGACY_PROTOCOLS`."""
     return tuple(
@@ -304,6 +321,7 @@ def probe_all_legacy_protocols(
             version,
             timeout_seconds=timeout_seconds,
             starttls=starttls,
+            legacy_compat=legacy_compat,
         )
         for flag, version in LEGACY_PROTOCOLS
     )
