@@ -1,0 +1,16 @@
+# captured: 2026-09-05T07:46:21Z
+# normalized-openssl: 3.5.7 LTS (homebrew openssl@3.5 baseline)
+# command: openssl s_client -connect 127.0.0.1:19443 -tls1_3 -groups X25519MLKEM768 -brief -servername hello-pqc.local
+# endpoint: disposable local ML-DSA-65 self-signed certificate; private key deleted after capture
+Connecting to 127.0.0.1
+depth=0 CN=hello-pqc.local
+verify error:num=18:self-signed certificate
+CONNECTION ESTABLISHED
+Protocol version: TLSv1.3
+Ciphersuite: TLS_AES_256_GCM_SHA384
+Peer certificate: CN=hello-pqc.local
+Hash used: UNDEF
+Signature type: mldsa65
+Verification error: self-signed certificate
+Negotiated TLS1.3 group: X25519MLKEM768
+DONE

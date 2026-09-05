@@ -31,7 +31,10 @@ _SLH_DSA = {
     "SLH-DSA-SHAKE-256f": ("SLH-DSA-SHAKE-256f", "2.16.840.1.101.3.4.3.31", 5),
 }
 PQC_SIGNATURES = MappingProxyType(
-    {name.upper(): value for name, value in (*_ML_DSA.items(), *_SLH_DSA.items())}
+    {
+        **{name.upper(): value for name, value in (*_ML_DSA.items(), *_SLH_DSA.items())},
+        **{name.replace("-", "").upper(): value for name, value in _ML_DSA.items()},
+    }
 )
 
 

@@ -28,6 +28,7 @@ import re
 from dataclasses import dataclass
 
 from qureddy.core.models import FailureCategory
+from qureddy.core.signatures import classify_pqc_signature
 
 NEGOTIATED_LINE = re.compile(
     r"^[^\S\r\n]*Negotiated[^\S\r\n]+TLS1\.3[^\S\r\n]+group:"
@@ -117,7 +118,7 @@ def parse_brief_output(stdout: str, *, expected_group: str) -> ParsedNegotiation
         negotiated_group=server_evidence,
         protocol_version=protocol,
         cipher_suite=cipher,
-        handshake_signature=_first_match(SIGNATURE_TYPE, stdout, "signature"),
+        handshake_signature=_handshake_signature(stdout),
         handshake_hash=_first_match(HASH_USED, stdout, "hash"),
         key_bits=_temp_key_bits(stdout),
     )
@@ -173,6 +174,15 @@ def _unexpected(
 def _first_match(pattern: re.Pattern[str], text: str, group_name: str) -> str | None:
     match = pattern.search(text)
     return match.group(group_name) if match else None
+
+
+def _handshake_signature(text: str) -> str | None:
+    """Return OpenSSL's signature type in the canonical FIPS spelling when known."""
+    signature = _first_match(SIGNATURE_TYPE, text, "signature")
+    if signature is None:
+        return None
+    classified = classify_pqc_signature(signature)
+    return classified[0] if classified is not None else signature
 
 
 def _temp_key_bits(text: str) -> int | None:
