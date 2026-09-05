@@ -11,6 +11,7 @@ LibreSSL) and on Windows (where PATH often contains an unrelated OpenSSL).
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import sys
 from pathlib import Path, PurePath
@@ -28,9 +29,11 @@ from qureddy.core.errors import (
     QureddyError,
 )
 from qureddy.core.models import FailureCategory, OpenSSLDependency
+from qureddy.scanners.tls.openssl_probe._capability_io import run_openssl
 from qureddy.scanners.tls.openssl_probe._constants import (
     ENV_OVERRIDE,
     HYBRID_GROUP,
+    LEGACY_ENV_OVERRIDE,
     OPENSSL_LTS_FORMULA,
     OPENSSL_LTS_LABEL,
     PINNED_OPENSSL_VERSION,
@@ -197,6 +200,37 @@ def resolve_openssl_path(explicit: str | None) -> str:
     """Resolve an explicit/env override or the first validated platform candidate."""
     path, _ = resolve_openssl_with_capability(explicit)
     return path
+
+
+def resolve_legacy_openssl(
+    explicit: str | None = None, *, timeout_seconds: int = 30
+) -> tuple[str | None, OpenSSLDependency]:
+    """Discover the optional legacy runtime for compatibility cipher probes."""
+    override = explicit or os.environ.get(LEGACY_ENV_OVERRIDE)
+    candidates = (
+        [override]
+        if override
+        else [
+            "/opt/openssl-legacy/bin/openssl",
+            "/opt/openssl10/bin/openssl",
+            "/usr/local/openssl-legacy/bin/openssl",
+        ]
+    )
+    for candidate in candidates:
+        if not candidate or not Path(candidate).is_file() or not os.access(candidate, os.X_OK):
+            continue
+        try:
+            version_text = run_openssl([candidate, "version"], timeout_seconds=timeout_seconds)
+            match = re.search(r"^OpenSSL\s+(\d+\.\d+\.\d+[A-Za-z0-9._-]*)", version_text)
+            if match is not None:
+                return candidate, OpenSSLDependency(
+                    name="openssl-legacy", path=candidate, version=match.group(1)
+                )
+        except QureddyError:
+            continue
+    return None, OpenSSLDependency(
+        name="openssl-legacy", failure_category=FailureCategory.LOCAL_OPENSSL_MISSING
+    )
 
 
 def _missing_dependency(path: str | None) -> OpenSSLDependency:

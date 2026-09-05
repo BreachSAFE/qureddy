@@ -66,13 +66,11 @@ from qureddy.scanners.tls.openssl_probe import (
     run_group_probe,
 )
 from qureddy.scanners.tls.openssl_probe.capability import resolve_openssl_with_capability
+from qureddy.scanners.tls.openssl_probe.resolver import resolve_legacy_openssl
 
 if TYPE_CHECKING:
     from qureddy.scanners.tls.connection import StartTLSMode
 
-# Re-exported for tests that pin the rollup behavior. Canonical impls
-# live in `_summary.py`; the public test surface stays on this module
-# for backward compat across the file split.
 _build_summary = build_summary
 _scan_readiness = scan_readiness
 _summary_failure_category = summary_failure_category
@@ -98,11 +96,11 @@ def _collect_optional_axes(
     target: ScanTarget,
     asset: Asset,
     openssl_path: str,
+    legacy_openssl_path: str | None,
     timeout_seconds: int,
     evidence: list[Evidence],
     findings: list[Finding],
 ) -> int:
-    """Collect legacy and certificate axes unless the target is unreachable."""
     if target_appears_unreachable(evidence):
         get_logger(__name__).info(
             "scan.legacy_and_cert_probes_skipped",
@@ -118,6 +116,18 @@ def _collect_optional_axes(
     )
     evidence.extend(legacy_evidence)
     findings.extend(legacy_findings)
+    if legacy_openssl_path is not None:
+        compatibility_evidence, compatibility_findings = scanner._collect_legacy_evidence(  # noqa: SLF001
+            target=target,
+            asset=asset,
+            openssl_path=legacy_openssl_path,
+            timeout_seconds=timeout_seconds,
+            starttls=scanner.starttls,
+            runtime="openssl-legacy",
+            legacy_compat=True,
+        )
+        evidence.extend(compatibility_evidence)
+        findings.extend(compatibility_findings)
     cert_evidence, cert_finding = scanner._collect_cert_evidence(  # noqa: SLF001
         target=target,
         asset=asset,
@@ -135,13 +145,13 @@ def _completed_scan_result(
     target: ScanTarget,
     asset: Asset,
     dependency: OpenSSLDependency,
+    legacy_dependency: OpenSSLDependency,
     evidence: list[Evidence],
     findings: list[Finding],
     scan_id: str,
     started: datetime,
     total_attempts: int,
 ) -> ScanResult:
-    """Roll up and build a completed TLS scan result."""
     completed = datetime.now(UTC)
     summary = build_summary(target, findings, evidence)
     get_logger(__name__).info(
@@ -161,7 +171,7 @@ def _completed_scan_result(
             completed_at=completed,
         ),
         target=target,
-        dependencies=(dependency,),
+        dependencies=(dependency, legacy_dependency),
         assets=(asset,),
         evidence=tuple(evidence),
         findings=tuple(findings),
@@ -174,10 +184,12 @@ def _run_tls_scan(
     target: ScanTarget,
     timeout_seconds: int,
 ) -> ScanResult:
-    """Run the TLS phases while keeping the public method a thin entrypoint."""
     started = datetime.now(UTC)
     scan_id = _begin_scan(target)
     openssl_path, dependency = scanner._check_capability(timeout_seconds)  # noqa: SLF001
+    legacy_openssl_path, legacy_dependency = scanner._check_legacy_capability(  # noqa: SLF001
+        timeout_seconds
+    )
     asset = build_asset(target)
     evidence, total_attempts = scanner._collect_evidence(  # noqa: SLF001
         target=target,
@@ -191,6 +203,7 @@ def _run_tls_scan(
         target,
         asset,
         openssl_path,
+        legacy_openssl_path,
         timeout_seconds,
         evidence,
         findings,
@@ -199,6 +212,7 @@ def _run_tls_scan(
         target,
         asset,
         dependency,
+        legacy_dependency,
         evidence,
         findings,
         scan_id,
@@ -208,7 +222,6 @@ def _run_tls_scan(
 
 
 def _begin_scan(target: ScanTarget) -> str:
-    """Bind correlation context and record the start of one scan."""
     scan_id = new_id("scan")
     structlog.contextvars.clear_contextvars()
     structlog.contextvars.bind_contextvars(scan_id=scan_id, target=target.locator)
@@ -258,6 +271,13 @@ class TLSScanner(Scanner[ScanTarget]):
             self._openssl_path_override, timeout_seconds=timeout_seconds
         )
 
+    def _check_legacy_capability(
+        self, timeout_seconds: int
+    ) -> tuple[str | None, OpenSSLDependency]:
+        path, dependency = resolve_legacy_openssl(timeout_seconds=timeout_seconds)
+        get_logger(__name__).info("legacy_openssl.resolved", path=path, version=dependency.version)
+        return path, dependency
+
     def _collect_evidence(
         self,
         *,
@@ -269,9 +289,6 @@ class TLSScanner(Scanner[ScanTarget]):
         log = get_logger(__name__)
         evidence: list[Evidence] = []
         probe_count = 0
-        # The primary hybrid attempt owns readiness failures. Supplementary hybrid and pure-PQ
-        # attempts are positive-only coverage: negotiation fires the structural policy rule,
-        # while rejection does not fabricate a negative finding (#337, #521).
         for group, role, phase in _GROUP_PROBE_PLAN:
             log.info("probe.phase.start", phase=phase, group=group)
             results = self._probe_with_retries(
@@ -317,14 +334,10 @@ class TLSScanner(Scanner[ScanTarget]):
         openssl_path: str,
         timeout_seconds: int,
         starttls: StartTLSMode | None = None,
+        runtime: str = "openssl",
+        legacy_compat: bool = False,
     ) -> tuple[list[Evidence], list[Finding]]:
-        """Legacy TLS 1.0/1.1/1.2 protocol + cipher enumeration (issue #192).
-
-        No retries: unlike the hybrid/classical probes (single handshake,
-        worth retrying on a flaky connection), this is already a multi
-        -handshake sweep per protocol — retrying the whole sweep on any
-        transient failure would multiply an already-slower path.
-        """
+        """Enumerate legacy protocols and ciphers without retrying the sweep."""
         log = get_logger(__name__)
         log.info("probe.phase.start", phase="legacy_tls1_tls11_tls12")
         results = probe_all_legacy_protocols(
@@ -334,19 +347,17 @@ class TLSScanner(Scanner[ScanTarget]):
             target.sni,
             timeout_seconds=timeout_seconds,
             starttls=starttls,
+            legacy_compat=legacy_compat,
         )
         log.info("probe.phase.complete", phase="legacy_tls1_tls11_tls12")
-        evidence = [evidence_from_legacy_result(asset, r) for r in results]
+        evidence = [evidence_from_legacy_result(asset, r, runtime=runtime) for r in results]
         findings = [
             f
             for ev, r in zip(evidence, results, strict=True)
             if (f := finding_from_legacy_result(asset, ev, r)) is not None
         ]
-        # Per-cipher evidence is appended after the finding zip (which pairs 1:1 with the
-        # protocol-level evidence above) so each accepted legacy cipher becomes a CBOM
-        # component without disturbing that pairing (#303).
         for r in results:
-            evidence.extend(cipher_evidence_from_legacy_result(asset, r))
+            evidence.extend(cipher_evidence_from_legacy_result(asset, r, runtime=runtime))
         return evidence, findings
 
     @staticmethod
@@ -358,21 +369,7 @@ class TLSScanner(Scanner[ScanTarget]):
         timeout_seconds: int,
         starttls: StartTLSMode | None = None,
     ) -> tuple[Evidence, Finding | None]:
-        """Certificate issuer-signature axis (issue #183): PQ vs classical signature.
-
-        Issue #226: this is the certificate's issuer/chain-of-trust signature,
-        not a claim about the live handshake's authentication signature —
-        see cert_sig.py's docstring for why those are different operations.
-
-        Independent of the key-exchange probes above — same pattern as
-        cli.py's _fetch_cert_for_cbom, now also run for the live scan
-        path, not just --format cbom. Swallows fetch/parse failures the
-        same way: a missing certificate must not fail the whole scan,
-        since the key-exchange axis is still a complete, valid result
-        without it. LocalOpenSSLMissing is not swallowed — same openssl
-        binary the rest of the scan already required, so if it's
-        missing the capability check above would already have failed.
-        """
+        """Collect certificate evidence without making it a scan prerequisite."""
         log = get_logger(__name__)
         log.info("probe.phase.start", phase="certificate")
         pem = ""

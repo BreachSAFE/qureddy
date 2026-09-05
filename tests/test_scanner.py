@@ -61,6 +61,14 @@ class TestTLSScannerOrchestration:
         monkeypatch.setattr(
             scanner, "_check_capability", lambda _timeout: (dependency.path, dependency)
         )
+        legacy_dependency = OpenSSLDependency(
+            name="openssl-legacy", path="/fixture/legacy", version="1.0.2u"
+        )
+        monkeypatch.setattr(
+            scanner,
+            "_check_legacy_capability",
+            lambda _timeout: (legacy_dependency.path, legacy_dependency),
+        )
         monkeypatch.setattr(scanner, "_collect_evidence", lambda **_kwargs: ([], 0))
         monkeypatch.setattr(scanner, "_collect_legacy_evidence", lambda **_kwargs: ([], []))
 
@@ -82,6 +90,7 @@ class TestTLSScannerOrchestration:
         result = scanner.scan(self._target(), timeout_seconds=1)
         assert result.scan.status == "completed"
         assert result.scan.total_attempts == 1
+        assert result.dependencies[1].version == "1.0.2u"
         assert result.evidence[0].id == "ev-cert"
 
     def test_unreachable_target_skips_supplemental_probes(
