@@ -2,65 +2,128 @@
 # SPDX-License-Identifier: Apache-2.0
 """Bulk-cipher strength and CycloneDX primitive, resolved from the suite name (#315).
 
-`cipher_classical_bits()` returns security strength per SP 800-57, so export
-caps and 3DES resolve below the key their name implies. `has_weak_cipher()`
-detects reviewed weak-acceptance markers independently of strength: RC4 returns
-128 and still matches a weak marker. Consumers that rank or filter need both.
+A cipher suite name is a packed record. This module decodes exactly one of its
+fields and answers three independent questions about it.
 
-Matching is substring-based over the suite name, so resolution order is
-significant. An export prefix has to resolve before the cipher it names, and
-3DES before the "des" inside it. The three tables below encode that order;
-`WEAK_CIPHER_MARKERS` is order-independent.
+  1. Name layout
+  ================================================================
 
-`cipher_classical_bits()` returns None when this table has no sourced rating. GOST
-is currently unrated; future names take the same path until the registry is reviewed
-(#821). The CBOM retains the observation and marks its primitive `unknown`.
+      ECDHE  -  RSA  -  AES128GCM  -  SHA256
+      +--------+--------+-----------+--------+
+      |   kx   |  auth  |   bulk    |  mac   |
+      +--------+--------+-----------+--------+
+           |        |         |          |
+           |        |         |          +--> digest adapter
+           |        |         +-------------> THIS MODULE
+           |        +-----------------------> signature adapter
+           +--------------------------------> key-exchange adapter
 
-This module classifies cipher families. CBOM adapters reuse its strength and primitive;
-legacy findings and SSH classification reuse its primitive. Weak-marker matching is a
-separate verdict.
+  2. Three outputs, independently derived
+  ================================================================
 
-Four protocol axes:
+      cipher name
+           |
+           +--> cipher_classical_bits()  -> int | None   strength in bits
+           +--> cipher_primitive()       -> str          CycloneDX class
+           +--> has_weak_cipher()        -> bool         prohibition verdict
 
-    observation
-    ├── 1/4 key exchange  → key-exchange adapter (owned elsewhere)
-    ├── 2/4 signature     → signature adapter (owned elsewhere)
-    ├── 3/4 cipher suite  → this module: strength, primitive, weak verdict
-    └── 4/4 digest/hash   → no owner in this module
+  A name may carry a sourced strength, a known primitive, and a weak verdict
+  at the same time. RC4 returns 128 and is prohibited. Consumers that rank or
+  filter must read strength and verdict together; strength alone will pass a
+  banned suite.
 
-The cipher axis has independent outputs. A cipher may have sourced strength, an
-`unknown` primitive, and a weak verdict simultaneously.
+  3. Resolution order
+  ================================================================
 
-CBOM projection:
+  Matching is substring-based, so a name can satisfy several rules. Order
+  decides which one wins, at two levels.
 
-    cipher observation
-    ├── cipher_classical_bits() → cbom_cipher adapter → classicalSecurityLevel
-    ├── cipher_primitive()      → cbom_cipher adapter → primitive
-    ├── has_weak_cipher()       → legacy finding and legacy CBOM component verdict
-    └── unrated suite           → component retained, strength omitted,
-                                  primitive = `unknown`
+      cipher_classical_bits(name)
+           |
+           v
+      +----------------------------------------------------------+
+      | normalise: lowercase, "_" -> "-"                          |
+      +----------------------------------------------------------+
+           |
+           v
+      +----------------------------------------------------------+
+      | exact: "none"                              -> 0           |
+      +----------------------------------------------------------+
+           |  fall through
+           v
+      +----------------------------------------------------------+
+      | PASS 1  _PRE_FAMILY_BITS      ORDER SIGNIFICANT           |
+      |         policy caps and prefixes that must beat a         |
+      |         substring of their own name                       |
+      |         "export1024" must resolve above "export"          |
+      +----------------------------------------------------------+
+           |  fall through
+           v
+      +----------------------------------------------------------+
+      | PASS 2  _SIZED_FAMILIES       order free                  |
+      |         size carried in the name: aes128, aria-256        |
+      +----------------------------------------------------------+
+           |  fall through
+           v
+      +----------------------------------------------------------+
+      | PASS 3  _POST_FAMILY_BITS     order free                  |
+      |         one fixed size per family: seed, idea, rc4, des   |
+      +----------------------------------------------------------+
+           |  fall through
+           v
+         None
 
-Function path:
+  Reversing the pass sequence misrates DES-CBC3-SHA, EXP-RC4-MD5 and
+  EXP1024-RC4-SHA. `WEAK_CIPHER_MARKERS` is order-independent: it is a
+  membership test over a fixed set, evaluated in full.
 
-    cipher name
-    ├── _sized_family_bits()    → encoded key size
-    ├── _first_marker_bits()    → first ordered family match
-    ├── cipher_classical_bits() → sourced strength or None
-    ├── cipher_primitive()      → primitive or unknown
-    └── has_weak_cipher()       → weak-acceptance-marker verdict
+  4. What each output means downstream
+  ================================================================
 
-Forward secrecy, AEAD status, and `nistQuantumSecurityLevel` are outside this module.
+      cipher_classical_bits()  --> cbom_cipher --> classicalSecurityLevel
+      cipher_primitive()       --> cbom_cipher --> primitive
+      has_weak_cipher()        --> legacy finding + legacy component verdict
 
-These outputs are schema-constrained. `classicalSecurityLevel` is
-`{"type": "integer", "minimum": 0}`. NULL receives 0. An unrated suite leaves
-`classicalSecurityLevel` absent. The `primitive` enum has no member for "encrypts
-nothing", so NULL maps to `other`.
+  Schema constraints, CycloneDX 1.7:
 
-    SP 800-57 Pt 1 Rev 5  https://doi.org/10.6028/NIST.SP.800-57pt1r5
-    RFC 7465 s2           https://www.rfc-editor.org/rfc/rfc7465#section-2
-    RFC 5469 s4           https://www.rfc-editor.org/rfc/rfc5469#section-4
-    CycloneDX 1.7         https://cyclonedx.org/docs/1.7/
-    Rating policy         docs/architecture/weak-cipher-classification-adr.md
+      classicalSecurityLevel   {"type": "integer", "minimum": 0}, optional
+      primitive                closed enum, sixteen members
+
+  NULL therefore rates 0. Zero confidentiality is a measured fact and the
+  field accepts 0. NULL maps to `other`, which the schema glosses as "another
+  primitive type". The schema reserves `unknown` for a primitive it calls
+  unidentified, and a NULL suite is identified exactly.
+
+  5. Absent strength is a defined outcome
+  ================================================================
+
+  `cipher_classical_bits()` returns None until a reviewed source assigns the
+  name a strength. The caller emits the component and omits the field. An
+  inferred figure reads as a measurement once serialised.
+
+  Strength and primitive resolve independently. `blowfish-cbc` resolves to
+  `block-cipher` from RFC 4253 s6.3, and to None strength while a source is
+  pending. Keep the two answers separate.
+
+  6. Out of scope
+  ================================================================
+
+  Forward secrecy, MAC strength, AEAD status and `nistQuantumSecurityLevel`.
+  A static-RSA suite carrying AES-256-GCM rates 256 here and clears the marker
+  set, so a caller reading this module alone sees a strong cipher.
+
+  Sources
+  ================================================================
+
+      SP 800-57 Pt 1 Rev 5  https://doi.org/10.6028/NIST.SP.800-57pt1r5
+      RFC 7465 s2           https://www.rfc-editor.org/rfc/rfc7465#section-2
+      RFC 5469 s4           https://www.rfc-editor.org/rfc/rfc5469#section-4
+      CycloneDX 1.7         https://cyclonedx.org/docs/1.7/
+      Rating policy         docs/architecture/weak-cipher-classification-adr.md
+
+  SP 800-57 Table 2 assigns a security strength to AES and 3DES. RC4, RC2,
+  IDEA, SEED, Camellia and ARIA fall outside it, and their figure is the key
+  length the name carries, capped by export policy where one applies.
 """
 
 from __future__ import annotations
