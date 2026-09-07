@@ -20,6 +20,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
+from qureddy.core.models import FailureCategory
 from qureddy.scanners.tls._classify import classify_failure, is_server_decline
 from qureddy.scanners.tls.connection import StartTLSMode, build_s_client_args
 from qureddy.scanners.tls.openssl_probe._constants import (
@@ -121,7 +122,9 @@ def _run_probe(
 
     Launch, timeout, and non-zero-exit handling stay in the existing executor
     and failure classifier. This function records their result and supplies
-    the complete combined transcript to the TLS evidence parser.
+    the complete combined transcript to the TLS evidence parser. Every caller
+    deliberately forces a key-exchange group, so a protocol decline can be
+    interpreted as capability evidence after ordinary failure precedence runs.
     """
     started = datetime.now(UTC)
     log_subprocess_start(args, timeout_seconds, attempt_number)
@@ -135,17 +138,13 @@ def _run_probe(
     assert return_code is not None  # noqa: S101 -- OK launch guarantees an exit code
     duration_ms = int((datetime.now(UTC) - started).total_seconds() * 1000)
     parser_input = combined_probe_output(outcome.stdout, outcome.stderr)
-    # A forced group probe is a capability test: alert 40 means the peer
-    # declined that offered group, not that the endpoint or scanner failed.
-    # Preserve real failures (connect, timeout, middlebox, parse) so retry and
-    # scan-status logic still receives actionable categories (#868).
-    failure = (
-        None
-        if return_code and is_server_decline(parser_input)
-        else classify_failure(parser_input)
-        if return_code
-        else None
-    )
+    # First preserve the classifier's precedence: a reset, timeout, or
+    # connection failure must not be erased just because the same transcript
+    # also contains a server alert. Only a generic handshake failure is safe
+    # to reinterpret as a declined forced capability probe (#877).
+    failure = classify_failure(parser_input) if return_code else None
+    if failure is FailureCategory.TLS_HANDSHAKE_FAILED and is_server_decline(parser_input):
+        failure = None
     log_subprocess_complete(
         args,
         return_code,
