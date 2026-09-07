@@ -208,7 +208,7 @@
         "value": "scan-1"
       },
       {
-        "name": "qureddy:scan.nist_quantum_security_level",
+        "name": "qureddy:scan.nist_quantum_security_levels",
         "value": "unknown"
       },
       {

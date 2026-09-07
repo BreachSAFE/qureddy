@@ -92,10 +92,10 @@ def add_scan_status_properties(bom: Bom, result: ScanResult) -> None:
     )
     bom.metadata.properties.add(
         Property(
-            name="qureddy:scan.nist_quantum_security_level",
+            name="qureddy:scan.nist_quantum_security_levels",
             value=(
-                str(result.summary.nist_quantum_security_level)
-                if result.summary.nist_quantum_security_level is not None
+                ",".join(str(level) for level in result.summary.nist_quantum_security_levels)
+                if result.summary.nist_quantum_security_levels is not None
                 else "unknown"
             ),
         )

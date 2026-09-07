@@ -89,14 +89,14 @@ def scan_readiness(findings: list[Finding], evidence: list[Evidence] | None = No
     return _first_matching_tier(readinesses, READINESS_PRECEDENCE) or Readiness.UNKNOWN
 
 
-def scan_nist_quantum_security_level(evidence: list[Evidence]) -> int | None:
-    """Return the weakest observed NIST category for key-exchange evidence.
+def scan_nist_quantum_security_levels(evidence: list[Evidence]) -> tuple[int, ...] | None:
+    """Return every observed NIST category for key-exchange evidence.
 
     This is deliberately narrower than the readiness rollup: NIST categories
     describe recognized algorithms, while readiness also incorporates failures,
     downgrade resistance, hygiene, and assurance. A classical category of
-    ``0`` is authoritative when it is observed; ``None`` remains distinct from
-    zero when no recognized key-exchange category was established or observed.
+    ``0`` remains distinct from ``None``. Categories are deduplicated and
+    sorted for deterministic output.
     """
     levels = [
         record.nist_quantum_security_level
@@ -105,4 +105,4 @@ def scan_nist_quantum_security_level(evidence: list[Evidence]) -> int | None:
         and record.failure_category is None
         and record.nist_quantum_security_level is not None
     ]
-    return min(levels) if levels else None
+    return tuple(sorted(set(levels))) if levels else None

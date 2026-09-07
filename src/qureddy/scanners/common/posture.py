@@ -26,7 +26,7 @@ from qureddy.scanners.common.evaluation import (
 from qureddy.scanners.common.evaluation import reason_codes as build_reason_codes
 from qureddy.scanners.common.rollup import (
     highest_severity,
-    scan_nist_quantum_security_level,
+    scan_nist_quantum_security_levels,
     scan_readiness,
 )
 
@@ -390,7 +390,7 @@ def build_scan_summary(
         finding_count=len(findings),
         highest_severity=highest_severity(findings),
         readiness=interpretation.effective,
-        nist_quantum_security_level=scan_nist_quantum_security_level(evidence),
+        nist_quantum_security_levels=scan_nist_quantum_security_levels(evidence),
         failure_category=failure_category,
         interpretation=interpretation,
     )

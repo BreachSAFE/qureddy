@@ -64,7 +64,20 @@ def test_jsonl_ends_with_canonical_scan_summary() -> None:
     assert lines[-1]["type"] == "scan_summary"
     assert lines[-1]["target"] == result.target.locator
     assert lines[-1]["finding_count"] == len(result.findings)
-    assert lines[-1]["nist_quantum_security_level"] is None
+    assert lines[-1]["nist_quantum_security_levels"] is None
+
+
+def test_jsonl_summary_emits_all_nist_categories() -> None:
+    result = _build_result()
+    result = result.model_copy(
+        update={
+            "summary": result.summary.model_copy(update={"nist_quantum_security_levels": (0, 3)})
+        }
+    )
+    output = io.StringIO()
+    render_jsonl(result, output)
+    summary = json.loads(output.getvalue().splitlines()[-1])
+    assert summary["nist_quantum_security_levels"] == [0, 3]
 
 
 @pytest.mark.parametrize("scheme", ["tls", "ssh", "ike"])
