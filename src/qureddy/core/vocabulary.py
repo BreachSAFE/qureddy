@@ -98,6 +98,25 @@ class ProbeRole(str, Enum):
     PURE_PQ_COVERAGE = "pure_pq_coverage"
 
 
+class StartTLSMode(str, Enum):
+    """Application protocol used to upgrade a connection to TLS."""
+
+    SMTP = "smtp"
+    POP3 = "pop3"
+    IMAP = "imap"
+    FTP = "ftp"
+    XMPP = "xmpp"
+    XMPP_SERVER = "xmpp-server"
+    TELNET = "telnet"
+    IRC = "irc"
+    MYSQL = "mysql"
+    POSTGRES = "postgres"
+    LMTP = "lmtp"
+    NNTP = "nntp"
+    SIEVE = "sieve"
+    LDAP = "ldap"
+
+
 class FailureCategory(str, Enum):
     """Define typed reasons a scan or probe did not complete cleanly."""
 

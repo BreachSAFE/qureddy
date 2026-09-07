@@ -4,28 +4,10 @@
 
 from __future__ import annotations
 
-from enum import StrEnum
-
+from qureddy.core.vocabulary import StartTLSMode
 from qureddy.scanners.tls._net import build_connect_target
 
-
-class StartTLSMode(StrEnum):
-    """OpenSSL 3.5.7 ``-starttls`` modes supported by the scanner contract."""
-
-    SMTP = "smtp"
-    POP3 = "pop3"
-    IMAP = "imap"
-    FTP = "ftp"
-    XMPP = "xmpp"
-    XMPP_SERVER = "xmpp-server"
-    TELNET = "telnet"
-    IRC = "irc"
-    MYSQL = "mysql"
-    POSTGRES = "postgres"
-    LMTP = "lmtp"
-    NNTP = "nntp"
-    SIEVE = "sieve"
-    LDAP = "ldap"
+__all__ = ["StartTLSMode", "build_s_client_args", "starttls_args"]
 
 
 def starttls_args(mode: StartTLSMode | None) -> tuple[str, ...]:

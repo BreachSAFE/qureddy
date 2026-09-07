@@ -65,6 +65,38 @@ def test_json_output_top_level_keys_in_locked_order() -> None:
     assert list(payload.keys()) == expected
 
 
+def test_starttls_mode_is_preserved_in_every_output_surface() -> None:
+    """Issue #782: machine and human outputs identify the connection profile."""
+    runner = CliRunner()
+    for output_format in ("rich", "json", "jsonl", "cbom"):
+        result = runner.invoke(
+            app,
+            [
+                "scan",
+                "tls",
+                "example.com",
+                "--starttls",
+                "mysql",
+                "--openssl",
+                fake_openssl("openssl_too_old"),
+                "--format",
+                output_format,
+            ],
+        )
+        assert result.exit_code == 3
+        if output_format == "json":
+            assert json.loads(result.stdout)["target"]["starttls_mode"] == "mysql"
+        elif output_format == "jsonl":
+            assert json.loads(result.stdout.splitlines()[-1])["starttls_mode"] == "mysql"
+        elif output_format == "cbom":
+            payload = json.loads(result.stdout)
+            properties = {item["name"]: item["value"] for item in payload["metadata"]["properties"]}
+            assert properties["qureddy:target.starttls_mode"] == "mysql"
+        else:
+            assert "starttls_mode" in result.stdout
+            assert "mysql" in result.stdout
+
+
 def test_output_dir_emits_correlated_json_and_cbom_from_one_scan(tmp_path: Path) -> None:
     """Issue #430: bundle projections retain one scan identity and observation window."""
     run_dir = tmp_path / "run"

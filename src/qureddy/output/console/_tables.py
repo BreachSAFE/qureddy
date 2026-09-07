@@ -88,6 +88,8 @@ def _summary_table(result: ScanResult) -> Table:
         classical_evidence = _pick_evidence(result, role=ProbeRole.CLASSICAL_CONTROL)
         table.add_row("protocol", styled_or_dash(_first_protocol_version(result.evidence)))
         table.add_row("cipher_suite", styled_or_dash(_first_cipher_suite(result.evidence)))
+        if result.target.starttls_mode is not None:
+            table.add_row("starttls_mode", Text(result.target.starttls_mode.value))
         table.add_row("hybrid_probe", _style_probe_status(hybrid_evidence))
         table.add_row("classical_probe", _style_probe_status(classical_evidence))
         _add_certificate_rows(table, result)
