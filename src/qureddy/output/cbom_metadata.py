@@ -29,7 +29,13 @@ from qureddy.output.cbom_public_key import classify_public_key
 if TYPE_CHECKING:
     from cyclonedx.model.bom import Bom
 
-    from qureddy.core.models import Evidence, ExternalToolDependency, OpenSSLDependency, ScanResult
+    from qureddy.core.models import (
+        Evidence,
+        ExternalToolDependency,
+        OpenSSLDependency,
+        ScanResult,
+        ScanSummary,
+    )
 
 
 def openssl_tool_properties(
@@ -90,15 +96,21 @@ def add_scan_status_properties(bom: Bom, result: ScanResult) -> None:
     bom.metadata.properties.add(
         Property(name="qureddy:scan.readiness", value=result.summary.readiness.value)
     )
-    levels = result.summary.nist_quantum_security_levels
-    for value in (tuple(str(level) for level in levels) if levels is not None else ("unknown",)):
-        bom.metadata.properties.add(
-            Property(name="qureddy:scan.nist_quantum_security_level", value=value)
-        )
+    for property_ in _nist_category_properties(result.summary):
+        bom.metadata.properties.add(property_)
     if result.summary.interpretation is not None:
         add_interpretation_properties(bom, result.summary.interpretation)
     _add_provenance_properties(bom, result)
     _add_rollup_properties(bom, result)
+
+
+def _nist_category_properties(summary: ScanSummary) -> tuple[Property, ...]:
+    """Project every scan-level NIST category as a CycloneDX multi-value property."""
+    levels = summary.nist_quantum_security_levels
+    values = tuple(str(level) for level in levels) if levels is not None else ("unknown",)
+    return tuple(
+        Property(name="qureddy:scan.nist_quantum_security_level", value=value) for value in values
+    )
 
 
 def _add_provenance_properties(bom: Bom, result: ScanResult) -> None:

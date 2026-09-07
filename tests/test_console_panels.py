@@ -25,6 +25,7 @@ from qureddy.core.models import (
     ObservationType,
     ProbeCommand,
     ProbeResult,
+    ProbeRole,
     Readiness,
     ScanMetadata,
     ScanResult,
@@ -85,6 +86,40 @@ def _certificate_evidence() -> Evidence:
             public_key_bits=2048,
             is_self_signed=False,
             is_post_quantum_signature=False,
+        ),
+    )
+
+
+def _nist_evidence() -> tuple[Evidence, ...]:
+    return (
+        Evidence(
+            id="ev-hybrid",
+            asset_id="asset-1",
+            evidence_type="tls.negotiation",
+            observation_type=ObservationType.NEGOTIATED,
+            source="test",
+            negotiated_group="X25519MLKEM768",
+            nist_quantum_security_level=3,
+            probe_role=ProbeRole.HYBRID_READINESS,
+        ),
+        Evidence(
+            id="ev-classical",
+            asset_id="asset-1",
+            evidence_type="tls.negotiation",
+            observation_type=ObservationType.NEGOTIATED,
+            source="test",
+            negotiated_group="X25519",
+            nist_quantum_security_level=0,
+            probe_role=ProbeRole.CLASSICAL_CONTROL,
+        ),
+        Evidence(
+            id="ev-cert",
+            asset_id="asset-1",
+            evidence_type="tls.cert.signature",
+            observation_type=ObservationType.OBSERVED,
+            source="test",
+            algorithm="sha256WithRSAEncryption",
+            nist_quantum_security_level=0,
         ),
     )
 
@@ -240,3 +275,12 @@ class TestCertificateSummary:
         assert "certificate_signature" in out
         assert "sha256WithRSAEncryption" in out
         assert "rsaEncryption (2048 bits)" in out
+
+    def test_rich_output_shows_nist_category_surfaces(self) -> None:
+        out = _render(_result_with_probes(_nist_evidence()))
+        assert "NIST quantum categories observed" in out
+        assert "X25519MLKEM768" in out
+        assert "X25519" in out
+        assert "downgrade path" in out
+        assert "sha256WithRSAEncry" in out
+        assert "ption" in out
