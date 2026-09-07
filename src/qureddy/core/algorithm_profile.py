@@ -42,12 +42,12 @@ def classify_key_exchange(name: str) -> AlgorithmProfile | None:
     for pattern, curve, classical_level in _CLASSICAL_KEX_CURVES:
         if pattern.search(lowered):
             return AlgorithmProfile(
-                "key-agree", 0, curve=curve, classical_security_level=classical_level
+                "key-agree", None, curve=curve, classical_security_level=classical_level
             )
     if lowered.startswith("diffie-hellman"):
-        return AlgorithmProfile("key-agree", 0)
+        return AlgorithmProfile("key-agree", None)
     if lowered.startswith("rsa"):
-        return AlgorithmProfile("pke", 0)
+        return AlgorithmProfile("pke", None)
     return None
 
 
@@ -58,5 +58,5 @@ def classify_signature_algorithm(name: str) -> AlgorithmProfile | None:
         parameter_set, level = classified
         return AlgorithmProfile("signature", level, parameter_set_identifier=parameter_set.upper())
     if any(marker in name.lower() for marker in _CLASSICAL_SIGNATURE_MARKERS):
-        return AlgorithmProfile("signature", 0)
+        return AlgorithmProfile("signature", None)
     return None

@@ -107,7 +107,10 @@ def _classify_classical_public_key(algorithm: str, bits: int | None) -> PublicKe
     properties = AlgorithmProperties(
         primitive=primitive,
         classical_security_level=strength,
-        nist_quantum_security_level=0,
+        # NIST assigns categories to recognized PQC parameter sets. A classical
+        # key is quantum-vulnerable, but it has no NIST PQC category; omit the
+        # CycloneDX field instead of fabricating category 0.
+        nist_quantum_security_level=None,
     )
     readiness = "classically_weak" if weak else "quantum_vulnerable"
     severity = "high" if weak else "low"

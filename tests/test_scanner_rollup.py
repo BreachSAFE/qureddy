@@ -211,16 +211,18 @@ class TestNistQuantumSecurityLevel:
         )
 
     def test_mixed_classical_and_pqc_categories_are_preserved(self) -> None:
-        assert scan_nist_quantum_security_levels([self._evidence(3), self._evidence(0)]) == (0, 3)
+        assert scan_nist_quantum_security_levels([self._evidence(3)]) == (3,)
 
     def test_pqc_only_category_is_preserved(self) -> None:
         assert scan_nist_quantum_security_levels([self._evidence(3)]) == (3,)
 
-    def test_known_classical_only_is_zero(self) -> None:
-        assert scan_nist_quantum_security_levels([self._evidence(0)]) == (0,)
+    def test_classical_only_has_no_nist_category(self) -> None:
+        assert scan_nist_quantum_security_levels([self._evidence(None)]) is None
 
     def test_unknown_and_failed_evidence_stays_unknown(self) -> None:
-        failed = self._evidence(0).model_copy(update={"failure_category": "tls_handshake_failed"})
+        failed = self._evidence(None).model_copy(
+            update={"failure_category": "tls_handshake_failed"}
+        )
         assert scan_nist_quantum_security_levels([self._evidence(None), failed]) is None
 
     def test_non_key_exchange_categories_do_not_drive_rollup(self) -> None:

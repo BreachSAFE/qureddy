@@ -313,7 +313,7 @@ class TestCycloneDx17Contract:
         assert component["name"] == "RSA-2048"
         properties = component["cryptoProperties"]["algorithmProperties"]
         assert properties["classicalSecurityLevel"] == 112
-        assert properties["nistQuantumSecurityLevel"] == 0
+        assert "nistQuantumSecurityLevel" not in properties
         verdict = {p["name"]: p["value"] for p in component["properties"]}
         assert verdict["qureddy:readiness"] == "quantum_vulnerable"
 
@@ -440,7 +440,7 @@ class TestCycloneDx17Contract:
             update={
                 "summary": result.summary.model_copy(
                     update={
-                        "nist_quantum_security_levels": (0, 3),
+                        "nist_quantum_security_levels": (3,),
                         "nist_quantum_security_level_max": 3,
                     }
                 )
@@ -452,7 +452,7 @@ class TestCycloneDx17Contract:
             for p in payload["metadata"]["properties"]
             if p["name"] == "qureddy:scan.nist_quantum_security_level"
         ]
-        assert values == ["0", "3"]
+        assert values == ["3"]
         max_values = [
             p["value"]
             for p in payload["metadata"]["properties"]

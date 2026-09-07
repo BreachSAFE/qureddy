@@ -71,14 +71,12 @@ def test_jsonl_ends_with_canonical_scan_summary() -> None:
 def test_jsonl_summary_emits_all_nist_categories() -> None:
     result = _build_result()
     result = result.model_copy(
-        update={
-            "summary": result.summary.model_copy(update={"nist_quantum_security_levels": (0, 3)})
-        }
+        update={"summary": result.summary.model_copy(update={"nist_quantum_security_levels": (3,)})}
     )
     output = io.StringIO()
     render_jsonl(result, output)
     summary = json.loads(output.getvalue().splitlines()[-1])
-    assert summary["nist_quantum_security_levels"] == [0, 3]
+    assert summary["nist_quantum_security_levels"] == [3]
 
 
 @pytest.mark.parametrize("scheme", ["tls", "ssh", "ike"])
