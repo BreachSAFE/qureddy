@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import platform
 import re
 import shutil
@@ -25,6 +26,25 @@ COMMAND_TIMEOUT = 600
 DOWNLOAD_TIMEOUT = 120
 EXPECTED_ARTIFACT_COUNT = 2
 FAILURE_INJECTION_ENV = "QUREDDY_RELEASE_GATE_TEST_FAIL"
+_SCANNER_OVERRIDE_ENV = frozenset(("QUREDDY_OPENSSL", "QUREDDY_LEGACY_OPENSSL"))
+
+
+def hermetic_environment() -> dict[str, str]:
+    """Return the release-gate environment without host-specific scanner overrides.
+
+    Release evidence must exercise the candidate's explicit replay fixtures and
+    pinned tools.  Local scanner overrides can point at a Docker wrapper or a
+    developer's unpinned OpenSSL installation; inheriting either would make the
+    gate host-dependent and can turn a bounded fixture scan into a network or
+    container operation.
+
+    Environment flow::
+
+        host shell ──X── QUREDDY_*_OPENSSL ──> release subprocesses
+             │
+             └──────────────> pinned release tools + explicit fixtures
+    """
+    return {name: value for name, value in os.environ.items() if name not in _SCANNER_OVERRIDE_ENV}
 
 
 def sha256(path: Path) -> str:

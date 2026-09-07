@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-import os
 import platform
 import shutil
 import subprocess
@@ -19,6 +18,7 @@ from release_support import (
     download_cyclonedx,
     download_tool,
     git_output,
+    hermetic_environment,
     inspect_archives,
     locked_versions,
     sha256,
@@ -176,7 +176,7 @@ def main() -> int:
         temporary_root = Path(temporary)
         tools = ROOT / ".cache" / "release-tools"
         tools.mkdir(parents=True, exist_ok=True)
-        environment = os.environ.copy()
+        environment = hermetic_environment()
         environment["UV_PROJECT_ENVIRONMENT"] = str(temporary_root / "project-venv")
         versions = {
             **locked_versions(commit),
