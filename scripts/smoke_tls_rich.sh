@@ -24,14 +24,16 @@ fi
 run_scan() {
   if [[ -n "${legacy_openssl}" ]]; then
     QUREDDY_LEGACY_OPENSSL="${legacy_openssl}" \
-      uv run --locked qureddy "${cli_args[@]}" scan tls "$1" \
+      uv run --locked qureddy scan tls "$1" \
         --format rich \
-        --timeout "${timeout_seconds}"
+        --timeout "${timeout_seconds}" \
+        "${cli_args[@]}"
   else
     env -u QUREDDY_LEGACY_OPENSSL \
-      uv run --locked qureddy "${cli_args[@]}" scan tls "$1" \
+      uv run --locked qureddy scan tls "$1" \
         --format rich \
-        --timeout "${timeout_seconds}"
+        --timeout "${timeout_seconds}" \
+        "${cli_args[@]}"
   fi
 }
 
