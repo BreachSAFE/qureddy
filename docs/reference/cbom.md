@@ -301,7 +301,7 @@ per-run are omitted under `--deterministic` so the document is content-addressab
 | `qureddy:scan.scanner_name` | always | `tls`, `ssh`, or `ike` |
 | `qureddy:scan.status` | always | `completed` or the top-level failure category (see [scan status](#9-scan-status)) |
 | `qureddy:scan.readiness` | always | run-level readiness verdict |
-| `qureddy:scan.nist_quantum_security_levels` | always | comma-separated distinct NIST categories observed for recognized key exchange; `0` is known classical and `unknown` means no category was established or observed |
+| `qureddy:scan.nist_quantum_security_level` | one per category | repeated CycloneDX property for each distinct NIST category observed for recognized key exchange; `0` is known classical and `unknown` means no category was established or observed |
 | `qureddy:scan.effective_readiness` | when interpretation is present | legacy interpretation readiness |
 | `qureddy:scan.hndl_exposure` | when interpretation is present | `protected`, `protected_defeasible`, `at_risk`, or `unknown` |
 | `qureddy:scan.hygiene_status` | when interpretation is present | `ok`, `action_needed`, `weak`, or `unknown` |
