@@ -83,6 +83,52 @@ def test_legacy_cipher_bits(name: str, bits: int | None) -> None:
 
 
 @pytest.mark.parametrize(
+    ("name", "bits"),
+    [
+        # RFC 4253 s6.3 states the key size beside each CBC name, and RFC 4344
+        # repeats it for the SDCTR spelling. Both are vendored at
+        # breachsafe-standards standards/rfc/rfc4253/ and rfc4344/.
+        ("twofish256-cbc", 256),
+        ("twofish192-cbc", 192),
+        ("twofish128-cbc", 128),
+        ("serpent256-cbc", 256),
+        ("serpent192-cbc", 192),
+        ("serpent128-cbc", 128),
+        ("twofish256-ctr", 256),
+        ("twofish192-ctr", 192),
+        ("twofish128-ctr", 128),
+        ("serpent256-ctr", 256),
+        ("serpent192-ctr", 192),
+        ("serpent128-ctr", 128),
+        # RFC 4253 s6.3 keeps "twofish-cbc" as a historical alias for
+        # "twofish256-cbc". It carries no digits, so it needs its own rule; a
+        # sized-family match would leave it unrated.
+        ("twofish-cbc", 256),
+        # RFC 4344 line 200 states the 128-bit key for cast128-ctr, which is
+        # the size the cast128 name carries in either mode.
+        ("cast128-cbc", 128),
+        ("cast128-ctr", 128),
+        # RFC 4253 s6.3 and RFC 4344 both list Blowfish while stating no key
+        # size, so it stays unrated and the CBOM omits the field.
+        ("blowfish-cbc", None),
+        ("blowfish-ctr", None),
+        # The IKEv2 registry names carry no size, so the SSH rules must leave
+        # them alone. RFC 9395 s7 deprecated both in the registry.
+        ("ENCR_CAST", None),
+        ("ENCR_BLOWFISH", None),
+    ],
+)
+def test_ssh_cipher_bits_from_rfc4253_and_rfc4344(name: str, bits: int | None) -> None:
+    """Rate the SSH cipher names whose key size the vendored RFC text states.
+
+    Rating a name records its strength; the weak verdict stays separate.
+    ``WEAK_CIPHER_MARKERS`` is untouched here, so a rated Twofish or Serpent
+    suite keeps whatever acceptance verdict it already had.
+    """
+    assert cipher_classical_bits(name) == bits
+
+
+@pytest.mark.parametrize(
     ("name", "primitive"),
     [
         ("ECDHE-RSA-AES256-GCM-SHA384", "ae"),

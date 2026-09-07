@@ -103,14 +103,26 @@ _PRE_FAMILY_BITS: tuple[tuple[tuple[str, ...], int], ...] = (
     (("exp1024",), 56),
     (("export1024",), 56),
     (("exp-", "export"), 40),
+    # RFC 4253 s6.3 defines "twofish-cbc" as an alias for "twofish256-cbc",
+    # retained for historical reasons. The alias carries no digits, so it
+    # resolves here; the sized spellings fall to pass 2.
+    (("twofish-cbc",), 256),
     # NULL suites explicitly describe no confidentiality; retain a rated zero
     # instead of treating the observation as an unknown algorithm.
     (("null",), 0),
     (("3des", "des-cbc3"), 112),
 )
 
-# Pass 2 of 3: size is in the name.
-_SIZED_FAMILIES: tuple[str, ...] = ("aes", "camellia", "aria", "arcfour")
+# Pass 2 of 3: size is in the name. Twofish and Serpent carry theirs in the
+# RFC 4253 s6.3 CBC names and the RFC 4344 SDCTR names alike.
+_SIZED_FAMILIES: tuple[str, ...] = (
+    "aes",
+    "camellia",
+    "aria",
+    "arcfour",
+    "twofish",
+    "serpent",
+)
 
 # Pass 3 of 3: one size per family. RC4 and RC2 are the non-export forms.
 _POST_FAMILY_BITS: tuple[tuple[tuple[str, ...], int], ...] = (
@@ -118,6 +130,7 @@ _POST_FAMILY_BITS: tuple[tuple[tuple[str, ...], int], ...] = (
     (("idea",), 128),  # RFC 5469 s4.2 withdraws it; absent from WEAK_CIPHER_MARKERS
     (("rc4", "arcfour"), 128),
     (("rc2",), 128),
+    (("cast128",), 128),  # RFC 4344 line 200 states the 128-bit key for cast128-ctr
     (("des",), 56),
 )
 
