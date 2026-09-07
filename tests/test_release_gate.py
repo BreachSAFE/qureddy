@@ -78,6 +78,18 @@ def test_dirty_worktree_fails_closed(monkeypatch: pytest.MonkeyPatch) -> None:
         release_support.verify_clean_source()
 
 
+def test_release_environment_ignores_host_openssl_overrides(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("QUREDDY_OPENSSL", "/host/openssl")
+    monkeypatch.setenv("QUREDDY_LEGACY_OPENSSL", "/host/docker-openssl")
+
+    environment = release_support.hermetic_environment()
+
+    assert "QUREDDY_OPENSSL" not in environment
+    assert "QUREDDY_LEGACY_OPENSSL" not in environment
+
+
 @pytest.mark.parametrize("gate_name", CRITICAL_GATES)
 def test_each_critical_command_fails_closed(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, gate_name: str
