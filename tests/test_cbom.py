@@ -431,6 +431,7 @@ class TestCycloneDx17Contract:
         props = {p["name"]: p["value"] for p in payload["metadata"]["properties"]}
         assert props["qureddy:scan.finding_count"] == "1"
         assert props["qureddy:scan.highest_severity"] == "info"
+        assert props["qureddy:scan.nist_quantum_security_level"] == "unknown"
 
     def test_inventory_comes_from_positive_evidence_not_findings(self) -> None:
         result = _build_result()

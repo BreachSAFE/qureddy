@@ -90,6 +90,16 @@ def add_scan_status_properties(bom: Bom, result: ScanResult) -> None:
     bom.metadata.properties.add(
         Property(name="qureddy:scan.readiness", value=result.summary.readiness.value)
     )
+    bom.metadata.properties.add(
+        Property(
+            name="qureddy:scan.nist_quantum_security_level",
+            value=(
+                str(result.summary.nist_quantum_security_level)
+                if result.summary.nist_quantum_security_level is not None
+                else "unknown"
+            ),
+        )
+    )
     if result.summary.interpretation is not None:
         add_interpretation_properties(bom, result.summary.interpretation)
     _add_provenance_properties(bom, result)

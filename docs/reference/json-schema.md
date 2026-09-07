@@ -251,6 +251,7 @@ also remains null instead of receiving a fabricated classification.
 | `finding_count` | integer | Number of findings |
 | `highest_severity` | enum or null | Highest finding severity |
 | `readiness` | enum | Rolled-up readiness |
+| `nist_quantum_security_level` | integer `0..5` or null | Highest observed NIST category among recognized key-exchange observations; null when none is established or observed |
 | `failure_category` | string or null | Canonical top-level failure reason |
 | `interpretation` | object or null | Evidence-derived posture interpretation |
 
@@ -427,7 +428,7 @@ JSONL is a streaming projection, not a lossless copy of the JSON document. It
 does not emit standalone evidence records. Finding records retain their linked
 identity and cryptographic fields, while the final summary carries scan identity,
 producer, status, target, readiness, severity, finding count, failure category,
-and canonical interpretation.
+canonical interpretation, and the scan-level NIST quantum category.
 
 ## 14. Stability rules
 

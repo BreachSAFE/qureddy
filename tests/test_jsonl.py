@@ -64,6 +64,7 @@ def test_jsonl_ends_with_canonical_scan_summary() -> None:
     assert lines[-1]["type"] == "scan_summary"
     assert lines[-1]["target"] == result.target.locator
     assert lines[-1]["finding_count"] == len(result.findings)
+    assert lines[-1]["nist_quantum_security_level"] is None
 
 
 @pytest.mark.parametrize("scheme", ["tls", "ssh", "ike"])

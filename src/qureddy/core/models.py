@@ -346,7 +346,13 @@ class ScanMetadata(BaseModel):
 
 
 class ScanSummary(BaseModel):
-    """Top-line summary of a scan result."""
+    """Top-line summary of a scan result.
+
+    ``nist_quantum_security_level`` is a compact capability rollup, not the
+    richer readiness verdict. It is the highest established NIST category
+    among recognized key-exchange observations; ``None`` means that no such
+    category was established or observed.
+    """
 
     model_config = FROZEN
 
@@ -354,6 +360,7 @@ class ScanSummary(BaseModel):
     finding_count: int
     highest_severity: Severity | None = None
     readiness: Readiness
+    nist_quantum_security_level: int | None = Field(default=None, ge=0, le=5)
     failure_category: FailureCategory | None = None
     interpretation: ScanInterpretation | None = Field(
         default=None, exclude_if=lambda value: value is None
