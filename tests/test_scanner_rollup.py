@@ -210,13 +210,11 @@ class TestNistQuantumSecurityLevel:
             nist_quantum_security_level=level,
         )
 
-    def test_highest_established_category_wins(self) -> None:
-        assert (
-            scan_nist_quantum_security_level(
-                [self._evidence(0), self._evidence(3, evidence_type="ssh.kex")]
-            )
-            == 3
-        )
+    def test_classical_fallback_downgrades_category(self) -> None:
+        assert scan_nist_quantum_security_level([self._evidence(0), self._evidence(3)]) == 0
+
+    def test_pqc_only_category_is_preserved(self) -> None:
+        assert scan_nist_quantum_security_level([self._evidence(3)]) == 3
 
     def test_known_classical_only_is_zero(self) -> None:
         assert scan_nist_quantum_security_level([self._evidence(0)]) == 0

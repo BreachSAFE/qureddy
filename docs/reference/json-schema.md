@@ -251,7 +251,7 @@ also remains null instead of receiving a fabricated classification.
 | `finding_count` | integer | Number of findings |
 | `highest_severity` | enum or null | Highest finding severity |
 | `readiness` | enum | Rolled-up readiness |
-| `nist_quantum_security_level` | integer `0..5` or null | Highest observed NIST category among recognized key-exchange observations; null when none is established or observed |
+| `nist_quantum_security_level` | integer `0..5` or null | Weakest observed NIST category among recognized key-exchange observations; null when none is established or observed |
 | `failure_category` | string or null | Canonical top-level failure reason |
 | `interpretation` | object or null | Evidence-derived posture interpretation |
 

@@ -349,7 +349,7 @@ class ScanSummary(BaseModel):
     """Top-line summary of a scan result.
 
     ``nist_quantum_security_level`` is a compact capability rollup, not the
-    richer readiness verdict. It is the highest established NIST category
+    richer readiness verdict. It is the weakest established NIST category
     among recognized key-exchange observations; ``None`` means that no such
     category was established or observed.
     """

@@ -90,7 +90,7 @@ def scan_readiness(findings: list[Finding], evidence: list[Evidence] | None = No
 
 
 def scan_nist_quantum_security_level(evidence: list[Evidence]) -> int | None:
-    """Return the highest observed NIST category for key-exchange evidence.
+    """Return the weakest observed NIST category for key-exchange evidence.
 
     This is deliberately narrower than the readiness rollup: NIST categories
     describe recognized algorithms, while readiness also incorporates failures,
@@ -105,4 +105,4 @@ def scan_nist_quantum_security_level(evidence: list[Evidence]) -> int | None:
         and record.failure_category is None
         and record.nist_quantum_security_level is not None
     ]
-    return max(levels) if levels else None
+    return min(levels) if levels else None
