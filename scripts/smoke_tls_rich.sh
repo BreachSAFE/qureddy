@@ -7,6 +7,7 @@ set -euo pipefail
 
 legacy_openssl="${QUREDDY_LEGACY_OPENSSL:-}"
 timeout_seconds="${QUREDDY_TIMEOUT:-8}"
+cli_args=("$@")
 
 if [[ -z "${legacy_openssl}" || ! -x "${legacy_openssl}" ]]; then
   printf 'WARNING: OpenSSL 1.0.2u not found; compatibility coverage is limited.\n' >&2
@@ -23,12 +24,12 @@ fi
 run_scan() {
   if [[ -n "${legacy_openssl}" ]]; then
     QUREDDY_LEGACY_OPENSSL="${legacy_openssl}" \
-      uv run --locked qureddy scan tls "$1" \
+      uv run --locked qureddy "${cli_args[@]}" scan tls "$1" \
         --format rich \
         --timeout "${timeout_seconds}"
   else
     env -u QUREDDY_LEGACY_OPENSSL \
-      uv run --locked qureddy scan tls "$1" \
+      uv run --locked qureddy "${cli_args[@]}" scan tls "$1" \
         --format rich \
         --timeout "${timeout_seconds}"
   fi
