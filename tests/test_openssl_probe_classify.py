@@ -20,6 +20,7 @@ import pytest
 import qureddy.scanners.tls.openssl_probe._constants as constants_module
 import qureddy.scanners.tls.openssl_probe.probe as probe_module
 from qureddy.core.models import FailureCategory, ProbeResult
+from qureddy.scanners.tls._classify import is_server_decline
 from qureddy.scanners.tls.openssl_probe import (
     _classify_failure,
     run_hybrid_probe,
@@ -97,6 +98,33 @@ class TestStderrClassification:
 
         assert result.return_code == 1
         assert result.failure_category is FailureCategory.TLS_HANDSHAKE_FAILED
+
+    @pytest.mark.parametrize(
+        "transcript",
+        [
+            "SSL alert number 40",
+            "ssl/tls alert handshake failure",
+            "SSL alert number 70",
+            "alert protocol version",
+            "SSL alert number 71",
+            "alert insufficient security",
+        ],
+    )
+    def test_protocol_declines_share_one_predicate(self, transcript: str) -> None:
+        assert is_server_decline(transcript)
+
+    @pytest.mark.parametrize(
+        "transcript",
+        [
+            "no shared cipher",
+            "no shared groups",
+            "unsupported protocol",
+            "no protocols available",
+            "wrong version number",
+        ],
+    )
+    def test_ambiguous_local_errors_are_not_server_declines(self, transcript: str) -> None:
+        assert not is_server_decline(transcript)
 
     def test_classify_failure_dispatch(self) -> None:
         """Direct check that _classify_failure picks the most specific category."""

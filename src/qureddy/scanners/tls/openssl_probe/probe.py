@@ -134,14 +134,15 @@ def _run_probe(
     return_code = outcome.returncode
     assert return_code is not None  # noqa: S101 -- OK launch guarantees an exit code
     duration_ms = int((datetime.now(UTC) - started).total_seconds() * 1000)
+    parser_input = combined_probe_output(outcome.stdout, outcome.stderr)
     # A forced group probe is a capability test: alert 40 means the peer
     # declined that offered group, not that the endpoint or scanner failed.
     # Preserve real failures (connect, timeout, middlebox, parse) so retry and
     # scan-status logic still receives actionable categories (#868).
     failure = (
         None
-        if return_code and is_server_decline(outcome.stderr)
-        else classify_failure(outcome.stderr)
+        if return_code and is_server_decline(parser_input)
+        else classify_failure(parser_input)
         if return_code
         else None
     )
@@ -154,7 +155,6 @@ def _run_probe(
         stdout=outcome.stdout,
         stderr=outcome.stderr,
     )
-    parser_input = combined_probe_output(outcome.stdout, outcome.stderr)
     return build_probe_result(
         args=args,
         stdout=outcome.stdout,
