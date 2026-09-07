@@ -62,6 +62,11 @@ def _summary_table(result: ScanResult) -> Table:
     table.add_row("schema_version", Text(result.schema_version))
     table.add_row("status", Text(scan.status))
     table.add_row("readiness", style_readiness(summary.readiness))
+    levels = summary.nist_quantum_security_levels
+    table.add_row(
+        "nist_quantum_security_levels",
+        Text(", ".join(str(level) for level in levels) if levels is not None else "—"),
+    )
     if summary.interpretation is not None:
         display = summary.interpretation.display
         table.add_row("overall_status", Text(display.overall_status))

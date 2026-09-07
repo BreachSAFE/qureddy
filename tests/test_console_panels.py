@@ -277,7 +277,17 @@ class TestCertificateSummary:
         assert "rsaEncryption (2048 bits)" in out
 
     def test_rich_output_shows_nist_category_surfaces(self) -> None:
-        out = _render(_result_with_probes(_nist_evidence()))
+        result = _result_with_probes(_nist_evidence())
+        result = result.model_copy(
+            update={
+                "summary": result.summary.model_copy(
+                    update={"nist_quantum_security_levels": (0, 3)}
+                )
+            }
+        )
+        out = _render(result)
+        assert "nist_quantum_security_levels" in out
+        assert "0, 3" in out
         assert "NIST quantum categories observed" in out
         assert "X25519MLKEM768" in out
         assert "X25519" in out
