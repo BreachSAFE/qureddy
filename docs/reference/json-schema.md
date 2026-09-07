@@ -238,9 +238,10 @@ The parser's internal input field is excluded from serialized JSON.
 Key-exchange findings populate `primitive`, `parameter_set_identifier`, and
 `nist_quantum_security_level` from QuReddy's protocol-neutral classifier when
 the negotiated or representative offered group is recognized. Classical key
-agreement and key transport use level `0`. Recognized post-quantum KEM parameter
-sets use their assigned NIST category. An unknown group remains null instead of
-receiving a fabricated classification.
+agreement and key transport use level `0`. Finalized NIST-standardized
+post-quantum KEM parameter sets use their assigned NIST category. Recognized
+legacy or non-NIST KEMs remain identifiable but use `null`; an unknown group
+also remains null instead of receiving a fabricated classification.
 
 ## 10. Summary
 
@@ -367,7 +368,7 @@ not a captured current posture for the target.
       "algorithm": "sntrup761x25519-sha512",
       "primitive": "kem",
       "parameter_set_identifier": "sntrup761",
-      "nist_quantum_security_level": 2,
+      "nist_quantum_security_level": null,
       "negotiated_group": "sntrup761x25519-sha512",
       "probe_role": null,
       "expected_group": null,

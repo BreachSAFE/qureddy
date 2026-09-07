@@ -19,22 +19,23 @@ import re
 _PQ_KEM_TOKENS = ("mlkem", "ml-kem", "sntrup", "kyber")
 
 # (token, canonical name, NIST post-quantum category). Longer/more-specific tokens first so
-# "kyber-1024" is not shadowed by "kyber". ML-KEM categories per FIPS 203 (512/768/1024 =
-# cat 1/3/5); Kyber round-3 shares them; sntrup761 is a documented conservative estimate (2).
-_PQ_KEM_CATEGORY: tuple[tuple[str, str, int], ...] = (
+# "kyber-1024" is not shadowed by "kyber". Only finalized NIST-standardized parameter sets
+# receive a NIST category; legacy Kyber and sntrup761 remain identifiable without an invented
+# category claim.
+_PQ_KEM_CATEGORY: tuple[tuple[str, str, int | None], ...] = (
     ("mlkem1024", "ML-KEM-1024", 5),
     ("ml-kem-1024", "ML-KEM-1024", 5),
     ("mlkem768", "ML-KEM-768", 3),
     ("ml-kem-768", "ML-KEM-768", 3),
     ("mlkem512", "ML-KEM-512", 1),
     ("ml-kem-512", "ML-KEM-512", 1),
-    ("kyber-1024", "Kyber-1024", 5),
-    ("kyber1024", "Kyber-1024", 5),
-    ("kyber-768", "Kyber-768", 3),
-    ("kyber768", "Kyber-768", 3),
-    ("kyber-512", "Kyber-512", 1),
-    ("kyber512", "Kyber-512", 1),
-    ("sntrup761", "sntrup761", 2),
+    ("kyber-1024", "Kyber-1024", None),
+    ("kyber1024", "Kyber-1024", None),
+    ("kyber-768", "Kyber-768", None),
+    ("kyber768", "Kyber-768", None),
+    ("kyber-512", "Kyber-512", None),
+    ("kyber512", "Kyber-512", None),
+    ("sntrup761", "sntrup761", None),
 )
 
 # Classical "half" markers, so a hybrid (PQ + classical) is told apart from a pure-PQ group.
@@ -67,7 +68,7 @@ def _anchored(tokens: tuple[str, ...], suffix: str = "") -> re.Pattern[str]:
 _PQ_KEM_RE = _anchored(_PQ_KEM_TOKENS, r"-?\d")
 _CLASSICAL_RE = _anchored(_CLASSICAL_HALF)
 # Exact parameter tokens, so "kyber512" does not match inside "kyber5120".
-_PQ_KEM_CATEGORY_RE: tuple[tuple[re.Pattern[str], str, int], ...] = tuple(
+_PQ_KEM_CATEGORY_RE: tuple[tuple[re.Pattern[str], str, int | None], ...] = tuple(
     (_anchored((token,), r"(?![0-9])"), canonical, level)
     for token, canonical, level in _PQ_KEM_CATEGORY
 )
@@ -78,8 +79,12 @@ def is_pq_kem(name: str) -> bool:
     return _PQ_KEM_RE.search(name.lower()) is not None
 
 
-def pq_kem_category(name: str) -> tuple[str, int] | None:
-    """Return ``(canonical KEM name, NIST category)`` for a PQ group, or None if not PQ."""
+def pq_kem_category(name: str) -> tuple[str, int | None] | None:
+    """Return a recognized PQ group and its NIST category, when authoritative.
+
+    Recognition and authority are intentionally separate: legacy and non-NIST
+    KEMs remain identifiable without receiving fabricated ratings.
+    """
     lowered = name.lower()
     for pattern, canonical, level in _PQ_KEM_CATEGORY_RE:
         if pattern.search(lowered):

@@ -546,7 +546,6 @@
             "encapsulate",
             "keygen"
           ],
-          "nistQuantumSecurityLevel": 2,
           "parameterSetIdentifier": "sntrup761",
           "primitive": "kem"
         },
@@ -590,7 +589,6 @@
             "encapsulate",
             "keygen"
           ],
-          "nistQuantumSecurityLevel": 2,
           "parameterSetIdentifier": "sntrup761",
           "primitive": "kem"
         },

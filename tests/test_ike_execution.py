@@ -17,12 +17,12 @@ from qureddy.scanners.ike.types import IKEMode
 
 @pytest.mark.parametrize(
     ("nat_t", "configured", "expected"),
-    [(False, 0, "500"), (True, 0, "4500"), (False, 32000, "32000"), (True, 32000, "32000")],
+    [(False, 0, "0"), (True, 0, "0"), (False, 32000, "32000"), (True, 32000, "32000")],
 )
 def test_adapter_uses_protocol_source_port_defaults(
     nat_t: bool, configured: int, expected: str
 ) -> None:
-    """Use UDP/500 direct and UDP/4500 NAT-T unless explicitly overridden (#719)."""
+    """Preserve ephemeral source-port zero and explicit overrides (#856)."""
     adapter = IkeScanAdapter(sys.executable, source_port=configured)
 
     argv = adapter._argv(  # noqa: SLF001 - executable argument contract under test.

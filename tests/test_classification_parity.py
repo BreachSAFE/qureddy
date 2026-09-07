@@ -25,6 +25,14 @@ from tests._cbom_fixtures import _build_result
 _OPENSSL_FIXTURES = Path(__file__).parent / "fixtures" / "openssl"
 
 
+def test_classical_kex_strength_vectors_are_protocol_neutral() -> None:
+    """Named classical groups expose sourced strength independently of PQ status."""
+    assert classify_key_exchange("x25519").classical_security_level == 128
+    assert classify_key_exchange("ecdh-sha2-nistp384").classical_security_level == 192
+    assert classify_key_exchange("x448-sha512").classical_security_level == 224
+    assert classify_key_exchange("not-a-real-group") is None
+
+
 def _github_like_ssh_result() -> ScanResult:
     """Return a deterministic scan result shaped like GitHub's current SSH offer."""
     offer = SSHOffer(
@@ -117,7 +125,7 @@ def test_ssh_named_evidence_exposes_algorithm_classification_in_json() -> None:
         evidence[("ssh.kex", "sntrup761x25519-sha512")]["primitive"],
         evidence[("ssh.kex", "sntrup761x25519-sha512")]["parameter_set_identifier"],
         evidence[("ssh.kex", "sntrup761x25519-sha512")]["nist_quantum_security_level"],
-    ) == ("kem", "sntrup761", 2)
+    ) == ("kem", "sntrup761", None)
     assert (
         evidence[("ssh.kex", "curve25519-sha256")]["primitive"],
         evidence[("ssh.kex", "curve25519-sha256")]["nist_quantum_security_level"],

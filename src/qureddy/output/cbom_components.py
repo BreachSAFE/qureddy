@@ -163,6 +163,7 @@ def key_exchange_algorithm_properties(group: str) -> AlgorithmProperties | None:
         primitive=CryptoPrimitive(spec.primitive),
         parameter_set_identifier=spec.parameter_set_identifier,
         curve=spec.curve,
+        classical_security_level=spec.classical_security_level,
         crypto_functions=list(_KEY_EXCHANGE_FUNCTIONS[spec.primitive]),
         nist_quantum_security_level=spec.nist_quantum_security_level,
     )

@@ -218,7 +218,9 @@ class IkeScanAdapter:
         ]
         if nat_t:
             argv.append("--nat-t")
-        source_port = self._source_port or (4500 if nat_t else 500)
+        # Zero is ike-scan's explicit ephemeral-port request. Preserve it so a
+        # normal unprivileged scan does not manufacture a bind failure on UDP/500.
+        source_port = self._source_port
         argv.extend(("--sport", str(source_port), "--dport", str(port), "--multiline"))
         if mode is IKEMode.IKEV1_AGGRESSIVE:
             argv.append("--aggressive")

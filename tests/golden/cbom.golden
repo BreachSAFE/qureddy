@@ -77,6 +77,7 @@
       "bom-ref": "crypto/algorithm/x25519",
       "cryptoProperties": {
         "algorithmProperties": {
+          "classicalSecurityLevel": 128,
           "cryptoFunctions": [
             "keygen"
           ],
