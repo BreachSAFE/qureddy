@@ -11,7 +11,6 @@ set -euo pipefail
 
 legacy_openssl="${QUREDDY_LEGACY_OPENSSL:-}"
 timeout_seconds="${QUREDDY_TIMEOUT:-8}"
-cli_args=("$@")
 
 if [[ -n "${legacy_openssl}" ]]; then
   if [[ ! -x "${legacy_openssl}" ]]; then
@@ -55,14 +54,12 @@ run_scan() {
     QUREDDY_LEGACY_OPENSSL="${legacy_openssl}" \
       uv run --locked qureddy scan tls "$1" \
         --format rich \
-        --timeout "${timeout_seconds}" \
-        "${cli_args[@]+"${cli_args[@]}"}"
+        --timeout "${timeout_seconds}"
   else
     env -u QUREDDY_LEGACY_OPENSSL \
       uv run --locked qureddy scan tls "$1" \
         --format rich \
-        --timeout "${timeout_seconds}" \
-        "${cli_args[@]+"${cli_args[@]}"}"
+        --timeout "${timeout_seconds}"
   fi
 }
 
