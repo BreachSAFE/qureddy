@@ -19,7 +19,6 @@ from qureddy.output._styles import (
     style_hndl,
     style_hygiene,
     style_path,
-    style_readiness,
     style_severity,
     styled_or_dash,
 )
@@ -61,7 +60,6 @@ def _summary_table(result: ScanResult) -> Table:
 
     table.add_row("schema_version", Text(result.schema_version))
     table.add_row("status", Text(scan.status))
-    table.add_row("readiness", style_readiness(summary.readiness))
     _add_nist_summary_rows(table, summary)
     if summary.interpretation is not None:
         display = summary.interpretation.display
@@ -108,13 +106,11 @@ def _add_nist_summary_rows(table: Table, summary: ScanSummary) -> None:
     """Add aggregate NIST categories and the highest product signal."""
     levels = summary.nist_quantum_security_levels
     table.add_row(
-        "nist_quantum_security_levels",
+        "nist_levels",
         Text(", ".join(str(level) for level in levels) if levels is not None else "—"),
     )
     maximum = summary.nist_quantum_security_level_max
-    table.add_row(
-        "nist_quantum_security_level_max", Text(str(maximum) if maximum is not None else "—")
-    )
+    table.add_row("nist_max", Text(str(maximum) if maximum is not None else "—"))
 
 
 def _add_certificate_rows(table: Table, result: ScanResult) -> None:
