@@ -78,7 +78,7 @@ def _write_repo(root: Path, version: str) -> None:
         "# CLI reference\n\n"
         f"This page records the installed `qureddy {version}` command surface.\n\n"
         "```text\n"
-        f"BreachSAFE QuReddy {version} -- https://www.breachsafe.io\n"
+        f"BreachSAFE QuReddy {version} -- https://github.com/breachsafe/qureddy\n"
         "```\n"
     )
     (root / "docs" / "BADGE.md").write_text(

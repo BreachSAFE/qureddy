@@ -79,5 +79,6 @@ def _key_exchange_row(evidence: Evidence, level: int) -> tuple[str, str, str, st
 
 
 def _certificate_row(evidence: Evidence, level: int) -> tuple[str, str, str, str, str]:
-    """Build one certificate-signature category row."""
-    return ("certificate", "-", str(level), evidence.algorithm or "unknown", "")
+    """Build one certificate-signature category row with its subject context."""
+    subject = evidence.certificate.subject if evidence.certificate is not None else "observed"
+    return ("certificate", subject, str(level), evidence.algorithm or "unknown", "")

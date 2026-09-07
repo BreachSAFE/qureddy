@@ -31,9 +31,9 @@ def test_project_name_is_breachsafe_qureddy() -> None:
     assert PROJECT_NAME == "BreachSAFE QuReddy"
 
 
-def test_public_domain_is_canonical_branding_source() -> None:
+def test_public_domain_remains_organization_domain() -> None:
     assert PUBLIC_DOMAIN == "breachsafe.io"
-    assert PROJECT_URL == "https://www.breachsafe.io"
+    assert PROJECT_URL == SOURCE_URL
 
 
 def test_source_url_is_breachsafe_qureddy() -> None:

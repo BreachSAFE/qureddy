@@ -145,17 +145,6 @@ def _run_details_table(result: ScanResult) -> Table:
     table.add_row("scan_id", Text(result.scan.scan_id))
     table.add_row("scanner", Text(result.scan.scanner_name))
     table.add_row("version", Text(result.scan.scanner_version))
-    if result.scan.provenance is not None:
-        provenance = result.scan.provenance
-        table.add_row("distribution", Text(provenance.distribution))
-        table.add_row("source_revision", styled_or_dash(provenance.source_revision))
-        table.add_row(
-            "source_dirty",
-            styled_or_dash(
-                None if provenance.source_dirty is None else str(provenance.source_dirty).lower()
-            ),
-        )
-        table.add_row("container_digest", styled_or_dash(provenance.container_digest))
     table.add_row("started", Text(started))
     table.add_row("completed", Text(completed))
     table.add_row("duration", Text(f"{duration:.1f}s"))

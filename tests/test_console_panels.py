@@ -120,6 +120,17 @@ def _nist_evidence() -> tuple[Evidence, ...]:
             source="test",
             algorithm="sha256WithRSAEncryption",
             nist_quantum_security_level=0,
+            certificate_record=CertificateObservation(
+                subject="CN=mail.example",
+                issuer="CN=Example CA",
+                not_before="Jan  1 00:00:00 2026 GMT",
+                not_after="Jan  1 00:00:00 2027 GMT",
+                serial="01AB",
+                signature_algorithm="sha256WithRSAEncryption",
+                public_key_summary="Public-Key: (2048 bit)",
+                is_self_signed=False,
+                is_post_quantum_signature=False,
+            ),
         ),
     )
 
@@ -298,3 +309,4 @@ class TestCertificateSummary:
         assert "downgrade path" in out
         assert "sha256WithRSAEncry" in out
         assert "ption" in out
+        assert "CN=mail.example" in out
