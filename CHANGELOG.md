@@ -44,6 +44,11 @@ versions follow [PEP 440](https://peps.python.org/pep-0440/).
 
 ## Unreleased
 
+### Fixed
+
+- Add an authorized dual-runtime TLS Rich smoke matrix with visible QuReddy and
+  OpenSSL versions, including explicit legacy-protocol BadSSL targets.
+
 ## [0.9.19] - 2026-09-07
 
 ### Fixed
