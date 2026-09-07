@@ -171,7 +171,7 @@ class TestTLSScannerOrchestration:
         assert evidence.observation_type is ObservationType.OBSERVED
         assert evidence.algorithm == "sha256WithRSAEncryption"
         assert evidence.primitive == "signature"
-        assert evidence.nist_quantum_security_level == 0
+        assert evidence.nist_quantum_security_level is None
         assert evidence.model_dump(mode="json")["certificate"] == {
             "subject": "CN=test",
             "issuer": "CN=issuer",
@@ -187,7 +187,7 @@ class TestTLSScannerOrchestration:
         assert len(findings) == 1
         assert findings[0].algorithm == "sha256WithRSAEncryption"
         assert findings[0].primitive == "signature"
-        assert findings[0].nist_quantum_security_level == 0
+        assert findings[0].nist_quantum_security_level is None
 
         expired_md5 = replace(
             certificate,

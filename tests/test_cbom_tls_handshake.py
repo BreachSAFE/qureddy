@@ -169,7 +169,7 @@ def test_classical_dsa_handshake_name_is_preserved() -> None:
     payload = _render(result.model_copy(update={"evidence": (evidence,)}))
     component = next(item for item in payload["components"] if item["name"] == "dsa_sha256")
     assert parsed.handshake_signature == "dsa_sha256"
-    assert component["cryptoProperties"]["algorithmProperties"]["nistQuantumSecurityLevel"] == 0
+    assert "nistQuantumSecurityLevel" not in component["cryptoProperties"]["algorithmProperties"]
 
 
 def test_cbom_emits_ephemeral_public_key_material() -> None:

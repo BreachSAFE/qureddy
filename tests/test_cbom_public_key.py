@@ -53,4 +53,4 @@ def test_rsa_4096_cbom_omits_interpolated_classical_strength() -> None:
     properties = component["cryptoProperties"]["algorithmProperties"]
 
     assert "classicalSecurityLevel" not in properties
-    assert properties["nistQuantumSecurityLevel"] == 0
+    assert "nistQuantumSecurityLevel" not in properties

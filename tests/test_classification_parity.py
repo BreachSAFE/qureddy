@@ -92,7 +92,7 @@ def test_x25519_classification_matches_json_jsonl_and_cbom() -> None:
         if component["bom-ref"] == "crypto/algorithm/x25519"
     )
 
-    expected = ("key-agree", 0)
+    expected = ("key-agree", None)
     assert json_evidence["algorithm"] == "X25519"
     assert (
         json_evidence["primitive"],
@@ -106,7 +106,7 @@ def test_x25519_classification_matches_json_jsonl_and_cbom() -> None:
     ) == expected
     assert (
         cbom_properties["primitive"],
-        cbom_properties["nistQuantumSecurityLevel"],
+        cbom_properties.get("nistQuantumSecurityLevel"),
     ) == expected
 
 
@@ -129,11 +129,11 @@ def test_ssh_named_evidence_exposes_algorithm_classification_in_json() -> None:
     assert (
         evidence[("ssh.kex", "curve25519-sha256")]["primitive"],
         evidence[("ssh.kex", "curve25519-sha256")]["nist_quantum_security_level"],
-    ) == ("key-agree", 0)
+    ) == ("key-agree", None)
     assert (
         evidence[("ssh.hostkey", "ssh-ed25519")]["primitive"],
         evidence[("ssh.hostkey", "ssh-ed25519")]["nist_quantum_security_level"],
-    ) == ("signature", 0)
+    ) == ("signature", None)
     assert evidence[("ssh.cipher", "chacha20-poly1305@openssh.com")]["primitive"] == "ae"
     assert evidence[("ssh.mac", "hmac-sha2-256-etm@openssh.com")]["primitive"] == "mac"
 

@@ -73,7 +73,7 @@ def test_pq_hybrid_with_classical_fallback_is_defeasible() -> None:
         finding for finding in result.findings if finding.rule_id == "ssh.kex.classical_alternative"
     )
     assert classical.primitive == "key-agree"
-    assert classical.nist_quantum_security_level == 0
+    assert classical.nist_quantum_security_level is None
 
 
 @pytest.mark.parametrize("marker", ["ext-info-c", "kex-strict-c-v00@openssh.com"])
@@ -282,7 +282,7 @@ def test_host_keys_emitted_as_cbom_components() -> None:
     # Classified honestly as classical signatures (no PQ resistance).
     props = components["crypto/algorithm/ssh-ed25519"]["cryptoProperties"]["algorithmProperties"]
     assert props["primitive"] == "signature"
-    assert props["nistQuantumSecurityLevel"] == 0
+    assert "nistQuantumSecurityLevel" not in props
     endpoint = next(d for d in payload["dependencies"] if d["ref"] == "endpoint")
     assert "crypto/algorithm/ssh-ed25519" in endpoint["provides"]
     assert "crypto/algorithm/rsa-sha2-256" in endpoint["provides"]
@@ -430,7 +430,7 @@ def test_classical_only_endpoint_emits_all_kex_components() -> None:
         assert ref in components, ref
         props = components[ref]["cryptoProperties"]["algorithmProperties"]
         assert props["primitive"] == "key-agree"
-        assert props["nistQuantumSecurityLevel"] == 0
+        assert "nistQuantumSecurityLevel" not in props
         assert props.get("classicalSecurityLevel") == strength
 
 
@@ -453,11 +453,11 @@ def test_weak_kex_group_appears_as_component() -> None:
 
 
 def test_classify_kex_covers_families_and_unknown() -> None:
-    # RSA key transport (RFC 4432) is PKE, level 0.
+    # RSA key transport (RFC 4432) is PKE without a NIST PQC category.
     rsa = classify.classify_kex("rsa2048-sha256")
     assert rsa is not None
     assert rsa.primitive == "pke"
-    assert rsa.nist_quantum_security_level == 0
+    assert rsa.nist_quantum_security_level is None
     # Finite-field DH is key-agreement with no named curve.
     dh = classify.classify_kex("diffie-hellman-group14-sha256")
     assert dh is not None

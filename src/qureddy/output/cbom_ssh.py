@@ -64,7 +64,8 @@ def ssh_kex_algorithm_properties(name: str) -> AlgorithmProperties | None:
     A PQ hybrid/standalone KEX (``mlkem768x25519-sha256``, ``mlkem768nistp256-sha256``,
     ``sntrup761x25519-sha512``, the kyber/AWS/OQS variants) becomes the KEM primitive
     carrying its ``nistQuantumSecurityLevel`` so the one PQ-relevant asset is no longer a
-    bare component; a classical group is honest key-agreement/key-transport at level 0.
+    bare component; a classical group is honest key-agreement/key-transport without
+    a fabricated NIST category.
     An unclassifiable name keeps a minimal (empty) algorithmProperties rather than a
     fabricated primitive/level. Classification (name -> primitive/level) lives in the SSH
     ``classify`` module; this only maps it onto the CycloneDX model.
@@ -110,7 +111,7 @@ def add_ssh_host_key_components(
     ``add_algorithm_components`` skips those (host keys are signature algorithms, not KEX
     groups), so without this the CBOM dropped the most security-relevant SSH signal. Each
     host key is classified with the shared signature classifier — every SSH host-key
-    family is classical today (nistQuantumSecurityLevel 0).
+    family is classical today and therefore carries no fabricated NIST category.
     """
     add_algorithm_assets(
         bom,
@@ -128,8 +129,8 @@ def add_ssh_transport_components(
 
     The SSH KEXINIT carries encryption (cipher) and MAC name-lists the scanner records as
     ``ssh.cipher`` / ``ssh.mac`` evidence; ``add_algorithm_components`` skips those SSH
-    evidence types. Every current SSH cipher/MAC is classical (nistQuantumSecurityLevel 0);
-    the cipher primitive comes from the shared classifier.
+    evidence types. The cipher primitive comes from the shared classifier; no NIST PQC
+    category is emitted for classical transport algorithms.
     """
     add_algorithm_assets(
         bom,
