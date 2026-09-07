@@ -361,6 +361,7 @@ class ScanSummary(BaseModel):
     highest_severity: Severity | None = None
     readiness: Readiness
     nist_quantum_security_levels: tuple[int, ...] | None = None
+    nist_quantum_security_level_max: int | None = Field(default=None, ge=0, le=5)
     failure_category: FailureCategory | None = None
     interpretation: ScanInterpretation | None = Field(
         default=None, exclude_if=lambda value: value is None

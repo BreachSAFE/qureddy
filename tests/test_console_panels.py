@@ -281,13 +281,17 @@ class TestCertificateSummary:
         result = result.model_copy(
             update={
                 "summary": result.summary.model_copy(
-                    update={"nist_quantum_security_levels": (0, 3)}
+                    update={
+                        "nist_quantum_security_levels": (0, 3),
+                        "nist_quantum_security_level_max": 3,
+                    }
                 )
             }
         )
         out = _render(result)
         assert "nist_quantum_security_levels" in out
         assert "0, 3" in out
+        assert "nist_quantum_security_level_max" in out
         assert "NIST quantum categories observed" in out
         assert "X25519MLKEM768" in out
         assert "X25519" in out

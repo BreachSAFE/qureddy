@@ -385,12 +385,14 @@ def build_scan_summary(
         failure_category,
         protocol=protocol,
     )
+    nist_levels = scan_nist_quantum_security_levels(evidence)
     return ScanSummary(
         target=target.locator,
         finding_count=len(findings),
         highest_severity=highest_severity(findings),
         readiness=interpretation.effective,
-        nist_quantum_security_levels=scan_nist_quantum_security_levels(evidence),
+        nist_quantum_security_levels=nist_levels,
+        nist_quantum_security_level_max=max(nist_levels) if nist_levels is not None else None,
         failure_category=failure_category,
         interpretation=interpretation,
     )

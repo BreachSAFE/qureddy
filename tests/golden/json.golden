@@ -189,6 +189,7 @@
     "failure_category": null,
     "finding_count": 2,
     "highest_severity": "low",
+    "nist_quantum_security_level_max": null,
     "nist_quantum_security_levels": null,
     "readiness": "transitional_hybrid",
     "target": "tls://example.com:443"

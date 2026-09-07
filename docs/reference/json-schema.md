@@ -252,6 +252,7 @@ also remains null instead of receiving a fabricated classification.
 | `highest_severity` | enum or null | Highest finding severity |
 | `readiness` | enum | Rolled-up readiness |
 | `nist_quantum_security_levels` | array of integers `0..5` or null | Distinct NIST categories among recognized key-exchange observations; null when none is established or observed |
+| `nist_quantum_security_level_max` | integer `0..5` or null | Highest observed category for upstream product routing; null when none is established or observed |
 | `failure_category` | string or null | Canonical top-level failure reason |
 | `interpretation` | object or null | Evidence-derived posture interpretation |
 

@@ -98,6 +98,13 @@ def add_scan_status_properties(bom: Bom, result: ScanResult) -> None:
     )
     for property_ in _nist_category_properties(result.summary):
         bom.metadata.properties.add(property_)
+    if result.summary.nist_quantum_security_level_max is not None:
+        bom.metadata.properties.add(
+            Property(
+                name="qureddy:scan.nist_quantum_security_level_max",
+                value=str(result.summary.nist_quantum_security_level_max),
+            )
+        )
     if result.summary.interpretation is not None:
         add_interpretation_properties(bom, result.summary.interpretation)
     _add_provenance_properties(bom, result)
