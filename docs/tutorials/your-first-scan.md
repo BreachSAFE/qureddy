@@ -49,7 +49,7 @@ qureddy --version
 The release candidate prints:
 
 ```text
-BreachSAFE QuReddy <version> -- https://www.breachsafe.io
+BreachSAFE QuReddy <version> -- https://github.com/breachsafe/qureddy
 ```
 
 ## 3. Scan an SSH endpoint

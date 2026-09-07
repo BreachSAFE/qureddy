@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://www.breachsafe.io/">
+  <a href="https://github.com/breachsafe/qureddy">
     <img src="https://static.wixstatic.com/media/393c0f_0ca31d6cc7df47f9838c96483a49dd4f~mv2.png" alt="BreachSAFE" width="112">
   </a>
 </p>
@@ -194,7 +194,7 @@ qureddy --version
 The expected version line is:
 
 ```text
-BreachSAFE QuReddy <version> -- https://www.breachsafe.io
+BreachSAFE QuReddy <version> -- https://github.com/breachsafe/qureddy
 ```
 
 QuReddy targets Python `>=3.14`. `pipx`
