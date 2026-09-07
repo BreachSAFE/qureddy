@@ -36,7 +36,7 @@
     "p3-ssh-hybrid": {
       "kind": "positive",
       "classification": "captured",
-      "sha256": "777f1e79dd17a722e1e419cd96e73963399e184e10575e6d4d957f78a57a088e",
+      "sha256": "d41ef41df49adb42826b2a25b7796d1c1de310dc2b1fc5c8f9203f5b1ca23799",
       "official_rejects": false,
       "cli_rejects": false,
       "semantic_rejects": false

@@ -45,11 +45,11 @@ def test_structural_classification(name: str, is_kem: bool, hybrid: bool, pure: 
         ("X25519MLKEM768", "ML-KEM-768", 3),
         ("SecP384r1MLKEM1024", "ML-KEM-1024", 5),
         ("mlkem512", "ML-KEM-512", 1),
-        ("X25519Kyber768", "Kyber-768", 3),
-        ("sntrup761x25519-sha512", "sntrup761", 2),
+        ("X25519Kyber768", "Kyber-768", None),
+        ("sntrup761x25519-sha512", "sntrup761", None),
     ],
 )
-def test_kem_category(name: str, canonical: str, level: int) -> None:
+def test_kem_category(name: str, canonical: str, level: int | None) -> None:
     assert pqc.pq_kem_category(name) == (canonical, level)
 
 

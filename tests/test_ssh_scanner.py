@@ -390,14 +390,14 @@ def test_mlkem_hybrid_kex_component_has_nist_level_3() -> None:
     assert set(props["cryptoFunctions"]) == {"keygen", "encapsulate", "decapsulate"}
 
 
-def test_sntrup_hybrid_kex_component_has_nist_level() -> None:
-    # #241: sntrup761 hybrid must carry a non-zero, populated level (not omitted).
+def test_sntrup_hybrid_kex_component_has_no_fabricated_nist_level() -> None:
+    # sntrup761 remains recognized as PQ, but NIST has not assigned it a category.
     components = _cbom_components(_run(("sntrup761x25519-sha512",), ("ssh-ed25519",)))
     props = components["crypto/algorithm/sntrup761x25519-sha512"]["cryptoProperties"][
         "algorithmProperties"
     ]
     assert props["primitive"] == "kem"
-    assert props["nistQuantumSecurityLevel"] == 2
+    assert props.get("nistQuantumSecurityLevel") is None
 
 
 def test_nistp_mlkem_hybrid_component_level_5() -> None:
@@ -421,15 +421,17 @@ def test_classical_only_endpoint_emits_all_kex_components() -> None:
             ("ssh-ed25519",),
         )
     )
-    for ref in (
-        "crypto/algorithm/curve25519-sha256",
-        "crypto/algorithm/ecdh-sha2-nistp256",
-        "crypto/algorithm/diffie-hellman-group14-sha256",
-    ):
+    expected_strength = {
+        "crypto/algorithm/curve25519-sha256": 128,
+        "crypto/algorithm/ecdh-sha2-nistp256": 128,
+        "crypto/algorithm/diffie-hellman-group14-sha256": None,
+    }
+    for ref, strength in expected_strength.items():
         assert ref in components, ref
         props = components[ref]["cryptoProperties"]["algorithmProperties"]
         assert props["primitive"] == "key-agree"
         assert props["nistQuantumSecurityLevel"] == 0
+        assert props.get("classicalSecurityLevel") == strength
 
 
 def test_hybrid_endpoint_keeps_classical_kex_groups() -> None:
