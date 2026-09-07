@@ -21,12 +21,7 @@ QuReddy is an open-source command line scanner for post-quantum readiness at
 TLS, SSH, and IKE endpoints. It records the protocol and cryptographic evidence that
 the endpoint exposes to a client, then reports the observed readiness posture.
 
-Primary integration: [BreachSAFE EnXemble](https://github.com/BreachSAFE) runs QuReddy
-in its scan engine and imports the JSONL findings, JSON evidence, and CycloneDX CBOM
-artifacts. The EnXemble repository is moving into the BreachSAFE organization; the
-organization link remains stable during that transition.
-
-TLS scans use a local OpenSSL 3.5.7 LTS binary. SSH scans read the server's
+TLS scans use a local OpenSSL 3.5.8 LTS binary. SSH scans read the server's
 cleartext KEXINIT offer directly. IKE scans use stock `ike-scan` as a
 lower-trust discovery backend. The container includes both external tools.
 
