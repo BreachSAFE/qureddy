@@ -12,13 +12,14 @@ versions follow [PEP 440](https://peps.python.org/pep-0440/).
 ## Contents
 
 1. [Unreleased](#unreleased)
-2. [0.9.19](#0919---2026-09-07)
-3. [0.9.18](#0918---2026-09-07)
-4. [0.9.17](#0917---2026-09-07)
-5. [0.9.16](#0916---2026-09-07)
-6. [0.9.15](#0915---2026-09-07)
-7. [0.9.13](#0913---2026-09-06)
-8. [0.9.12](#0912---2026-09-06)
+2. [0.9.20](#0920---2026-09-07)
+3. [0.9.19](#0919---2026-09-07)
+4. [0.9.18](#0918---2026-09-07)
+5. [0.9.17](#0917---2026-09-07)
+6. [0.9.16](#0916---2026-09-07)
+7. [0.9.15](#0915---2026-09-07)
+8. [0.9.13](#0913---2026-09-06)
+9. [0.9.12](#0912---2026-09-06)
 9. [0.9.11](#0911---2026-09-06)
 10. [0.9.10](#0910---2026-09-06)
 11. [0.9.9](#099---2026-09-04)
@@ -44,10 +45,18 @@ versions follow [PEP 440](https://peps.python.org/pep-0440/).
 
 ## Unreleased
 
+## [0.9.20] - 2026-09-07
+
 ### Fixed
 
+- Point CLI and Rich output links at the canonical GitHub repository.
+- Remove empty provenance rows from human Rich output while retaining machine
+  provenance fields.
+- Show the certificate subject in the Rich NIST quantum-category table.
 - Add an authorized dual-runtime TLS Rich smoke matrix with visible QuReddy and
   OpenSSL versions, including explicit legacy-protocol BadSSL targets.
+- Make the smoke runner safe on macOS Bash 3.2 and keep Rich output as its
+  default presentation.
 
 ## [0.9.19] - 2026-09-07
 
