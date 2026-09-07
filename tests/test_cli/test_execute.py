@@ -15,6 +15,7 @@ import qureddy.cli.ssh as ssh_cli_module
 from qureddy.cli import app, main
 from qureddy.core import retry as retry_module
 from qureddy.core.errors import CbomError
+from qureddy.core.models import FailureCategory, OpenSSLDependency
 from tests._fake_openssl import fake_openssl
 
 
@@ -250,6 +251,20 @@ def test_local_openssl_supported_lts_patch_scans_successfully(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A patched release on the supported 3.5.x LTS series is accepted."""
+
+    # This test covers local capability acceptance and a failed modern probe. Keep the
+    # optional legacy axis unavailable so a host-installed legacy OpenSSL cannot perform
+    # a real network scan and change the readiness assertion (#849 follow-up).
+    monkeypatch.setattr(
+        "qureddy.scanners.tls.scanner.resolve_legacy_openssl",
+        lambda *, timeout_seconds: (
+            None,
+            OpenSSLDependency(
+                name="openssl-legacy",
+                failure_category=FailureCategory.LOCAL_OPENSSL_MISSING,
+            ),
+        ),
+    )
 
     def synthetic_capability_output(
         args: list[str],
