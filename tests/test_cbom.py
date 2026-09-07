@@ -431,7 +431,7 @@ class TestCycloneDx17Contract:
         props = {p["name"]: p["value"] for p in payload["metadata"]["properties"]}
         assert props["qureddy:scan.finding_count"] == "1"
         assert props["qureddy:scan.highest_severity"] == "info"
-        assert props["qureddy:scan.nist_quantum_security_level"] == "unknown"
+        assert "qureddy:scan.nist_quantum_security_level" not in props
 
     def test_summary_nist_categories_preserve_mixed_capability(self) -> None:
         result = _build_result()

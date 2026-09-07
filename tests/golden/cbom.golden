@@ -208,10 +208,6 @@
         "value": "scan-1"
       },
       {
-        "name": "qureddy:scan.nist_quantum_security_level",
-        "value": "unknown"
-      },
-      {
         "name": "qureddy:scan.readiness",
         "value": "transitional_hybrid"
       },

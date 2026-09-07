@@ -107,7 +107,9 @@ def add_scan_status_properties(bom: Bom, result: ScanResult) -> None:
 def _nist_category_properties(summary: ScanSummary) -> tuple[Property, ...]:
     """Project every scan-level NIST category as a CycloneDX multi-value property."""
     levels = summary.nist_quantum_security_levels
-    values = tuple(str(level) for level in levels) if levels is not None else ("unknown",)
+    if levels is None:
+        return ()
+    values = tuple(str(level) for level in levels)
     return tuple(
         Property(name="qureddy:scan.nist_quantum_security_level", value=value) for value in values
     )
