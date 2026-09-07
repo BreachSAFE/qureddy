@@ -61,13 +61,15 @@ fields and answers three independent questions about it.
            v
       +----------------------------------------------------------+
       | PASS 2  _SIZED_FAMILIES       order free                  |
-      |         size carried in the name: aes128, aria-256        |
+      |         size carried in the name: aes128, aria-256,       |
+      |         twofish192-ctr, serpent256-cbc                    |
       +----------------------------------------------------------+
            |  fall through
            v
       +----------------------------------------------------------+
       | PASS 3  _POST_FAMILY_BITS     order free                  |
-      |         one fixed size per family: seed, idea, rc4, des   |
+      |         one fixed size per family: seed, idea, rc4,       |
+      |         rc2, cast128, des                                 |
       +----------------------------------------------------------+
            |  fall through
            v
