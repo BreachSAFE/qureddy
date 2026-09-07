@@ -101,9 +101,11 @@ fields and answers three independent questions about it.
   name a strength. The caller emits the component and omits the field. An
   inferred figure reads as a measurement once serialised.
 
-  Strength and primitive resolve independently. `blowfish-cbc` resolves to
-  `block-cipher` from RFC 4253 s6.3, and to None strength while a source is
-  pending. Keep the two answers separate.
+  Strength and primitive resolve independently, and `blowfish-cbc` shows the
+  gap. RFC 4253 s6.3 lists it, which fixes the primitive at `block-cipher`,
+  and the same line states a key size for every neighbouring entry while
+  leaving Blowfish without one. Primitive resolves, strength stays None. Keep
+  the two answers separate.
 
   6. Out of scope
   ================================================================
@@ -118,12 +120,16 @@ fields and answers three independent questions about it.
       SP 800-57 Pt 1 Rev 5  https://doi.org/10.6028/NIST.SP.800-57pt1r5
       RFC 7465 s2           https://www.rfc-editor.org/rfc/rfc7465#section-2
       RFC 5469 s4           https://www.rfc-editor.org/rfc/rfc5469#section-4
+      RFC 4253 s6.3         https://www.rfc-editor.org/rfc/rfc4253#section-6.3
+      RFC 4344              https://www.rfc-editor.org/rfc/rfc4344
       CycloneDX 1.7         https://cyclonedx.org/docs/1.7/
       Rating policy         docs/architecture/weak-cipher-classification-adr.md
 
   SP 800-57 Table 2 assigns a security strength to AES and 3DES. RC4, RC2,
-  IDEA, SEED, Camellia and ARIA fall outside it, and their figure is the key
-  length the name carries, capped by export policy where one applies.
+  IDEA, SEED, Camellia, ARIA, Twofish, Serpent and CAST-128 fall outside it,
+  and their figure is the key length the name carries, capped by export policy
+  where one applies. The SSH families print that figure beside the name:
+  RFC 4253 s6.3 for the CBC spellings, RFC 4344 for SDCTR.
 """
 
 from __future__ import annotations
