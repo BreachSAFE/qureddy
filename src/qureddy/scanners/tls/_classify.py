@@ -26,6 +26,19 @@ _log = get_logger(__name__)
 _FINGERPRINT_LEN = 16
 _STDERR_PREVIEW_LEN = 120
 
+
+def is_server_decline(stderr: str) -> bool:
+    """Return whether a forced capability probe was declined by the peer.
+
+    OpenSSL reports a peer rejecting an offered TLS 1.3 group as alert 40.
+    This is a valid result for a capability probe, not evidence that the
+    endpoint or the local probe failed.  Keep the predicate separate from
+    ``classify_failure`` because alert 40 remains a genuine handshake
+    failure when no deliberate capability offer is in scope.
+    """
+    return "ssl alert number 40" in stderr.lower()
+
+
 _STDERR_SIGNATURES: tuple[tuple[str, FailureCategory], ...] = (
     # DNS / resolver failures → connect failed
     ("name or service not known", FailureCategory.TARGET_CONNECT_FAILED),

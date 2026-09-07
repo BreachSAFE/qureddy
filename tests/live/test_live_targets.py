@@ -15,7 +15,7 @@ import shutil
 import pytest
 
 from qureddy.core.errors import LocalOpenSSLMissing
-from qureddy.core.models import FailureCategory, Readiness
+from qureddy.core.models import ObservationType, Readiness
 from qureddy.core.targets import parse_target
 from qureddy.scanners.tls.openssl_probe import probe_capability, resolve_openssl_path
 from qureddy.scanners.tls.scanner import TLSScanner
@@ -99,17 +99,20 @@ def test_one_one_one_one_with_sni(scanner: TLSScanner) -> None:
     assert result.summary.target == "tls://1.1.1.1:443"
 
 
-def test_tls12_only_handshake_failure(scanner: TLSScanner) -> None:
-    """UC5: tls-v1-2.badssl.com:1012 must fail with tls_handshake_failed.
+def test_tls12_only_server_declines_tls13_groups(scanner: TLSScanner) -> None:
+    """UC5: a TLS 1.2-only server declines forced TLS 1.3 groups (#868).
 
-    The endpoint forces TLS 1.2 only; the scanner requires TLS 1.3.
-    The probe returns nonzero; the scanner reports the failure path
-    rather than crashing.
+    The endpoint forces TLS 1.2 only. Its alert-40 responses are capability
+    evidence, not scanner failures; the optional TLS 1.3 probes are recorded
+    as not offered while the scan remains completed.
     """
     target = parse_target("tls-v1-2.badssl.com:1012")
     result = scanner.scan(target)
-    assert result.summary.failure_category is FailureCategory.TLS_HANDSHAKE_FAILED
-    assert any(f.rule_id == "tls.hybrid.probe_failed" for f in result.findings)
+    assert result.summary.failure_category is None
+    assert any(
+        evidence.observation_type is ObservationType.NOT_OFFERED for evidence in result.evidence
+    )
+    assert not any(f.rule_id == "tls.hybrid.probe_failed" for f in result.findings)
 
 
 def test_www_cloudflare_completes_within_timeout(scanner: TLSScanner) -> None:

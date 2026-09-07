@@ -10,7 +10,14 @@ Test path:
 
 from __future__ import annotations
 
-from qureddy.core.models import FailureCategory, ProbeCommand, ProbeResult, ProbeRole, ScanTarget
+from qureddy.core.models import (
+    FailureCategory,
+    ObservationType,
+    ProbeCommand,
+    ProbeResult,
+    ProbeRole,
+    ScanTarget,
+)
 from qureddy.scanners.tls._evidence import build_asset, evidence_from_probe
 from qureddy.scanners.tls.openssl_probe import HYBRID_GROUP, run_hybrid_probe
 from tests._fake_openssl import fake_openssl
@@ -69,6 +76,27 @@ def test_evidence_parser_does_not_match_across_stream_boundary() -> None:
 
     assert evidence.negotiated_group is None
     assert evidence.failure_category is FailureCategory.PARSE_NO_GROUP
+
+
+def test_server_decline_is_not_offered_evidence() -> None:
+    """Alert 40 records capability absence, not a probe failure (#868)."""
+    probe = run_hybrid_probe(
+        fake_openssl("openssl_handshake_failure"),
+        host="example.com",
+        port=443,
+        sni="example.com",
+    )
+
+    evidence = evidence_from_probe(
+        asset=build_asset(_target()),
+        probe=probe,
+        expected_group=HYBRID_GROUP,
+        probe_role=ProbeRole.HYBRID_READINESS,
+    )
+
+    assert evidence.observation_type is ObservationType.NOT_OFFERED
+    assert evidence.evidence_type == "tls.probe.not_offered"
+    assert evidence.failure_category is None
 
 
 def test_evidence_preserves_live_handshake_details() -> None:

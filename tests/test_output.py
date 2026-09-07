@@ -21,6 +21,7 @@ from qureddy.core.models import (
     OpenSSLDependency,
     ProbeCommand,
     ProbeResult,
+    ProbeRole,
     Readiness,
     ScanMetadata,
     ScanResult,
@@ -355,6 +356,26 @@ class TestFindingCryptoDetail:
         out = _render_to_string(_build_result())
         assert "classical_probe" in out
         assert "X25519" in out
+
+    def test_declined_probe_row_shows_not_offered(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setenv("NO_COLOR", "1")
+        result = _build_result()
+        declined = result.evidence[1].model_copy(
+            update={
+                "observation_type": ObservationType.NOT_OFFERED,
+                "negotiated_group": None,
+                "failure_category": None,
+                "probe_role": ProbeRole.CLASSICAL_CONTROL,
+            }
+        )
+        out = _render_to_string(
+            result.model_copy(update={"evidence": (result.evidence[0], declined)})
+        )
+        assert "classical_probe" in out
+        assert "not offered" in out
 
 
 class TestNoColorEnvVar:

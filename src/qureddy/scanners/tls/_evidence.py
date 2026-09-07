@@ -35,6 +35,7 @@ from qureddy.core.models import (
     ScanTarget,
 )
 from qureddy.scanners.common.assets import build_endpoint_asset
+from qureddy.scanners.tls._classify import is_server_decline
 from qureddy.scanners.tls.parse import ParsedNegotiation, parse_brief_output
 
 
@@ -100,6 +101,18 @@ def _evidence_for_probe_failure(
     expected_group: str,
     probe_role: ProbeRole,
 ) -> Evidence:
+    if probe.failure_category is None and is_server_decline(probe.parser_input):
+        return Evidence(
+            id=new_id("ev"),
+            asset_id=asset.id,
+            evidence_type="tls.probe.not_offered",
+            observation_type=ObservationType.NOT_OFFERED,
+            source="qureddy.openssl_probe",
+            probe_role=probe_role,
+            expected_group=expected_group,
+            probe_result=probe,
+            notes=(f"server declined offered group {expected_group}",),
+        )
     # Trust the probe module's stderr-based classification verbatim.
     # Falling back to TLS_HANDSHAKE_FAILED here would erase
     # target_connect_failed / sni_required_or_wrong /

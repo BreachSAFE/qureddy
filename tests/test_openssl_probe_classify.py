@@ -18,12 +18,14 @@ from unittest.mock import patch
 import pytest
 
 import qureddy.scanners.tls.openssl_probe._constants as constants_module
+import qureddy.scanners.tls.openssl_probe.probe as probe_module
 from qureddy.core.models import FailureCategory, ProbeResult
 from qureddy.scanners.tls.openssl_probe import (
     _classify_failure,
     run_hybrid_probe,
 )
 from qureddy.scanners.tls.openssl_probe._results import result_from_timeout
+from qureddy.scanners.tls.openssl_probe.executor import LaunchStatus, OpenSSLOutcome
 from tests._fake_openssl import fake_openssl
 
 
@@ -64,7 +66,7 @@ class TestStderrClassification:
         assert result.return_code != 0
         assert result.failure_category is FailureCategory.TARGET_CONNECT_FAILED
 
-    def test_handshake_failure_is_tls_handshake_failed(self) -> None:
+    def test_server_decline_is_not_offered_for_capability_probe(self) -> None:
         result = run_hybrid_probe(
             fake_openssl("openssl_handshake_failure"),
             "104.154.89.105",
@@ -73,6 +75,27 @@ class TestStderrClassification:
             timeout_seconds=5,
         )
         assert result.return_code != 0
+        assert result.failure_category is None
+
+    def test_genuine_handshake_failure_stays_classified(self) -> None:
+        outcome = OpenSSLOutcome(
+            returncode=1,
+            stdout="",
+            stderr="no shared cipher",
+            timed_out=False,
+            duration_ms=1,
+            launch=LaunchStatus.OK,
+        )
+        with patch.object(probe_module, "execute", return_value=outcome):
+            result = run_hybrid_probe(
+                fake_openssl("openssl_ok"),
+                "example.com",
+                443,
+                "example.com",
+                timeout_seconds=5,
+            )
+
+        assert result.return_code == 1
         assert result.failure_category is FailureCategory.TLS_HANDSHAKE_FAILED
 
     def test_classify_failure_dispatch(self) -> None:
