@@ -88,7 +88,13 @@ def psk_live_result() -> ScanResult:
     target = os.environ.get("QUREDDY_IKE_PSK_TARGET", "127.0.0.1:4500")
     source_port = int(os.environ.get("QUREDDY_IKE_PSK_SOURCE_PORT", "40501"))
     scanner = IKEScanner(IkeScanAdapter(_ike_scan_path(), source_port=source_port))
-    return scanner.scan(parse_ike_target(target), timeout_seconds=2)
+    result = scanner.scan(parse_ike_target(target), timeout_seconds=2)
+    verdict = evaluate_lab(result.evidence, status=result.scan.status, target=target)
+    if verdict.outcome is LabOutcome.RUN:
+        return result
+    if verdict.outcome is LabOutcome.FAIL:
+        pytest.fail(verdict.reason)
+    _unmet(verdict.reason)
 
 
 def test_live_direct_probe_uses_udp_500_and_detects_responder(
