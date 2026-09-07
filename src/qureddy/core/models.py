@@ -31,6 +31,7 @@ from qureddy.core.vocabulary import PqcSupport as PqcSupport  # noqa: PLC0414
 from qureddy.core.vocabulary import ProbeRole as ProbeRole  # noqa: PLC0414
 from qureddy.core.vocabulary import Readiness as Readiness  # noqa: PLC0414
 from qureddy.core.vocabulary import Severity as Severity  # noqa: PLC0414
+from qureddy.core.vocabulary import StartTLSMode as StartTLSMode  # noqa: PLC0414
 
 FROZEN = ConfigDict(frozen=True, extra="forbid")
 
@@ -107,6 +108,7 @@ class ScanTarget(BaseModel):
     port: int = Field(ge=MIN_PORT, le=MAX_PORT)
     sni: str | None
     scheme: str = "tls"
+    starttls_mode: StartTLSMode | None = Field(default=None, exclude_if=lambda value: value is None)
     locator: str
 
     @field_validator("host")

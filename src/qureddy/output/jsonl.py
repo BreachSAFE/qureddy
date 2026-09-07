@@ -99,6 +99,9 @@ def summary_record(result: ScanResult) -> dict[str, Any]:
         "readiness": result.summary.readiness.value,
         "highest_severity": highest_severity.value if highest_severity is not None else None,
         "finding_count": result.summary.finding_count,
+        "starttls_mode": (
+            result.target.starttls_mode.value if result.target.starttls_mode is not None else None
+        ),
         "failure_category": failure_category.value if failure_category is not None else None,
         "interpretation": (
             {

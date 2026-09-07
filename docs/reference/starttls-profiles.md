@@ -2,9 +2,9 @@
 
 [![Diátaxis reference](https://img.shields.io/badge/Di%C3%A1taxis-reference-1f6feb?style=flat-square)](https://diataxis.fr/reference/)
 
-This page defines the planned service-profile contract for `qureddy scan tls`.
-The current released scanner supports direct TLS. The profile names and behavior
-below are design and calibration targets tracked by [#577](https://github.com/BreachSAFE/qureddy/issues/577),
+This page defines the service-profile contract for `qureddy scan tls`.
+The released scanner supports direct TLS and OpenSSL `-starttls` modes; live
+interoperability calibration remains tracked by [#577](https://github.com/BreachSAFE/qureddy/issues/577),
 [#578](https://github.com/BreachSAFE/qureddy/issues/578), and [#590](https://github.com/BreachSAFE/qureddy/issues/590).
 They are not claims that every profile is available in the current release.
 
@@ -27,18 +27,17 @@ TLS service profiles select the application-layer transition that occurs before
 the TLS handshake. A profile does not identify a host, infer a service from a
 port, or establish application authentication.
 
-The endpoint remains a `ScanTarget`:
+The endpoint remains a `ScanTarget`, including the selected connection profile:
 
 ```text
-host, port, SNI, scheme
+host, port, SNI, scheme, starttls_mode
 ```
 
-The scan request carries the acquisition profile separately:
+The CLI attaches the acquisition profile to that target before scanning:
 
 ```text
-TLSScanRequest
-  ├── ScanTarget
-  └── TLSProfileRef
+TLS scan request
+  └── ScanTarget.starttls_mode
 ```
 
 Direct TLS begins with TLS records. STARTTLS profiles begin with a
@@ -71,9 +70,9 @@ class TLSConnectionProfile(BaseModel):
 `ScanTarget` must remain backward compatible. Omitting a profile selects the
 existing direct-TLS behavior.
 
-The profile identifier is recorded in scan metadata and evidence so QuReddy
-App can distinguish, for example, LDAP StartTLS on port 389 from direct LDAPS
-on port 636.
+The selected mode is recorded in the canonical target and every output projection
+so QuReddy App can distinguish, for example, LDAP StartTLS on port 389 from direct
+LDAPS on port 636.
 
 ## 3. Profile catalog
 
@@ -256,4 +255,3 @@ this page should be treated as shipped until its acceptance issue closes.
 - [Shared OpenSSL execution issue #578](https://github.com/BreachSAFE/qureddy/issues/578)
 - [Service reachability milestone #590](https://github.com/BreachSAFE/qureddy/issues/590)
 - [TDS/MSSQL issue #581](https://github.com/BreachSAFE/qureddy/issues/581)
-

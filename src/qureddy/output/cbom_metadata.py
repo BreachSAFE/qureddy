@@ -164,6 +164,8 @@ def add_scan_target_metadata(bom: Bom, result: ScanResult, *, reproducible: bool
         ]
     if target.sni is not None:
         pairs.append(("qureddy:target.sni", target.sni))
+    if target.starttls_mode is not None:
+        pairs.append(("qureddy:target.starttls_mode", target.starttls_mode.value))
     for name, value in pairs:
         bom.metadata.properties.add(Property(name=name, value=value))
 

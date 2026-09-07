@@ -267,7 +267,7 @@ def _scan_and_render(
     output_stream: IO[str] | None = _open_output_file(output)
     try:
         retry_set = _parse_retry_args(retry_on, retries, retry_delay)
-        scan_target = _parse_cli_target(target, sni)
+        scan_target = _parse_cli_target(target, sni, starttls)
         structlog.contextvars.bind_contextvars(target=scan_target.locator)
         scanner = _build_tls_scanner(openssl, retries, retry_delay, retry_set, starttls)
         result, exit_code = _execute_scan(
@@ -382,9 +382,14 @@ def _parse_retry_args(
     return retry_set
 
 
-def _parse_cli_target(target: str, sni: str | None) -> ScanTarget:
+def _parse_cli_target(target: str, sni: str | None, starttls: StartTLSMode | None) -> ScanTarget:
     """Parse the positional target arg; exit 4 on a malformed target."""
     try:
-        return parse_target(target, sni_override=sni, block_internal=block_internal_targets())
+        parsed = parse_target(
+            target,
+            sni_override=sni,
+            block_internal=block_internal_targets(),
+        )
+        return parsed.model_copy(update={"starttls_mode": starttls})
     except TargetParseError as exc:
         _fail(f"invalid target: {exc}", EXIT_USAGE)
