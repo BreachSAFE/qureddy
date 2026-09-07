@@ -41,7 +41,9 @@ def classify_key_exchange(name: str) -> AlgorithmProfile | None:
         return AlgorithmProfile("kem", level, parameter_set_identifier=parameter_set)
     for pattern, curve, classical_level in _CLASSICAL_KEX_CURVES:
         if pattern.search(lowered):
-            return AlgorithmProfile("key-agree", 0, curve=curve, classical_security_level=classical_level)
+            return AlgorithmProfile(
+                "key-agree", 0, curve=curve, classical_security_level=classical_level
+            )
     if lowered.startswith("diffie-hellman"):
         return AlgorithmProfile("key-agree", 0)
     if lowered.startswith("rsa"):
