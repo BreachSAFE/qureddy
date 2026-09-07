@@ -20,6 +20,7 @@ from qureddy.core.models import (
     ScanTarget,
     Severity,
 )
+from qureddy.scanners.common.rollup import scan_nist_quantum_security_levels
 from qureddy.scanners.tls._summary import build_summary, highest_severity
 from qureddy.scanners.tls.scanner import _scan_readiness
 
@@ -193,3 +194,39 @@ class TestHighestSeverity:
 
     def test_empty_findings_is_none(self) -> None:
         assert highest_severity([]) is None
+
+
+class TestNistQuantumSecurityLevel:
+    """Keep the compact category rollup distinct from readiness semantics."""
+
+    @staticmethod
+    def _evidence(level: int | None, *, evidence_type: str = "tls.negotiation") -> Evidence:
+        return Evidence(
+            id=f"ev-{level}",
+            asset_id="asset-1",
+            evidence_type=evidence_type,
+            observation_type=ObservationType.NEGOTIATED,
+            source="test",
+            nist_quantum_security_level=level,
+        )
+
+    def test_mixed_classical_and_pqc_categories_are_preserved(self) -> None:
+        assert scan_nist_quantum_security_levels([self._evidence(3), self._evidence(0)]) == (0, 3)
+
+    def test_pqc_only_category_is_preserved(self) -> None:
+        assert scan_nist_quantum_security_levels([self._evidence(3)]) == (3,)
+
+    def test_known_classical_only_is_zero(self) -> None:
+        assert scan_nist_quantum_security_levels([self._evidence(0)]) == (0,)
+
+    def test_unknown_and_failed_evidence_stays_unknown(self) -> None:
+        failed = self._evidence(0).model_copy(update={"failure_category": "tls_handshake_failed"})
+        assert scan_nist_quantum_security_levels([self._evidence(None), failed]) is None
+
+    def test_non_key_exchange_categories_do_not_drive_rollup(self) -> None:
+        assert (
+            scan_nist_quantum_security_levels(
+                [self._evidence(5, evidence_type="tls.cert.signature")]
+            )
+            is None
+        )

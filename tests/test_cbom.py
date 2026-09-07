@@ -431,6 +431,34 @@ class TestCycloneDx17Contract:
         props = {p["name"]: p["value"] for p in payload["metadata"]["properties"]}
         assert props["qureddy:scan.finding_count"] == "1"
         assert props["qureddy:scan.highest_severity"] == "info"
+        assert "qureddy:scan.nist_quantum_security_level" not in props
+        assert "qureddy:scan.nist_quantum_security_level_max" not in props
+
+    def test_summary_nist_categories_preserve_mixed_capability(self) -> None:
+        result = _build_result()
+        result = result.model_copy(
+            update={
+                "summary": result.summary.model_copy(
+                    update={
+                        "nist_quantum_security_levels": (0, 3),
+                        "nist_quantum_security_level_max": 3,
+                    }
+                )
+            }
+        )
+        payload = _render(result)
+        values = [
+            p["value"]
+            for p in payload["metadata"]["properties"]
+            if p["name"] == "qureddy:scan.nist_quantum_security_level"
+        ]
+        assert values == ["0", "3"]
+        max_values = [
+            p["value"]
+            for p in payload["metadata"]["properties"]
+            if p["name"] == "qureddy:scan.nist_quantum_security_level_max"
+        ]
+        assert max_values == ["3"]
 
     def test_inventory_comes_from_positive_evidence_not_findings(self) -> None:
         result = _build_result()

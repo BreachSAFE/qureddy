@@ -16,6 +16,7 @@ from qureddy.output._styles import BRAND_CYAN
 from qureddy.output.console._commands import _commands_panel
 from qureddy.output.console._errors import _errors_table
 from qureddy.output.console._evidence import _SEVERITY_ORDER
+from qureddy.output.console._nist import nist_categories_table
 from qureddy.output.console._tables import _findings_table, _run_details_table, _summary_table
 from qureddy.output.console._verdict import _verdict_panel
 
@@ -72,6 +73,10 @@ def render_rich(
     console.print(_verdict_panel(result))
     console.print()
     console.print(_summary_table(result))
+    nist_categories = nist_categories_table(result)
+    if nist_categories is not None:
+        console.print()
+        console.print(nist_categories)
     shown_findings = _filter_by_min_severity(result.findings, min_severity)
     if shown_findings:
         console.print()

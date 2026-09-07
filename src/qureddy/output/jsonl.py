@@ -97,6 +97,8 @@ def summary_record(result: ScanResult) -> dict[str, Any]:
         "status": result.scan.status,
         "target": result.target.locator,
         "readiness": result.summary.readiness.value,
+        "nist_quantum_security_levels": result.summary.nist_quantum_security_levels,
+        "nist_quantum_security_level_max": result.summary.nist_quantum_security_level_max,
         "highest_severity": highest_severity.value if highest_severity is not None else None,
         "finding_count": result.summary.finding_count,
         "starttls_mode": (

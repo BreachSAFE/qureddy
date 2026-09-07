@@ -41,6 +41,9 @@ _POSITIVE_READINESS: tuple[Readiness, ...] = (
 _POSITIVE_OBSERVATIONS: frozenset[ObservationType] = frozenset(
     {ObservationType.NEGOTIATED, ObservationType.OBSERVED}
 )
+_KEX_EVIDENCE_TYPES: frozenset[str] = frozenset(
+    {"tls.negotiation", "ssh.kex", "ssh.kex.weak", "ike.dh_group"}
+)
 
 
 def highest_severity(findings: list[Finding]) -> Severity | None:
@@ -84,3 +87,22 @@ def scan_readiness(findings: list[Finding], evidence: list[Evidence] | None = No
         return conclusive_readiness
     readinesses = {f.readiness for f in findings}
     return _first_matching_tier(readinesses, READINESS_PRECEDENCE) or Readiness.UNKNOWN
+
+
+def scan_nist_quantum_security_levels(evidence: list[Evidence]) -> tuple[int, ...] | None:
+    """Return every observed NIST category for key-exchange evidence.
+
+    This is deliberately narrower than the readiness rollup: NIST categories
+    describe recognized algorithms, while readiness also incorporates failures,
+    downgrade resistance, hygiene, and assurance. A classical category of
+    ``0`` remains distinct from ``None``. Categories are deduplicated and
+    sorted for deterministic output.
+    """
+    levels = [
+        record.nist_quantum_security_level
+        for record in evidence
+        if record.evidence_type in _KEX_EVIDENCE_TYPES
+        and record.failure_category is None
+        and record.nist_quantum_security_level is not None
+    ]
+    return tuple(sorted(set(levels))) if levels else None

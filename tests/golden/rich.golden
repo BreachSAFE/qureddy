@@ -12,7 +12,8 @@ Scan details
  ───────────────────────────────────────────
  schema_version    qureddy.scan.v1
  status            completed
- readiness         transitional_hybrid
+ nist_levels       —
+ nist_max          —
  protocol          TLSv1.3
  cipher_suite      TLS_AES_256_GCM_SHA384
  hybrid_probe      negotiated X25519MLKEM768
