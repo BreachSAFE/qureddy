@@ -101,13 +101,16 @@ def _style_probe_status(evidence: Evidence | None) -> Text:
     """Compose the per-probe summary cell.
 
     `negotiated <GROUP>` (green word + group-styled name) when the probe
-    succeeded; `failed (<category>)` in red on failure; dim `no result`
-    when no evidence record exists.
+    succeeded; `not offered` in yellow when the peer declined the requested
+    group; `failed (<category>)` in red on failure; dim `no result` when no
+    evidence record exists.
     """
     if evidence is None:
         return Text("no result", style="dim")
     if evidence.failure_category is not None:
         return Text(f"failed ({evidence.failure_category.value})", style="red")
+    if evidence.observation_type is ObservationType.NOT_OFFERED:
+        return Text("not offered", style="yellow")
     if evidence.negotiated_group:
         out = Text("negotiated ", style="green")
         out.append(style_group(evidence.negotiated_group))

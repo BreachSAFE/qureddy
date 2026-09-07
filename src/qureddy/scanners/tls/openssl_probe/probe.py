@@ -20,7 +20,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
-from qureddy.scanners.tls._classify import classify_failure
+from qureddy.scanners.tls._classify import classify_failure, is_server_decline
 from qureddy.scanners.tls.connection import StartTLSMode, build_s_client_args
 from qureddy.scanners.tls.openssl_probe._constants import (
     CLASSICAL_GROUP,
@@ -134,7 +134,17 @@ def _run_probe(
     return_code = outcome.returncode
     assert return_code is not None  # noqa: S101 -- OK launch guarantees an exit code
     duration_ms = int((datetime.now(UTC) - started).total_seconds() * 1000)
-    failure = classify_failure(outcome.stderr) if return_code else None
+    # A forced group probe is a capability test: alert 40 means the peer
+    # declined that offered group, not that the endpoint or scanner failed.
+    # Preserve real failures (connect, timeout, middlebox, parse) so retry and
+    # scan-status logic still receives actionable categories (#868).
+    failure = (
+        None
+        if return_code and is_server_decline(outcome.stderr)
+        else classify_failure(outcome.stderr)
+        if return_code
+        else None
+    )
     log_subprocess_complete(
         args,
         return_code,

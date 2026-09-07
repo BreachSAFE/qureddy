@@ -104,7 +104,7 @@ jobs:
           python -c 'import json; d=json.load(open("cbom.json")); assert d["specVersion"] == "1.7"; assert d["components"]'
           docker run --rm qureddy-container:smoke scan tls pq.cloudflareresearch.com --format cbom > combined.json 2>&1
           python -c 'import json; json.load(open("combined.json"))'
-      - name: Verify JSON, rich, SSH, IP/SNI, and expected failure
+      - name: Verify JSON, rich, SSH, IP/SNI, and declined TLS groups
         run: |
           set -euo pipefail
           docker run --rm qureddy-container:smoke scan tls example.com --format json > tls.json
@@ -112,11 +112,8 @@ jobs:
           docker run --rm qureddy-container:smoke scan tls 1.1.1.1:443 --sni one.one.one.one > ip.txt
           docker run --rm qureddy-container:smoke scan ssh github.com --format cbom > ssh.json
           python -c 'import json; d=json.load(open("ssh.json")); assert d["specVersion"] == "1.7"'
-          set +e
           docker run --rm qureddy-container:smoke scan tls badssl.com --format json > badssl.json
-          rc=$?
-          set -e
-          test "$rc" = 2
+          python -c 'import json; d=json.load(open("badssl.json")); assert d["scan"]["status"] == "completed"; assert d["summary"]["failure_category"] is None'
 
   # Resolve the image version once, from the release tag on a `release` event
   # (strip the leading `v` from `vX.Y.Z`) or from the dispatch input otherwise.
