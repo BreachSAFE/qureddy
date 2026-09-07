@@ -27,16 +27,30 @@ _FINGERPRINT_LEN = 16
 _STDERR_PREVIEW_LEN = 120
 
 
-def is_server_decline(stderr: str) -> bool:
+# These signatures identify a peer alerting that a forced capability offer is
+# unacceptable. Keep them separate from ambiguous local errors such as
+# ``no shared cipher``; those do not prove that the peer made the decision.
+_DECLINE_SIGNATURES: tuple[str, ...] = (
+    "ssl alert number 40",  # handshake_failure
+    "alert handshake failure",
+    "ssl alert number 70",  # protocol_version
+    "alert protocol version",
+    "ssl alert number 71",  # insufficient_security
+    "alert insufficient security",
+)
+
+
+def is_server_decline(transcript: str) -> bool:
     """Return whether a forced capability probe was declined by the peer.
 
-    OpenSSL reports a peer rejecting an offered TLS 1.3 group as alert 40.
-    This is a valid result for a capability probe, not evidence that the
-    endpoint or the local probe failed.  Keep the predicate separate from
-    ``classify_failure`` because alert 40 remains a genuine handshake
-    failure when no deliberate capability offer is in scope.
+    OpenSSL reports a peer rejecting an offered TLS 1.3 group with a protocol
+    alert. This is a valid result for a capability probe, not evidence that
+    the endpoint or the local probe failed. Keep the predicate separate from
+    ``classify_failure`` because these alerts remain genuine handshake
+    failures when no deliberate capability offer is in scope.
     """
-    return "ssl alert number 40" in stderr.lower()
+    normalized = transcript.casefold()
+    return any(signature in normalized for signature in _DECLINE_SIGNATURES)
 
 
 _STDERR_SIGNATURES: tuple[tuple[str, FailureCategory], ...] = (
@@ -74,10 +88,7 @@ _STDERR_SIGNATURES: tuple[tuple[str, FailureCategory], ...] = (
     ("fragmentation needed", FailureCategory.MIDDLEBOX_OR_MTU_FAILURE),
     ("premature close", FailureCategory.MIDDLEBOX_OR_MTU_FAILURE),
     # TLS handshake-level alerts (client + server)
-    ("alert handshake failure", FailureCategory.TLS_HANDSHAKE_FAILED),
-    ("ssl alert number 40", FailureCategory.TLS_HANDSHAKE_FAILED),
-    ("alert protocol version", FailureCategory.TLS_HANDSHAKE_FAILED),
-    ("ssl alert number 70", FailureCategory.TLS_HANDSHAKE_FAILED),
+    *((signature, FailureCategory.TLS_HANDSHAKE_FAILED) for signature in _DECLINE_SIGNATURES),
     ("inappropriate fallback", FailureCategory.TLS_HANDSHAKE_FAILED),
     ("ssl alert number 86", FailureCategory.TLS_HANDSHAKE_FAILED),
     ("no shared cipher", FailureCategory.TLS_HANDSHAKE_FAILED),
