@@ -217,6 +217,7 @@ def _classical_protocol_finding(
         confidence=Confidence.HIGH,
         runtime=runtime,
         protocol_version=result.protocol_version,
+        algorithm=result.accepted_ciphers[0] if result.accepted_ciphers else None,
     )
 
 
@@ -244,6 +245,7 @@ def _legacy_protocol_finding(
         confidence=Confidence.HIGH,
         runtime=runtime,
         protocol_version=result.protocol_version,
+        algorithm=result.accepted_ciphers[0] if result.accepted_ciphers else None,
     )
 
 
