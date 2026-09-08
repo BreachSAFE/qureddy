@@ -251,6 +251,7 @@ class Evidence(BaseModel):
     evidence_type: str
     observation_type: ObservationType
     source: str
+    runtime: str | None = None
     protocol: str = "tls"
     protocol_version: str | None = None
     cipher_suite: str | None = None
@@ -307,6 +308,7 @@ class Finding(BaseModel):
     severity: Severity
     readiness: Readiness
     confidence: Confidence
+    runtime: str | None = None
     algorithm: str | None = None
     primitive: str | None = None
     parameter_set_identifier: str | None = None

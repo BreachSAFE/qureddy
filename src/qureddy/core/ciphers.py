@@ -305,6 +305,16 @@ def cipher_primitive(name: str) -> str:
     )
 
 
+def weak_ciphers(accepted_ciphers: tuple[str, ...]) -> tuple[str, ...]:
+    """Return accepted suites matching the reviewed weak-cipher markers."""
+    return tuple(
+        cipher
+        for cipher in accepted_ciphers
+        if cipher.upper() == "NONE"
+        or any(marker in cipher.upper() for marker in WEAK_CIPHER_MARKERS)
+    )
+
+
 def has_weak_cipher(accepted_ciphers: tuple[str, ...]) -> bool:
     """Return whether accepted suite names contain a reviewed weak marker.
 
@@ -312,7 +322,4 @@ def has_weak_cipher(accepted_ciphers: tuple[str, ...]) -> bool:
     A suite can have numeric strength and still return ``True``. The caller owns the
     policy response and finding text; this helper only matches the reviewed markers.
     """
-    return any(
-        cipher.upper() == "NONE" or any(marker in cipher.upper() for marker in WEAK_CIPHER_MARKERS)
-        for cipher in accepted_ciphers
-    )
+    return bool(weak_ciphers(accepted_ciphers))
