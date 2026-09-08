@@ -20,6 +20,11 @@ def test_runtime_image_bundles_pinned_stock_ike_scan() -> None:
     assert "/usr/share/doc/ike-scan/copyright" in runtime
     assert "GPL-3.0-or-later WITH openvpn-openssl-exception" in runtime
     assert 'io.breachsafe.qureddy.ike-scan.version="${IKE_SCAN_VERSION}"' in runtime
+    assert "ARG QUREDDY_SOURCE_REVISION" in runtime
+    assert 'org.opencontainers.image.revision="${QUREDDY_SOURCE_REVISION}"' in runtime
+    assert "QUREDDY_DISTRIBUTION=container" in runtime
+    assert "QUREDDY_SOURCE_REVISION=${QUREDDY_SOURCE_REVISION}" in runtime
+    assert "QUREDDY_SOURCE_DIRTY=false" in runtime
     assert runtime.index('"ike-scan=${IKE_SCAN_VERSION}"') < runtime.index("USER qureddy")
 
 
@@ -33,6 +38,17 @@ def test_container_smoke_executes_bundled_ike_scan() -> None:
     assert "-W -f='${Version}' ike-scan" in smoke
     assert 'test "$actual" = "$expected"' in smoke
     assert "test -r /usr/share/doc/ike-scan/copyright" in smoke
+
+
+def test_container_build_passes_exact_source_revision() -> None:
+    """The published image must receive the source revision it claims."""
+    assert '--build-arg "QUREDDY_SOURCE_REVISION=${GITHUB_SHA}"' in WORKFLOW
+
+
+def test_manual_container_publisher_passes_exact_source_revision() -> None:
+    """The manual multi-arch publisher must preserve the same provenance contract."""
+    publisher = (Path(__file__).parents[1] / "scripts" / "publish_ghcr.sh").read_text()
+    assert '--build-arg QUREDDY_SOURCE_REVISION="$REVISION"' in publisher
 
 
 def test_mutable_image_tags_are_promoted_only_after_signature_verification() -> None:

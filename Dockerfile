@@ -43,6 +43,7 @@ RUN python -m build --wheel --no-isolation --outdir /tmp/wheel
 FROM python:3.14-slim-bookworm@sha256:9ab8d9c8514b44f90cf0029dd42fdd7e9e211e639c8b995304cc04568dee900f
 
 ARG QUREDDY_VERSION=0.9.21
+ARG QUREDDY_SOURCE_REVISION
 ARG IKE_SCAN_VERSION=1.9.5-1+b1
 ARG OPENSSL_VERSION=3.5.8
 LABEL org.opencontainers.image.title="QuReddy" \
@@ -50,6 +51,7 @@ LABEL org.opencontainers.image.title="QuReddy" \
       org.opencontainers.image.source="https://github.com/breachsafe/qureddy" \
       org.opencontainers.image.licenses="Apache-2.0 AND (GPL-3.0-or-later WITH openvpn-openssl-exception)" \
       org.opencontainers.image.version="${QUREDDY_VERSION}" \
+      org.opencontainers.image.revision="${QUREDDY_SOURCE_REVISION}" \
       io.breachsafe.qureddy.openssl.version="${OPENSSL_VERSION}" \
       io.breachsafe.qureddy.openssl-legacy.version="1.0.2u" \
       io.breachsafe.qureddy.ike-scan.version="${IKE_SCAN_VERSION}"
@@ -69,6 +71,9 @@ RUN apt-get update \
 
 ENV QUREDDY_OPENSSL=/opt/openssl/bin/openssl \
     QUREDDY_LEGACY_OPENSSL=/opt/openssl-legacy/bin/openssl \
+    QUREDDY_DISTRIBUTION=container \
+    QUREDDY_SOURCE_REVISION=${QUREDDY_SOURCE_REVISION} \
+    QUREDDY_SOURCE_DIRTY=false \
     LD_LIBRARY_PATH=/opt/openssl/lib64:/opt/openssl/lib \
     PATH=/opt/openssl/bin:$PATH
 
