@@ -70,6 +70,7 @@ jobs:
           # is not an error.
           docker buildx build \
             --build-arg "QUREDDY_VERSION=${QUREDDY_VERSION}" \
+            --build-arg "QUREDDY_SOURCE_REVISION=${GITHUB_SHA}" \
             --cache-from "type=registry,ref=ghcr.io/breachsafe/qureddy:buildcache-amd64" \
             --load \
             --tag qureddy-container:smoke .

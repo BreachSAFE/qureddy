@@ -44,6 +44,7 @@ uv build --wheel
 docker buildx build \
   --platform linux/amd64,linux/arm64 \
   --build-arg QUREDDY_VERSION="$VERSION" \
+  --build-arg QUREDDY_SOURCE_REVISION="$REVISION" \
   --label org.opencontainers.image.version="$VERSION" \
   --label org.opencontainers.image.revision="$REVISION" \
   -t "ghcr.io/breachsafe/qureddy:$VERSION" \
