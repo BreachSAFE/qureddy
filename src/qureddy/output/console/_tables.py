@@ -85,9 +85,7 @@ def _summary_table(result: ScanResult) -> Table:
     table.add_row("status", Text(scan.status))
     _add_nist_summary_rows(table, summary)
     if summary.interpretation is not None:
-        display = summary.interpretation.display
         table.add_row("posture", _summary_posture(summary))
-        table.add_row("evidence", Text(display.quantum_protection))
     if scan.scanner_name == "ssh":
         # SSH has no TLS-style forced hybrid/classical probes or cipher suite;
         # show the KEX/host-key algorithms actually observed instead.
