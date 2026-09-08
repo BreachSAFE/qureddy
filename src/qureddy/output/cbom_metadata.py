@@ -6,6 +6,9 @@ These functions append QuReddy provenance to ``bom.metadata`` (the local
 OpenSSL capability flags, scan status/target identity, the evidence trail,
 and per-finding verdicts). They are split out of ``cbom.py`` to keep that
 module under the file-size ceiling; the rendered CBOM is unchanged (#171).
+
+    Finding ──▶ CycloneDX annotation text ──▶ CBOM stdout
+       └──────▶ subject-linked verdict properties
 """
 
 from __future__ import annotations
@@ -331,7 +334,10 @@ def finding_annotations(
                     }
                 },
                 "timestamp": timestamp,
-                "text": f"{finding.title}\n{finding.description}",
+                "text": (
+                    f"{finding.title}\n{finding.description}"
+                    + (f"\nCWE: {', '.join(finding.cwe_ids)}" if finding.cwe_ids else "")
+                ),
             }
         )
         verdicts.setdefault(

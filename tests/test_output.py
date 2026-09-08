@@ -430,6 +430,16 @@ class TestFindingsTableProtocolColumn:
         out = _render_to_string(_build_result())
         assert "Protocol" in out
 
+    def test_cwe_is_rendered_for_classified_finding(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setenv("NO_COLOR", "1")
+        result = _build_result()
+        finding = result.findings[0].model_copy(update={"rule_id": "tls.transport.weak"})
+
+        assert "CWE-327" in _render_to_string(result.model_copy(update={"findings": (finding,)}))
+
     def test_protocol_value_rendered_per_finding(
         self,
         monkeypatch: pytest.MonkeyPatch,

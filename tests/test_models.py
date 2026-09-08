@@ -195,6 +195,20 @@ class TestModelImmutability:
             )
 
 
+def test_finding_exposes_cwe_for_known_weakness_rule() -> None:
+    finding = _make_finding().model_copy(update={"rule_id": "tls.transport.weak"})
+
+    assert finding.cwe_ids == ("CWE-327",)
+    assert finding.model_dump(mode="json")["cwe_ids"] == ["CWE-327"]
+
+
+def test_finding_omits_cwe_when_rule_is_not_a_weakness() -> None:
+    finding = _make_finding()
+
+    assert finding.cwe_ids == ()
+    assert "cwe_ids" not in finding.model_dump(mode="json")
+
+
 class TestScanTargetBoundaryValidation:
     """Issue #369: the ScanTarget construction boundary must reject invalid
     host/SNI/scheme values that would otherwise flow into OpenSSL argv.

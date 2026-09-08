@@ -79,6 +79,19 @@ def test_jsonl_summary_emits_all_nist_categories() -> None:
     assert summary["nist_quantum_security_levels"] == [3]
 
 
+def test_jsonl_finding_carries_cwe_classification() -> None:
+    result = _build_result()
+    finding = _finding(rule_id="tls.transport.weak")
+    result = result.model_copy(update={"findings": (finding,)})
+
+    output = io.StringIO()
+    render_jsonl(result, output)
+    record = json.loads(output.getvalue().splitlines()[0])
+
+    assert record["info"]["classification"]["cwe-id"] == ["CWE-327"]
+    assert record["info"]["metadata"]["cwe_ids"] == ["CWE-327"]
+
+
 @pytest.mark.parametrize("scheme", ["tls", "ssh", "ike"])
 @pytest.mark.parametrize("status", ["completed", "no_response", "rejected"])
 def test_jsonl_summary_preserves_canonical_scan_status(scheme: str, status: str) -> None:

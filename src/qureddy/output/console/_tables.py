@@ -8,7 +8,7 @@
            ├─ compact posture projection
            ├─ protocol and certificate facts
            └─ finding and run metadata
-                └─ Rich scan-details table
+                └─ Rich scan-details table (rule ID + optional CWE)
 
 This module renders the canonical result model. It does not reclassify
 algorithms or infer peer behavior from probe failures; those decisions belong
@@ -225,7 +225,8 @@ def _findings_table(result: ScanResult, *, findings: tuple[Finding, ...] | None 
         details = _finding_crypto_detail(finding)
         table.add_row(
             style_severity(finding.severity),
-            f"{_finding_display_id(finding)}\n{finding.rule_id}",
+            f"{_finding_display_id(finding)}\n{finding.rule_id}"
+            + (f"\n{', '.join(finding.cwe_ids)}" if finding.cwe_ids else ""),
             styled_or_dash(finding.protocol_version),
             details,
         )
