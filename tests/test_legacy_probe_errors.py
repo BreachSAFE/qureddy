@@ -112,3 +112,16 @@ def test_handshake_client_failure_marks_incomplete_not_not_offered() -> None:
     assert result.probe_incomplete is True
     assert result.offered is False
     assert result.accepted_ciphers == ()
+
+
+def test_handshake_peer_rejection_remains_confirmed_not_offered() -> None:
+    """A recognized TLS peer alert is a clean negative, not an incomplete sweep."""
+    responses = [
+        _completed(0, stdout="ECDHE-RSA-AES128-GCM-SHA256"),
+        _completed(1, stderr="error: sslv3 alert handshake failure"),
+    ]
+    with patch(_RUN, side_effect=responses):
+        result = _probe()
+    assert result.probe_incomplete is False
+    assert result.offered is False
+    assert result.accepted_ciphers == ()
