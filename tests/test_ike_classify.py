@@ -72,6 +72,22 @@ def test_weak_group_emits_separate_quantum_and_hygiene_findings() -> None:
     by_rule = {item.rule_id: item for item in findings}
     assert by_rule["ike.kex.classical"].readiness is Readiness.QUANTUM_VULNERABLE
     assert by_rule["ike.dh.weak"].readiness is Readiness.CLASSICALLY_WEAK
+    assert by_rule["ike.dh.weak"].protocol_version == "IKEv2"
+    assert by_rule["ike.dh.weak"].algorithm == "1024-bit_MODP_group"
+    assert by_rule["ike.dh.weak"].runtime == "ike-scan/1.9.5"
+
+
+def test_multi_record_finding_does_not_choose_one_algorithm() -> None:
+    records = [
+        _group(2, "1024-bit_MODP_group", evidence_id="ev-group-2"),
+        _group(5, "1536-bit_MODP_group", evidence_id="ev-group-5"),
+    ]
+
+    weak = next(item for item in classify_ike(_asset(), records) if item.rule_id == "ike.dh.weak")
+
+    assert weak.protocol_version == "IKEv2"
+    assert weak.algorithm is None
+    assert weak.runtime == "ike-scan/1.9.5"
 
 
 def test_ml_kem_identifier_never_emits_classical_finding() -> None:
