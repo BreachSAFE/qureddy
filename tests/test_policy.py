@@ -180,6 +180,15 @@ class TestProbeFailedRule:
         assert findings[0].rule_id == "tls.classical.control_rejected"
         assert findings[0].readiness is Readiness.NOT_APPLICABLE
 
+    def test_classical_control_connect_failure_is_not_peer_rejection(self) -> None:
+        """Issue #759: no peer response cannot prove fallback rejection."""
+        ev = _evidence(
+            observation_type=ObservationType.NO_RESPONSE,
+            failure_category=FailureCategory.TARGET_CONNECT_FAILED,
+            probe_role=ProbeRole.CLASSICAL_CONTROL,
+        )
+        assert classify_evidence(_asset(), [ev]) == []
+
 
 class TestNonMatchingEvidence:
     def test_unrecognized_group_does_not_fire_any_rule(self) -> None:

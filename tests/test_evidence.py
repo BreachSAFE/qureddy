@@ -99,6 +99,29 @@ def test_server_decline_is_not_offered_evidence() -> None:
     assert evidence.failure_category is None
 
 
+def test_connect_failure_is_no_response_not_peer_observation() -> None:
+    """A refused connection cannot prove anything about the remote peer (#896)."""
+    probe = ProbeResult(
+        command=ProbeCommand(executable="openssl", args=(), timeout_seconds=1),
+        return_code=1,
+        stdout_sha256="0" * 64,
+        stderr_sha256="0" * 64,
+        failure_category=FailureCategory.TARGET_CONNECT_FAILED,
+        stderr_excerpt="Connection refused",
+        duration_ms=1,
+    )
+
+    evidence = evidence_from_probe(
+        asset=build_asset(_target()),
+        probe=probe,
+        expected_group=HYBRID_GROUP,
+        probe_role=ProbeRole.HYBRID_READINESS,
+    )
+
+    assert evidence.observation_type is ObservationType.NO_RESPONSE
+    assert evidence.failure_category is FailureCategory.TARGET_CONNECT_FAILED
+
+
 def test_evidence_preserves_live_handshake_details() -> None:
     """The successful probe path must project parsed details onto Evidence."""
     transcript = (

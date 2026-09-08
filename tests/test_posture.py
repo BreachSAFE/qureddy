@@ -1,6 +1,15 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
 # SPDX-License-Identifier: Apache-2.0
-"""Regression tests for structured posture interpretation."""
+"""Regression tests for structured posture interpretation.
+
+    evidence/finding inputs
+           ├─ observed peer facts → posture verdict
+           └─ target failure → NOT_TESTABLE, no peer-behaviour claim
+                └─ machine fields and human-readable display
+
+The failure branch is pinned separately because a plausible-looking headline
+can otherwise hide an invalid evidence state.
+"""
 
 from __future__ import annotations
 
@@ -113,6 +122,26 @@ def test_failed_target_is_not_testable_even_with_partial_findings() -> None:
     assert interpretation.axes.pqc_support is PqcSupport.NOT_TESTABLE
     assert interpretation.axes.key_exchange.value == "not_testable"
     assert interpretation.axes.authentication.value == "not_testable"
+
+
+def test_failed_target_does_not_claim_classical_key_exchange_observed() -> None:
+    """Do not turn a failed connection into peer-behaviour evidence (#896)."""
+    interpretation = build_interpretation(
+        [
+            _finding("tls.hybrid.probe_failed", "tls.kex.hybrid_probe", Readiness.UNKNOWN),
+            _finding(
+                "tls.classical.negotiated_x25519",
+                "tls.kex.classical",
+                Readiness.QUANTUM_VULNERABLE,
+            ),
+        ],
+        [],
+        FailureCategory.TARGET_CONNECT_FAILED,
+    )
+
+    assert interpretation.axes.pqc_support is PqcSupport.NOT_TESTABLE
+    assert "classical key exchange was observed" not in interpretation.headline
+    assert interpretation.headline == "PQC posture could not be tested."
 
 
 def test_handshake_failure_without_hygiene_evidence_is_unknown() -> None:
