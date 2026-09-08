@@ -1,6 +1,19 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
 # SPDX-License-Identifier: Apache-2.0
-"""The scan-details, findings, and run-details tables."""
+"""The scan-details, findings, and run-details tables.
+
+    ScanResult
+      └─ ScanSummary
+           ├─ NIST category rollup
+           ├─ compact posture projection
+           ├─ protocol and certificate facts
+           └─ finding and run metadata
+                └─ Rich scan-details table
+
+This module renders the canonical result model. It does not reclassify
+algorithms or infer peer behavior from probe failures; those decisions belong
+to the shared classifier and evidence layers.
+"""
 
 from __future__ import annotations
 
@@ -10,14 +23,12 @@ from rich import box
 from rich.table import Table
 from rich.text import Text
 
-from qureddy.core.models import OpenSSLDependency, ProbeRole
+from qureddy.core.models import OpenSSLDependency, ProbeRole, Readiness
 from qureddy.core.pqc import is_hybrid_pq
 from qureddy.output._styles import (
     BODY_TEXT,
     style_capability,
     style_group,
-    style_hndl,
-    style_hygiene,
     style_path,
     style_severity,
     styled_or_dash,
@@ -51,6 +62,18 @@ def _field_value_table(title: str) -> Table:
     return table
 
 
+def _summary_posture(summary: ScanSummary) -> Text:
+    """Map the canonical readiness result to the compact Rich posture label."""
+    labels = {
+        Readiness.QUANTUM_SAFE: ("PROTECTED", "bold green"),
+        Readiness.TRANSITIONAL_HYBRID: ("PROTECTED", "bold green"),
+        Readiness.QUANTUM_VULNERABLE: ("CLASSICAL", "yellow"),
+        Readiness.CLASSICALLY_WEAK: ("WEAK", "bold red"),
+    }
+    label, style = labels.get(summary.readiness, ("UNKNOWN", "dim"))
+    return Text(label, style=style)
+
+
 def _summary_table(result: ScanResult) -> Table:
     table = _field_value_table("Scan details")
 
@@ -62,20 +85,9 @@ def _summary_table(result: ScanResult) -> Table:
     _add_nist_summary_rows(table, summary)
     if summary.interpretation is not None:
         display = summary.interpretation.display
-        table.add_row("overall_status", Text(display.overall_status))
-        table.add_row("quantum_protection", Text(display.quantum_protection))
-        table.add_row("future_quantum_risk", Text(display.future_quantum_risk))
-        table.add_row("current_hygiene", Text(display.current_hygiene))
-        table.add_row("technical_detail", Text(summary.interpretation.headline))
-        table.add_row("recommended_action", Text(summary.interpretation.recommended_action))
-        table.add_row("hndl_exposure", style_hndl(summary.interpretation.hndl_exposure))
-        table.add_row("hygiene_status", style_hygiene(summary.interpretation.hygiene_status))
-        axes = summary.interpretation.axes
-        table.add_row("pqc_support", Text(axes.pqc_support.value))
-        table.add_row("key_exchange_posture", Text(axes.key_exchange.value))
-        table.add_row("downgrade_resistance", Text(axes.downgrade_resistance.value))
-        table.add_row("authentication", Text(axes.authentication.value))
-        table.add_row("protocol_hygiene", Text(axes.protocol_hygiene.value))
+        table.add_row("posture", _summary_posture(summary))
+        table.add_row("evidence", Text(display.quantum_protection))
+        table.add_row("action", Text(summary.interpretation.recommended_action))
     if scan.scanner_name == "ssh":
         # SSH has no TLS-style forced hybrid/classical probes or cipher suite;
         # show the KEX/host-key algorithms actually observed instead.

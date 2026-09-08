@@ -187,7 +187,7 @@ def test_hndl_first_summary_is_rendered_from_canonical_interpretation() -> None:
     out = _render_to_string(result)
 
     assert "Future Harvest-Now, Decrypt-Later Risk (HNDL):" in out
-    assert "Protected today, but a classical downgrade path remains" in out
+    assert "Protected by observed post-quantum key exchange, but a classical downgrade" in out
     assert "Evaluation: TLS hybrid post-quantum protection" in out
     assert "Protection: Hybrid post-quantum protection observed" in out
     assert "Hardening:  Protocol hardening is required" in out
@@ -359,7 +359,12 @@ class TestFindingCryptoDetail:
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         monkeypatch.setenv("NO_COLOR", "1")
-        out = _render_to_string(_build_result())
+        result = _build_result()
+        interpretation = build_interpretation(result.findings, result.evidence, None)
+        result = result.model_copy(
+            update={"summary": result.summary.model_copy(update={"interpretation": interpretation})}
+        )
+        out = _render_to_string(result)
         assert "hybrid_probe" in out
         assert "negotiated" in out
         assert "X25519MLKEM768" in out
@@ -464,6 +469,24 @@ class TestExistingContractStillHolds:
         out = _render_to_string(_build_result())
         expected_locator = "tls://" + "example.com:443"
         assert expected_locator in out
+
+    def test_rich_summary_uses_compact_posture_projection(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setenv("NO_COLOR", "1")
+        result = _build_result()
+        interpretation = build_interpretation(result.findings, result.evidence, None)
+        result = result.model_copy(
+            update={"summary": result.summary.model_copy(update={"interpretation": interpretation})}
+        )
+        out = _render_to_string(result)
+        assert "posture" in out
+        assert "PROTECTED" in out
+        assert "evidence" in out
+        assert "action" in out
+        assert "overall_status" not in out
+        assert "downgrade_resistance" not in out
 
     def test_mixed_posture_uses_two_axis_headline(
         self,
