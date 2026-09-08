@@ -4,11 +4,16 @@
 
 The field set is part of the 0.2 JSON compatibility contract; changes require
 an accompanying schema and compatibility review.
+
+    evidence ──▶ Finding ──▶ JSON / JSONL / Rich / CBOM
+                    │
+                    └─▶ cwe_ids derived from the shared rule mapping
 """
 
 from __future__ import annotations
 
 import ipaddress
+import operator
 import re
 from datetime import datetime
 
@@ -16,6 +21,7 @@ from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validat
 
 from qureddy import __version__ as _version
 from qureddy.core.certificate import CertificateDetails, CertificateObservation  # noqa: TC001
+from qureddy.core.cwe import cwe_ids_for_rule
 from qureddy.core.evaluation import InterpretationDisplay, PostureEvaluation  # noqa: F401, TC001
 from qureddy.core.vocabulary import (
     LOCAL_CAPABILITY_CATEGORIES as LOCAL_CAPABILITY_CATEGORIES,  # noqa: PLC0414
@@ -319,6 +325,16 @@ class Finding(BaseModel):
     bom_ref: str | None = None
     oid: str | None = None
     nist_quantum_security_level: int | None = Field(default=None, ge=0, le=5)
+
+    cwe_ids: tuple[str, ...] = Field(default_factory=tuple, exclude_if=operator.not_)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _derive_cwe_ids(cls, values: dict[str, object]) -> dict[str, object]:
+        """Derive the persisted CWE projection from the canonical rule ID."""
+        normalized = values.copy()
+        normalized["cwe_ids"] = cwe_ids_for_rule(str(normalized.get("rule_id", "")))
+        return normalized
 
 
 class ScanProvenance(BaseModel):

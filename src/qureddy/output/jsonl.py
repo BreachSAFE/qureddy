@@ -1,6 +1,12 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
 # SPDX-License-Identifier: Apache-2.0
-"""Osmedeus/nuclei-compatible JSONL output adapter."""
+"""Osmedeus/nuclei-compatible JSONL output adapter.
+
+ScanResult.findings ──▶ Nuclei-shaped finding record ──▶ stdout JSONL
+                              ├─▶ info.classification.cwe-id
+                              └─▶ info.metadata.cwe_ids
+ScanResult.summary  ────────────────────────────────────▶ trailing summary record
+"""
 
 from __future__ import annotations
 
@@ -26,6 +32,28 @@ def _ip_or_none(host: str) -> str | None:
 
 def _nuclei_type(scheme: str) -> str:
     return {"tls": "ssl", "ssh": "ssh", "ike": "ike"}[scheme]
+
+
+def _finding_metadata(result: ScanResult, finding: Finding) -> dict[str, Any]:
+    """Project QuReddy-specific finding metadata for the JSONL contract."""
+    return {
+        "finding_type": finding.finding_type,
+        "readiness": finding.readiness.value,
+        "confidence": finding.confidence.value,
+        "primitive": finding.primitive,
+        "algorithm": finding.algorithm,
+        "protocol": finding.protocol,
+        "protocol_version": finding.protocol_version,
+        "negotiated_group": finding.negotiated_group,
+        "nist_quantum_security_level": finding.nist_quantum_security_level,
+        "key_size": finding.key_size,
+        "parameter_set_identifier": finding.parameter_set_identifier,
+        "oid": finding.oid,
+        "bom_ref": finding.bom_ref,
+        "cwe_ids": list(finding.cwe_ids),
+        "scan_id": result.scan.scan_id,
+        "scanner_version": result.scan.scanner_version,
+    }
 
 
 def finding_record(result: ScanResult, finding: Finding) -> dict[str, Any]:
@@ -59,24 +87,9 @@ def finding_record(result: ScanResult, finding: Finding) -> dict[str, Any]:
             "classification": {
                 "oid": finding.oid,
                 "nist-quantum-security-level": finding.nist_quantum_security_level,
+                "cwe-id": list(finding.cwe_ids),
             },
-            "metadata": {
-                "finding_type": finding.finding_type,
-                "readiness": finding.readiness.value,
-                "confidence": finding.confidence.value,
-                "primitive": finding.primitive,
-                "algorithm": finding.algorithm,
-                "protocol": finding.protocol,
-                "protocol_version": finding.protocol_version,
-                "negotiated_group": finding.negotiated_group,
-                "nist_quantum_security_level": finding.nist_quantum_security_level,
-                "key_size": finding.key_size,
-                "parameter_set_identifier": finding.parameter_set_identifier,
-                "oid": finding.oid,
-                "bom_ref": finding.bom_ref,
-                "scan_id": result.scan.scan_id,
-                "scanner_version": result.scan.scanner_version,
-            },
+            "metadata": _finding_metadata(result, finding),
         },
     }
 
