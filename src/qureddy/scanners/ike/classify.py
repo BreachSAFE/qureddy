@@ -46,10 +46,21 @@ def _finding(
     severity: Severity,
     readiness: Readiness,
 ) -> Finding:
-    """Build one finding that can only cite supplied evidence records."""
+    """Build one finding that can only cite supplied evidence records.
+
+    evidence records ──▶ unanimous shared fields ──▶ canonical Finding
+          │                         ├─▶ protocol / algorithm / runtime
+          └─ evidence_ids ──────────┴─▶ every output renderer
+
+    A field that differs across cited records stays ``None``; selecting the
+    first record would turn a multi-observation finding into a false claim.
+    """
     records = tuple(evidence)
     if not records:
         raise ValueError(f"{rule_id} requires evidence")
+    protocol_versions = {record.protocol_version for record in records}
+    algorithms = {record.algorithm for record in records}
+    runtimes = {record.runtime or record.source for record in records}
     return Finding(
         id=new_id("finding"),
         asset_id=asset.id,
@@ -62,6 +73,9 @@ def _finding(
         readiness=readiness,
         confidence=Confidence.LOW,
         protocol="ike",
+        protocol_version=(protocol_versions.pop() if len(protocol_versions) == 1 else None),
+        algorithm=(algorithms.pop() if len(algorithms) == 1 else None),
+        runtime=(runtimes.pop() if len(runtimes) == 1 else None),
     )
 
 
