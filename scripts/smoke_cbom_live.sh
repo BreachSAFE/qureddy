@@ -165,6 +165,10 @@ run_scan() {
         failures=$((failures + 1))
     fi
     validate_bundle "$run_dir" "$scanner" "$target" "$stdout_path"
+    if [[ -s "$run_dir/scan.rich.txt" ]]; then
+        printf '\n--- Rich output: %s %s ---\n' "$scanner" "$target"
+        cat "$run_dir/scan.rich.txt"
+    fi
 }
 
 printf 'QuReddy live CBOM conformance smoke\n'
