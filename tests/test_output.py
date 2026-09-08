@@ -434,6 +434,26 @@ class TestFindingsTableProtocolColumn:
         # Two findings both have protocol_version=TLSv1.3.
         assert out.count("TLSv1.3") >= 2
 
+    def test_finding_id_and_runtime_distinguish_observations(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setenv("NO_COLOR", "1")
+        result = _build_result()
+        findings = tuple(
+            finding.model_copy(update={"runtime": runtime})
+            for finding, runtime in zip(
+                result.findings,
+                ("openssl", "openssl-legacy"),
+                strict=True,
+            )
+        )
+        out = _render_to_string(result.model_copy(update={"findings": findings}))
+        assert "Finding ID" in out
+        assert "Runtime" in out
+        assert "f-hybrid@openssl" in out
+        assert "f-classical@openssl-legacy" in out
+
 
 class TestExistingContractStillHolds:
     """The pre-existing contract (target locator + schema version visible)

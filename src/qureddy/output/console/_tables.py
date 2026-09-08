@@ -202,9 +202,10 @@ def _findings_table(result: ScanResult, *, findings: tuple[Finding, ...] | None 
         padding=(0, 0),
     )
     table.add_column("Severity", no_wrap=True, width=8)
-    # Long rule IDs must never be ellipsized: they are the stable join key
-    # between console, JSON, tests, and policy tooling.
-    table.add_column("Rule", no_wrap=True, width=38)
+    # Keep the occurrence identity with its acquisition runtime, but retain the
+    # stable rule ID on the next line so the fixed-width console stays readable.
+    # Both values remain visible and joinable across TLS, SSH, IKE, and future scans.
+    table.add_column("Finding ID / Runtime / Rule", no_wrap=False, overflow="fold", width=38)
     table.add_column("Protocol", no_wrap=True, width=8)
     table.add_column("Crypto", no_wrap=False, overflow="fold", width=20)
 
@@ -212,11 +213,16 @@ def _findings_table(result: ScanResult, *, findings: tuple[Finding, ...] | None 
         details = _finding_crypto_detail(finding)
         table.add_row(
             style_severity(finding.severity),
-            finding.rule_id,
+            f"{_finding_display_id(finding)}\n{finding.rule_id}",
             styled_or_dash(finding.protocol_version),
             details,
         )
     return table
+
+
+def _finding_display_id(finding: Finding) -> str:
+    """Show the occurrence ID with its runtime when runtime attribution exists."""
+    return f"{finding.id}@{finding.runtime}" if finding.runtime else finding.id
 
 
 def _finding_crypto_detail(finding: Finding) -> Text:

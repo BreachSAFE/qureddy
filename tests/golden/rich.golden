@@ -24,10 +24,12 @@ Scan details
 
 Findings
 
- Severity Rule                                   Protocol Crypto
+ Severity Finding ID / Runtime / Rule            Protocol Crypto
  ─────────────────────────────────────────────────────────────────────────────
- low      tls.classical.negotiated_x25519        TLSv1.3  X25519
- info     tls.hybrid.negotiated_pq               TLSv1.3  X25519MLKEM768
+ low      f-classical                            TLSv1.3  X25519
+          tls.classical.negotiated_x25519
+ info     f-hybrid                               TLSv1.3  X25519MLKEM768
+          tls.hybrid.negotiated_pq
 
 
 Run details
