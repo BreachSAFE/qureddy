@@ -1,6 +1,14 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
 # SPDX-License-Identifier: Apache-2.0
-"""Current hardcoded readiness policy. Structural PQ classification, no YAML loading."""
+"""Current hardcoded readiness policy. Structural PQ classification, no YAML loading.
+
+Evidence failure boundary::
+
+    probe attempt ──┬── handshake rejection ──▶ control-rejected finding
+                    └── no peer / local failure ─▶ failure evidence only
+
+The policy must not turn transport or local failures into a claim about peer behavior.
+"""
 
 from __future__ import annotations
 
@@ -76,6 +84,11 @@ _PROBE_FAILED = (
     FailureCategory.PARSE_NO_GROUP,
     FailureCategory.PARSE_AMBIGUOUS,
 )
+# A control probe can establish peer rejection only after a handshake-level response. DNS,
+# transport, SNI, middlebox, and parser failures contain no such fact and must remain neutral
+# failure evidence (#759/#896). Keep this narrower than `_PROBE_FAILED`: the latter also drives
+# the hybrid probe's unknown-result rule.
+_CONTROL_REJECTION_FAILURES = (FailureCategory.TLS_HANDSHAKE_FAILED,)
 
 MVP_POLICY: tuple[PolicyRule, ...] = (
     PolicyRule(
@@ -234,7 +247,7 @@ MVP_POLICY: tuple[PolicyRule, ...] = (
             RuleCondition(field=RuleField.PROBE_ROLE, probe_role=ProbeRole.CLASSICAL_CONTROL),
             RuleCondition(
                 field=RuleField.FAILURE_CATEGORY,
-                failure_category_in=_PROBE_FAILED,
+                failure_category_in=_CONTROL_REJECTION_FAILURES,
             ),
         ),
     ),

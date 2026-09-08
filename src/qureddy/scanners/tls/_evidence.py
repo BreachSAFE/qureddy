@@ -122,7 +122,14 @@ def _evidence_for_probe_failure(
         id=new_id("ev"),
         asset_id=asset.id,
         evidence_type="tls.probe.failure",
-        observation_type=ObservationType.OBSERVED,
+        # A refused or unreachable target produced no peer bytes. Preserve the
+        # failure category, but do not let a failed probe enter positive-evidence
+        # rollups as if it observed a classical handshake (#896).
+        observation_type=(
+            ObservationType.NO_RESPONSE
+            if category is FailureCategory.TARGET_CONNECT_FAILED
+            else ObservationType.OBSERVED
+        ),
         source="qureddy.openssl_probe",
         probe_role=probe_role,
         expected_group=expected_group,

@@ -1,6 +1,16 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
 # SPDX-License-Identifier: Apache-2.0
-"""Protocol-agnostic posture interpretation from scanner evidence."""
+"""Protocol-agnostic posture interpretation from scanner evidence.
+
+    evidence and findings
+           │
+           ├─ peer facts observed → posture axes and explanatory text
+           └─ local/target failure → NOT_TESTABLE / UNKNOWN text
+                                      (never a fabricated peer verdict)
+
+This module owns the cross-protocol interpretation boundary. Probe-specific
+collectors own acquisition, and renderers only project this result.
+"""
 
 from __future__ import annotations
 
@@ -52,6 +62,7 @@ def _ciso_text(
     if "hybrid_probe_failed" in reasons and axes.pqc_support not in {
         PqcSupport.HYBRID_OBSERVED,
         PqcSupport.PURE_PQ_OBSERVED,
+        PqcSupport.NOT_TESTABLE,
     }:
         return (
             "PQC support could not be confirmed; classical key exchange was observed.",
