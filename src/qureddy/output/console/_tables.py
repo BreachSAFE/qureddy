@@ -43,7 +43,7 @@ from qureddy.output.console._evidence import (
 )
 
 if TYPE_CHECKING:
-    from qureddy.core.models import Finding, ScanResult, ScanSummary
+    from qureddy.core.models import Evidence, Finding, ScanResult, ScanSummary
 
 
 def _field_value_table(title: str) -> Table:
@@ -194,7 +194,7 @@ def _findings_table(result: ScanResult, *, findings: tuple[Finding, ...] | None 
     """Findings table.
 
     Keep the human table compact while retaining the fields that distinguish
-    observed crypto: severity, stable rule ID, protocol, group, and algorithm.
+    observed crypto: severity, stable rule ID, protocol, group, algorithm, and CWE.
     The full readiness enum remains in JSON and the scan-details block.
 
     ``findings`` overrides which findings are rendered (used by the
@@ -216,18 +216,19 @@ def _findings_table(result: ScanResult, *, findings: tuple[Finding, ...] | None 
     # Keep the occurrence identity with its acquisition runtime, but retain the
     # stable rule ID on the next line so the fixed-width console stays readable.
     # Both values remain visible and joinable across TLS, SSH, IKE, and future scans.
-    table.add_column("Finding ID / Runtime / Rule", no_wrap=False, overflow="fold", width=38)
+    table.add_column("Finding ID / Runtime / Rule", no_wrap=False, overflow="fold", width=34)
     table.add_column("Protocol", no_wrap=True, width=8)
-    table.add_column("Crypto", no_wrap=False, overflow="fold", width=20)
+    table.add_column("Crypto", no_wrap=False, overflow="fold", width=14)
+    table.add_column("CWE", no_wrap=False, overflow="fold", width=8)
 
     for finding in sorted(rows, key=lambda item: _SEVERITY_ORDER[item.severity]):
-        details = _finding_crypto_detail(finding)
+        details = _finding_crypto_detail(finding, result.evidence)
         table.add_row(
             style_severity(finding.severity),
-            f"{_finding_display_id(finding)}\n{finding.rule_id}"
-            + (f"\n{', '.join(finding.cwe_ids)}" if finding.cwe_ids else ""),
-            styled_or_dash(finding.protocol_version),
+            f"{_finding_display_id(finding)}\n{finding.rule_id}",
+            Text(finding.protocol_version or finding.protocol.upper()),
             details,
+            Text(", ".join(finding.cwe_ids) if finding.cwe_ids else "—", style="dim"),
         )
     return table
 
@@ -237,13 +238,21 @@ def _finding_display_id(finding: Finding) -> str:
     return f"{finding.id}@{finding.runtime}" if finding.runtime else finding.id
 
 
-def _finding_crypto_detail(finding: Finding) -> Text:
-    """Render the compact crypto discriminator for one finding."""
-    if finding.negotiated_group:
-        details = style_group(finding.negotiated_group)
-        if finding.algorithm and finding.algorithm != finding.negotiated_group:
-            details.append(f" / {finding.algorithm}")
-        return details
-    if finding.algorithm:
-        return Text(finding.algorithm)
-    return Text("—", style="dim")
+def _finding_crypto_detail(finding: Finding, evidence: tuple[Evidence, ...] = ()) -> Text:
+    """Render direct and linked-evidence crypto names without duplication."""
+    names: list[str] = []
+    for value in (finding.negotiated_group, finding.algorithm):
+        if value and value not in names:
+            names.append(value)
+    for record in evidence:
+        if record.id in finding.evidence_ids and record.algorithm and record.algorithm not in names:
+            names.append(record.algorithm)
+    if not names:
+        return Text("—", style="dim")
+    if (
+        finding.negotiated_group
+        and finding.algorithm
+        and finding.algorithm != finding.negotiated_group
+    ):
+        return Text(f"{finding.negotiated_group} / {finding.algorithm}")
+    return Text(", ".join(names))
