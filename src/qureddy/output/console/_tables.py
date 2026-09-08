@@ -240,13 +240,17 @@ def _finding_display_id(finding: Finding) -> str:
 
 def _finding_crypto_detail(finding: Finding, evidence: tuple[Evidence, ...] = ()) -> Text:
     """Render direct and linked-evidence crypto names without duplication."""
-    names: list[str] = []
-    for value in (finding.negotiated_group, finding.algorithm):
-        if value and value not in names:
-            names.append(value)
-    for record in evidence:
-        if record.id in finding.evidence_ids and record.algorithm and record.algorithm not in names:
-            names.append(record.algorithm)
+    names = tuple(
+        dict.fromkeys(
+            value
+            for value in (
+                finding.negotiated_group,
+                finding.algorithm,
+                *(record.algorithm for record in evidence if record.id in finding.evidence_ids),
+            )
+            if value
+        )
+    )
     if not names:
         return Text("—", style="dim")
     if (
