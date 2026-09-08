@@ -1,4 +1,4 @@
-QuReddy 0.9.20 by BreachSAFE · https://github.com/breachsafe/qureddy
+QuReddy 0.9.21 by BreachSAFE · https://github.com/breachsafe/qureddy
 
  ──────────────────── QuReddy scan: tls://example.com:443 ─────────────────────
  READY — PQ hybrid X25519MLKEM768 negotiated
@@ -36,7 +36,7 @@ Run details
  ──────────────────────────────────────────────────────────────────
  scan_id                  scan-1
  scanner                  tls
- version                  0.9.20
+ version                  0.9.21
  started                  2026-04-26T00:00:00Z
  completed                2026-04-26T00:00:00Z
  duration                 0.0s
