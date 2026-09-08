@@ -14,6 +14,8 @@ from qureddy.core.models import ProbeRole
 from qureddy.output._styles import BODY_TEXT
 from qureddy.scanners.common.rollup import _KEX_EVIDENCE_TYPES
 
+_SIGNATURE_EVIDENCE_TYPES = frozenset({"ssh.hostkey", "tls.cert.signature"})
+
 if TYPE_CHECKING:
     from qureddy.core.models import Evidence, ScanResult
 
@@ -60,7 +62,7 @@ def _category_row(evidence: Evidence) -> tuple[str, str, str, str, str] | None:
         return None
     if evidence.evidence_type in _KEX_EVIDENCE_TYPES:
         return _key_exchange_row(evidence, level)
-    if evidence.evidence_type == "tls.cert.signature":
+    if evidence.evidence_type in _SIGNATURE_EVIDENCE_TYPES:
         return _certificate_row(evidence, level)
     return None
 
@@ -80,5 +82,7 @@ def _key_exchange_row(evidence: Evidence, level: int) -> tuple[str, str, str, st
 
 def _certificate_row(evidence: Evidence, level: int) -> tuple[str, str, str, str, str]:
     """Build one certificate-signature category row with its subject context."""
+    if evidence.evidence_type == "ssh.hostkey":
+        return ("signature", "host key", str(level), evidence.algorithm or "unknown", "")
     subject = evidence.certificate.subject if evidence.certificate is not None else "observed"
     return ("certificate", subject, str(level), evidence.algorithm or "unknown", "")

@@ -109,7 +109,7 @@ def _nist_evidence() -> tuple[Evidence, ...]:
             observation_type=ObservationType.NEGOTIATED,
             source="test",
             negotiated_group="X25519",
-            nist_quantum_security_level=None,
+            nist_quantum_security_level=0,
             probe_role=ProbeRole.CLASSICAL_CONTROL,
         ),
         Evidence(
@@ -119,7 +119,7 @@ def _nist_evidence() -> tuple[Evidence, ...]:
             observation_type=ObservationType.OBSERVED,
             source="test",
             algorithm="sha256WithRSAEncryption",
-            nist_quantum_security_level=None,
+            nist_quantum_security_level=0,
             certificate_record=CertificateObservation(
                 subject="CN=mail.example",
                 issuer="CN=Example CA",
@@ -293,7 +293,7 @@ class TestCertificateSummary:
             update={
                 "summary": result.summary.model_copy(
                     update={
-                        "nist_quantum_security_levels": (3,),
+                        "nist_quantum_security_levels": (0, 3),
                         "nist_quantum_security_level_max": 3,
                     }
                 )
@@ -301,12 +301,12 @@ class TestCertificateSummary:
         )
         out = _render(result)
         assert "nist_levels" in out
-        assert "3" in out
+        assert "0, 3" in out
         assert "nist_max" in out
         assert "NIST quantum categories observed" in out
         assert "X25519MLKEM768" in out
         assert "X25519" in out
-        assert "downgrade path" not in out
+        assert "downgrade path" in out
         assert "sha256WithRSAEncry" in out
         assert "ption" in out
         assert "CN=mail.example" in out

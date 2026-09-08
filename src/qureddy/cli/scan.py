@@ -86,8 +86,8 @@ _SCAN_TLS_EPILOG = _colorize_help_text(f"""\
 EXAMPLES:
 
 \b
-# Most common: scan a hostname with rich console output.
-qureddy scan tls google.com
+# Most common: scan a known TLS test endpoint with rich console output.
+qureddy scan tls tls-v1-2.badssl.com:1012
 
 \b
 # Machine-readable JSON for CI pipelines.
@@ -103,15 +103,15 @@ qureddy scan tls 1.1.1.1:443 --sni one.one.one.one
 
 \b
 # Tolerate transient network hiccups (3 retries, 2s apart).
-qureddy scan tls flaky.example.com --retry-on tls_handshake_failed --retries 3 --retry-delay 2
+qureddy scan tls tls-v1-2.badssl.com:1012 --retry-on tls_handshake_failed --retries 3 --retry-delay 2
 
 \b
 # Compact JSON written straight to a file (stdout stays empty and clean).
-qureddy scan tls example.com --format json --compact --output scan.json
+qureddy scan tls tls-v1-2.badssl.com:1012 --format json --compact --output scan.json
 
 \b
 # Human report trimmed to medium-and-above findings (machine formats stay complete).
-qureddy scan tls example.com --min-severity medium
+qureddy scan tls tls-v1-2.badssl.com:1012 --min-severity medium
 
 {_OUTPUT_HELP_SECTION}
 
@@ -126,7 +126,7 @@ times the timeout. Use `-vv` to see every subprocess start and completion;
 
 \b
 For a faster diagnostic run, lower the per-probe timeout:
-qureddy scan tls example.com --timeout 5 -vvv
+qureddy scan tls tls-v1-2.badssl.com:1012 --timeout 5 -vvv
 
 EXIT CODES:
 

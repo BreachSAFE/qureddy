@@ -313,7 +313,7 @@ class TestCycloneDx17Contract:
         assert component["name"] == "RSA-2048"
         properties = component["cryptoProperties"]["algorithmProperties"]
         assert properties["classicalSecurityLevel"] == 112
-        assert "nistQuantumSecurityLevel" not in properties
+        assert properties["nistQuantumSecurityLevel"] == 0
         verdict = {p["name"]: p["value"] for p in component["properties"]}
         assert verdict["qureddy:readiness"] == "quantum_vulnerable"
 

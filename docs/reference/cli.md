@@ -131,13 +131,13 @@ Examples:
 ```bash
 qureddy scan tls pq.cloudflareresearch.com
 qureddy scan tls 1.1.1.1:443 --sni one.one.one.one
-qureddy scan tls example.com --format json
-qureddy scan tls example.com --format json --compact --output scan.json
-qureddy scan tls example.com --output-dir evidence/run-001
-qureddy scan tls example.com --min-severity medium
-qureddy scan tls example.com --format cbom
-qureddy scan tls example.com --openssl /absolute/path/to/openssl
-qureddy scan tls flaky.example --retry-on tls_handshake_failed --retries 3
+qureddy scan tls tls-v1-2.badssl.com:1012 --format json
+qureddy scan tls tls-v1-2.badssl.com:1012 --format json --compact --output scan.json
+qureddy scan tls tls-v1-2.badssl.com:1012 --output-dir evidence/run-001
+qureddy scan tls tls-v1-2.badssl.com:1012 --min-severity medium
+qureddy scan tls tls-v1-2.badssl.com:1012 --format cbom
+qureddy scan tls tls-v1-2.badssl.com:1012 --openssl /absolute/path/to/openssl
+qureddy scan tls tls-v1-2.badssl.com:1012 --retry-on tls_handshake_failed --retries 3
 ```
 
 ## 5. `qureddy scan ike`
@@ -170,9 +170,9 @@ qureddy scan ike [OPTIONS] TARGET
 Examples:
 
 ```bash
-qureddy scan ike vpn.example.com
-qureddy scan ike vpn.example.com --nat-t
-qureddy scan ike vpn.example.com --nat-t --format cbom
+qureddy scan ike netherlands.hide.me
+qureddy scan ike netherlands.hide.me --nat-t
+qureddy scan ike netherlands.hide.me --nat-t --format cbom
 qureddy scan ike 192.0.2.10 --source-port 500 --format json
 ```
 

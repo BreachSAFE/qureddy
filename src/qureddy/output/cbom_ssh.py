@@ -110,8 +110,8 @@ def add_ssh_host_key_components(
     The SSH scanner records every offered host-key algorithm as ``ssh.hostkey`` evidence;
     ``add_algorithm_components`` skips those (host keys are signature algorithms, not KEX
     groups), so without this the CBOM dropped the most security-relevant SSH signal. Each
-    host key is classified with the shared signature classifier — every SSH host-key
-    family is classical today and therefore carries no fabricated NIST category.
+    host key is classified with the shared signature classifier — every current classical
+    host-key family carries CycloneDX level 0 (none of the NIST categories are met).
     """
     add_algorithm_assets(
         bom,
@@ -129,8 +129,8 @@ def add_ssh_transport_components(
 
     The SSH KEXINIT carries encryption (cipher) and MAC name-lists the scanner records as
     ``ssh.cipher`` / ``ssh.mac`` evidence; ``add_algorithm_components`` skips those SSH
-    evidence types. The cipher primitive comes from the shared classifier; no NIST PQC
-    category is emitted for classical transport algorithms.
+    evidence types. The cipher primitive comes from the shared classifier; classical
+    transport algorithms carry CycloneDX level 0 where their algorithm profile is known.
     """
     add_algorithm_assets(
         bom,

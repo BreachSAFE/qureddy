@@ -178,8 +178,7 @@ def signature_algorithm_properties(name: str) -> AlgorithmProperties | None:
     Every signature is the SIGNATURE primitive with sign/verify functions. ML-DSA
     (FIPS 204) and SLH-DSA (FIPS 205) each carry their NIST security category
     (from cert_sig's single classification table); a classical signature (ECDSA,
-    RSA, EdDSA, DSA) has no post-quantum resistance; it carries no fabricated
-    NIST category.
+    RSA, EdDSA, DSA) has no post-quantum resistance and carries CycloneDX level 0.
     A name we can't classify keeps a minimal algorithmProperties rather than
     fabricating a level. The PQC check runs before the classical-marker scan
     because both ML-DSA and SLH-DSA names contain the classical substring ``dsa``.

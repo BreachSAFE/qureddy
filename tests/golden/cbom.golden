@@ -82,6 +82,7 @@
             "keygen"
           ],
           "curve": "curve25519",
+          "nistQuantumSecurityLevel": 0,
           "primitive": "key-agree"
         },
         "assetType": "algorithm"

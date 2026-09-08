@@ -60,8 +60,8 @@ EXAMPLES:
 qureddy scan ssh github.com
 
 \b
-# A non-standard SFTP port.
-qureddy scan ssh sftp.vendor.example.com:2222
+# An explicit SSH port.
+qureddy scan ssh github.com:22
 
 \b
 # Machine-readable JSON.

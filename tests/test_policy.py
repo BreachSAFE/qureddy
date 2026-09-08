@@ -111,7 +111,7 @@ class TestClassicalRule:
         assert findings[0].readiness is Readiness.QUANTUM_VULNERABLE
         assert findings[0].algorithm == "X25519"
         assert findings[0].primitive == "key-agree"
-        assert findings[0].nist_quantum_security_level is None
+        assert findings[0].nist_quantum_security_level == 0
 
 
 class TestNotTestableRule:

@@ -47,16 +47,16 @@ _ROOT_EPILOG = _colorize_help_text(f"""\
 QUICK START:
 
 \b
-# Human-readable scan.
-qureddy scan tls google.com
+# Human-readable TLS scan against a deterministic test endpoint.
+qureddy scan tls tls-v1-2.badssl.com:1012
 
 \b
 # Scan an SSH endpoint.
 qureddy scan ssh github.com
 
 \b
-# Scan an IKE gateway (requires stock ike-scan).
-qureddy scan ike vpn.example.com
+# Scan a public IKE gateway (requires stock ike-scan).
+qureddy scan ike netherlands.hide.me --nat-t
 
 \b
 # Machine-readable, for CI pipelines (real PQ hybrid endpoint).
@@ -72,11 +72,11 @@ qureddy scan tls 1.1.1.1:443 --sni one.one.one.one
 
 \b
 # Tolerate transient network blips (3 retries).
-qureddy scan tls flaky.net --retry-on tls_handshake_failed --retries 3
+qureddy scan tls tls-v1-2.badssl.com:1012 --retry-on tls_handshake_failed --retries 3
 
 \b
 # Verbose diagnostics (-v/-vv/-vvv).
-qureddy scan tls example.com -v
+qureddy scan tls tls-v1-2.badssl.com:1012 -v
 
 MORE HELP:
 

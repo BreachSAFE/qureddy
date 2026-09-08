@@ -28,7 +28,7 @@ def test_root_and_scan_help_link_to_ike_help() -> None:
     scan = runner.invoke(app, ["scan", "--help"])
 
     assert root.exit_code == 0
-    assert "qureddy scan ike vpn.example.com" in root.stdout
+    assert "qureddy scan ike netherlands.hide.me --nat-t" in root.stdout
     assert "qureddy scan ike --help" in root.stdout
     assert scan.exit_code == 0
     assert "qureddy scan ike --help" in scan.stdout
@@ -100,8 +100,9 @@ def test_scan_tls_help_carries_examples_block() -> None:
     assert result.exit_code == 0
     assert "EXAMPLES" in result.stdout
     assert any(
-        line.strip() == "qureddy scan tls google.com" for line in result.stdout.splitlines()
-    ), "expected the google.com example"
+        line.strip() == "qureddy scan tls tls-v1-2.badssl.com:1012"
+        for line in result.stdout.splitlines()
+    ), "expected the badssl.com example"
 
 
 def _line_with_substring(stdout: str, needle: str) -> str:
@@ -137,10 +138,10 @@ def test_scan_tls_help_examples_render_one_per_line() -> None:
 
     # Also lock that each named example's command appears in the output.
     for cmd in (
-        "qureddy scan tls google.com",
+        "qureddy scan tls tls-v1-2.badssl.com:1012",
         "qureddy scan tls pq.cloudflareresearch.com",
         "qureddy scan tls 1.1.1.1:443",
-        "qureddy scan tls flaky.example.com",
+        "qureddy scan tls tls-v1-2.badssl.com:1012 --retry-on tls_handshake_failed",
     ):
         assert cmd in result.stdout, f"missing example command: {cmd}"
 

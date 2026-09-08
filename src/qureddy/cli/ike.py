@@ -42,8 +42,8 @@ _SCAN_IKE_EPILOG = _colorize_help_text(f"""\
 EXAMPLES:
 
 \b
-qureddy scan ike vpn.example.com
-qureddy scan ike vpn.example.com --nat-t
+qureddy scan ike netherlands.hide.me
+qureddy scan ike netherlands.hide.me --nat-t
 qureddy scan ike 192.0.2.10 --source-port 500 --format json
 
 TRUST BOUNDARY:

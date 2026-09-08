@@ -349,9 +349,10 @@ class ScanSummary(BaseModel):
     """Top-line summary of a scan result.
 
     ``nist_quantum_security_levels`` is a compact capability rollup, not the
-    richer readiness verdict. It contains every distinct NIST category
-    established among recognized key-exchange observations; ``None`` means
-    that no such category was established or observed.
+    richer readiness verdict. It contains every distinct NIST/CycloneDX level
+    established among recognized KEX or signature observations; ``0`` means
+    CycloneDX “none of the NIST categories are met”, while ``None`` means no
+    classified level was established or observed.
     """
 
     model_config = FROZEN

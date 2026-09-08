@@ -211,13 +211,13 @@ class TestNistQuantumSecurityLevel:
         )
 
     def test_mixed_classical_and_pqc_categories_are_preserved(self) -> None:
-        assert scan_nist_quantum_security_levels([self._evidence(3)]) == (3,)
+        assert scan_nist_quantum_security_levels([self._evidence(3), self._evidence(0)]) == (0, 3)
 
     def test_pqc_only_category_is_preserved(self) -> None:
         assert scan_nist_quantum_security_levels([self._evidence(3)]) == (3,)
 
-    def test_classical_only_has_no_nist_category(self) -> None:
-        assert scan_nist_quantum_security_levels([self._evidence(None)]) is None
+    def test_classical_only_reports_cyclonedx_no_category(self) -> None:
+        assert scan_nist_quantum_security_levels([self._evidence(0)]) == (0,)
 
     def test_unknown_and_failed_evidence_stays_unknown(self) -> None:
         failed = self._evidence(None).model_copy(
@@ -225,10 +225,7 @@ class TestNistQuantumSecurityLevel:
         )
         assert scan_nist_quantum_security_levels([self._evidence(None), failed]) is None
 
-    def test_non_key_exchange_categories_do_not_drive_rollup(self) -> None:
-        assert (
-            scan_nist_quantum_security_levels(
-                [self._evidence(5, evidence_type="tls.cert.signature")]
-            )
-            is None
-        )
+    def test_signature_categories_drive_rollup(self) -> None:
+        assert scan_nist_quantum_security_levels(
+            [self._evidence(5, evidence_type="tls.cert.signature")]
+        ) == (5,)
