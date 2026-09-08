@@ -221,7 +221,10 @@ def _handshake_with_cipher_list(
     if completed is None:
         return None, True
     if completed.returncode != 0:
-        return None, False
+        # A failed client handshake is not evidence that the peer rejected every
+        # remaining cipher. Preserve the existing incomplete signal so the caller
+        # reports coverage as unknown instead of a false clean negative (#817).
+        return None, True
     # `-brief` output lands on stderr, not stdout, for some handshake
     # outcomes (confirmed live) — same quirk openssl_probe.py's
     # `_combined_probe_output` already handles. Joined with `\n`, not
