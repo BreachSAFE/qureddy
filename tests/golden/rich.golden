@@ -24,11 +24,11 @@ Scan details
 
 Findings
 
- Severity Finding ID / Runtime / Rule            Protocol Crypto
- ─────────────────────────────────────────────────────────────────────────────
- low      f-classical                            TLSv1.3  X25519
+ Severity Finding ID / Runtime / Rule        Protocol Crypto         CWE
+ ────────────────────────────────────────────────────────────────────────────
+ low      f-classical                        TLSv1.3  X25519         —
           tls.classical.negotiated_x25519
- info     f-hybrid                               TLSv1.3  X25519MLKEM768
+ info     f-hybrid                           TLSv1.3  X25519MLKEM768 —
           tls.hybrid.negotiated_pq
 
 

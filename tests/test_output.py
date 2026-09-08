@@ -348,6 +348,41 @@ class TestFindingCryptoDetail:
 
         assert str(_finding_crypto_detail(finding)) == "—"
 
+    def test_aggregate_finding_uses_linked_evidence_algorithms(self) -> None:
+        finding = Finding(
+            id="f-ssh-weak",
+            asset_id="asset-ssh",
+            evidence_ids=("ev-rc4", "ev-md5"),
+            rule_id="ssh.transport.weak",
+            finding_type="ssh.transport.weak",
+            title="Weak SSH transport",
+            description="d",
+            severity=Severity.MEDIUM,
+            readiness=Readiness.CLASSICALLY_WEAK,
+            confidence=Confidence.HIGH,
+            protocol="ssh",
+        )
+        evidence = (
+            Evidence(
+                id="ev-rc4",
+                asset_id="asset-ssh",
+                evidence_type="ssh.cipher",
+                observation_type=ObservationType.OFFERED,
+                source="test",
+                algorithm="arcfour",
+            ),
+            Evidence(
+                id="ev-md5",
+                asset_id="asset-ssh",
+                evidence_type="ssh.mac",
+                observation_type=ObservationType.OFFERED,
+                source="test",
+                algorithm="hmac-md5",
+            ),
+        )
+
+        assert str(_finding_crypto_detail(finding, evidence)) == "arcfour, hmac-md5"
+
     def test_cipher_suite_row_present(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("NO_COLOR", "1")
         out = _render_to_string(_build_result())
@@ -450,6 +485,29 @@ class TestFindingsTableProtocolColumn:
         out = _render_to_string(_build_result())
         # Two findings both have protocol_version=TLSv1.3.
         assert out.count("TLSv1.3") >= 2
+
+    def test_ssh_protocol_and_cwe_are_rendered_as_columns(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setenv("NO_COLOR", "1")
+        values = _build_result().findings[0].model_dump()
+        values.update(
+            {
+                "rule_id": "ssh.hostkey.weak",
+                "protocol": "ssh",
+                "protocol_version": None,
+            }
+        )
+        finding = Finding.model_validate(values)
+
+        out = _render_to_string(_build_result().model_copy(update={"findings": (finding,)}))
+
+        assert "Protocol" in out
+        assert "Crypto" in out
+        assert "CWE" in out
+        assert "SSH" in out
+        assert "CWE-327" in out
 
     def test_finding_id_and_runtime_distinguish_observations(
         self,
