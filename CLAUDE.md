@@ -11,7 +11,8 @@
 2. [Architecture](#architecture)
 3. [Deliberate QuReddy divergences](#deliberate-qureddy-divergences)
 4. [Temporary workspace policy](#temporary-workspace-policy)
-5. [Change procedure](#change-procedure)
+5. [Output conformance tools](#output-conformance-tools)
+6. [Change procedure](#change-procedure)
 
 ## Instruction hierarchy
 
@@ -98,6 +99,42 @@ Check free space before large runs. Keep the canonical checkout, Git history, cr
 virtual environments, and irreplaceable artifacts on persistent storage. Do not replace,
 symlink, or globally redirect macOS `/tmp`. If the RAM volume is absent or too small, use
 system `/tmp` only as a documented exception and report it in the handoff.
+
+## Output conformance tools
+
+QuReddy emits four supported projections from one canonical `ScanResult`:
+
+```text
+ScanResult
+├── scan.json       native machine contract
+├── scan.jsonl      finding-stream contract + trailing summary
+├── scan.cdx.json   CycloneDX 1.7 CBOM inventory
+└── scan.rich.txt   human-readable terminal report
+```
+
+`scripts/validate_output_bundle.py` is the cross-format validator. It checks
+identity, status, summary fields, finding identity, JSON/JSONL validity, Rich
+required sections, and the independent pinned CycloneDX schema plus semantic
+checks. Invoke it against a bundle produced by `--output-dir`:
+
+```bash
+uv run --locked python scripts/validate_output_bundle.py \
+  --run-dir <bundle-dir> --scanner <tls|ssh|ike> --target <original-target>
+```
+
+`scripts/smoke_cbom_live.sh` uses the real CLI and exercises live TLS, SSH, and
+IKE targets. It writes all four projections from each scan and invokes the
+validator above. Preserve artifacts while investigating a failure:
+
+```bash
+QUREDDY_KEEP_SMOKE_ARTIFACTS=1 scripts/smoke_cbom_live.sh
+```
+
+The required PR evidence path is: isolated worktree → targeted regression test
+→ output-bundle validation → `just gates` → anti-pattern review → hosted checks.
+Record every command's exit code. SARIF is not implemented by QuReddy; it is a
+future fifth output contract and must remain explicitly `NOT RUN`, not inferred
+from GitHub's unrelated Scorecard SARIF artifact.
 
 ## Change procedure
 

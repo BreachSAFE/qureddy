@@ -44,6 +44,7 @@ def _finding_metadata(result: ScanResult, finding: Finding) -> dict[str, Any]:
         "algorithm": finding.algorithm,
         "protocol": finding.protocol,
         "protocol_version": finding.protocol_version,
+        "runtime": finding.runtime,
         "negotiated_group": finding.negotiated_group,
         "nist_quantum_security_level": finding.nist_quantum_security_level,
         "key_size": finding.key_size,

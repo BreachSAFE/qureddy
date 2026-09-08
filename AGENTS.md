@@ -13,7 +13,8 @@ the complete policy; this file intentionally avoids restating it.
 1. [Non-negotiable context](#non-negotiable-context)
 2. [Ten-step change loop](#ten-step-change-loop)
 3. [Fast command card](#fast-command-card)
-4. [Handoff format](#handoff-format)
+4. [Output conformance](#output-conformance)
+5. [Handoff format](#handoff-format)
 
 ## Non-negotiable context
 
@@ -59,6 +60,33 @@ Use `just test-unit` for a quick local loop and `just gates` before handoff.
 Use `just test-live` only when network access is intentional. For a temporary
 workstream, copy the candidate tree into a fresh `/tmp/qureddy-<issue>-*`
 directory, run the same locked commands there, and preserve its logs.
+
+## Output conformance
+
+The CLI's bundle mode renders one canonical scan into the four supported output
+surfaces: `scan.json`, `scan.jsonl`, `scan.cdx.json` (CycloneDX 1.7 CBOM), and
+`scan.rich.txt`. Validate that bundle with:
+
+```bash
+uv run --locked python scripts/validate_output_bundle.py \
+  --run-dir <bundle-dir> --scanner <tls|ssh|ike> --target <original-target>
+```
+
+For live TLS, SSH, and IKE coverage, run the existing multi-endpoint harness:
+
+```bash
+QUREDDY_KEEP_SMOKE_ARTIFACTS=1 scripts/smoke_cbom_live.sh
+```
+
+It must be run intentionally with network access and reports the real CLI exit
+code for every target. `scripts/validate_output_bundle.py` validates JSON and
+JSONL correlation, required Rich sections and finding values, and the pinned
+CycloneDX schema/semantic contract. SARIF is not a QuReddy output format yet;
+do not report SARIF as covered until a renderer and schema gate are added.
+
+Every PR touching output or scanner behavior must include the targeted tests,
+`just gates`, and the live bundle harness when network access is available. A
+green unit suite alone is not evidence that all output surfaces stayed aligned.
 
 ## Handoff format
 
