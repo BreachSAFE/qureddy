@@ -21,14 +21,13 @@ _CWE_BY_RULE_ID = MappingProxyType(
     {
         # Broken or obsolete cryptographic algorithms/protocols.
         "tls.transport.weak": ("CWE-327",),
-        "tls.legacy.protocol_offered": ("CWE-327",),
-        "tls.cert.weak_signature_algorithm": ("CWE-327",),
+        "tls.legacy.protocol_offered": ("CWE-757",),
+        "tls.cert.weak_signature_algorithm": ("CWE-328",),
         "ssh.kex.weak": ("CWE-327",),
         "ssh.hostkey.weak": ("CWE-327",),
         "ssh.transport.weak": ("CWE-327",),
         "ike.transport.prohibited": ("CWE-327",),
         "ike.transport.legacy_3des": ("CWE-327",),
-        "ike.transport.weak": ("CWE-327",),
         # A measured choice of a weaker negotiated alternative.
         "tls.hybrid.downgraded_to_classical": ("CWE-757",),
         "ssh.kex.classical_alternative": ("CWE-757",),

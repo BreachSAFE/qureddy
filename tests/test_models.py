@@ -196,10 +196,38 @@ class TestModelImmutability:
 
 
 def test_finding_exposes_cwe_for_known_weakness_rule() -> None:
-    finding = _make_finding().model_copy(update={"rule_id": "tls.transport.weak"})
+    values = _make_finding().model_dump()
+    values["rule_id"] = "tls.transport.weak"
+    finding = Finding.model_validate(values)
 
     assert finding.cwe_ids == ("CWE-327",)
     assert finding.model_dump(mode="json")["cwe_ids"] == ["CWE-327"]
+
+
+def test_finding_with_cwe_round_trips_through_json() -> None:
+    values = _make_finding().model_dump()
+    values["rule_id"] = "tls.transport.weak"
+    finding = Finding.model_validate(values)
+
+    reloaded = Finding.model_validate(finding.model_dump(mode="json"))
+
+    assert reloaded.cwe_ids == ("CWE-327",)
+
+
+@pytest.mark.parametrize(
+    ("rule_id", "expected"),
+    [
+        ("tls.legacy.protocol_offered", ("CWE-757",)),
+        ("tls.cert.weak_signature_algorithm", ("CWE-328",)),
+    ],
+)
+def test_finding_uses_curated_cwe_mapping(rule_id: str, expected: tuple[str, ...]) -> None:
+    values = _make_finding().model_dump()
+    values["rule_id"] = rule_id
+
+    finding = Finding.model_validate(values)
+
+    assert finding.cwe_ids == expected
 
 
 def test_finding_omits_cwe_when_rule_is_not_a_weakness() -> None:

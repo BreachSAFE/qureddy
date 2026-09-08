@@ -436,7 +436,9 @@ class TestFindingsTableProtocolColumn:
     ) -> None:
         monkeypatch.setenv("NO_COLOR", "1")
         result = _build_result()
-        finding = result.findings[0].model_copy(update={"rule_id": "tls.transport.weak"})
+        values = result.findings[0].model_dump()
+        values["rule_id"] = "tls.transport.weak"
+        finding = Finding.model_validate(values)
 
         assert "CWE-327" in _render_to_string(result.model_copy(update={"findings": (finding,)}))
 

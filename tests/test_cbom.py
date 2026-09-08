@@ -20,6 +20,7 @@ from qureddy.core.errors import CbomError
 from qureddy.core.models import (
     Evidence,
     FailureCategory,
+    Finding,
     ObservationType,
     OpenSSLDependency,
 )
@@ -43,7 +44,9 @@ class TestCycloneDx17Contract:
 
     def test_finding_annotation_carries_cwe_classification(self) -> None:
         result = _build_result()
-        finding = result.findings[0].model_copy(update={"rule_id": "tls.transport.weak"})
+        values = result.findings[0].model_dump()
+        values["rule_id"] = "tls.transport.weak"
+        finding = Finding.model_validate(values)
         payload = _render(result.model_copy(update={"findings": (finding,)}))
 
         assert "CWE: CWE-327" in payload["annotations"][0]["text"]

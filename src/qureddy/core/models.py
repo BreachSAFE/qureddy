@@ -326,11 +326,15 @@ class Finding(BaseModel):
     oid: str | None = None
     nist_quantum_security_level: int | None = Field(default=None, ge=0, le=5)
 
-    @computed_field(exclude_if=operator.not_)  # type: ignore[prop-decorator]  # Pydantic decorator typing mismatch.
-    @property
-    def cwe_ids(self) -> tuple[str, ...]:
-        """Return the conservative CWE classification for this finding rule."""
-        return cwe_ids_for_rule(self.rule_id)
+    cwe_ids: tuple[str, ...] = Field(default_factory=tuple, exclude_if=operator.not_)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _derive_cwe_ids(cls, values: dict[str, object]) -> dict[str, object]:
+        """Derive the persisted CWE projection from the canonical rule ID."""
+        normalized = values.copy()
+        normalized["cwe_ids"] = cwe_ids_for_rule(str(normalized.get("rule_id", "")))
+        return normalized
 
 
 class ScanProvenance(BaseModel):
