@@ -136,7 +136,7 @@ def add_cipher_suite_components(
         bom,
         result,
         provides_edges,
-        select=lambda e: e.cipher_suite,
+        select=lambda e: e.cipher_suite if e.evidence_type != "tls.legacy.cipher" else None,
         algorithm_properties=_cipher_suite_properties,
     )
 
@@ -247,10 +247,11 @@ def _protocol_cipher_suites(
                 if item.cipher_suite == cipher_suite and item.negotiated_group in algorithm_refs
             }
         )
+        suite_ref = algorithm_refs.get(cipher_suite, algorithm_ref(cipher_suite))
         suites.append(
             ProtocolPropertiesCipherSuite(
                 name=cipher_suite,
-                algorithms=[BomRef(value=ref) for ref in group_refs] or None,
+                algorithms=[BomRef(value=suite_ref), *(BomRef(value=ref) for ref in group_refs)],
             )
         )
     return suites

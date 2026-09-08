@@ -246,6 +246,8 @@ def test_cipher_evidence_offered_emits_one_per_cipher() -> None:
     evidence = cipher_evidence_from_legacy_result(_asset(), result)
     assert [e.negotiated_group for e in evidence] == ["AES128-SHA", "DES-CBC3-SHA"]
     assert [e.algorithm for e in evidence] == ["AES128-SHA", "DES-CBC3-SHA"]
+    assert all(e.protocol == "tls" for e in evidence)
+    assert [e.cipher_suite for e in evidence] == ["AES128-SHA", "DES-CBC3-SHA"]
     assert [e.primitive for e in evidence] == ["block-cipher", "block-cipher"]
     assert all(e.nist_quantum_security_level is None for e in evidence)
     assert all(e.evidence_type == "tls.legacy.cipher" for e in evidence)
@@ -267,7 +269,9 @@ def test_render_emits_legacy_cipher_components_with_verdict() -> None:
         evidence_type="tls.legacy.cipher",
         observation_type=ObservationType.OFFERED,
         source="qureddy.scanners.tls.legacy_probe",
+        protocol="tls",
         protocol_version="TLSv1.2",
+        cipher_suite="DES-CBC3-SHA",
         negotiated_group="DES-CBC3-SHA",
         notes=("accepted on TLSv1.2",),
     )
@@ -277,7 +281,9 @@ def test_render_emits_legacy_cipher_components_with_verdict() -> None:
         evidence_type="tls.legacy.cipher",
         observation_type=ObservationType.OFFERED,
         source="qureddy.scanners.tls.legacy_probe",
+        protocol="tls",
         protocol_version="TLSv1.2",
+        cipher_suite="AES256-GCM-SHA384",
         negotiated_group="AES256-GCM-SHA384",
         notes=("accepted on TLSv1.2",),
     )
@@ -315,6 +321,18 @@ def test_render_emits_legacy_cipher_components_with_verdict() -> None:
     assert weak_props.count(("qureddy:rule_id", "tls.legacy.cipher_weak")) == 1
     strong_props = {p["name"]: p["value"] for p in components["AES256-GCM-SHA384"]["properties"]}
     assert strong_props["qureddy:readiness"] == "quantum_vulnerable"
+
+    protocols = {
+        component["name"]: component
+        for component in json.loads(stream.getvalue())["components"]
+        if component.get("cryptoProperties", {}).get("assetType") == "protocol"
+    }
+    suites = protocols["TLSv1.2"]["cryptoProperties"]["protocolProperties"]["cipherSuites"]
+    assert {suite["name"] for suite in suites} >= {"DES-CBC3-SHA", "AES256-GCM-SHA384"}
+    assert (
+        "crypto/algorithm/des-cbc3-sha"
+        in next(suite for suite in suites if suite["name"] == "DES-CBC3-SHA")["algorithms"]
+    )
 
 
 def test_pass_order_is_the_correctness_property() -> None:

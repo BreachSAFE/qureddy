@@ -60,6 +60,7 @@
           "cipherSuites": [
             {
               "algorithms": [
+                "crypto/algorithm/tls_aes_256_gcm_sha384",
                 "crypto/algorithm/x25519",
                 "crypto/algorithm/x25519mlkem768"
               ],
