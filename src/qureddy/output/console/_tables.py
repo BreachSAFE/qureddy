@@ -1,13 +1,14 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
 # SPDX-License-Identifier: Apache-2.0
-"""The scan-details, findings, and run-details tables.
+"""The certificate, scan-details, findings, and run-details tables.
 
     ScanResult
       └─ ScanSummary
            ├─ NIST category rollup
            ├─ compact posture projection
-           ├─ protocol and certificate facts
+           ├─ protocol facts
            └─ finding and run metadata
+                ├─ Rich certificate table
                 └─ Rich scan-details table (rule ID + optional CWE)
 
 This module renders the canonical result model. It does not reclassify
@@ -87,7 +88,6 @@ def _summary_table(result: ScanResult) -> Table:
         display = summary.interpretation.display
         table.add_row("posture", _summary_posture(summary))
         table.add_row("evidence", Text(display.quantum_protection))
-        table.add_row("action", Text(summary.interpretation.recommended_action))
     if scan.scanner_name == "ssh":
         # SSH has no TLS-style forced hybrid/classical probes or cipher suite;
         # show the KEX/host-key algorithms actually observed instead.
@@ -102,7 +102,6 @@ def _summary_table(result: ScanResult) -> Table:
             table.add_row("starttls_mode", Text(result.target.starttls_mode.value))
         table.add_row("hybrid_probe", _style_probe_status(hybrid_evidence))
         table.add_row("classical_probe", _style_probe_status(classical_evidence))
-        _add_certificate_rows(table, result)
     table.add_row("findings", Text(str(summary.finding_count)))
     table.add_row("attempts", Text(str(scan.total_attempts)))
     if summary.failure_category is not None:
@@ -124,27 +123,29 @@ def _add_nist_summary_rows(table: Table, summary: ScanSummary) -> None:
     table.add_row("nist_max", Text(str(maximum) if maximum is not None else "—"))
 
 
-def _add_certificate_rows(table: Table, result: ScanResult) -> None:
-    """Add parsed certificate facts without fetching or reinterpreting evidence."""
+def _certificate_table(result: ScanResult) -> Table | None:
+    """Render parsed certificate facts in their own evidence-focused section."""
     certificate = next((e.certificate for e in result.evidence if e.certificate is not None), None)
     if certificate is None:
-        return
-    table.add_row("certificate_subject", Text(certificate.subject))
-    table.add_row("certificate_issuer", Text(certificate.issuer))
-    table.add_row("certificate_valid_from", styled_or_dash(certificate.not_valid_before))
-    table.add_row("certificate_valid_until", styled_or_dash(certificate.not_valid_after))
-    table.add_row("certificate_serial", Text(certificate.serial_number))
-    table.add_row("certificate_signature", Text(certificate.signature_algorithm))
+        return None
+    table = _field_value_table("Certificate")
+    table.add_row("subject", Text(certificate.subject))
+    table.add_row("issuer", Text(certificate.issuer))
+    table.add_row("valid_from", styled_or_dash(certificate.not_valid_before))
+    table.add_row("valid_until", styled_or_dash(certificate.not_valid_after))
+    table.add_row("serial", Text(certificate.serial_number))
+    table.add_row("signature", Text(certificate.signature_algorithm))
     public_key = certificate.public_key_algorithm or "unknown"
     if certificate.public_key_bits is not None:
         public_key = f"{public_key} ({certificate.public_key_bits} bits)"
-    table.add_row("certificate_public_key", Text(public_key))
+    table.add_row("public_key", Text(public_key))
     table.add_row(
-        "certificate_self_signed",
+        "self_signed",
         styled_or_dash(
             None if certificate.is_self_signed is None else str(certificate.is_self_signed).lower()
         ),
     )
+    return table
 
 
 def _run_details_table(result: ScanResult) -> Table:

@@ -496,7 +496,7 @@ class TestExistingContractStillHolds:
         assert "posture" in out
         assert "PROTECTED" in out
         assert "evidence" in out
-        assert "action" in out
+        assert "action" not in out
         assert "overall_status" not in out
         assert "downgrade_resistance" not in out
 

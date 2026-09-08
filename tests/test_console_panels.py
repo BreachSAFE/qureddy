@@ -281,11 +281,18 @@ class TestCommandsPanel:
 class TestCertificateSummary:
     def test_rich_output_includes_certificate_facts(self) -> None:
         out = _render(_result_with_probes((_certificate_evidence(),)))
-        assert "certificate_subject" in out
+        assert "Certificate" in out
+        assert "subject" in out
         assert "CN=mail.example" in out
-        assert "certificate_signature" in out
+        assert "signature" in out
         assert "sha256WithRSAEncryption" in out
         assert "rsaEncryption (2048 bits)" in out
+
+    def test_certificate_facts_are_not_scan_detail_rows(self) -> None:
+        out = _render(_result_with_probes((_certificate_evidence(),)))
+        scan_details, certificate = out.split("Certificate", maxsplit=1)
+        assert "subject" not in scan_details
+        assert "subject" in certificate
 
     def test_rich_output_shows_nist_category_surfaces(self) -> None:
         result = _result_with_probes(_nist_evidence())
