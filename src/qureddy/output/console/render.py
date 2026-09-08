@@ -17,7 +17,12 @@ from qureddy.output.console._commands import _commands_panel
 from qureddy.output.console._errors import _errors_table
 from qureddy.output.console._evidence import _SEVERITY_ORDER
 from qureddy.output.console._nist import nist_categories_table
-from qureddy.output.console._tables import _findings_table, _run_details_table, _summary_table
+from qureddy.output.console._tables import (
+    _certificate_table,
+    _findings_table,
+    _run_details_table,
+    _summary_table,
+)
 from qureddy.output.console._verdict import _verdict_panel
 
 if TYPE_CHECKING:
@@ -73,6 +78,10 @@ def render_rich(
     console.print(_verdict_panel(result))
     console.print()
     console.print(_summary_table(result))
+    certificate_table = _certificate_table(result)
+    if certificate_table is not None:
+        console.print()
+        console.print(certificate_table)
     nist_categories = nist_categories_table(result)
     if nist_categories is not None:
         console.print()
