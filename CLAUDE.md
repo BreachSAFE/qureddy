@@ -130,11 +130,17 @@ validator above. Preserve artifacts while investigating a failure:
 QUREDDY_KEEP_SMOKE_ARTIFACTS=1 scripts/smoke_cbom_live.sh
 ```
 
-The required PR evidence path is: isolated worktree → targeted regression test
-→ output-bundle validation → `just gates` → anti-pattern review → hosted checks.
-Record every command's exit code. SARIF is not implemented by QuReddy; it is a
-future fifth output contract and must remain explicitly `NOT RUN`, not inferred
-from GitHub's unrelated Scorecard SARIF artifact.
+The required PR evidence path is: read issue/PR feedback → isolated worktree →
+targeted regression test → output-bundle validation → `just gates` →
+anti-pattern/conformance review → re-read and resolve every current comment →
+hosted checks. Record every command's exit code. SARIF is not implemented by
+QuReddy; it is a future fifth output contract and must remain explicitly `NOT
+RUN`, not inferred from GitHub's unrelated Scorecard SARIF artifact.
+
+Feedback loop: review existing comments before changing code, re-read comments
+after local validation, and check them once more before merge. Each actionable
+comment must be marked resolved by evidence, fixed with a regression test, or
+explicitly recorded as deferred with an issue; silent comments are blockers.
 
 ## Change procedure
 

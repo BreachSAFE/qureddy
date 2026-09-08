@@ -30,19 +30,27 @@ the complete policy; this file intentionally avoids restating it.
 
 ## Ten-step change loop
 
-1. Inventory the issue, current tree, local guidance, and applicable skills.
+1. Inventory the issue, current tree, local guidance, applicable skills, and current
+   issue/PR comments or reviewer feedback.
 2. Steelman the problem and the smallest defensible fix.
 3. Reproduce the current behavior in an isolated `/tmp` workstream first.
 4. Pressure-test alternatives, malformed input, compatibility, and regressions.
 5. Implement the smallest surgical change in a focused worktree.
 6. Add or update regression tests that fail before the fix.
 7. Run the project gates and record real exit codes.
-8. Run the anti-pattern/architecture self-check, including size and duplication review.
-9. Update the issue, commit, push, and open/merge only with explicit authorization.
+8. Run the anti-pattern/architecture self-check, review all current PR feedback,
+   and resolve, test, or explicitly defer every actionable comment.
+9. Update the issue/PR with evidence and comment resolutions, commit, push, and
+   open/merge only with explicit authorization.
 10. For a release, verify the package, image, and real CLI smoke path separately.
 
 If a step is not run, report `NOT RUN` and why. Never replace an isolated
 reproduction with a patched-state test.
+
+Review feedback is a required loop, not a final courtesy: read it before coding,
+re-check it after local gates, and re-read it immediately before merge. A PR is
+not ready while an actionable reviewer comment is unanswered, untested, or
+silently deferred.
 
 ## Fast command card
 
