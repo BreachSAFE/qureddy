@@ -94,6 +94,17 @@ def test_classical_nondeprecated_nonweak_protocol_is_low_finding() -> None:
     assert finding.severity is Severity.LOW
 
 
+def test_protocol_finding_carries_an_accepted_cipher() -> None:
+    """Keep the protocol row's existing Crypto column backed by observed data."""
+    for protocol in ("TLSv1.2", "TLSv1"):
+        finding = _finding(
+            protocol=protocol,
+            accepted=("ECDHE-RSA-AES256-GCM-SHA384", "AES256-GCM-SHA384"),
+        )
+        assert finding is not None
+        assert finding.algorithm == "ECDHE-RSA-AES256-GCM-SHA384"
+
+
 def test_not_offered_protocol_has_no_finding() -> None:
     assert _finding(protocol="TLSv1.2", accepted=(), offered=False) is None
 
