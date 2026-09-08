@@ -26,9 +26,11 @@ from qureddy.scanners.tls.legacy_probe import probe_legacy_protocol
 _RUN = "qureddy.scanners.tls.openssl_probe.executor.subprocess.run"
 
 
-def _completed(returncode: int, stdout: str = "") -> subprocess.CompletedProcess[str]:
+def _completed(
+    returncode: int, stdout: str = "", stderr: str = ""
+) -> subprocess.CompletedProcess[str]:
     return subprocess.CompletedProcess(
-        args=["openssl"], returncode=returncode, stdout=stdout, stderr=""
+        args=["openssl"], returncode=returncode, stdout=stdout, stderr=stderr
     )
 
 
@@ -87,6 +89,23 @@ def test_handshake_timeout_mid_sweep_marks_incomplete() -> None:
     responses = [
         _completed(0, stdout="AES128-SHA:AES256-SHA"),  # _candidate_ciphers
         subprocess.TimeoutExpired(cmd=["openssl"], timeout=5),  # first handshake
+    ]
+    with patch(_RUN, side_effect=responses):
+        result = _probe()
+    assert result.probe_incomplete is True
+    assert result.offered is False
+    assert result.accepted_ciphers == ()
+
+
+def test_handshake_client_failure_marks_incomplete_not_not_offered() -> None:
+    """A non-zero handshake exit is not proof that the peer rejected every
+    cipher: a local client limitation must remain an unknown sweep result."""
+    responses = [
+        _completed(0, stdout="ECDHE-RSA-AES128-GCM-SHA256"),
+        _completed(
+            1,
+            stderr="error: elliptic curve routines:unknown group",
+        ),
     ]
     with patch(_RUN, side_effect=responses):
         result = _probe()
