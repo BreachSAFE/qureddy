@@ -68,6 +68,7 @@ import subprocess
 from dataclasses import dataclass
 
 from qureddy.core.logging import get_logger
+from qureddy.scanners.tls._classify import is_server_decline
 from qureddy.scanners.tls.connection import StartTLSMode, build_s_client_args
 from qureddy.scanners.tls.openssl_probe.executor import LaunchStatus, raise_for_launch
 from qureddy.scanners.tls.openssl_probe.executor import run_openssl as execute
@@ -221,10 +222,11 @@ def _handshake_with_cipher_list(
     if completed is None:
         return None, True
     if completed.returncode != 0:
-        # A failed client handshake is not evidence that the peer rejected every
-        # remaining cipher. Preserve the existing incomplete signal so the caller
-        # reports coverage as unknown instead of a false clean negative (#817).
-        return None, True
+        # A client failure is not evidence that the peer rejected every remaining
+        # cipher. Preserve unknown coverage unless the transcript contains a
+        # recognized peer alert, which is a confirmed negative (#817).
+        transcript = f"{completed.stdout}\n{completed.stderr}"
+        return None, not is_server_decline(transcript)
     # `-brief` output lands on stderr, not stdout, for some handshake
     # outcomes (confirmed live) — same quirk openssl_probe.py's
     # `_combined_probe_output` already handles. Joined with `\n`, not
