@@ -29,7 +29,6 @@ from qureddy.output.console._evidence import (
     _pick_evidence,
     _style_probe_status,
 )
-from qureddy.scanners.common.finding_types import FINDING_TYPE_LEGACY_PROTOCOL_OFFERED
 
 if TYPE_CHECKING:
     from qureddy.core.models import Finding, ScanResult, ScanSummary
@@ -229,8 +228,4 @@ def _finding_crypto_detail(finding: Finding) -> Text:
         return details
     if finding.algorithm:
         return Text(finding.algorithm)
-    if finding.finding_type == FINDING_TYPE_LEGACY_PROTOCOL_OFFERED:
-        return Text("legacy protocol")
-    if finding.finding_type == "tls.kex.classical_protocol":
-        return Text("classical suites")
     return Text("—", style="dim")

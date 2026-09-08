@@ -351,9 +351,9 @@ class TLSScanner(Scanner[ScanTarget]):
         log.info("probe.phase.complete", phase="legacy_tls1_tls11_tls12")
         evidence = [evidence_from_legacy_result(asset, r, runtime=runtime) for r in results]
         findings = [
-            f
+            finding
             for ev, r in zip(evidence, results, strict=True)
-            if (f := finding_from_legacy_result(asset, ev, r)) is not None
+            for finding in finding_from_legacy_result(asset, ev, r, runtime=runtime)
         ]
         for r in results:
             evidence.extend(cipher_evidence_from_legacy_result(asset, r, runtime=runtime))

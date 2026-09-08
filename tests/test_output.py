@@ -332,6 +332,22 @@ class TestFindingCryptoDetail:
 
         assert str(_finding_crypto_detail(finding)) == "X25519MLKEM768 / ECDHE"
 
+    def test_missing_algorithm_does_not_infer_crypto_from_finding_type(self) -> None:
+        finding = Finding(
+            id="f-legacy",
+            asset_id="asset-tls",
+            evidence_ids=("ev-tls",),
+            rule_id="tls.legacy.protocol_offered",
+            finding_type="tls.legacy.protocol_offered",
+            title="TLSv1 offered",
+            description="d",
+            severity=Severity.MEDIUM,
+            readiness=Readiness.CLASSICALLY_WEAK,
+            confidence=Confidence.HIGH,
+        )
+
+        assert str(_finding_crypto_detail(finding)) == "—"
+
     def test_cipher_suite_row_present(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("NO_COLOR", "1")
         out = _render_to_string(_build_result())

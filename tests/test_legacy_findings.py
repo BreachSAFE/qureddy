@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from qureddy.core.ciphers import weak_ciphers
 from qureddy.core.models import Asset, ObservationType
 from qureddy.scanners.tls._legacy_findings import evidence_from_legacy_result
 from qureddy.scanners.tls.legacy_probe import LegacyProtocolResult
@@ -25,6 +26,13 @@ def _evidence(*, offered: bool, accepted: tuple[str, ...], incomplete: bool = Fa
 def test_offered_legacy_protocol_is_offered() -> None:
     evidence = _evidence(offered=True, accepted=("AES128-SHA",))
     assert evidence.observation_type is ObservationType.OFFERED
+
+
+def test_weak_cipher_classifier_preserves_matching_names() -> None:
+    assert weak_ciphers(("AES128-SHA", "RC4-SHA", "DES-CBC3-SHA")) == (
+        "RC4-SHA",
+        "DES-CBC3-SHA",
+    )
 
 
 def test_confirmed_not_offered_is_not_offered() -> None:
@@ -63,7 +71,19 @@ def _finding(*, protocol: str, accepted: tuple[str, ...], offered: bool = True) 
         accepted_ciphers=accepted,
         probe_incomplete=False,
     )
-    return finding_from_legacy_result(_ASSET, _EVIDENCE, result)
+    findings = finding_from_legacy_result(_ASSET, _EVIDENCE, result)
+    return findings[0] if findings else None
+
+
+def _findings(*, protocol: str, accepted: tuple[str, ...], offered: bool = True) -> tuple:
+    result = LegacyProtocolResult(
+        protocol_flag="-x",
+        protocol_version=protocol,
+        offered=offered,
+        accepted_ciphers=accepted,
+        probe_incomplete=False,
+    )
+    return finding_from_legacy_result(_ASSET, _EVIDENCE, result, runtime="openssl-legacy")
 
 
 def test_classical_nondeprecated_nonweak_protocol_is_low_finding() -> None:
@@ -105,13 +125,22 @@ def test_tls12_weak_cipher_drives_weak_hygiene_and_ciso_summary() -> None:
 
 
 def test_deprecated_protocol_with_weak_cipher_preserves_both_facts() -> None:
-    finding = _finding(protocol="TLSv1", accepted=("RC4-SHA",))
-    assert finding is not None
+    findings = _findings(protocol="TLSv1", accepted=("RC4-SHA",))
+    assert {finding.rule_id for finding in findings} == {
+        "tls.legacy.protocol_offered",
+        "tls.transport.weak",
+    }
+    assert all(finding.rule_id == finding.finding_type for finding in findings)
+    weak = next(finding for finding in findings if finding.rule_id == "tls.transport.weak")
+    legacy = next(
+        finding for finding in findings if finding.rule_id == "tls.legacy.protocol_offered"
+    )
+    assert weak.algorithm == "RC4-SHA"
+    assert weak.severity is Severity.CRITICAL
+    assert weak.runtime == legacy.runtime == "openssl-legacy"
 
-    interpretation = build_interpretation([finding], [], None)
+    interpretation = build_interpretation(list(findings), [], None)
 
-    assert finding.rule_id == "tls.legacy.protocol_offered"
-    assert finding.finding_type == "tls.transport.weak"
     assert interpretation.hygiene_status is HygieneStatus.WEAK
     assert interpretation.reason_codes == (
         "deprecated_protocol_observed",

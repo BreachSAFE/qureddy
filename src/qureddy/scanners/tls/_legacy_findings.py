@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from qureddy.core.ciphers import cipher_primitive, has_weak_cipher
+from qureddy.core.ciphers import cipher_primitive, weak_ciphers
 from qureddy.core.ids import new_id
 from qureddy.core.models import (
     Asset,
@@ -77,6 +77,7 @@ def evidence_from_legacy_result(
             evidence_type="tls.legacy.protocol",
             observation_type=ObservationType.NOT_TESTABLE,
             source="qureddy.scanners.tls.legacy_probe",
+            runtime=runtime,
             protocol_version=result.protocol_version,
             notes=("probe did not complete (timeout) — protocol support undetermined",),
         )
@@ -91,6 +92,7 @@ def evidence_from_legacy_result(
         evidence_type="tls.legacy.protocol",
         observation_type=observation_type,
         source="qureddy.scanners.tls.legacy_probe",
+        runtime=runtime,
         protocol_version=result.protocol_version,
         notes=notes,
     )
@@ -117,6 +119,7 @@ def cipher_evidence_from_legacy_result(
             evidence_type="tls.legacy.cipher",
             observation_type=ObservationType.OFFERED,
             source="qureddy.scanners.tls.legacy_probe",
+            runtime=runtime,
             protocol_version=result.protocol_version,
             algorithm=cipher,
             primitive=cipher_primitive(cipher),
@@ -131,9 +134,13 @@ _DEPRECATED_PROTOCOLS = frozenset({"TLSv1", "TLSv1.1"})
 
 
 def finding_from_legacy_result(
-    asset: Asset, evidence: Evidence, result: LegacyProtocolResult
-) -> Finding | None:
-    """A Finding when the protocol is deprecated, weak, or purely classical.
+    asset: Asset,
+    evidence: Evidence,
+    result: LegacyProtocolResult,
+    *,
+    runtime: str = "openssl",
+) -> tuple[Finding, ...]:
+    """Build one or two single-fact findings for an offered legacy result.
 
     TLS 1.0/1.1 are themselves deprecated (PCI-DSS/NIST SP 800-52) —
     always a finding when offered, regardless of cipher.
@@ -156,31 +163,42 @@ def finding_from_legacy_result(
     when a hybrid TLS 1.3 finding is also present — it only becomes the
     scan's verdict when TLS 1.2 is the only protocol actually offered.
 
-    Severity: HIGH when the accepted-cipher list contains a known-weak
-    marker (see legacy_probe.WEAK_CIPHER_MARKERS and its documented gap
-    for RC4/3DES/DES on the required OpenSSL 3.5.7 LTS build), MEDIUM
-    otherwise. The classical-protocol-only case is LOW: it is expected,
-    common behavior, not a defect being flagged.
+    A deprecated protocol and a weak accepted cipher are separate facts, so
+    both findings are retained when they overlap. A weak cipher is CRITICAL
+    in that compound case and HIGH otherwise. The classical-protocol-only
+    case is LOW: it is expected, common behavior, not a defect being flagged.
     """
     if not result.offered:
-        return None
-    weak = has_weak_cipher(result.accepted_ciphers)
+        return ()
+    matched = weak_ciphers(result.accepted_ciphers)
     deprecated_protocol = result.protocol_version in _DEPRECATED_PROTOCOLS
     cipher_list = ", ".join(result.accepted_ciphers)
-    if not deprecated_protocol and not weak:
-        return _classical_protocol_finding(asset, evidence, result, cipher_list)
-    return _deprecated_or_weak_finding(
-        asset,
-        evidence,
-        result,
-        cipher_list,
-        weak=weak,
-        deprecated_protocol=deprecated_protocol,
-    )
+    findings: list[Finding] = []
+    if deprecated_protocol:
+        findings.append(_legacy_protocol_finding(asset, evidence, result, cipher_list, runtime))
+    if matched:
+        findings.append(
+            _weak_cipher_finding(
+                asset,
+                evidence,
+                result,
+                cipher_list,
+                matched,
+                runtime,
+                deprecated_protocol=deprecated_protocol,
+            )
+        )
+    if not findings:
+        findings.append(_classical_protocol_finding(asset, evidence, result, cipher_list, runtime))
+    return tuple(findings)
 
 
 def _classical_protocol_finding(
-    asset: Asset, evidence: Evidence, result: LegacyProtocolResult, cipher_list: str
+    asset: Asset,
+    evidence: Evidence,
+    result: LegacyProtocolResult,
+    cipher_list: str,
+    runtime: str,
 ) -> Finding:
     """Finding for a non-deprecated, non-weak but purely classical protocol."""
     return Finding(
@@ -197,40 +215,63 @@ def _classical_protocol_finding(
         severity=Severity.LOW,
         readiness=Readiness.QUANTUM_VULNERABLE,
         confidence=Confidence.HIGH,
+        runtime=runtime,
         protocol_version=result.protocol_version,
     )
 
 
-def _deprecated_or_weak_finding(
+def _legacy_protocol_finding(
     asset: Asset,
     evidence: Evidence,
     result: LegacyProtocolResult,
     cipher_list: str,
-    *,
-    weak: bool,
-    deprecated_protocol: bool,
+    runtime: str,
 ) -> Finding:
-    """Finding for a deprecated protocol or one accepting a known-weak cipher."""
-    severity = Severity.HIGH if weak else Severity.MEDIUM
-    rule_id = (
-        FINDING_TYPE_LEGACY_PROTOCOL_OFFERED if deprecated_protocol else FINDING_TYPE_WEAK_TRANSPORT
-    )
-    finding_type = FINDING_TYPE_WEAK_TRANSPORT if weak else FINDING_TYPE_LEGACY_PROTOCOL_OFFERED
-    reason = (
-        f"{result.protocol_version} is deprecated per PCI-DSS/NIST SP 800-52"
-        if deprecated_protocol
-        else f"{result.protocol_version} accepts a known-weak cipher"
-    )
+    """Build the single-fact finding for an offered deprecated protocol."""
     return Finding(
         id=new_id("finding"),
         asset_id=asset.id,
         evidence_ids=(evidence.id,),
-        rule_id=rule_id,
-        finding_type=finding_type,
-        title=f"{result.protocol_version} offered" + (" with a known-weak cipher" if weak else ""),
-        description=f"{reason}. Accepted ciphers: {cipher_list}.",
-        severity=severity,
+        rule_id=FINDING_TYPE_LEGACY_PROTOCOL_OFFERED,
+        finding_type=FINDING_TYPE_LEGACY_PROTOCOL_OFFERED,
+        title=f"{result.protocol_version} offered",
+        description=(
+            f"{result.protocol_version} is deprecated per PCI-DSS/NIST SP 800-52. "
+            f"Accepted ciphers: {cipher_list}."
+        ),
+        severity=Severity.MEDIUM,
         readiness=Readiness.CLASSICALLY_WEAK,
         confidence=Confidence.HIGH,
+        runtime=runtime,
+        protocol_version=result.protocol_version,
+    )
+
+
+def _weak_cipher_finding(
+    asset: Asset,
+    evidence: Evidence,
+    result: LegacyProtocolResult,
+    cipher_list: str,
+    matched: tuple[str, ...],
+    runtime: str,
+    *,
+    deprecated_protocol: bool,
+) -> Finding:
+    """Build the single-fact finding for accepted weak cipher material."""
+    return Finding(
+        id=new_id("finding"),
+        asset_id=asset.id,
+        evidence_ids=(evidence.id,),
+        rule_id=FINDING_TYPE_WEAK_TRANSPORT,
+        finding_type=FINDING_TYPE_WEAK_TRANSPORT,
+        title=f"{result.protocol_version} accepts a known-weak cipher",
+        description=(
+            f"Accepted weak ciphers: {', '.join(matched)}. All accepted ciphers: {cipher_list}."
+        ),
+        severity=Severity.CRITICAL if deprecated_protocol else Severity.HIGH,
+        readiness=Readiness.CLASSICALLY_WEAK,
+        confidence=Confidence.HIGH,
+        algorithm=matched[0],
+        runtime=runtime,
         protocol_version=result.protocol_version,
     )

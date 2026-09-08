@@ -72,6 +72,7 @@
       "probe_role": null,
       "protocol": "tls",
       "protocol_version": "TLSv1.3",
+      "runtime": null,
       "server_software": null,
       "server_version": null,
       "source": "qureddy.scanners.tls.parse"
@@ -120,6 +121,7 @@
       "probe_role": null,
       "protocol": "tls",
       "protocol_version": "TLSv1.3",
+      "runtime": null,
       "server_software": null,
       "server_version": null,
       "source": "qureddy.scanners.tls.parse"
@@ -147,6 +149,7 @@
       "protocol_version": "TLSv1.3",
       "readiness": "transitional_hybrid",
       "rule_id": "tls.hybrid.negotiated_pq",
+      "runtime": null,
       "severity": "info",
       "title": "Hybrid"
     },
@@ -171,6 +174,7 @@
       "protocol_version": "TLSv1.3",
       "readiness": "quantum_vulnerable",
       "rule_id": "tls.classical.negotiated_x25519",
+      "runtime": null,
       "severity": "low",
       "title": "Classical control"
     }
