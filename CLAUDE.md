@@ -148,3 +148,18 @@ Use an isolated worktree, pressure-test in a temporary environment, run the rele
 quality/release/anti-pattern gates, open a focused PR, and merge only after hosted
 checks and artifact identity checks pass. Never treat a green job that did not execute
 as a passing gate.
+
+**One PR at a time; never stack dependent PRs.** Target current `main`, keep one coherent
+issue per PR, and rebase the next worktree only after merge plus `origin/main` verification.
+Behind, conflicting, or red PRs are not merge-ready.
+
+**Every PR runs the full applicable gates.** Include quality, security, conformance,
+anti-pattern, size, docs, and live/image checks as relevant. Record real exit codes;
+`N/10` reports progress, and unrun/skipped gates are `NOT RUN`, never `PASS`. A “full
+gates” instruction covers issue/PR review, reproduction, fix, gates, PR, hosted checks,
+merge, post-merge `main` verification, and related-issue recheck.
+
+**Monitor during the work.** Re-check issues, PR comments/reviews, CI/merge state, HITL,
+and other-agent findings after each major step, each long-running test/job, before PR,
+before merge, and after merge. Classify new blockers immediately; “no new feedback” needs
+a timestamped check.
