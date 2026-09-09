@@ -11,6 +11,8 @@ on:
       - .github/workflows/container.yml
       - pyproject.toml
       - src/**
+  push:
+    branches: [main]
   release:
     types: [published]
   workflow_dispatch:
@@ -121,11 +123,14 @@ jobs:
   # Inputs pass through env (not inline ${{ }}) for script-injection hardening.
   version:
     name: Resolve image version
-    if: (github.event_name == 'workflow_dispatch' && inputs.publish == true) || github.event_name == 'release'
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish == true) || github.event_name == 'release'
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.resolve.outputs.version }}
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Resolve version
         id: resolve
         env:
@@ -133,11 +138,15 @@ jobs:
           TAG: ${{ github.event.release.tag_name }}
           INPUT_VERSION: ${{ inputs.version }}
         run: |
+          set -euo pipefail
           if [ "$EVENT_NAME" = "release" ]; then
             VERSION="${TAG#v}"
+          elif [ "$EVENT_NAME" = "push" ]; then
+            VERSION="$(grep -m1 -E '^version[[:space:]]*=' pyproject.toml | sed -E 's/.*"([^"]+)".*/\1/')"
           else
             VERSION="$INPUT_VERSION"
           fi
+          test -n "$VERSION" || { echo 'ERROR: empty image version' >&2; exit 1; }
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
   # Build each architecture on its OWN NATIVE runner (no QEMU emulation: emulating an
@@ -146,7 +155,7 @@ jobs:
   publish:
     name: Build ${{ matrix.arch }} image
     needs: version
-    if: (github.event_name == 'workflow_dispatch' && inputs.publish == true) || github.event_name == 'release'
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish == true) || github.event_name == 'release'
     strategy:
       fail-fast: false
       matrix:
@@ -199,7 +208,7 @@ jobs:
   manifest:
     name: Merge multi-arch manifest
     needs: [version, publish]
-    if: (github.event_name == 'workflow_dispatch' && inputs.publish == true) || github.event_name == 'release'
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish == true) || github.event_name == 'release'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -242,6 +251,7 @@ jobs:
           docker buildx imagetools inspect "$IMAGE@$digest"
       - name: Promote verified digest to release tags
         env:
+          EVENT_NAME: ${{ github.event_name }}
           QUREDDY_VERSION: ${{ needs.version.outputs.version }}
           IMAGE: ghcr.io/breachsafe/qureddy
         run: |
@@ -249,9 +259,16 @@ jobs:
           digest="$(docker buildx imagetools inspect --raw "$IMAGE:sha-${GITHUB_SHA::12}" \
             | sha256sum | cut -d' ' -f1)"
           digest="sha256:${digest}"
+          if [ "$EVENT_NAME" = "push" ]; then
+            # A main push is a development refresh: never move a version tag.
+            QUREDDY_VERSION=latest
+          fi
+          previous_tag=""
           for tag in "$QUREDDY_VERSION" latest; do
+            [ "$tag" = "$previous_tag" ] && continue
             docker buildx imagetools create --tag "$IMAGE:$tag" "$IMAGE@$digest"
             scripts/verify_container_signature.sh "$IMAGE:$tag"
+            previous_tag="$tag"
           done
       - name: Log in to Docker Hub
         env:
@@ -265,6 +282,7 @@ jobs:
             --username "$DOCKERHUB_USERNAME" --password-stdin
       - name: Promote the signed digest to Docker Hub
         env:
+          EVENT_NAME: ${{ github.event_name }}
           QUREDDY_VERSION: ${{ needs.version.outputs.version }}
           SOURCE_IMAGE: ghcr.io/breachsafe/qureddy
           DEST_IMAGE: docker.io/breachsafe/qureddy
@@ -282,10 +300,17 @@ jobs:
           }
           cosign sign --yes "$DEST_IMAGE@$destination_digest"
           scripts/verify_container_signature.sh "$DEST_IMAGE@$destination_digest"
+          if [ "$EVENT_NAME" = "push" ]; then
+            # A main push is a development refresh: never move a version tag.
+            QUREDDY_VERSION=latest
+          fi
+          previous_tag=""
           for tag in "$QUREDDY_VERSION" latest; do
+            [ "$tag" = "$previous_tag" ] && continue
             docker buildx imagetools create --tag "$DEST_IMAGE:$tag" \
               "$DEST_IMAGE@$destination_digest"
             promoted_digest="sha256:$(docker buildx imagetools inspect --raw "$DEST_IMAGE:$tag" | sha256sum | cut -d' ' -f1)"
             test "$promoted_digest" = "$destination_digest"
             scripts/verify_container_signature.sh "$DEST_IMAGE:$tag"
+            previous_tag="$tag"
           done
