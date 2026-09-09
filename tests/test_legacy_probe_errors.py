@@ -125,3 +125,17 @@ def test_handshake_peer_rejection_remains_confirmed_not_offered() -> None:
     assert result.probe_incomplete is False
     assert result.offered is False
     assert result.accepted_ciphers == ()
+
+
+def test_accept_then_peer_rejection_terminates_cleanly() -> None:
+    """An accepted cipher is retained before the peer rejects the remainder (#913)."""
+    responses = [
+        _completed(0, stdout="AES128-SHA:DES-CBC3-SHA"),
+        _completed(0, stdout="Ciphersuite: AES128-SHA"),
+        _completed(1, stderr="error: sslv3 alert handshake failure"),
+    ]
+    with patch(_RUN, side_effect=responses):
+        result = _probe()
+    assert result.accepted_ciphers == ("AES128-SHA",)
+    assert result.offered is True
+    assert result.probe_incomplete is False

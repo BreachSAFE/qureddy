@@ -33,7 +33,6 @@ from qureddy.core.models import (
 )
 from qureddy.core.policy import classify_evidence
 from qureddy.core.retry import run_with_retries
-from qureddy.core.status import STATUS_COMPLETED
 from qureddy.scanners.common.metadata import build_scan_metadata
 from qureddy.scanners.tls._cert_findings import (
     evidence_from_certificate,
@@ -53,6 +52,7 @@ from qureddy.scanners.tls._scan_failures import (
 from qureddy.scanners.tls._summary import (
     build_summary,
     scan_readiness,
+    scan_status,
     summary_failure_category,
 )
 from qureddy.scanners.tls.cert_probe import fetch_certificate_pem, parse_certificate
@@ -159,7 +159,7 @@ def _completed_scan_result(
         finding_count=len(findings),
         readiness=summary.readiness.value,
     )
-    status = summary.failure_category.value if summary.failure_category else STATUS_COMPLETED
+    status = scan_status(summary.failure_category, evidence)
     return ScanResult(
         scan=build_scan_metadata(
             scan_id=scan_id,
