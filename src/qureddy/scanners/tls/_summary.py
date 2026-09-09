@@ -14,9 +14,11 @@ from qureddy.core.models import (
     Evidence,
     FailureCategory,
     Finding,
+    ObservationType,
     ScanSummary,
     ScanTarget,
 )
+from qureddy.core.status import STATUS_COMPLETED
 
 # Readiness/severity rollup now lives in the shared protocol-agnostic core (#248).
 # Re-exported here (listed in __all__) so existing TLS callers and tests keep importing
@@ -24,7 +26,13 @@ from qureddy.core.models import (
 from qureddy.scanners.common.posture import build_scan_summary
 from qureddy.scanners.common.rollup import highest_severity, scan_readiness
 
-__all__ = ["build_summary", "highest_severity", "scan_readiness", "summary_failure_category"]
+__all__ = [
+    "build_summary",
+    "highest_severity",
+    "scan_readiness",
+    "scan_status",
+    "summary_failure_category",
+]
 
 
 def build_summary(
@@ -41,6 +49,29 @@ def build_summary(
         failure_category,
         protocol="tls",
     )
+
+
+def scan_status(
+    failure_category: FailureCategory | None,
+    evidence: list[Evidence],
+) -> str:
+    """Separate completed endpoint observation from probe failure (#853).
+
+    A TLS 1.3 PQ probe can fail after a classical handshake or certificate
+    observation. Keep that failure in the summary, but report the scan as
+    completed; a timeout/connect failure remains a failed scan (#836).
+    """
+    if failure_category is None:
+        return STATUS_COMPLETED
+    endpoint_observed = any(
+        item.failure_category is None
+        and item.observation_type
+        in {ObservationType.NEGOTIATED, ObservationType.OFFERED, ObservationType.OBSERVED}
+        for item in evidence
+    )
+    if failure_category is FailureCategory.TLS_HANDSHAKE_FAILED and endpoint_observed:
+        return STATUS_COMPLETED
+    return failure_category.value
 
 
 # Issue #241: retry attempts accumulate rather than replace, so an earlier
