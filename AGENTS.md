@@ -27,6 +27,10 @@ the complete policy; this file intentionally avoids restating it.
 - Do not infer that a green command ran all checks. Record commands and exit codes.
 - Code comments and docstrings must preserve reviewer/agent context; follow the
   [commenting contract](docs/contributors/coding-rules.md#section-10--comments-and-docstrings).
+- One PR at a time: never stack dependent PRs; rebase the next worktree only after
+  merge and `origin/main` verification.
+- During active work, re-check issues, PR feedback, CI/merge state, HITL, and other-agent
+  findings after major steps and long-running jobs; record unrun checks as `NOT RUN`.
 
 ## Ten-step change loop
 
