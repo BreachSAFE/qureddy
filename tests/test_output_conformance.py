@@ -98,7 +98,7 @@ def test_bundle_validator_preserves_repeated_cbom_nist_levels(tmp_path: Path) ->
 
 def test_rich_validator_accepts_wrapped_crypto_value() -> None:
     """Column wrapping inside a crypto token must not look like data loss (#921)."""
-    wrapped = "ECDHE-ECDSA-AE S128-SHA"
+    wrapped = "ECDHE-ECDSA-AE CWE-757 S128-SHA"
 
     assert _rich_contains_value(wrapped, "ECDHE-ECDSA-AES128-SHA")
 
