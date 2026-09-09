@@ -38,15 +38,7 @@ _DECLINE_SIGNATURES: tuple[str, ...] = (
     "ssl alert number 71",  # insufficient_security
     "alert insufficient security",
 )
-_UNKNOWN_FAILURE_MARKERS: tuple[str, ...] = (
-    "error",
-    "failure",
-    "failed",
-    "errno",
-    "timeout",
-    "reset",
-    "eof",
-)
+_ALLOWED_DECLINE_CONTEXT_PREFIXES: tuple[str, ...] = ("connecting to ",)
 
 
 def is_server_decline(transcript: str) -> bool:
@@ -65,16 +57,15 @@ def is_server_decline(transcript: str) -> bool:
 def _is_unambiguous_decline(transcript: str) -> bool:
     """Require every non-empty transcript line to carry a decline signature.
 
-    A decline substring embedded beside an otherwise unknown error is not
-    enough to turn a failed probe into negative capability evidence. Known
-    OpenSSL alert lines may include their normal error prefix on the same
-    line, so line-level matching preserves those transcripts while keeping
-    unfamiliar companion output conservative.
+    A decline substring embedded beside an otherwise unknown line is not
+    enough to turn a failed probe into negative capability evidence. The
+    only permitted non-alert line is OpenSSL's known connection preamble;
+    alert lines may include their normal error prefix on the same line.
     """
     lines = tuple(line.casefold() for line in transcript.splitlines() if line.strip())
     return bool(lines) and all(
         any(signature in line for signature in _DECLINE_SIGNATURES)
-        or not any(marker in line for marker in _UNKNOWN_FAILURE_MARKERS)
+        or line.startswith(_ALLOWED_DECLINE_CONTEXT_PREFIXES)
         for line in lines
     )
 
