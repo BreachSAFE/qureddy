@@ -17,9 +17,10 @@ ANTIPATTERN ACCEPTED: raw-json-post-processing, because
 `cyclonedx-python-lib`'s `Bom.register_dependency` has no `provides`
 parameter (confirmed via `inspect.signature(Dependency.__init__)` — only
 `ref`/`dependencies` exist) despite `provides` being valid CycloneDX 1.7,
-and its `CertificateProperties` model does not yet expose 1.7's native
-``serialNumber`` field. The final-byte patch is limited to those two
-upstream API gaps; everything else is delegated to ``JsonV1Dot7``.
+and its `CertificateProperties`/`ProtocolPropertiesCipherSuite` models do
+not yet expose 1.7's native ``serialNumber``/``tlsGroups`` fields. The
+final-byte patch is limited to those three upstream API gaps; everything
+else is delegated to ``JsonV1Dot7``.
 """
 
 from __future__ import annotations
@@ -36,7 +37,7 @@ from cyclonedx.output.json import JsonV1Dot7
 
 from qureddy.core.errors import CbomError
 from qureddy.core.models import ObservationType, OpenSSLDependency, ScanResult
-from qureddy.output.cbom_assets import ENDPOINT_REF
+from qureddy.output.cbom_assets import ENDPOINT_REF, POSITIVE_OBSERVATIONS, algorithm_ref
 from qureddy.output.cbom_components import (
     CERTIFICATE_REF,
     add_algorithm_components,
@@ -281,6 +282,7 @@ def _write_with_library_gap_patches(
     _patch_provides_edges(payload, provides_edges)
     if certificate_serial:
         _patch_certificate_serial(payload, certificate_serial)
+    _patch_tls_group_fields(payload, result)
     _attach_native_findings(payload, result, reproducible=reproducible)
     validate_cbom_semantics(payload)
     _write_payload(stream, payload, compact=compact)
@@ -289,7 +291,7 @@ def _write_with_library_gap_patches(
 def _assert_library_serialization_shape(payload: dict[str, Any], has_certificate: bool) -> None:
     """Fail closed if the library's intermediate JSON shape changes (#306).
 
-    The four CycloneDX 1.7 fields patched below are intentionally outside the
+    The three CycloneDX 1.7 fields patched below are intentionally outside the
     installed library model. This guard turns a library upgrade from silent
     data loss into an actionable test/runtime failure.
     """
@@ -353,6 +355,59 @@ def _patch_certificate_serial(payload: dict[str, Any], certificate_serial: str) 
     certificate_component["cryptoProperties"]["certificateProperties"]["serialNumber"] = (
         certificate_serial
     )
+
+
+def _patch_tls_group_fields(payload: dict[str, Any], result: ScanResult) -> None:
+    """Add CycloneDX 1.7 TLS named groups omitted by the installed model.
+
+    Data flow (one source of truth):
+
+        tls.negotiation evidence ──▶ protocol/version/suite join
+                                  ├─▶ tlsGroups (native CycloneDX field)
+                                  └─▶ remove the same group refs from algorithms
+
+    Legacy-cipher evidence is excluded because its overloaded ``negotiated_group``
+    stores the accepted cipher name, not a TLS named group.  This patch is kept
+    at the final-byte seam because the pinned library constructor accepts neither
+    ``tlsGroups`` nor ``tlsSignatureSchemes``; no QuReddy-only field is emitted.
+    """
+    groups_by_suite = _tls_groups_by_suite(result)
+    for component in payload.get("components", []):
+        crypto = component.get("cryptoProperties", {})
+        if crypto.get("assetType") != "protocol":
+            continue
+        protocol = crypto.get("protocolProperties", {})
+        if protocol.get("type") != "tls":
+            continue
+        version = component.get("name")
+        for suite in protocol.get("cipherSuites", []):
+            groups = groups_by_suite.get((version, suite.get("name")), ())
+            if not groups:
+                continue
+            suite["tlsGroups"] = list(groups)
+            group_refs = {algorithm_ref(group) for group in groups}
+            suite["algorithms"] = [
+                ref for ref in suite.get("algorithms", []) if ref not in group_refs
+            ]
+
+
+def _tls_groups_by_suite(result: ScanResult) -> dict[tuple[str, str], tuple[str, ...]]:
+    """Collect deterministic TLS named groups by protocol version and suite."""
+    grouped: dict[tuple[str, str], set[str]] = {}
+    for evidence in result.evidence:
+        if (
+            evidence.observation_type not in POSITIVE_OBSERVATIONS
+            or evidence.evidence_type != "tls.negotiation"
+            or evidence.protocol != "tls"
+            or evidence.protocol_version is None
+            or evidence.cipher_suite is None
+            or evidence.negotiated_group is None
+        ):
+            continue
+        grouped.setdefault((evidence.protocol_version, evidence.cipher_suite), set()).add(
+            evidence.negotiated_group
+        )
+    return {key: tuple(sorted(values)) for key, values in grouped.items()}
 
 
 def _write_payload(stream: IO[str], payload: dict[str, Any], *, compact: bool) -> None:
