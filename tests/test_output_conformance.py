@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 
 import pytest
-from scripts.validate_output_bundle import validate_bundle
+from scripts.validate_output_bundle import _rich_contains_value, validate_bundle
 
 from qureddy.cli._render import _render_bundle
 from tests._cbom_fixtures import _build_result
@@ -94,6 +94,13 @@ def test_bundle_validator_preserves_repeated_cbom_nist_levels(tmp_path: Path) ->
 
     with pytest.raises(ValueError, match="CBOM summary field drift: nist_quantum_security_levels"):
         validate_bundle(tmp_path, "tls", "example.com")
+
+
+def test_rich_validator_accepts_wrapped_crypto_value() -> None:
+    """Column wrapping inside a crypto token must not look like data loss (#921)."""
+    wrapped = "ECDHE-ECDSA-AE S128-SHA"
+
+    assert _rich_contains_value(wrapped, "ECDHE-ECDSA-AES128-SHA")
 
 
 def test_bundle_validator_accepts_optional_sarif_envelope(tmp_path: Path) -> None:
