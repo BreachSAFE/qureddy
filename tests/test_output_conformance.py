@@ -8,15 +8,15 @@ import json
 from pathlib import Path
 
 import pytest
-from scripts.validate_output_bundle import validate_bundle
+from scripts.validate_output_bundle import _rich_contains_value, validate_bundle
 
 from qureddy.cli._render import _render_bundle
 from tests._cbom_fixtures import _build_result
 
 
-def _write_bundle(directory: Path) -> None:
+def _write_bundle(directory: Path, result=None) -> None:
     """Emit all supported projections from the canonical test ScanResult."""
-    result = _build_result()
+    result = result or _build_result()
     finding = result.findings[0].model_copy(update={"runtime": "openssl"})
     _render_bundle(
         result.model_copy(update={"findings": (finding,)}),
@@ -49,6 +49,72 @@ def test_bundle_validator_rejects_jsonl_finding_drift(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="JSONL finding identity drift"):
         validate_bundle(tmp_path, "tls", "example.com")
+
+
+def test_bundle_validator_rejects_cbom_status_drift(tmp_path: Path) -> None:
+    """A schema-valid CBOM cannot contradict canonical scan status (#922)."""
+    _write_bundle(tmp_path)
+    cbom_path = tmp_path / "scan.cdx.json"
+    payload = json.loads(cbom_path.read_text())
+    for property_ in payload["metadata"]["properties"]:
+        if property_["name"] == "qureddy:scan.status":
+            property_["value"] = "fabricated-status"
+            break
+    cbom_path.write_text(json.dumps(payload))
+
+    with pytest.raises(ValueError, match="CBOM summary field drift: status"):
+        validate_bundle(tmp_path, "tls", "example.com")
+
+
+def test_bundle_validator_rejects_unexpected_cbom_failure_category(tmp_path: Path) -> None:
+    """A CBOM cannot invent a conditional failure field absent from JSON (#922)."""
+    _write_bundle(tmp_path)
+    cbom_path = tmp_path / "scan.cdx.json"
+    payload = json.loads(cbom_path.read_text())
+    payload["metadata"]["properties"].append(
+        {"name": "qureddy:scan.failure_category", "value": "timeout"}
+    )
+    cbom_path.write_text(json.dumps(payload))
+
+    with pytest.raises(ValueError, match="CBOM summary field drift: failure_category"):
+        validate_bundle(tmp_path, "tls", "example.com")
+
+
+def test_bundle_validator_preserves_repeated_cbom_nist_levels(tmp_path: Path) -> None:
+    """Repeated CycloneDX properties remain an ordered canonical level list (#922)."""
+    result = _build_result()
+    result = result.model_copy(
+        update={
+            "summary": result.summary.model_copy(
+                update={
+                    "nist_quantum_security_levels": (0, 3, 5),
+                    "nist_quantum_security_level_max": 5,
+                }
+            )
+        }
+    )
+    _write_bundle(tmp_path, result)
+    cbom_path = tmp_path / "scan.cdx.json"
+    payload = json.loads(cbom_path.read_text())
+    properties = payload["metadata"]["properties"]
+    properties.remove(
+        next(
+            item
+            for item in properties
+            if item["name"] == "qureddy:scan.nist_quantum_security_level" and item["value"] == "3"
+        )
+    )
+    cbom_path.write_text(json.dumps(payload))
+
+    with pytest.raises(ValueError, match="CBOM summary field drift: nist_quantum_security_levels"):
+        validate_bundle(tmp_path, "tls", "example.com")
+
+
+def test_rich_validator_accepts_wrapped_crypto_value() -> None:
+    """Column wrapping inside a crypto token must not look like data loss (#921)."""
+    wrapped = "ECDHE-ECDSA-AE CWE-757 S128-SHA"
+
+    assert _rich_contains_value(wrapped, "ECDHE-ECDSA-AES128-SHA")
 
 
 def test_bundle_validator_accepts_optional_sarif_envelope(tmp_path: Path) -> None:
