@@ -51,6 +51,21 @@ def test_bundle_validator_rejects_jsonl_finding_drift(tmp_path: Path) -> None:
         validate_bundle(tmp_path, "tls", "example.com")
 
 
+def test_bundle_validator_rejects_cbom_status_drift(tmp_path: Path) -> None:
+    """A schema-valid CBOM cannot contradict canonical scan status (#922)."""
+    _write_bundle(tmp_path)
+    cbom_path = tmp_path / "scan.cdx.json"
+    payload = json.loads(cbom_path.read_text())
+    for property_ in payload["metadata"]["properties"]:
+        if property_["name"] == "qureddy:scan.status":
+            property_["value"] = "fabricated-status"
+            break
+    cbom_path.write_text(json.dumps(payload))
+
+    with pytest.raises(ValueError, match="CBOM summary field drift: status"):
+        validate_bundle(tmp_path, "tls", "example.com")
+
+
 def test_bundle_validator_accepts_optional_sarif_envelope(tmp_path: Path) -> None:
     """The fifth-format gate validates a supplied SARIF 2.1.0 artifact."""
     _write_bundle(tmp_path)
