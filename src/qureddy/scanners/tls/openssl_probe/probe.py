@@ -21,7 +21,7 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from qureddy.core.models import FailureCategory
-from qureddy.scanners.tls._classify import classify_failure, is_server_decline
+from qureddy.scanners.tls._classify import classify_failure_detail, is_server_decline
 from qureddy.scanners.tls.connection import StartTLSMode, build_s_client_args
 from qureddy.scanners.tls.openssl_probe._constants import (
     CLASSICAL_GROUP,
@@ -138,12 +138,16 @@ def _run_probe(
     assert return_code is not None  # noqa: S101 -- OK launch guarantees an exit code
     duration_ms = int((datetime.now(UTC) - started).total_seconds() * 1000)
     parser_input = combined_probe_output(outcome.stdout, outcome.stderr)
-    # First preserve the classifier's precedence: a reset, timeout, or
-    # connection failure must not be erased just because the same transcript
-    # also contains a server alert. Only a generic handshake failure is safe
-    # to reinterpret as a declined forced capability probe (#877).
-    failure = classify_failure(parser_input) if return_code else None
-    if failure is FailureCategory.TLS_HANDSHAKE_FAILED and is_server_decline(parser_input):
+    # Preserve classifier precedence: resets, timeouts, and connect failures
+    # survive alerts; only a matched generic handshake failure may be declined.
+    failure, matched_signature = (
+        classify_failure_detail(parser_input) if return_code else (None, False)
+    )
+    if (
+        matched_signature
+        and failure is FailureCategory.TLS_HANDSHAKE_FAILED
+        and is_server_decline(parser_input)
+    ):
         failure = None
     log_subprocess_complete(
         args,
