@@ -25,7 +25,6 @@ sys.path.insert(0, str(REPOSITORY_ROOT))
 from tests.conformance.harness import official_errors, semantic_errors  # noqa: E402
 
 _REQUIRED_ARTIFACTS = ("scan.json", "scan.cdx.json", "scan.jsonl", "scan.rich.txt")
-_MIN_RICH_FRAGMENT_LENGTH = 3
 _SUMMARY_FIELDS = (
     "readiness",
     "nist_quantum_security_levels",
@@ -211,9 +210,11 @@ def _validate_cbom_summary(
         ),
     }
     for field, (property_name, expected_values) in fields.items():
-        if not expected_values or expected_values == [None]:
-            continue
         actual_values = _cbom_property_values(cbom, property_name)
+        if not expected_values or expected_values == [None]:
+            if actual_values:
+                raise ValueError(f"CBOM summary field drift: {field}")
+            continue
         expected = [str(value) for value in expected_values]
         if actual_values != expected:
             raise ValueError(f"CBOM summary field drift: {field}")
@@ -278,15 +279,24 @@ def _validate_rich(run_dir: Path, scanner: str, findings: list[Any]) -> None:
 
 def _rich_contains_value(compact_rich: str, value: str) -> bool:
     """Match a value despite Rich wrapping a table cell between characters."""
-    compact_value = re.sub(r"\s+", "", value)
-    if compact_value in compact_rich:
+    normalized_rich = re.sub(r"[^A-Za-z0-9]", "", compact_rich)
+    normalized_value = re.sub(r"[^A-Za-z0-9]", "", value)
+    if normalized_value in normalized_rich:
         return True
-    fragments = [
-        fragment
-        for fragment in re.split(r"[-_]", value)
-        if len(fragment) >= _MIN_RICH_FRAGMENT_LENGTH
-    ]
-    return len(fragments) > 1 and all(fragment in compact_rich for fragment in fragments)
+
+    # A wrapped cell can be interleaved with the next column before its
+    # continuation line (for example ``AE`` + ``CWE-757`` + ``S128``). The
+    # bounded gap keeps this tolerant to table layout without accepting an
+    # unrelated value from the whole document.
+    token_patterns: list[str] = []
+    for token in value.split("-"):
+        alternatives = [re.escape(token)]
+        alternatives.extend(
+            f"{re.escape(token[:split])}.{{0,64}}{re.escape(token[split:])}"
+            for split in range(1, len(token))
+        )
+        token_patterns.append(f"(?:{'|'.join(alternatives)})")
+    return re.search("-".join(token_patterns), compact_rich) is not None
 
 
 def validate_bundle(run_dir: Path, scanner: str, target: str, sarif: Path | None = None) -> str:

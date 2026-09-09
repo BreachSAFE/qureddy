@@ -66,6 +66,20 @@ def test_bundle_validator_rejects_cbom_status_drift(tmp_path: Path) -> None:
         validate_bundle(tmp_path, "tls", "example.com")
 
 
+def test_bundle_validator_rejects_unexpected_cbom_failure_category(tmp_path: Path) -> None:
+    """A CBOM cannot invent a conditional failure field absent from JSON (#922)."""
+    _write_bundle(tmp_path)
+    cbom_path = tmp_path / "scan.cdx.json"
+    payload = json.loads(cbom_path.read_text())
+    payload["metadata"]["properties"].append(
+        {"name": "qureddy:scan.failure_category", "value": "timeout"}
+    )
+    cbom_path.write_text(json.dumps(payload))
+
+    with pytest.raises(ValueError, match="CBOM summary field drift: failure_category"):
+        validate_bundle(tmp_path, "tls", "example.com")
+
+
 def test_bundle_validator_preserves_repeated_cbom_nist_levels(tmp_path: Path) -> None:
     """Repeated CycloneDX properties remain an ordered canonical level list (#922)."""
     result = _build_result()
