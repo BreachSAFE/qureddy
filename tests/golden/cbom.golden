@@ -60,11 +60,13 @@
           "cipherSuites": [
             {
               "algorithms": [
-                "crypto/algorithm/tls_aes_256_gcm_sha384",
-                "crypto/algorithm/x25519",
-                "crypto/algorithm/x25519mlkem768"
+                "crypto/algorithm/tls_aes_256_gcm_sha384"
               ],
-              "name": "TLS_AES_256_GCM_SHA384"
+              "name": "TLS_AES_256_GCM_SHA384",
+              "tlsGroups": [
+                "X25519",
+                "X25519MLKEM768"
+              ]
             }
           ],
           "type": "tls",

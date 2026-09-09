@@ -237,7 +237,15 @@ def _positive_protocol_evidence(result: ScanResult) -> list[Evidence]:
 def _protocol_cipher_suites(
     evidence: list[Evidence], algorithm_refs: dict[str, str]
 ) -> list[ProtocolPropertiesCipherSuite]:
-    """Build deterministic cipher-suite entries for one protocol version."""
+    """Build deterministic cipher-suite entries for one protocol version.
+
+    ``cyclonedx-python-lib`` does not expose the CycloneDX 1.7 ``tlsGroups``
+    member on ``ProtocolPropertiesCipherSuite``.  The serializer adds that
+    native field from the same evidence after model serialization.  Keep the
+    group observations available here only for the serializer's graph join;
+    legacy TLS evidence deliberately uses ``negotiated_group`` for the cipher
+    name and must not be mistaken for a TLS named group.
+    """
     suites = []
     for cipher_suite in sorted({item.cipher_suite for item in evidence if item.cipher_suite}):
         group_refs = sorted(
