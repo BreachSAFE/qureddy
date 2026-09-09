@@ -99,6 +99,27 @@ class TestStderrClassification:
         assert result.return_code == 1
         assert result.failure_category is FailureCategory.TLS_HANDSHAKE_FAILED
 
+    def test_real_middlebox_failure_wins_over_server_decline(self) -> None:
+        outcome = OpenSSLOutcome(
+            returncode=1,
+            stdout="",
+            stderr="SSL alert number 40\nConnection reset by peer",
+            timed_out=False,
+            duration_ms=1,
+            launch=LaunchStatus.OK,
+        )
+        with patch.object(probe_module, "execute", return_value=outcome):
+            result = run_hybrid_probe(
+                fake_openssl("openssl_ok"),
+                "example.com",
+                443,
+                "example.com",
+                timeout_seconds=5,
+            )
+
+        assert result.return_code == 1
+        assert result.failure_category is FailureCategory.MIDDLEBOX_OR_MTU_FAILURE
+
     @pytest.mark.parametrize(
         "transcript",
         [
