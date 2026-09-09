@@ -995,6 +995,13 @@ release gate remains authoritative if hosted Actions is unavailable.
 **Rule 27.2 — Mandatory PR workflow.**
 Every change goes through a PR. Solo contributors create PRs and self-review. The PR audit trail is the artifact. Direct pushes to `main` are forbidden.
 
+**Rule 27.2a — No stacked PRs.**
+Only one production-change PR may be active at a time. Every production PR must branch from
+the latest `main`; do not open a dependent PR, or rebase the next production change, until
+the current PR has merged. After merge, verify `main`, rebase the next candidate onto that
+new commit, and then open or update exactly one PR. Independent documentation-only or
+Dependabot PRs must not modify or depend on an in-flight production change.
+
 **Rule 27.3 — Squash-and-merge by default.**
 Feature branches accumulate WIP commits. Squash to a single, well-described commit on `main`. The commit message follows Conventional Commits.
 
