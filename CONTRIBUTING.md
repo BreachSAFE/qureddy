@@ -87,7 +87,7 @@ Use `just test-ike-live` with `QUREDDY_IKE_LIVE_TARGET` set to an authorized com
 1. **Open an issue first** for non-trivial changes. We will tell you if it's in scope for the current milestone before you write code.
 2. **Branch from `main`**. Branch naming: `<type>/<short-description>` (e.g., `feat/cert-scanner`, `fix/openssl-version-parse`).
 3. **One thing per PR.** Per Rule 1.3 in CODING_RULES, do not bundle a refactor with a feature with a bug fix. If your PR description splits into "Part 1" and "Part 2," it should be two PRs.
-4. **Do not stack production PRs.** Follow [coding-rules Rule 27.2a](docs/contributors/coding-rules.md#rule-272a--no-stacked-prs): branch from the latest `main`, merge one production change, verify `main`, then rebase the next candidate.
+4. **Do not stack production PRs.** Follow [coding-rules Rule 27.2a](docs/contributors/coding-rules.md#rule-272a--no-stacked-prs): branch from the latest `main`, never another open PR; merge one candidate, verify `main`, then rebase the next candidate.
 5. **Run the gates locally** before pushing:
 
    ```
