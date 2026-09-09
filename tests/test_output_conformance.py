@@ -14,9 +14,9 @@ from qureddy.cli._render import _render_bundle
 from tests._cbom_fixtures import _build_result
 
 
-def _write_bundle(directory: Path) -> None:
+def _write_bundle(directory: Path, result=None) -> None:
     """Emit all supported projections from the canonical test ScanResult."""
-    result = _build_result()
+    result = result or _build_result()
     finding = result.findings[0].model_copy(update={"runtime": "openssl"})
     _render_bundle(
         result.model_copy(update={"findings": (finding,)}),
@@ -63,6 +63,36 @@ def test_bundle_validator_rejects_cbom_status_drift(tmp_path: Path) -> None:
     cbom_path.write_text(json.dumps(payload))
 
     with pytest.raises(ValueError, match="CBOM summary field drift: status"):
+        validate_bundle(tmp_path, "tls", "example.com")
+
+
+def test_bundle_validator_preserves_repeated_cbom_nist_levels(tmp_path: Path) -> None:
+    """Repeated CycloneDX properties remain an ordered canonical level list (#922)."""
+    result = _build_result()
+    result = result.model_copy(
+        update={
+            "summary": result.summary.model_copy(
+                update={
+                    "nist_quantum_security_levels": (0, 3, 5),
+                    "nist_quantum_security_level_max": 5,
+                }
+            )
+        }
+    )
+    _write_bundle(tmp_path, result)
+    cbom_path = tmp_path / "scan.cdx.json"
+    payload = json.loads(cbom_path.read_text())
+    properties = payload["metadata"]["properties"]
+    properties.remove(
+        next(
+            item
+            for item in properties
+            if item["name"] == "qureddy:scan.nist_quantum_security_level" and item["value"] == "3"
+        )
+    )
+    cbom_path.write_text(json.dumps(payload))
+
+    with pytest.raises(ValueError, match="CBOM summary field drift: nist_quantum_security_levels"):
         validate_bundle(tmp_path, "tls", "example.com")
 
 

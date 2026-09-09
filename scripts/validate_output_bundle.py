@@ -184,7 +184,9 @@ def _cbom_property_values(cbom: dict[str, Any], name: str) -> list[str]:
     return [
         item["value"]
         for item in cbom.get("metadata", {}).get("properties", [])
-        if isinstance(item, dict) and item.get("name") == name and isinstance(item.get("value"), str)
+        if isinstance(item, dict)
+        and item.get("name") == name
+        and isinstance(item.get("value"), str)
     ]
 
 
