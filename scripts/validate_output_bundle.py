@@ -179,6 +179,44 @@ def _validate_cbom_identity(cbom: dict[str, Any], scanner: str, target: str) -> 
         raise ValueError("scan.cdx.json: target identity mismatch")
 
 
+def _cbom_property_values(cbom: dict[str, Any], name: str) -> list[str]:
+    """Return every value for one metadata property, preserving multi-values."""
+    return [
+        item["value"]
+        for item in cbom.get("metadata", {}).get("properties", [])
+        if isinstance(item, dict) and item.get("name") == name and isinstance(item.get("value"), str)
+    ]
+
+
+def _validate_cbom_summary(
+    cbom: dict[str, Any], scan: dict[str, Any], summary: dict[str, Any]
+) -> None:
+    """Reject CBOM summary properties that contradict canonical scan JSON (#922)."""
+    fields = {
+        "status": ("qureddy:scan.status", [scan.get("status")]),
+        "readiness": ("qureddy:scan.readiness", [summary.get("readiness")]),
+        "failure_category": (
+            "qureddy:scan.failure_category",
+            [summary.get("failure_category")],
+        ),
+        "nist_quantum_security_levels": (
+            "qureddy:scan.nist_quantum_security_level",
+            summary.get("nist_quantum_security_levels"),
+        ),
+        "nist_quantum_security_level_max": (
+            "qureddy:scan.nist_quantum_security_level_max",
+            [summary.get("nist_quantum_security_level_max")],
+        ),
+    }
+    for field, (property_name, expected_values) in fields.items():
+        if not expected_values or expected_values == [None]:
+            continue
+        actual_values = _cbom_property_values(cbom, property_name)
+        expected = [str(value) for value in expected_values]
+        if actual_values != expected:
+            raise ValueError(f"CBOM summary field drift: {field}")
+
+
 def _validate_jsonl_parity(
     run_dir: Path, scan: dict[str, Any], summary: dict[str, Any], findings: list[Any]
 ) -> int:
@@ -261,6 +299,7 @@ def validate_bundle(run_dir: Path, scanner: str, target: str, sarif: Path | None
     findings = canonical["findings"]
     cbom = _validate_cbom(run_dir)
     _validate_cbom_identity(cbom, scanner, target)
+    _validate_cbom_summary(cbom, scan, summary)
     jsonl_count = _validate_jsonl_parity(run_dir, scan, summary, findings)
     _validate_rich(run_dir, scanner, findings)
 
