@@ -531,3 +531,88 @@ class TestSummaryFailureCategorySupersededByRetrySuccess:
         summary = _build_summary(target, findings, [hybrid_failure, classical_success])
 
         assert summary.failure_category is FailureCategory.TARGET_CONNECT_FAILED
+
+
+class TestScanStatusWithPartialEndpointEvidence:
+    """A probe failure must not hide a completed endpoint observation (#853)."""
+
+    @staticmethod
+    def _target() -> ScanTarget:
+        return ScanTarget(
+            original_input="classical.example",
+            host="classical.example",
+            port=443,
+            sni="classical.example",
+            locator="tls://classical.example:443",
+        )
+
+    def _result(self, category: FailureCategory) -> ScanResult:
+        target = self._target()
+        asset = build_asset(target)
+        hybrid_failure = Evidence(
+            id="ev-hybrid-failure",
+            asset_id=asset.id,
+            evidence_type="tls.probe.failure",
+            observation_type=ObservationType.OBSERVED,
+            source="fixture",
+            probe_role=ProbeRole.HYBRID_READINESS,
+            failure_category=category,
+        )
+        classical_success = Evidence(
+            id="ev-classical-success",
+            asset_id=asset.id,
+            evidence_type="tls.negotiation",
+            observation_type=ObservationType.NEGOTIATED,
+            source="fixture",
+            probe_role=ProbeRole.CLASSICAL_CONTROL,
+            negotiated_group="X25519",
+        )
+        findings = [
+            Finding(
+                id="f-hybrid-failure",
+                asset_id=asset.id,
+                evidence_ids=(hybrid_failure.id,),
+                rule_id="tls.hybrid.probe_failed",
+                finding_type="tls.kex.probe_failed",
+                title="hybrid probe failed",
+                description="d",
+                severity=Severity.INFO,
+                readiness=Readiness.UNKNOWN,
+                confidence=Confidence.MEDIUM,
+            ),
+            Finding(
+                id="f-classical-success",
+                asset_id=asset.id,
+                evidence_ids=(classical_success.id,),
+                rule_id="tls.classical.negotiated_x25519",
+                finding_type="tls.kex.classical",
+                title="classical control succeeded",
+                description="d",
+                severity=Severity.LOW,
+                readiness=Readiness.QUANTUM_VULNERABLE,
+                confidence=Confidence.HIGH,
+            ),
+        ]
+        return scanner_module._completed_scan_result(  # noqa: SLF001
+            target,
+            asset,
+            OpenSSLDependency(path="/fixture/openssl", version="3.5.7"),
+            OpenSSLDependency(name="openssl-legacy", path="/fixture/legacy", version="1.0.2u"),
+            [hybrid_failure, classical_success],
+            findings,
+            "scan-fixture",
+            datetime(2026, 9, 8, tzinfo=UTC),
+            2,
+        )
+
+    def test_peer_handshake_failure_with_classical_evidence_is_completed(self) -> None:
+        """#853: status reflects a reached endpoint; failure evidence remains in summary."""
+        result = self._result(FailureCategory.TLS_HANDSHAKE_FAILED)
+        assert result.scan.status == "completed"
+        assert result.summary.failure_category is FailureCategory.TLS_HANDSHAKE_FAILED
+
+    def test_timeout_with_classical_evidence_remains_failed(self) -> None:
+        """#836: a timeout cannot become a completed cryptographic verdict."""
+        result = self._result(FailureCategory.TARGET_CONNECT_FAILED)
+        assert result.scan.status == FailureCategory.TARGET_CONNECT_FAILED.value
+        assert result.summary.failure_category is FailureCategory.TARGET_CONNECT_FAILED
