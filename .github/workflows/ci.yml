@@ -33,11 +33,9 @@ jobs:
   # Change detection. Every job below is gated on this instead of a
   # workflow-level `paths-ignore`.
   #
-  # `main` protection requires 17 named contexts with strict: true. A workflow
-  # that never STARTS never reports those contexts, so a documentation-only PR
-  # would sit unmergeable forever. A job that starts and then SKIPS reports its
-  # context as skipped, which branch protection accepts. So the workflow always
-  # runs and the expensive jobs opt out.
+  # `main` protection requires named contexts with strict: true. Every required
+  # job must therefore finish successfully, including for documentation-only
+  # changes; skipped required jobs are not a mergeable result.
   #
   # Anything that is not documentation is treated as code. The default on any
   # uncertainty (no base sha, non-PR event, unreadable diff) is to run everything.
@@ -92,8 +90,8 @@ jobs:
           if [ "${non_doc:-1}" -gt 0 ]; then
             echo "code=true" >> "$GITHUB_OUTPUT"
           else
-            echo "documentation-only diff; heavy jobs will skip"
-            echo "code=false" >> "$GITHUB_OUTPUT"
+            echo "documentation-only diff; required jobs will still run"
+            echo "code=true" >> "$GITHUB_OUTPUT"
           fi
 
   # ===========================================================================
