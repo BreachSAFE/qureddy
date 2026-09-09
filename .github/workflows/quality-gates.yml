@@ -44,8 +44,8 @@ jobs:
 
   # Change detection. `main` protection requires named contexts with strict: true,
   # so a workflow that never starts leaves them unreported and blocks the merge.
-  # A job that starts and skips reports its context as skipped, which protection
-  # accepts. The workflow always runs; the expensive jobs opt out. Any uncertainty
+  # Every required job must finish successfully, including for documentation-only
+  # changes; skipped required jobs are not a mergeable result. Any uncertainty
   # defaults to running everything.
   changes:
     name: Detect relevant changes
@@ -92,8 +92,8 @@ jobs:
           if [ "${non_doc:-1}" -gt 0 ]; then
             echo "code=true" >> "$GITHUB_OUTPUT"
           else
-            echo "documentation-only diff; heavy jobs will skip"
-            echo "code=false" >> "$GITHUB_OUTPUT"
+            echo "documentation-only diff; required jobs will still run"
+            echo "code=true" >> "$GITHUB_OUTPUT"
           fi
 
   # ===========================================================================
