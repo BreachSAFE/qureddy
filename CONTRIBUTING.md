@@ -87,16 +87,17 @@ Use `just test-ike-live` with `QUREDDY_IKE_LIVE_TARGET` set to an authorized com
 1. **Open an issue first** for non-trivial changes. We will tell you if it's in scope for the current milestone before you write code.
 2. **Branch from `main`**. Branch naming: `<type>/<short-description>` (e.g., `feat/cert-scanner`, `fix/openssl-version-parse`).
 3. **One thing per PR.** Per Rule 1.3 in CODING_RULES, do not bundle a refactor with a feature with a bug fix. If your PR description splits into "Part 1" and "Part 2," it should be two PRs.
-4. **Run the gates locally** before pushing:
+4. **Do not stack production PRs.** Follow [coding-rules Rule 27.2a](docs/contributors/coding-rules.md#rule-272a--no-stacked-prs): branch from the latest `main`, never another open PR; merge one candidate, verify `main`, then rebase the next candidate.
+5. **Run the gates locally** before pushing:
 
    ```
    just gates
    ```
 
-5. **Open a PR.** Fill out the PR template. The audit checklist is non-negotiable.
-6. **Self-review your own diff.** The `audit-pr` skill output goes in the PR description.
-7. **CI must pass on all three platforms** (ubuntu, macos, windows) before merge.
-8. **Squash-and-merge** is the default merge strategy.
+6. **Open a PR.** Fill out the PR template. The audit checklist is non-negotiable.
+7. **Self-review your own diff.** The `audit-pr` skill output goes in the PR description.
+8. **CI must pass on all three platforms** (ubuntu, macos, windows) before merge.
+9. **Squash-and-merge** is the default merge strategy.
 
 Before release work, run the repository-owned local gate:
 
