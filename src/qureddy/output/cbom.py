@@ -291,7 +291,7 @@ def _write_with_library_gap_patches(
 def _assert_library_serialization_shape(payload: dict[str, Any], has_certificate: bool) -> None:
     """Fail closed if the library's intermediate JSON shape changes (#306).
 
-    The four CycloneDX 1.7 fields patched below are intentionally outside the
+    The three CycloneDX 1.7 fields patched below are intentionally outside the
     installed library model. This guard turns a library upgrade from silent
     data loss into an actionable test/runtime failure.
     """
