@@ -1,6 +1,26 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
 # SPDX-License-Identifier: Apache-2.0
-"""Shared scan execution and failure-to-exit-code mapping."""
+"""Shared scan execution and failure-to-exit-code mapping.
+
+The result document and process status have separate consumers, but one source
+of truth determines whether a scan reached its endpoint::
+
+    scanner.scan()
+        |\
+        | +--> exception ------------------> failure result + exit 2/3
+        |\
+        +----> ScanResult
+                  |\
+                  +--> summary.failure_category  evidence detail
+                  +--> scan.status               completion boundary
+                                                    |
+                                      completed ---+--> exit 0
+                                      failed ------+--> exit 2/3
+
+``failure_category`` is retained for diagnosis even when a partial scan is
+complete. It must not independently turn a completed result into a failed
+process; that was the #925 contract mismatch.
+"""
 
 from __future__ import annotations
 
@@ -30,6 +50,7 @@ from qureddy.core.models import (
     FailureCategory,
     OpenSSLDependency,
 )
+from qureddy.core.status import STATUS_COMPLETED
 from qureddy.scanners.tls.scanner import (
     build_capability_failure_result,
     build_scan_failure_result,
@@ -119,6 +140,10 @@ def _execute_scan(
 
     if exit_code == EXIT_OK and result.summary.failure_category in LOCAL_CAPABILITY_CATEGORIES:
         exit_code = EXIT_LOCAL_DEPENDENCY
-    elif exit_code == EXIT_OK and result.summary.failure_category is not None:
+    elif (
+        exit_code == EXIT_OK
+        and result.summary.failure_category is not None
+        and result.scan.status != STATUS_COMPLETED
+    ):
         exit_code = EXIT_TARGET_FAILED
     return result, exit_code
