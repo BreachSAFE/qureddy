@@ -122,13 +122,14 @@ def _evidence_for_probe_failure(
         id=new_id("ev"),
         asset_id=asset.id,
         evidence_type="tls.probe.failure",
-        # A refused or unreachable target produced no peer bytes. Preserve the
-        # failure category, but do not let a failed probe enter positive-evidence
-        # rollups as if it observed a classical handshake (#896).
+        # A failed probe is never positive crypto evidence. Keep the narrower
+        # no-response state for connection failures; handshake, SNI, middlebox,
+        # and parser failures are not testable, even when the peer sent bytes.
+        # Preserve the failure category for retry and summary policy (#927).
         observation_type=(
             ObservationType.NO_RESPONSE
             if category is FailureCategory.TARGET_CONNECT_FAILED
-            else ObservationType.OBSERVED
+            else ObservationType.NOT_TESTABLE
         ),
         source="qureddy.openssl_probe",
         probe_role=probe_role,
