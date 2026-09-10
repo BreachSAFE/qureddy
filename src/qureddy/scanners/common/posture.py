@@ -22,6 +22,7 @@ from qureddy.core.models import (
     Finding,
     HndlExposure,
     HygieneStatus,
+    ObservationType,
     PostureAxes,
     PqcSupport,
     ScanInterpretation,
@@ -47,6 +48,7 @@ POLICY_VERSION = "1"
 def _ciso_text(
     axes: PostureAxes,
     reasons: tuple[str, ...],
+    has_positive_evidence: bool,
 ) -> tuple[str, str]:
     """Create deterministic headline/action text from structured reasons."""
     if "weak_classical_algorithm_observed" in reasons:
@@ -59,11 +61,16 @@ def _ciso_text(
             "Hybrid PQC is available, but legacy protocol exposure remains.",
             "Disable TLS 1.0/1.1 and remove classical fallback where compatible.",
         )
-    if "hybrid_probe_failed" in reasons and axes.pqc_support not in {
-        PqcSupport.HYBRID_OBSERVED,
-        PqcSupport.PURE_PQ_OBSERVED,
-        PqcSupport.NOT_TESTABLE,
-    }:
+    if (
+        "hybrid_probe_failed" in reasons
+        and has_positive_evidence
+        and axes.pqc_support
+        not in {
+            PqcSupport.HYBRID_OBSERVED,
+            PqcSupport.PURE_PQ_OBSERVED,
+            PqcSupport.NOT_TESTABLE,
+        }
+    ):
         return (
             "PQC support could not be confirmed; classical key exchange was observed.",
             "Verify the target TLS terminator supports the requested hybrid group and re-scan.",
@@ -101,6 +108,22 @@ def _is_not_testable(failure_category: FailureCategory | None) -> bool:
         FailureCategory.LOCAL_OPENSSL_VERSION_MISMATCH,
         FailureCategory.LOCAL_OPENSSL_LACKS_GROUP,
     }
+
+
+def _has_positive_evidence(
+    evidence: list[Evidence], failure_category: FailureCategory | None
+) -> bool:
+    """Allow peer-behaviour headlines only for successful, failure-free evidence."""
+    return failure_category is None and any(
+        item.failure_category is None
+        and item.observation_type
+        in {
+            ObservationType.NEGOTIATED,
+            ObservationType.OFFERED,
+            ObservationType.OBSERVED,
+        }
+        for item in evidence
+    )
 
 
 def _resolve_protocol(
@@ -339,7 +362,8 @@ def build_interpretation(
     resolved_protocol = _resolve_protocol(findings, evidence, protocol)
     axes, signals, not_testable = _build_axes(findings, evidence, failure_category)
     reason_codes = build_reason_codes(findings, failure_category)
-    headline, recommended_action = _ciso_text(axes, reason_codes)
+    positive_evidence = _has_positive_evidence(evidence, failure_category)
+    headline, recommended_action = _ciso_text(axes, reason_codes, positive_evidence)
     hndl_exposure = _hndl_exposure(
         protocol=resolved_protocol,
         classical=signals.classical_kex,
