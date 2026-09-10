@@ -114,6 +114,21 @@ def test_positive_fixture_inventory_matrix() -> None:
         if component["bom-ref"] == "crypto/certificate/leaf"
     )
     assert certificate["cryptoProperties"]["certificateProperties"]["serialNumber"]
+    certificate_properties = certificate["cryptoProperties"]["certificateProperties"]
+    assert certificate_properties["relatedCryptographicAssets"] == [
+        {"type": "algorithm", "ref": "crypto/algorithm/ecdsa-with-sha256"},
+        {"type": "publicKey", "ref": "crypto/algorithm/ec-256"},
+    ]
+    curve_algorithm = next(
+        component
+        for component in fixtures["p7-leaf-cert"]["components"]
+        if component.get("cryptoProperties", {}).get("algorithmProperties", {}).get("curve")
+        == "curve25519"
+    )
+    assert (
+        curve_algorithm["cryptoProperties"]["algorithmProperties"]["ellipticCurve"]
+        == "other/Curve25519"
+    )
     for payload in fixtures.values():
         for component in payload.get("components", []):
             if component.get("cryptoProperties", {}).get("assetType") == "certificate":

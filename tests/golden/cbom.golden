@@ -85,6 +85,7 @@
             "keygen"
           ],
           "curve": "curve25519",
+          "ellipticCurve": "other/Curve25519",
           "nistQuantumSecurityLevel": 0,
           "primitive": "key-agree"
         },

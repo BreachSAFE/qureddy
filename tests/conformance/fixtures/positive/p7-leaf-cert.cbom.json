@@ -213,6 +213,16 @@
           "issuerName": "C=GB, O=Sectigo Limited, CN=Sectigo Public Server Authentication CA DV E36",
           "notValidAfter": "2026-09-30T23:59:59+00:00",
           "notValidBefore": "2026-07-03T00:00:00+00:00",
+          "relatedCryptographicAssets": [
+            {
+              "type": "algorithm",
+              "ref": "crypto/algorithm/ecdsa-with-sha256"
+            },
+            {
+              "type": "publicKey",
+              "ref": "crypto/algorithm/ec-256"
+            }
+          ],
           "signatureAlgorithmRef": "crypto/algorithm/ecdsa-with-sha256",
           "subjectName": "CN=github.com",
           "subjectPublicKeyRef": "crypto/algorithm/ec-256",
@@ -755,6 +765,7 @@
             "keygen"
           ],
           "curve": "curve25519",
+          "ellipticCurve": "other/Curve25519",
           "nistQuantumSecurityLevel": 0,
           "primitive": "key-agree"
         },
