@@ -92,7 +92,7 @@ def test_phase_5_accepts_exact_files_targets_and_statuses(tmp_path: Path) -> Non
     assert len(result.passed) == 1
 
 
-@pytest.mark.parametrize("wrong_status", ["completed", "failed"])
+@pytest.mark.parametrize("wrong_status", ["tls_handshake_failed", "failed"])
 def test_phase_5_rejects_wrong_negative_control_status(tmp_path: Path, wrong_status: str) -> None:
     statuses = {**EXPECTED_SELF_SCAN_STATUSES, "tls12.json": wrong_status}
     _write_self_scan(tmp_path, statuses=statuses)
@@ -101,7 +101,7 @@ def test_phase_5_rejects_wrong_negative_control_status(tmp_path: Path, wrong_sta
     _check_phase_5_self_scan(tmp_path, result)
 
     assert any("tls12.json" in failure for failure in result.failed)
-    assert any("expected tls_handshake_failed" in failure for failure in result.failed)
+    assert any("expected completed" in failure for failure in result.failed)
 
 
 def test_phase_5_rejects_missing_and_unexpected_files(tmp_path: Path) -> None:
