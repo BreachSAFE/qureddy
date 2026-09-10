@@ -7,7 +7,11 @@ from __future__ import annotations
 from pathlib import Path
 
 from qureddy.core.errors import QureddyError
-from qureddy.scanners.tls.legacy_probe import _LEGACY_CIPHERSUITE, _candidate_ciphers
+from qureddy.scanners.tls.legacy_probe import (
+    _LEGACY_CIPHERSUITE,
+    _candidate_ciphers,
+    probe_legacy_protocol,
+)
 from qureddy.scanners.tls.openssl_probe import resolver
 
 
@@ -58,3 +62,28 @@ def test_legacy_runtime_resolver_records_missing_when_binary_fails(
     path, dependency = resolver.resolve_legacy_openssl(str(binary), timeout_seconds=1)
     assert path is None
     assert dependency.failure_category is not None
+
+
+def test_native_fallback_merges_with_openssl_sweep(monkeypatch) -> None:
+    monkeypatch.setattr(
+        "qureddy.scanners.tls.legacy_probe._enumerate_ciphers",
+        lambda *_args, **_kwargs: (["AES128-SHA"], False, True),
+    )
+    monkeypatch.setattr(
+        "qureddy.scanners.tls.legacy_probe.probe_excluded_suites",
+        lambda *_args, **_kwargs: (("RC4-SHA", "AES128-SHA"), True),
+    )
+
+    result = probe_legacy_protocol(
+        "/openssl",
+        "example.com",
+        443,
+        "example.com",
+        "-tls1",
+        "TLSv1",
+        timeout_seconds=1,
+        native_fallback=True,
+    )
+
+    assert result.accepted_ciphers == ("AES128-SHA", "RC4-SHA")
+    assert result.probe_incomplete is True

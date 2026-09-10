@@ -164,11 +164,13 @@ def select_excluded_suite(
     version = _TLS_VERSIONS[protocol_version]
     deadline = time.monotonic() + timeout_seconds
     result = (False, False)
-    with suppress(OSError, TimeoutError):
-        with socket.create_connection((host, port), timeout=timeout_seconds) as sock:
-            sock.settimeout(max(0.1, deadline - time.monotonic()))
-            sock.sendall(_client_hello(host, sni, version, suite.wire_id))
-            result = _read_selected_suite(sock, suite.wire_id, deadline)
+    with (
+        suppress(OSError, TimeoutError),
+        socket.create_connection((host, port), timeout=timeout_seconds) as sock,
+    ):
+        sock.settimeout(max(0.1, deadline - time.monotonic()))
+        sock.sendall(_client_hello(host, sni, version, suite.wire_id))
+        result = _read_selected_suite(sock, suite.wire_id, deadline)
     return result
 
 
