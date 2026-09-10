@@ -14,6 +14,7 @@ from qureddy.core.models import (
     Finding,
     HndlExposure,
     HygieneStatus,
+    ObservationType,
     PqcSupport,
     ProbeRole,
     Readiness,
@@ -234,11 +235,28 @@ def _first(values: tuple[str | None, ...]) -> str | None:
 
 
 def _negotiated_algorithm(findings: list[Finding], evidence: list[Evidence]) -> str | None:
+    """Return an algorithm only from conclusive peer-observation evidence.
+
+    Legacy cipher sweeps record offered suites in ``negotiated_group`` for
+    compatibility with the finding model.  They are not handshake results;
+    accepting them here would turn an inventory observation into a negotiated
+    claim and make the Rich summary disagree with its protocol fields.
+    """
+    conclusive_ids = {
+        ev.id
+        for ev in evidence
+        if ev.observation_type in {ObservationType.NEGOTIATED, ObservationType.OBSERVED}
+        and ev.failure_category is None
+    }
     return _first(
         (
-            *(ev.negotiated_group for ev in evidence),
-            *(finding.negotiated_group for finding in findings),
-            *(finding.algorithm for finding in findings),
+            *(ev.negotiated_group for ev in evidence if ev.id in conclusive_ids),
+            *(
+                value
+                for finding in findings
+                if conclusive_ids.intersection(finding.evidence_ids)
+                for value in (finding.negotiated_group, finding.algorithm)
+            ),
         )
     )
 
