@@ -23,6 +23,7 @@ _CWE_BY_RULE_ID = MappingProxyType(
         "tls.transport.weak": ("CWE-327",),
         "tls.legacy.protocol_offered": ("CWE-757",),
         "tls.cert.weak_signature_algorithm": ("CWE-328",),
+        "tls.cert.expired": ("CWE-298",),
         "ssh.kex.weak": ("CWE-327",),
         "ssh.hostkey.weak": ("CWE-327",),
         "ssh.transport.weak": ("CWE-327",),
