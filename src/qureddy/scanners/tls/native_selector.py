@@ -99,6 +99,52 @@ def _server_hello_suite(handshake: bytes) -> int | None:
     return int.from_bytes(body[suite_offset : suite_offset + 2], "big")
 
 
+def _read_record(sock: socket.socket) -> tuple[int, bytes] | None:
+    """Read one bounded TLS record, returning None for malformed input."""
+    header = sock.recv(_TLS_RECORD_HEADER)
+    if len(header) != _TLS_RECORD_HEADER:
+        return None
+    content_type, _record_version, length = struct.unpack(">BHH", header)
+    if length > _MAX_RECORD_BYTES:
+        return None
+    payload = bytearray()
+    while len(payload) < length:
+        chunk = sock.recv(length - len(payload))
+        if not chunk:
+            return None
+        payload.extend(chunk)
+    return content_type, bytes(payload)
+
+
+def _read_selected_suite(
+    sock: socket.socket,
+    suite_id: int,
+    deadline: float,
+) -> tuple[bool, bool]:
+    """Read records until exact selection, alert, or bounded uncertainty."""
+    handshake = bytearray()
+    for _ in range(_MAX_RECORDS):
+        record = _read_record(sock)
+        if record is None:
+            return False, False
+        content_type, payload = record
+        if content_type == _ALERT:
+            return False, True
+        if content_type != _HANDSHAKE:
+            return False, False
+        handshake.extend(payload)
+        if len(handshake) < _HANDSHAKE_HEADER:
+            continue
+        message_length = int.from_bytes(handshake[1:4], "big") + _HANDSHAKE_HEADER
+        if len(handshake) < message_length:
+            if time.monotonic() >= deadline:
+                return False, False
+            continue
+        selected = _server_hello_suite(bytes(handshake[:message_length]))
+        return selected == suite_id, selected is not None and selected == suite_id
+    return False, False
+
+
 def select_excluded_suite(
     host: str,
     port: int,
@@ -121,39 +167,7 @@ def select_excluded_suite(
         with socket.create_connection((host, port), timeout=timeout_seconds) as sock:
             sock.settimeout(max(0.1, deadline - time.monotonic()))
             sock.sendall(_client_hello(host, sni, version, suite.wire_id))
-            handshake = bytearray()
-            for _ in range(_MAX_RECORDS):
-                header = sock.recv(_TLS_RECORD_HEADER)
-                if len(header) != _TLS_RECORD_HEADER:
-                    break
-                content_type, _record_version, length = struct.unpack(">BHH", header)
-                if length > _MAX_RECORD_BYTES:
-                    break
-                payload = bytearray()
-                while len(payload) < length:
-                    chunk = sock.recv(length - len(payload))
-                    if not chunk:
-                        break
-                    payload.extend(chunk)
-                if len(payload) != length:
-                    break
-                if content_type == _ALERT:
-                    result = (False, True)
-                    break
-                if content_type != _HANDSHAKE:
-                    break
-                handshake.extend(payload)
-                if len(handshake) >= _HANDSHAKE_HEADER:
-                    message_length = int.from_bytes(handshake[1:4], "big") + _HANDSHAKE_HEADER
-                    if len(handshake) >= message_length:
-                        selected = _server_hello_suite(bytes(handshake[:message_length]))
-                        result = (
-                            selected == suite.wire_id,
-                            selected is not None and selected == suite.wire_id,
-                        )
-                        break
-                if time.monotonic() >= deadline:
-                    break
+            result = _read_selected_suite(sock, suite.wire_id, deadline)
     except OSError, TimeoutError:
         pass
     return result
