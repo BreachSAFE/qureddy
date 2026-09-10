@@ -34,6 +34,7 @@ from __future__ import annotations
 import socket
 import struct
 import time
+from contextlib import suppress
 from dataclasses import dataclass
 
 _MAX_RECORDS = 8
@@ -163,13 +164,11 @@ def select_excluded_suite(
     version = _TLS_VERSIONS[protocol_version]
     deadline = time.monotonic() + timeout_seconds
     result = (False, False)
-    try:
+    with suppress(OSError, TimeoutError):
         with socket.create_connection((host, port), timeout=timeout_seconds) as sock:
             sock.settimeout(max(0.1, deadline - time.monotonic()))
             sock.sendall(_client_hello(host, sni, version, suite.wire_id))
             result = _read_selected_suite(sock, suite.wire_id, deadline)
-    except OSError, TimeoutError:
-        pass
     return result
 
 
