@@ -24,18 +24,31 @@ BRANCH="${2:-main}"
 
 echo "Applying branch protection to ${REPO} branch ${BRANCH}..."
 
-# Required status checks. Update this list as new gates are added.
+# Required status checks. Keep this list aligned with the live protection state
+# when gates are added or renamed; PUT replaces the complete context set.
 REQUIRED_CONTEXTS=(
   "Phase 1: Static (ubuntu-latest)"
   "Phase 1: Static (macos-latest)"
-  "Phase 1: Static (windows-latest)"
   "Phase 2: Unit (ubuntu-latest)"
   "Phase 2: Unit (macos-latest)"
-  "Phase 2: Unit (windows-latest)"
-  "Phase 3: Integration (ubuntu-latest)"
-  "Phase 4: Live (ubuntu-latest)"
-  "Phase 7: Audit"
-  "Analyze (python)"  # CodeQL
+  # Keep this independent context required: phase-3's `needs` edge is an
+  # execution dependency, not a durable branch-protection contract. If the
+  # workflow is refactored (as in #841), the Windows IKE gate must still block
+  # a merge when its job fails.
+  "Phase 2: IKE unit (windows-latest)"
+  "CBOM: CycloneDX 1.7 final bytes"
+  "Package: build and runtime audit"
+  "Package: clean install (ubuntu-latest)"
+  "Package: clean install (macos-latest)"
+  "Package: clean install (windows-latest)"
+  "Phase 6: Build"
+  "MAX code-quality"
+  "Changed-line coverage (100%)"
+  "Local release gate (ubuntu-latest)"
+  "Local release gate (macos-latest)"
+  "Analyze (python)"
+  "Phase 3: Integration (ubuntu-latest, OpenSSL 3.5.8)"
+  "Phase 3: Integration (macos-latest, OpenSSL 3.5.8)"
 )
 
 # Build the gh api args.
@@ -45,7 +58,7 @@ ARGS=(
   -F "required_pull_request_reviews[required_approving_review_count]=0"
   -F "required_pull_request_reviews[dismiss_stale_reviews]=true"
   -F "required_pull_request_reviews[require_code_owner_reviews]=false"
-  -f "restrictions="
+  -F "restrictions=null"
   -F "required_linear_history=true"
   -F "allow_force_pushes=false"
   -F "allow_deletions=false"

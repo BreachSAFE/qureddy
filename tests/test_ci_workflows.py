@@ -7,6 +7,7 @@ from __future__ import annotations
 from pathlib import Path
 
 CI_WORKFLOW = Path(".github/workflows/ci.yml")
+BRANCH_PROTECTION = Path("scripts/setup-branch-protection.sh")
 LIVE_ONLY_IF = (
     "if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}"
 )
@@ -37,6 +38,13 @@ def test_unit_matrix_exercises_windows_pipe_behavior() -> None:
     assert "runs-on: windows-latest" in windows_phase
     assert "pytest tests/test_ike_*.py" in windows_phase
     assert "needs: [phase-2-unit, phase-2-ike-windows]" in workflow
+
+
+def test_windows_ike_is_explicitly_required_by_branch_protection() -> None:
+    """Keep the Windows IKE job required when workflow dependencies are refactored."""
+    protection = BRANCH_PROTECTION.read_text(encoding="utf-8")
+
+    assert '"Phase 2: IKE unit (windows-latest)"' in protection
 
 
 def test_blocking_package_install_smoke_is_hermetic() -> None:
