@@ -47,7 +47,8 @@
           ],
           "curve": "curve25519",
           "nistQuantumSecurityLevel": 0,
-          "primitive": "key-agree"
+          "primitive": "key-agree",
+          "ellipticCurve": "other/Curve25519"
         },
         "assetType": "algorithm"
       },

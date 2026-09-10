@@ -163,7 +163,13 @@
           "notValidBefore": "2026-08-05T20:44:40+00:00",
           "signatureAlgorithmRef": "crypto/algorithm/ecdsa-with-sha256",
           "subjectName": "CN=www.google.com",
-          "serialNumber": "FCD06FF5E90151A212F6E002C6BE8F2C"
+          "serialNumber": "FCD06FF5E90151A212F6E002C6BE8F2C",
+          "relatedCryptographicAssets": [
+            {
+              "type": "algorithm",
+              "ref": "crypto/algorithm/ecdsa-with-sha256"
+            }
+          ]
         }
       },
       "name": "CN=www.google.com",
@@ -697,7 +703,8 @@
           ],
           "curve": "curve25519",
           "nistQuantumSecurityLevel": 0,
-          "primitive": "key-agree"
+          "primitive": "key-agree",
+          "ellipticCurve": "other/Curve25519"
         },
         "assetType": "algorithm"
       },

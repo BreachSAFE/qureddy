@@ -20,7 +20,7 @@
     "p1-hybrid-tls": {
       "kind": "positive",
       "classification": "captured",
-      "sha256": "19d01c805cf8a01f72e852d5b3bdbf391fbfd8fdd4e7746c98a281edc26dc984",
+      "sha256": "6c7a130e3f50afef54e06b607cb8bf27cd8532d025e2024b5b371e120dedc802",
       "official_rejects": false,
       "cli_rejects": false,
       "semantic_rejects": false
@@ -28,7 +28,7 @@
     "p2-classical-tls": {
       "kind": "positive",
       "classification": "minimized-from-captured",
-      "sha256": "43f387123df849ff9c6f02990fea4fca3bbd87776ac09f59554c174ea261ff98",
+      "sha256": "d113f5760bbba9410f598983d52f184403964c1021b2ec6407929cbff5a4378a",
       "official_rejects": false,
       "cli_rejects": false,
       "semantic_rejects": false
@@ -36,7 +36,7 @@
     "p3-ssh-hybrid": {
       "kind": "positive",
       "classification": "captured",
-      "sha256": "d41ef41df49adb42826b2a25b7796d1c1de310dc2b1fc5c8f9203f5b1ca23799",
+      "sha256": "2e8713cd7188514e0a3401a2db6e54f08ee07e02b77023125c8a497b8f07c290",
       "official_rejects": false,
       "cli_rejects": false,
       "semantic_rejects": false
@@ -68,7 +68,7 @@
     "p7-leaf-cert": {
       "kind": "positive",
       "classification": "captured",
-      "sha256": "4668bfcec7a0700059d5570739533065126e7e5c8ac03892cb9c3d662fc1d514",
+      "sha256": "48cafc396f2459b5fa29055e8eddd9259afbdcf8d280828c6da5272c3bd42c0f",
       "official_rejects": false,
       "cli_rejects": false,
       "semantic_rejects": false
@@ -132,7 +132,7 @@
     "p3-ssh-mlkem": {
       "kind": "positive",
       "classification": "captured",
-      "sha256": "81177f3cc1ebe5d76b9f4dab1a3f34ddb9a9abb41be8cf943bc95c4003765547",
+      "sha256": "64759329516444e4bd8fe767fdc4239b388bf473a5e39b7ef5f2c83202141e0f",
       "official_rejects": false,
       "cli_rejects": false,
       "semantic_rejects": false

@@ -185,7 +185,8 @@
           ],
           "curve": "curve25519",
           "nistQuantumSecurityLevel": 0,
-          "primitive": "key-agree"
+          "primitive": "key-agree",
+          "ellipticCurve": "other/Curve25519"
         },
         "assetType": "algorithm"
       },
@@ -215,7 +216,8 @@
           ],
           "curve": "curve25519",
           "nistQuantumSecurityLevel": 0,
-          "primitive": "key-agree"
+          "primitive": "key-agree",
+          "ellipticCurve": "other/Curve25519"
         },
         "assetType": "algorithm"
       },
@@ -303,7 +305,8 @@
           ],
           "curve": "P-256",
           "nistQuantumSecurityLevel": 0,
-          "primitive": "key-agree"
+          "primitive": "key-agree",
+          "ellipticCurve": "nist/P-256"
         },
         "assetType": "algorithm"
       },
@@ -333,7 +336,8 @@
           ],
           "curve": "P-384",
           "nistQuantumSecurityLevel": 0,
-          "primitive": "key-agree"
+          "primitive": "key-agree",
+          "ellipticCurve": "nist/P-384"
         },
         "assetType": "algorithm"
       },
@@ -363,7 +367,8 @@
           ],
           "curve": "P-521",
           "nistQuantumSecurityLevel": 0,
-          "primitive": "key-agree"
+          "primitive": "key-agree",
+          "ellipticCurve": "nist/P-521"
         },
         "assetType": "algorithm"
       },

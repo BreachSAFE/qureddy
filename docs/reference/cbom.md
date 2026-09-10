@@ -161,6 +161,14 @@ algorithm observation from the CA signature over the leaf certificate. It
 carries `qureddy:signature.role=tls.handshake.certificate_verify` and the
 reported hash in `qureddy:signature.hash`.
 
+Certificate links use CycloneDX 1.7 `certificateProperties.relatedCryptographicAssets`
+with `type=algorithm` for the issuer signature and `type=publicKey` for the subject key.
+The deprecated `signatureAlgorithmRef` and `subjectPublicKeyRef` aliases remain during
+the pinned serializer transition; consumers should prefer the native array.
+
+Key-exchange algorithms use the CycloneDX 1.7 `algorithmProperties.ellipticCurve`
+registry identifier. The deprecated `curve` alias remains only for the same transition.
+
 ### Ephemeral key material
 
 When OpenSSL reports a temporary public-key size, the CBOM links native

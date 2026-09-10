@@ -19,7 +19,7 @@ parameter (confirmed via `inspect.signature(Dependency.__init__)` — only
 `ref`/`dependencies` exist) despite `provides` being valid CycloneDX 1.7,
 and its `CertificateProperties`/`ProtocolPropertiesCipherSuite` models do
 not yet expose 1.7's native ``serialNumber``/``tlsGroups`` fields. The
-final-byte patch is limited to those three upstream API gaps; everything
+final-byte patch is limited to these upstream API gaps; everything
 else is delegated to ``JsonV1Dot7``.
 """
 
@@ -282,6 +282,7 @@ def _write_with_library_gap_patches(
     _patch_provides_edges(payload, provides_edges)
     if certificate_serial:
         _patch_certificate_serial(payload, certificate_serial)
+    _patch_native_crypto_fields(payload)
     _patch_tls_group_fields(payload, result)
     _attach_native_findings(payload, result, reproducible=reproducible)
     validate_cbom_semantics(payload)
@@ -355,6 +356,47 @@ def _patch_certificate_serial(payload: dict[str, Any], certificate_serial: str) 
     certificate_component["cryptoProperties"]["certificateProperties"]["serialNumber"] = (
         certificate_serial
     )
+
+
+_NATIVE_CURVE_IDS = {
+    "curve25519": "other/Curve25519",
+    "curve448": "other/Curve448",
+    "P-256": "nist/P-256",
+    "P-384": "nist/P-384",
+    "P-521": "nist/P-521",
+}
+
+
+def _patch_native_crypto_fields(payload: dict[str, Any]) -> None:
+    """Add CycloneDX 1.7 native fields behind the pinned library seam.
+
+    Data flow::
+
+        typed library JSON ──▶ native 1.7 fields
+              curve         ──▶ ellipticCurve (registry identifier)
+              *Ref pairs    ──▶ relatedCryptographicAssets
+
+    The installed serializer still exposes the deprecated spellings. Keep
+    those aliases during the documented serializer transition; consumers read
+    the native fields first. Unknown curve text is never fabricated.
+    """
+    for component in payload.get("components", []):
+        crypto = component.get("cryptoProperties", {})
+        algorithm = crypto.get("algorithmProperties", {})
+        native_curve = _NATIVE_CURVE_IDS.get(algorithm.get("curve"))
+        if native_curve is not None:
+            algorithm["ellipticCurve"] = native_curve
+
+        certificate = crypto.get("certificateProperties", {})
+        related: list[dict[str, str]] = []
+        signature_ref = certificate.get("signatureAlgorithmRef")
+        subject_key_ref = certificate.get("subjectPublicKeyRef")
+        if isinstance(signature_ref, str):
+            related.append({"type": "algorithm", "ref": signature_ref})
+        if isinstance(subject_key_ref, str):
+            related.append({"type": "publicKey", "ref": subject_key_ref})
+        if related:
+            certificate["relatedCryptographicAssets"] = related
 
 
 def _patch_tls_group_fields(payload: dict[str, Any], result: ScanResult) -> None:

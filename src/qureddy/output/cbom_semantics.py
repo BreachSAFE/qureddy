@@ -136,8 +136,8 @@ def _dependency_refs(dependency: dict[str, Any]) -> Iterator[str]:
 def _intra_component_crypto_refs(payload: dict[str, Any]) -> Iterator[str]:
     """Yield the crypto references components make.
 
-    A certificate's signatureAlgorithmRef and subjectPublicKeyRef (#313), and each
-    protocol's cipherSuites[].algorithms, point at algorithm components.
+    A certificate's native relatedCryptographicAssets (and deprecated transition
+    refs), and each protocol's cipherSuites[].algorithms, point at components.
     """
     for component in payload.get("components", []):
         yield from _component_crypto_refs(component)
@@ -149,6 +149,10 @@ def _component_crypto_refs(component: dict[str, Any]) -> Iterator[str]:
     certificate_properties = crypto_properties.get("certificateProperties", {})
     for ref_field in ("signatureAlgorithmRef", "subjectPublicKeyRef"):
         reference = certificate_properties.get(ref_field)
+        if isinstance(reference, str):
+            yield reference
+    for related in certificate_properties.get("relatedCryptographicAssets", []):
+        reference = related.get("ref") if isinstance(related, dict) else None
         if isinstance(reference, str):
             yield reference
     material_ref = crypto_properties.get("relatedCryptoMaterialProperties", {}).get("algorithmRef")
