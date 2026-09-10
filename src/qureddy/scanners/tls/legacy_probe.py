@@ -70,6 +70,7 @@ from dataclasses import dataclass
 from qureddy.core.logging import get_logger
 from qureddy.scanners.tls._classify import is_server_decline
 from qureddy.scanners.tls.connection import StartTLSMode, build_s_client_args
+from qureddy.scanners.tls.native_selector import probe_excluded_suites
 from qureddy.scanners.tls.openssl_probe.executor import LaunchStatus, raise_for_launch
 from qureddy.scanners.tls.openssl_probe.executor import run_openssl as execute
 
@@ -249,6 +250,7 @@ def probe_legacy_protocol(
     timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS,
     starttls: StartTLSMode | None = None,
     legacy_compat: bool = False,
+    native_fallback: bool = False,
 ) -> LegacyProtocolResult:
     """Iterative-exclusion cipher enumeration for one legacy protocol version.
 
@@ -257,12 +259,51 @@ def probe_legacy_protocol(
     in accepted-cipher-count rounds, not candidate-count rounds.
     """
     _log.info("legacy_probe.protocol.start", protocol=protocol_version)
+    accepted, incomplete, had_candidates = _enumerate_ciphers(
+        openssl_path,
+        host,
+        port,
+        sni,
+        protocol_flag,
+        timeout_seconds=timeout_seconds,
+        starttls=starttls,
+        legacy_compat=legacy_compat,
+    )
+    if starttls is None and native_fallback and had_candidates and not incomplete:
+        native_accepted, native_incomplete = probe_excluded_suites(
+            host, port, sni, protocol_version, timeout_seconds=timeout_seconds
+        )
+        accepted.extend(cipher for cipher in native_accepted if cipher not in accepted)
+        incomplete = incomplete or native_incomplete
+    result = _legacy_protocol_result(protocol_flag, protocol_version, accepted, incomplete)
+    _log.info(
+        "legacy_probe.protocol.complete",
+        protocol=protocol_version,
+        offered=result.offered,
+        incomplete=result.probe_incomplete,
+    )
+    return result
+
+
+def _enumerate_ciphers(
+    openssl_path: str,
+    host: str,
+    port: int,
+    sni: str | None,
+    protocol_flag: str,
+    *,
+    timeout_seconds: int,
+    starttls: StartTLSMode | None,
+    legacy_compat: bool,
+) -> tuple[list[str], bool, bool]:
+    """Run the OpenSSL sweep and report whether its candidate list was usable."""
     remaining, incomplete = _candidate_ciphers(
         openssl_path,
         protocol_flag,
         timeout_seconds=timeout_seconds,
         legacy_compat=legacy_compat,
     )
+    had_candidates = bool(remaining)
     accepted: list[str] = []
     while remaining:
         cipher, timed_out = _handshake_with_cipher_list(
@@ -283,14 +324,7 @@ def probe_legacy_protocol(
             break
         accepted.append(cipher)
         remaining.remove(cipher)
-    result = _legacy_protocol_result(protocol_flag, protocol_version, accepted, incomplete)
-    _log.info(
-        "legacy_probe.protocol.complete",
-        protocol=protocol_version,
-        offered=result.offered,
-        incomplete=result.probe_incomplete,
-    )
-    return result
+    return accepted, incomplete, had_candidates
 
 
 def _legacy_protocol_result(
@@ -314,6 +348,7 @@ def probe_all_legacy_protocols(
     timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS,
     starttls: StartTLSMode | None = None,
     legacy_compat: bool = False,
+    native_fallback: bool = False,
 ) -> tuple[LegacyProtocolResult, ...]:
     """Run `probe_legacy_protocol` for every version in `LEGACY_PROTOCOLS`."""
     return tuple(
@@ -327,6 +362,7 @@ def probe_all_legacy_protocols(
             timeout_seconds=timeout_seconds,
             starttls=starttls,
             legacy_compat=legacy_compat,
+            native_fallback=native_fallback,
         )
         for flag, version in LEGACY_PROTOCOLS
     )

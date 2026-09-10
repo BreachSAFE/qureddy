@@ -113,6 +113,7 @@ def _collect_optional_axes(
         openssl_path=openssl_path,
         timeout_seconds=timeout_seconds,
         starttls=scanner.starttls,
+        native_fallback=legacy_openssl_path is None,
     )
     evidence.extend(legacy_evidence)
     findings.extend(legacy_findings)
@@ -335,6 +336,7 @@ class TLSScanner(Scanner[ScanTarget]):
         starttls: StartTLSMode | None = None,
         runtime: str = "openssl",
         legacy_compat: bool = False,
+        native_fallback: bool = False,
     ) -> tuple[list[Evidence], list[Finding]]:
         """Enumerate legacy protocols and ciphers without retrying the sweep."""
         log = get_logger(__name__)
@@ -347,6 +349,7 @@ class TLSScanner(Scanner[ScanTarget]):
             timeout_seconds=timeout_seconds,
             starttls=starttls,
             legacy_compat=legacy_compat,
+            native_fallback=native_fallback,
         )
         log.info("probe.phase.complete", phase="legacy_tls1_tls11_tls12")
         evidence = [evidence_from_legacy_result(asset, r, runtime=runtime) for r in results]

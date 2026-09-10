@@ -28,6 +28,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from qureddy.core.ciphers import cipher_classical_bits, cipher_primitive
+from qureddy.core.models import FailureCategory, OpenSSLDependency
 from qureddy.core.targets import parse_target
 from qureddy.scanners.tls.openssl_probe.resolver import resolve_legacy_openssl
 from qureddy.scanners.tls.scanner import TLSScanner
@@ -88,6 +89,29 @@ def test_compatibility_lane_is_wired() -> None:
         "the badssl cipher suite needs an OpenSSL 1.0.2u compatibility runtime; "
         "set QUREDDY_LEGACY_OPENSSL or install one at a path resolve_legacy_openssl searches"
     )
+
+
+def test_primary_lane_detects_rc4_without_legacy_runtime(monkeypatch) -> None:
+    """The native selector must cover RC4 when OpenSSL 3.x cannot offer it (#700)."""
+    monkeypatch.setattr(
+        "qureddy.scanners.tls.scanner.resolve_legacy_openssl",
+        lambda **_kwargs: (
+            None,
+            OpenSSLDependency(
+                name="openssl-legacy",
+                failure_category=FailureCategory.LOCAL_OPENSSL_MISSING,
+            ),
+        ),
+    )
+    result = TLSScanner(openssl_path=_openssl_path()).scan(parse_target("rc4.badssl.com:443"))
+    accepted = {
+        evidence.negotiated_group
+        for evidence in result.evidence
+        if evidence.evidence_type == _CIPHER_EVIDENCE_TYPE
+        and evidence.runtime == "openssl"
+        and evidence.negotiated_group
+    }
+    assert any("RC4" in cipher for cipher in accepted), sorted(accepted)
 
 
 def test_rc4_host_rates_rc4_at_128_bits(scanner: TLSScanner) -> None:

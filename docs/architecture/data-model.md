@@ -211,6 +211,7 @@ class LocalOpenSSLVersionMismatch
 class LocalOpenSSLVersionUnreadable
 class MatchStatus { <<enum>> }
 class NativeSSHCollector
+class NativeSuite
 class NativeTLSCollector
 class ObservationType { <<enum>> }
 class OpenSSLDependency
