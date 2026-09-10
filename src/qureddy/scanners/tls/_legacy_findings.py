@@ -179,8 +179,8 @@ def finding_from_legacy_result(
     if deprecated_protocol:
         findings.append(_legacy_protocol_finding(asset, evidence, result, cipher_list, runtime))
     if matched:
-        findings.append(
-            _weak_cipher_finding(
+        findings.extend(
+            _weak_cipher_findings(
                 asset,
                 evidence,
                 result,
@@ -251,7 +251,7 @@ def _legacy_protocol_finding(
     )
 
 
-def _weak_cipher_finding(
+def _weak_cipher_findings(
     asset: Asset,
     evidence: Evidence,
     result: LegacyProtocolResult,
@@ -260,22 +260,30 @@ def _weak_cipher_finding(
     runtime: str,
     *,
     deprecated_protocol: bool,
-) -> Finding:
-    """Build the single-fact finding for accepted weak cipher material."""
-    return Finding(
-        id=new_id("finding"),
-        asset_id=asset.id,
-        evidence_ids=(evidence.id,),
-        rule_id=FINDING_TYPE_WEAK_TRANSPORT,
-        finding_type=FINDING_TYPE_WEAK_TRANSPORT,
-        title=f"{result.protocol_version} accepts a known-weak cipher",
-        description=(
-            f"Accepted weak ciphers: {', '.join(matched)}. All accepted ciphers: {cipher_list}."
-        ),
-        severity=Severity.CRITICAL if deprecated_protocol else Severity.HIGH,
-        readiness=Readiness.CLASSICALLY_WEAK,
-        confidence=Confidence.HIGH,
-        algorithm=matched[0],
-        runtime=runtime,
-        protocol_version=result.protocol_version,
+) -> tuple[Finding, ...]:
+    """Build one structured finding for each accepted weak cipher.
+
+    ``Finding.algorithm`` is singular, so retaining only ``matched[0]`` would
+    make every additional weak suite disappear from machine-readable output.
+    The shared evidence record still anchors each finding to the one observed
+    protocol sweep and the full accepted list remains available in each
+    description for human context.
+    """
+    return tuple(
+        Finding(
+            id=new_id("finding"),
+            asset_id=asset.id,
+            evidence_ids=(evidence.id,),
+            rule_id=FINDING_TYPE_WEAK_TRANSPORT,
+            finding_type=FINDING_TYPE_WEAK_TRANSPORT,
+            title=f"{result.protocol_version} accepts known-weak cipher {cipher}",
+            description=(f"Accepted weak cipher: {cipher}. All accepted ciphers: {cipher_list}."),
+            severity=Severity.CRITICAL if deprecated_protocol else Severity.HIGH,
+            readiness=Readiness.CLASSICALLY_WEAK,
+            confidence=Confidence.HIGH,
+            algorithm=cipher,
+            runtime=runtime,
+            protocol_version=result.protocol_version,
+        )
+        for cipher in matched
     )
