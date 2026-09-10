@@ -12,6 +12,15 @@
 pipeline {
   agent any
 
+  // These are Jenkins-node capabilities/endpoints, not portable repository
+  // defaults. The job must provide them explicitly; an empty value fails the
+  // prerequisite stage or disables the optional CBOM publish stage.
+  parameters {
+    string(name: 'QUREDDY_OPENSSL', defaultValue: '', description: 'Absolute path to the pinned OpenSSL 3.5.x binary on the Jenkins node')
+    string(name: 'LEGACY_OPENSSL', defaultValue: '', description: 'Absolute path to the OpenSSL 1.0.2u compatibility binary or shim on the Jenkins node')
+    string(name: 'CBOMKIT_API', defaultValue: '', description: 'Optional CBOMkit API base URL for non-blocking artifact publication')
+  }
+
   options {
     timeout(time: 60, unit: 'MINUTES')
     disableConcurrentBuilds()
@@ -26,20 +35,10 @@ pipeline {
   }
 
   environment {
-    QUREDDY_OPENSSL = '/opt/homebrew/opt/openssl@3.5/bin/openssl'
     REPORT_DIR      = 'build/jenkins'
-    // Our fork on colima (breachsafe/cbomkit-backend:local + cbomkit-ui 0.2.0),
-    // NOT upstream ghcr.io/cbomkit/cbomkit. The stock stack was running in a second
-    // VM on :8081/:8001 and briefly received these scans; it held a separate,
-    // parallel history. Removed 2026-09-06. See the viewer repo's CLAUDE.md.
-    CBOMKIT_API     = 'http://127.0.0.1:8082'
-
-    // Deliberately NOT named QUREDDY_LEGACY_OPENSSL here. The engine reads that
-    // variable, and a pipeline-wide value reaches the unit stage, where
-    // test_local_openssl_supported_lts_patch_scans_successfully resolves the real
-    // runtime and fails. Only the stage that needs the compatibility lane exports
-    // it under the name the engine looks for.
-    LEGACY_OPENSSL = "${HOME}/Library/Caches/qureddy-app/openssl-legacy-docker/bin/openssl"
+    QUREDDY_OPENSSL = "${params.QUREDDY_OPENSSL}"
+    LEGACY_OPENSSL  = "${params.LEGACY_OPENSSL}"
+    CBOMKIT_API     = "${params.CBOMKIT_API}"
   }
 
   stages {
@@ -57,6 +56,8 @@ pipeline {
       steps {
         sh '''
           set -eu
+          [ -n "${QUREDDY_OPENSSL:-}" ] || { echo "QUREDDY_OPENSSL Jenkins parameter is required" >&2; exit 1; }
+          [ -n "${LEGACY_OPENSSL:-}" ] || { echo "LEGACY_OPENSSL Jenkins parameter is required" >&2; exit 1; }
           "$QUREDDY_OPENSSL" version
           "$QUREDDY_OPENSSL" version | grep -q "OpenSSL 3.5" \\
             || { echo "primary lane is not OpenSSL 3.5.x" >&2; exit 1; }
@@ -129,6 +130,10 @@ pipeline {
       environment { QUREDDY_LEGACY_OPENSSL = "${LEGACY_OPENSSL}" }
       steps {
         script {
+          if (!env.CBOMKIT_API?.trim()) {
+            echo 'CBOMKIT_API is not configured; skipping optional CBOM publication'
+            return
+          }
           def up = sh(returnStatus: true,
                       script: "curl -sS -o /dev/null --max-time 5 ${CBOMKIT_API}/api/v1/cbom/last/1")
           if (up != 0) {

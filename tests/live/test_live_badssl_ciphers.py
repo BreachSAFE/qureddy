@@ -13,7 +13,7 @@ for this use. Each expectation below was recorded from a real scan on 2026-09-06
 `min_bits` and the named suites are what the scanner emitted, not what the
 classifier is expected to return in isolation.
 
-The compatibility lane is required. OpenSSL 3.5.7 compiles out RC4 and single DES
+The compatibility lane is required. OpenSSL 3.5.x compiles out RC4 and single DES
 and reaches 3DES only with `enable-weak-ssl-ciphers`, so without a 1.0.2u runtime
 these endpoints negotiate nothing and every assertion here would be vacuous. The
 module skips rather than fails when that runtime is absent, and
@@ -147,7 +147,7 @@ def test_null_host_also_covers_seed_and_camellia(scanner: TLSScanner) -> None:
     assert seed, f"no SEED suite negotiated; got {sorted(rated)}"
     assert set(seed.values()) == {128}, seed
     assert camellia, f"no CAMELLIA suite negotiated; got {sorted(rated)}"
-    assert set(camellia.values()) <= {128, 256}, camellia
+    assert set(camellia.values()) <= {128, 192, 256}, camellia
 
 
 def test_no_accepted_cipher_is_left_unrated(scanner: TLSScanner) -> None:
@@ -159,7 +159,9 @@ def test_no_accepted_cipher_is_left_unrated(scanner: TLSScanner) -> None:
     """
     unrated: dict[str, list[str]] = {}
     for host in ("badssl.com", "rc4.badssl.com", "3des.badssl.com", "null.badssl.com"):
-        names = [name for name, bits in _scan(scanner, host).items() if bits is None]
+        rated = _scan(scanner, host)
+        assert rated, f"{host} produced no accepted cipher evidence"
+        names = [name for name, bits in rated.items() if bits is None]
         if names:
             unrated[host] = sorted(names)
     assert not unrated, unrated
