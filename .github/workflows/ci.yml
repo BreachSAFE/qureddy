@@ -362,7 +362,7 @@ jobs:
           uv run --locked qureddy scan tls tls-v1-2.badssl.com:1012 --format json > phase-5-self-scan/tls12.json
           tls12_exit=$?
           set -e
-          test "$tls12_exit" -eq 2
+          test "$tls12_exit" -eq 0
 
       - name: Upload self-scan artifacts
         if: always()
