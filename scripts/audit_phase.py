@@ -49,7 +49,7 @@ EXPECTED_LIVE_TESTS = frozenset(
         "test_pq_cloudflareresearch_hybrid",
         "test_example_com_classical_control_fires",
         "test_one_one_one_one_with_sni",
-        "test_tls12_only_handshake_failure",
+        "test_tls12_only_server_declines_tls13_groups",
         "test_www_cloudflare_completes_within_timeout",
         "test_www_google_completes_within_timeout",
     }
@@ -70,7 +70,7 @@ EXPECTED_SELF_SCAN_STATUSES = {
     "example.json": "completed",
     "1111.json": "completed",
     "github-ssh.json": "completed",
-    "tls12.json": "tls_handshake_failed",
+    "tls12.json": "completed",
 }
 
 
