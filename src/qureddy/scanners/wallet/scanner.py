@@ -304,6 +304,27 @@ def _record_bitcoin_chain(builder: _Builder, facts: ChainFacts) -> None:
         observation=ObservationType.OBSERVED,
     )
     builder.record(
+        "transactions.examined",
+        f"{facts.transactions_examined} of {facts.tx_count}",
+        lane="chain",
+        source="len of the returned page over chain_stats plus mempool_stats tx_count",
+        observation=ObservationType.OBSERVED,
+    )
+    builder.record(
+        "transactions.confirmed",
+        str(facts.transactions_confirmed),
+        lane="chain",
+        source="tx[].status.confirmed is true in the returned page",
+        observation=ObservationType.OBSERVED,
+    )
+    builder.record(
+        "transactions.mempool",
+        str(facts.transactions_mempool),
+        lane="chain",
+        source="tx[].status.confirmed absent; this endpoint returns mempool entries first",
+        observation=ObservationType.OBSERVED,
+    )
+    builder.record(
         "inputs.from_this_address",
         str(facts.inputs_examined),
         lane="chain",
