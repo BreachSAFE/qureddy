@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import urllib.parse
 from typing import Annotated
 
 import typer
@@ -12,11 +13,7 @@ from qureddy._branding import PROJECT_URL
 from qureddy.cli._errors import EXIT_OK, EXIT_USAGE, _fail
 from qureddy.cli._execute import _execute_scan
 from qureddy.cli._help import _NO_WRAP_CONTEXT_SETTINGS, _colorize_help_text
-from qureddy.cli._options import (
-    FormatOpt,
-    OutputDirOpt,
-    VerboseOpt,
-)
+from qureddy.cli._options import FormatOpt, OutputDirOpt, VerboseOpt
 from qureddy.cli._render import _prepare_output_dir, _render
 from qureddy.cli.main import scan_app
 from qureddy.core.logging import start_run_logging
@@ -105,8 +102,6 @@ def _detect_chain(address: str) -> str:
 
 def _endpoint(chain: str) -> tuple[str, int]:
     """Host and port of the primary endpoint for a chain, from its configured base."""
-    import urllib.parse
-
     bases = ethereum.rpcs() if chain == _ETHEREUM else indexer.bases()
     parsed = urllib.parse.urlsplit(bases[0])
     port = parsed.port or (_DEFAULT_PORT if parsed.scheme == "https" else 80)

@@ -29,6 +29,7 @@ from qureddy.core.models import (
     ScanSummary,
     ScanTarget,
 )
+from qureddy.core.vocabulary import SIGNATURE_ONLY_PROTOCOLS
 from qureddy.scanners.common.evaluation import (
     PostureSignals,
     derive_signals,
@@ -145,10 +146,21 @@ def _resolve_protocol(
 
 
 def _pqc_axis(
-    *, classical: bool, hybrid: bool, pure_pq: bool, hybrid_failed: bool, not_testable: bool
+    *,
+    classical: bool,
+    hybrid: bool,
+    pure_pq: bool,
+    hybrid_failed: bool,
+    not_testable: bool,
+    signature_only_classical: bool = False,
 ) -> tuple[PqcSupport, AxisStatus]:
     if not_testable:
         return PqcSupport.NOT_TESTABLE, AxisStatus.NOT_TESTABLE
+    if signature_only_classical:
+        # A chain account negotiates nothing, so the key-exchange signals never
+        # fire and the axis would read UNKNOWN with the algorithm in hand. The
+        # classical signature is the whole of the observed protection here.
+        return PqcSupport.CLASSICAL_ONLY_OBSERVED, AxisStatus.CLASSICAL
     if hybrid:
         return PqcSupport.HYBRID_OBSERVED, AxisStatus.HYBRID
     if pure_pq:
@@ -215,12 +227,14 @@ def _hndl_exposure(
     hybrid: bool,
     pure_pq: bool,
     not_testable: bool,
+    signature_classical: bool = False,
 ) -> HndlExposure:
     """Classify future-quantum exposure without ranking present-day hygiene."""
-    if protocol == "ike":
-        return HndlExposure.UNKNOWN
-    if not_testable:
-        return HndlExposure.UNKNOWN
+    by_protocol = _protocol_hndl_exposure(
+        protocol=protocol, not_testable=not_testable, signature_classical=signature_classical
+    )
+    if by_protocol is not None:
+        return by_protocol
     if hybrid:
         return HndlExposure.PROTECTED_DEFEASIBLE if classical else HndlExposure.PROTECTED
     if pure_pq:
@@ -228,6 +242,19 @@ def _hndl_exposure(
     if classical:
         return HndlExposure.AT_RISK
     return HndlExposure.UNKNOWN
+
+
+def _protocol_hndl_exposure(
+    *, protocol: str, not_testable: bool, signature_classical: bool
+) -> HndlExposure | None:
+    """Settle the cases a key-exchange reading cannot answer, or return None."""
+    if protocol == "ike" or not_testable:
+        return HndlExposure.UNKNOWN
+    if protocol in SIGNATURE_ONLY_PROTOCOLS:
+        # The harvestable value is the public key itself: recorded today, solved
+        # by Shor later. A classical signing algorithm is that exposure.
+        return HndlExposure.AT_RISK if signature_classical else HndlExposure.UNKNOWN
+    return None
 
 
 def _hygiene_status(
@@ -323,6 +350,7 @@ def _build_axes(
     findings: list[Finding],
     evidence: list[Evidence],
     failure_category: FailureCategory | None,
+    protocol: str,
 ) -> tuple[PostureAxes, PostureSignals, bool]:
     signals = derive_signals(findings, evidence)
     not_testable = _is_not_testable(failure_category)
@@ -333,6 +361,9 @@ def _build_axes(
         pure_pq=signals.pure_pq,
         hybrid_failed=signals.hybrid_failed,
         not_testable=not_testable,
+        signature_only_classical=(
+            protocol in SIGNATURE_ONLY_PROTOCOLS and signals.authentication_classical
+        ),
     )
 
     downgrade = _downgrade_axis(signals, not_testable=not_testable)
@@ -360,7 +391,9 @@ def build_interpretation(
 ) -> ScanInterpretation:
     """Build stable posture axes and provenance from observed findings."""
     resolved_protocol = _resolve_protocol(findings, evidence, protocol)
-    axes, signals, not_testable = _build_axes(findings, evidence, failure_category)
+    axes, signals, not_testable = _build_axes(
+        findings, evidence, failure_category, resolved_protocol
+    )
     reason_codes = build_reason_codes(findings, failure_category)
     positive_evidence = _has_positive_evidence(evidence, failure_category)
     headline, recommended_action = _ciso_text(axes, reason_codes, positive_evidence)
@@ -370,6 +403,7 @@ def build_interpretation(
         hybrid=signals.hybrid,
         pure_pq=signals.pure_pq,
         not_testable=not_testable,
+        signature_classical=signals.authentication_classical,
     )
     hygiene_status = _hygiene_status(
         signals,

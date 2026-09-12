@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 
 from qureddy.core.evaluation import PostureEvaluation
 from qureddy.core.models import HndlExposure, HygieneStatus, PqcSupport
+from qureddy.core.vocabulary import SIGNATURE_ONLY_PROTOCOLS
 
 if TYPE_CHECKING:
     from qureddy.scanners.common.evaluation.facts import PostureFacts
@@ -36,17 +37,29 @@ def _summary(facts: PostureFacts) -> str:
     if facts.support is PqcSupport.PURE_PQ_OBSERVED:
         return f"{protocol} pure post-quantum protection was observed."
     if facts.support is PqcSupport.CLASSICAL_ONLY_OBSERVED:
-        if facts.hndl_exposure is HndlExposure.UNKNOWN:
-            scope = "IPsec" if protocol == "IKE" else protocol
-            return (
-                f"Only classical {protocol} key exchange was observed. "
-                f"Overall {scope} HNDL exposure could not be determined."
-            )
+        return _classical_summary(facts, protocol)
+    return f"{protocol} post-quantum protection could not be confirmed."
+
+
+def _classical_summary(facts: PostureFacts, protocol: str) -> str:
+    """Word the classical-only case for the surface the protocol actually has."""
+    if facts.protocol in SIGNATURE_ONLY_PROTOCOLS:
+        # These protocols negotiate nothing, so "key exchange" would name a step
+        # that never runs. The signing algorithm is the whole surface.
+        algorithm = facts.negotiated_algorithm or "a classical algorithm"
+        return (
+            f"{protocol} accounts sign with {algorithm}, which meets no NIST post-quantum category."
+        )
+    if facts.hndl_exposure is HndlExposure.UNKNOWN:
+        scope = "IPsec" if protocol == "IKE" else protocol
         return (
             f"Only classical {protocol} key exchange was observed. "
-            "The endpoint remains exposed to harvest-now/decrypt-later risk."
+            f"Overall {scope} HNDL exposure could not be determined."
         )
-    return f"{protocol} post-quantum protection could not be confirmed."
+    return (
+        f"Only classical {protocol} key exchange was observed. "
+        "The endpoint remains exposed to harvest-now/decrypt-later risk."
+    )
 
 
 def _protection(support: PqcSupport) -> str:
@@ -63,6 +76,9 @@ def _action(facts: PostureFacts) -> str:
     if facts.support is PqcSupport.PURE_PQ_OBSERVED:
         return "Continue monitoring negotiated post-quantum protection."
     if facts.support is PqcSupport.CLASSICAL_ONLY_OBSERVED:
+        if facts.protocol in SIGNATURE_ONLY_PROTOCOLS:
+            # No configuration on this side changes a chain's signing algorithm.
+            return "Track the published key, since exposure begins at publication."
         return f"Enable hybrid post-quantum protection for {facts.protocol.upper()} and re-run."
     return "Resolve probe limitations and re-run the assessment."
 

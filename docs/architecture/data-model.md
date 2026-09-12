@@ -279,6 +279,7 @@ class _KexClassification
 class _LocalOpenSSLProblem
 class _NativeEndpointCollector
 class _RootGroup
+AccountFacts *-- "*" HttpExchange
 AlgorithmFacts --> CryptoPrimitive
 AlgorithmSpec *-- AlgorithmFacts
 AlgorithmSpec *-- "*" Identifier

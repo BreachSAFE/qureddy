@@ -266,6 +266,7 @@ max-statements = 50
 "src/qureddy/cli/scan.py" = ["TC001"]
 "src/qureddy/cli/ssh.py" = ["TC001"]
 "src/qureddy/cli/ike.py" = ["TC001"]
+"src/qureddy/cli/wallet.py" = ["TC001"]
 "tests/**/*.py" = [
     "S101",     # asserts allowed in tests
     "PLR2004",  # magic numbers allowed in tests

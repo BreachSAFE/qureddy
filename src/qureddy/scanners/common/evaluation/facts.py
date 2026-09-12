@@ -20,6 +20,7 @@ from qureddy.core.models import (
     Readiness,
 )
 from qureddy.core.signals import SemanticSignal
+from qureddy.core.vocabulary import WALLET_SIGNATURE_EVIDENCE
 
 
 class PostureFacts(BaseModel):
@@ -179,6 +180,7 @@ def _authentication_classical_signal(
             _has_suffix(types, "cert.classical_signature"),
             _has_suffix(evidence_types, "hostkey"),
             _has_suffix(types, "hostkey.weak"),
+            WALLET_SIGNATURE_EVIDENCE in evidence_types,
         )
     )
 

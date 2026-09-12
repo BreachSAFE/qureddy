@@ -171,3 +171,11 @@ class OutputFormat(str, Enum):
 #: Named here because two layers read it: `scanners/wallet` writes it, and
 #: `output/cbom_wallet` selects on it, and `scanners` may not import `output`.
 WALLET_SIGNATURE_EVIDENCE = "wallet.signature"
+
+#: Schemes whose protocol performs no key exchange, so the PQC axis reads the
+#: signing algorithm instead. A chain account authenticates a spend with a
+#: signature and negotiates nothing, so a key-exchange axis has no input and
+#: falls to UNKNOWN, which renders as "could not be confirmed" when the
+#: algorithm was read. `posture._hndl_exposure` already carries the matching
+#: precedent for `ike`.
+SIGNATURE_ONLY_PROTOCOLS = frozenset({"btc", "eth"})

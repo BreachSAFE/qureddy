@@ -726,7 +726,8 @@ def _build_result(
             started_at=started,
             scanner_name="wallet",
             status="completed",
-            total_attempts=1,
+            total_attempts=sum(1 for item in builder.evidence if item.probe_result is not None)
+            or 1,
             completed_at=datetime.now(UTC),
         ),
         target=target,
