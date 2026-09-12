@@ -40,6 +40,25 @@ TLS scan request
   └── ScanTarget.starttls_mode
 ```
 
+The support claim has three separate layers. Keep them separate in reviews and
+in operator reports:
+
+```text
+CLI enum              OpenSSL capability             Endpoint evidence
+14 accepted values -> `s_client -starttls` list -> real service handshake
+       |                         |                         |
+       +-------------------------+-------------------------+
+                         ScanResult / output
+              Rich | JSON | JSONL | CBOM
+```
+
+Human review rule: a value in the CLI enum proves only that the argument is
+accepted. It does not prove that the selected local binary implements the mode,
+that a remote service supports the upgrade, or that the endpoint is secure.
+Machine review rule: preserve `accepted`, `unavailable`, `unknown`, and
+`not_tested` as distinct states; never turn a missing observation into a
+successful-support claim.
+
 Direct TLS begins with TLS records. STARTTLS profiles begin with a
 service-specific cleartext exchange and then transition to TLS. Each service
 defines its own greeting, upgrade command, identity field, refusal behavior,
@@ -105,6 +124,44 @@ Port numbers are examples only. They never select a profile automatically.
 starts TLS immediately uses `postgresql-direct` or the existing `direct` profile.
 `ftp` and `ftps` are intentionally separate because explicit `AUTH TLS` and
 implicit TLS have different pre-handshake behavior.
+
+### CLI mode and live-evidence matrix
+
+The released CLI accepts the following 14 values. This is a vocabulary matrix,
+not a promise that every public service is reachable from every network or that
+the legacy OpenSSL compatibility lane implements every value.
+
+| CLI value | OpenSSL 3.5.x (>=3.5.7) capability | Public endpoint evidence in this repository | Jenkins coverage |
+| --- | --- | --- | --- |
+| `smtp` | accepted by local capability check | `smtp.gmail.com:587` — completed on 2026-09-12 | not scheduled |
+| `pop3` | accepted by local capability check | not recorded | not scheduled |
+| `imap` | accepted by local capability check | not recorded | not scheduled |
+| `ftp` | accepted by local capability check | not recorded | not scheduled |
+| `xmpp` | accepted by local capability check | `jabber.org:5222` — completed on 2026-09-12 | not scheduled |
+| `xmpp-server` | accepted by local capability check | not recorded | not scheduled |
+| `telnet` | accepted by local capability check | not recorded | not scheduled |
+| `irc` | accepted by local capability check | not recorded | not scheduled |
+| `mysql` | accepted by local capability check | not recorded | not scheduled |
+| `postgres` | accepted by local capability check | not recorded | not scheduled |
+| `lmtp` | accepted by local capability check | not recorded | not scheduled |
+| `nntp` | accepted by local capability check | unavailable public target recorded; no support claim | not scheduled |
+| `sieve` | accepted by local capability check | not recorded | not scheduled |
+| `ldap` | accepted by local capability check | not recorded | not scheduled |
+
+The public captures above are evidence examples, not durable availability
+guarantees. Reproduce them with Rich output when the endpoint is authorized and
+reachable:
+
+```bash
+qureddy scan tls smtp.gmail.com:587 --starttls smtp --format rich --timeout 8
+qureddy scan tls jabber.org:5222 --starttls xmpp --format rich --timeout 8
+```
+
+The current Jenkinsfile does not invoke `scripts/run-starttls-matrix.sh` and
+does not schedule a STARTTLS matrix. The local matrix covers SMTP, IMAP, POP3,
+FTP, PostgreSQL, MySQL, and LDAP only; its reports are lab evidence and are not
+public endpoint evidence. The remaining modes stay `not_tested` until a real
+configured service and a recorded result are added.
 
 ## 4. Evidence contract
 
@@ -240,10 +297,11 @@ Before a profile is advertised as supported, its issue must provide:
 7. identical evidence identifiers across Rich, JSON, JSONL, and CBOM;
 8. documentation and link checks.
 
-Current calibration is uneven. PostgreSQL, MySQL, and SMTP have recorded live
-OpenSSL observations. IMAP and POP3 remain unverified. MariaDB requires its own
-server proof. IRC and Telnet require independent calibration. No profile in
-this page should be treated as shipped until its acceptance issue closes.
+Current calibration is uneven. The matrix above records the two public captures
+currently available and deliberately leaves the other modes unverified. Local
+lab coverage and the separate OpenSSL 1.0.2u compatibility lane are different
+evidence sources. No profile should be treated as endpoint-interoperable merely
+because it appears in `--help`.
 
 ## 10. Related references
 
