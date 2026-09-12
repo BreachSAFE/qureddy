@@ -42,6 +42,7 @@ from qureddy.scanners.common.rollup import (
 )
 from qureddy.scanners.common.signature_posture import (
     protocol_hndl_exposure,
+    signature_only_ciso_text,
     signature_only_pqc_axis,
 )
 
@@ -53,8 +54,12 @@ def _ciso_text(
     axes: PostureAxes,
     reasons: tuple[str, ...],
     has_positive_evidence: bool,
+    protocol: str = "",
 ) -> tuple[str, str]:
     """Create deterministic headline/action text from structured reasons."""
+    signature_only = signature_only_ciso_text(protocol=protocol)
+    if signature_only is not None:
+        return signature_only
     if "weak_classical_algorithm_observed" in reasons:
         return (
             "Classically weak algorithm exposure was observed.",
@@ -79,27 +84,30 @@ def _ciso_text(
             "PQC support could not be confirmed; classical key exchange was observed.",
             "Verify the target TLS terminator supports the requested hybrid group and re-scan.",
         )
-    return {
-        PqcSupport.PURE_PQ_OBSERVED: (
-            "Pure post-quantum key exchange was observed.",
-            "Continue monitoring negotiated posture.",
-        ),
-        PqcSupport.HYBRID_OBSERVED: (
-            "Hybrid post-quantum key exchange was observed.",
-            "Continue monitoring negotiated posture.",
-        ),
-        PqcSupport.NOT_TESTABLE: (
-            "PQC posture could not be tested.",
-            "Resolve the scan failure and re-run the assessment.",
-        ),
-        PqcSupport.CLASSICAL_ONLY_OBSERVED: (
-            "Only classical key exchange was observed.",
-            "Enable a supported hybrid group and re-run the assessment.",
-        ),
-    }.get(
+    return _CISO_TEXT_BY_SUPPORT.get(
         axes.pqc_support,
         ("PQC posture is unknown.", "Resolve probe limitations and re-run the assessment."),
     )
+
+
+_CISO_TEXT_BY_SUPPORT: dict[PqcSupport, tuple[str, str]] = {
+    PqcSupport.PURE_PQ_OBSERVED: (
+        "Pure post-quantum key exchange was observed.",
+        "Continue monitoring negotiated posture.",
+    ),
+    PqcSupport.HYBRID_OBSERVED: (
+        "Hybrid post-quantum key exchange was observed.",
+        "Continue monitoring negotiated posture.",
+    ),
+    PqcSupport.NOT_TESTABLE: (
+        "PQC posture could not be tested.",
+        "Resolve the scan failure and re-run the assessment.",
+    ),
+    PqcSupport.CLASSICAL_ONLY_OBSERVED: (
+        "Only classical key exchange was observed.",
+        "Enable a supported hybrid group and re-run the assessment.",
+    ),
+}
 
 
 def _is_not_testable(failure_category: FailureCategory | None) -> bool:
@@ -339,7 +347,9 @@ def build_interpretation(
     )
     reason_codes = build_reason_codes(findings, failure_category)
     positive_evidence = _has_positive_evidence(evidence, failure_category)
-    headline, recommended_action = _ciso_text(axes, reason_codes, positive_evidence)
+    headline, recommended_action = _ciso_text(
+        axes, reason_codes, positive_evidence, resolved_protocol
+    )
     hndl_exposure, hygiene_status = _statuses(
         signals,
         protocol=resolved_protocol,

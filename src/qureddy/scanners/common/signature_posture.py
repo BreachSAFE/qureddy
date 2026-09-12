@@ -23,6 +23,21 @@ def signature_only_pqc_axis(
     return None
 
 
+def signature_only_ciso_text(*, protocol: str) -> tuple[str, str] | None:
+    """Answer the headline and action for a protocol that only signs, or None.
+
+    The key-exchange wording would name a step that never runs, and its action
+    ("enable a supported hybrid group") names a control no operator of a chain
+    account holds.
+    """
+    if protocol not in SIGNATURE_ONLY_PROTOCOLS:
+        return None
+    return (
+        "The account signs with a classical algorithm that meets no NIST category.",
+        "Track the published key, since exposure begins at publication.",
+    )
+
+
 def protocol_hndl_exposure(
     *, protocol: str, not_testable: bool, signature_classical: bool
 ) -> HndlExposure | None:
