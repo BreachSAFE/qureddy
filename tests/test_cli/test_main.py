@@ -76,7 +76,15 @@ def test_scan_tls_help_assigns_subprocess_boundaries_to_vv() -> None:
 
 
 def test_scan_tls_help_documents_starttls_with_cleartext_port() -> None:
-    """Keep the STARTTLS feature discoverable and version wording unpinned."""
+    """Guard the help contract without pretending it proves live interoperability.
+
+    The assertion path is intentionally small and observable:
+
+        source option -> rendered ``scan tls --help`` -> operator-facing text
+
+    A source-only assertion would miss Typer/Click rendering drift; a live scan
+    would make this documentation regression dependent on network state.
+    """
     result = CliRunner().invoke(app, ["scan", "tls", "--help"])
     help_text = " ".join(result.stdout.split())
 

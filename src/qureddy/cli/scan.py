@@ -70,6 +70,15 @@ from qureddy.scanners.tls.scanner import (
 
 # Tier-2 epilog for `qureddy scan tls --help` (issue #41 / ADR 0003 patterns 3-4).
 #
+# Help is an operator contract, not a capability oracle:
+#
+#   documented mode -> local OpenSSL capability -> live endpoint evidence
+#          |                  |                         |
+#          +------------------+-------------------------+
+#                              ScanResult
+#
+# Keep examples executable and label endpoint claims separately from the enum.
+#
 # Exit-code lines reference the EXIT_* constants so a contract change there
 # (e.g. issue #12's exit 70) doesn't drift the help text — single source of
 # truth per agent-antipatterns "Copy-paste duplication" rule.

@@ -67,7 +67,14 @@ StartTLSOpt = Annotated[
     typer.Option(
         "--starttls",
         # #931/#906: describe the supported LTS series, not a stale patch-level
-        # pin; the enforced runtime floor is maintained by the capability gate.
+        # pin. The option selects acquisition metadata; it does not assert that
+        # a remote service accepts the upgrade:
+        #
+        #   CLI mode -> ScanTarget.starttls_mode -> shared OpenSSL argv
+        #            -> canonical ScanResult -> Rich | JSON | JSONL | CBOM
+        #
+        # The capability gate owns the local OpenSSL version/group contract;
+        # endpoint interoperability remains an observation in the result.
         help=(
             "Upgrade from the service's cleartext port before TLS "
             "(for example SMTP 587, not implicit TLS 465); "
