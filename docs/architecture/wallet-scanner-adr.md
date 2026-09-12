@@ -22,14 +22,16 @@ SPDX-License-Identifier: Apache-2.0
 11. [Signing defects](#11-signing-defects)
 12. [Hard-coded addresses](#12-hard-coded-addresses)
 13. [CLI surface](#13-cli-surface)
-14. [Alternatives considered](#14-alternatives-considered)
-15. [Consequences](#15-consequences)
-16. [Acceptance gates](#16-acceptance-gates)
-17. [Anti-pattern check](#17-anti-pattern-check)
-18. [Revisit when](#18-revisit-when)
-19. [References](#19-references)
+14. [Rendered output](#14-rendered-output)
+15. [Alternatives considered](#15-alternatives-considered)
+16. [Consequences](#16-consequences)
+17. [Acceptance gates](#17-acceptance-gates)
+18. [Anti-pattern check](#18-anti-pattern-check)
+19. [Revisit when](#19-revisit-when)
+20. [References](#20-references)
 
 ## 1. Context
+
 
 
 A wallet holds a key on the same curve families QuReddy already grades. Bitcoin and Ethereum
@@ -45,6 +47,7 @@ did not support. This ADR therefore fixes the claims contract first and treats t
 as settled, because the architecture is a reuse of `ScanResult`.
 
 ## 2. The seven defects this specification exists to stop
+
 
 
 Each was found in the prototype by a human reader, and each passed a green test suite.
@@ -65,6 +68,7 @@ failure: a claim wider than the evidence. Defect 7 is the surface those two hide
 ## 3. Decision
 
 
+
 Add a `wallet` scanner under `scanners/wallet/` and a `qureddy scan wallet` subcommand. Produce a
 `ScanResult`, so `output/` renders rich, JSON, JSONL and CycloneDX with no change to that layer.
 
@@ -73,6 +77,7 @@ Introduce no grading scale. The engine already carries `nist_quantum_security_le
 `Readiness`. A wallet finding uses those and adds none.
 
 ## 4. Claims contract
+
 
 
 This section is normative for the wallet scanner. A finding that breaks a rule here is a defect
@@ -93,6 +98,7 @@ C2 has teeth on the Ethereum lane specifically. That lane reads account state, n
 material, so its exposure conclusion is `INFERRED` in every case.
 
 ## 5. Module layout
+
 
 
 New modules sit under `scanners/wallet/`. Every other layer is reused unchanged.
@@ -132,6 +138,7 @@ cli  ->  output  ->  scanners  ->  core
 ```
 
 ## 6. Data structures and their relationships
+
 
 
 Three dataclasses live inside the scanner and reach no consumer. They are folded into the
@@ -186,6 +193,7 @@ Where each internal field lands:
 | `Signature.r` | the nonce-reuse finding at `Readiness.CLASSICALLY_WEAK` |
 
 ## 7. Call graph and parameter injection
+
 
 
 ```text
@@ -245,6 +253,7 @@ public indexer would disclose the account the setting exists to protect.
 ## 8. Subject model
 
 
+
 A wallet scan contacts an indexer and asks about an account, so the endpoint and the subject are
 different identifiers. `ScanTarget` gains one optional field:
 
@@ -262,6 +271,7 @@ value on a `tls` target is rejected at construction instead of travelling as dat
 reads. `schema_version` stays `qureddy.scan.v1`, because the change is one optional field.
 
 ## 9. Bitcoin lane
+
 
 
 Two lanes run, and their separation is what lets C3 hold.
@@ -300,6 +310,7 @@ whose funding output is `p2pk` yields `INFERRED` at best, and the coverage findi
 ## 10. Ethereum lane
 
 
+
 Three JSON-RPC calls: `eth_getCode`, `eth_getTransactionCount`, `eth_getBalance`.
 `QUREDDY_ETH_RPC` replaces the defaults on the same reasoning as the Esplora override.
 
@@ -321,6 +332,7 @@ slot. It reads no key.
 ## 11. Signing defects
 
 
+
 A repeated ECDSA nonce yields the private key by algebra from public data, with no quantum
 computer. That is `Readiness.CLASSICALLY_WEAK`, distinct from the `QUANTUM_VULNERABLE` exposure
 finding, and the two stay separate in the output.
@@ -335,6 +347,7 @@ balance, because Breitner and Heninger (FC 2019) found repeated-nonce addresses 
 bots that scan for exactly this. A finding that implies funds remain is a defect under C7.
 
 ## 12. Hard-coded addresses
+
 
 
 Per C6, each address compiled into source or documentation carries a check.
@@ -353,6 +366,7 @@ party stays out of the source, because a public ledger entry is still that perso
 ## 13. CLI surface
 
 
+
 ```text
 qureddy scan wallet ADDRESS [--type bitcoin|ethereum] [--format ...] [--output-dir DIR] [-v]
 ```
@@ -362,7 +376,121 @@ from the address form, and `--type` overrides it. Options beyond these five are 
 two endpoint overrides are environment variables, which keeps a credentialed or internal
 endpoint out of shell history.
 
-## 14. Alternatives considered
+## 14. Rendered output
+
+
+The engine owns the scan and its four projections. An application layer reads the JSON and
+decides how to present it. Neither adds a grading scale, per C5.
+
+The rich projection follows the shape `scan ssh` and `scan tls` already produce: a banner, an
+HNDL verdict block, a scan-details table, the NIST categories table, and the findings. The
+sketch below is the target for `scanner.py`; it was written from the live `scan ssh github.com`
+render and is unverified until that module exists.
+
+```text
+$ qureddy scan wallet bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4
+
+QuReddy 0.9.24 by BreachSAFE
+
+ --------------- QuReddy scan: btc://mempool.space:443 ------------------
+ subject: bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4
+ Future Harvest-Now, Decrypt-Later Risk (HNDL):
+   Public key published on chain; secp256k1 meets no NIST category
+
+ Evaluation: Signing key is recoverable by a CRQC from published data.
+ Protection: None observed
+ Hardening:  Move funds to an unspent output
+
+ Observed:
+   - Public key read from vin[].witness[1]: 0279be667e...f81798
+   - Signature nonce reuse: none in 25 examined
+ Action: Spend to a fresh address and stop reusing this one.
+ ------------------------------------------------------------------------
+
+Scan details
+ Field            Value
+ ----------------------------------------------
+ schema_version   qureddy.scan.v1
+ status           completed
+ nist_levels      0
+ nist_max         0
+ posture          EXPOSED
+ subject          bc1qw508d6...kv8f3t4
+ script           v0_p2wpkh
+ key_published    yes
+ findings         13
+ attempts         1
+
+NIST quantum categories observed
+ Surface      Context     Level   Algorithm            Note
+ -----------------------------------------------------------------------
+ signature    observed        0   ECDSA-secp256k1      key read from witness
+ public key   observed        0   secp256k1 pubkey     0279be667e...f81798
+
+Findings
+ Lane       Name                       Value                Source
+ -----------------------------------------------------------------------
+ offline    script.type                v0_p2wpkh            bech32 ver+len
+ offline    network                    mainnet              bech32 hrp
+ constant   nist.level                 0                    core/pqc
+ chain #02  key.published              yes                  vin[] key bytes
+ chain #02  pubkeys.recovered          1                    02|03+32B push
+ chain #01  outputs.funded / spent     172 / 97             chain_stats
+ chain #02  transactions.examined      50 / 172             len(/txs page)
+ chain #02   - confirmed               47                   status.confirmed
+ chain #02   - mempool                  3                   status absent
+ chain #02  inputs.from_this_address   25                   prevout==target
+ chain #02  signatures.examined        25                   DER 0x30
+ defect     nonce.reuse                none in 25           Counter(r)
+ chain #01  balance                    0.01607723 BTC       funded-spent/1e8
+ coverage   paging                     first page only      no :last_seen_txid
+```
+
+Every row carries a lane and a source expression, which is C1 rendered. When a lane fails, C3
+governs and the offline lane still answers:
+
+```text
+ chain      key.published              not tested           indexer unreachable
+ chain      balance                    not tested           indexer unreachable
+ offline    script.type                v0_p2wpkh            bech32 ver+len
+```
+
+The application tab consumes `scan.json` and adds no grading:
+
+```text
++-- itsqday ----------------------------------------------------------+
+|  [11] WALLET                                                      ^ |
+|  +----------------------------------------------+                  |
+|  | bc1q... / 1... / 3... / bc1p... / 0x...       |  [ Check ]       |
+|  +----------------------------------------------+                  |
+|                                                                     |
+|  NIST QUANTUM SECURITY LEVEL 0 . NONE      ECDSA secp256k1          |
+|  +----+----+----+----+----+----+                                    |
+|  | 0  | 1  | 2  | 3  | 4  | 5  |   none AES-128 SHA-256 AES-192 ... |
+|  +----+----+----+----+----+----+                                    |
+|                                                                     |
+|  name                   value              lane       source        |
+|  ------------------------------------------------------------------ |
+|  script.type            v0_p2wpkh          OFFLINE    bech32 ver+len|
+|  key.published          yes                CHAIN #02  witness bytes |
+|  pubkey                 0279be667e...798   CHAIN #02  witness[1]    |
+|  nonce.reuse            none in 25         DEFECT     Counter(r)    |
+|  balance                0.01607723 BTC     CHAIN #01  funded-spent  |
+|                                                                     |
+|  ARTIFACTS  scan.json . scan.cdx.json . certificate.pem . scan.pcap |
++---------------------------------------------------------------------+
+```
+
+```text
+qureddy scan wallet  ->  ScanResult  ->  rich | json | jsonl | cbom
+                                          |
+                          run-<UTC>-btc/scan.json
+                                          |
+                                          +-> the application tab reads it
+```
+
+## 15. Alternatives considered
+
 
 
 | Alternative | Rejected because |
@@ -373,7 +501,8 @@ endpoint out of shell history.
 | Grade exposure on a scale defined here | Published estimates of exposed supply differ by roughly four times, so a scale would encode a contested judgement in a public engine. The application layer may grade; this layer measures |
 | Prove request attribution from a packet capture | The payload is TLS. A capture evidences a session in a window, and attributing individual records to individual calls is beyond it |
 
-## 15. Consequences
+## 16. Consequences
+
 
 
 - `output/` renders every projection with no change, because the contract is `ScanResult`.
@@ -385,7 +514,8 @@ endpoint out of shell history.
   to say so on every run.
 - An application layer consuming this result decides how to grade it.
 
-## 16. Acceptance gates
+## 17. Acceptance gates
+
 
 Each gate maps to a rule it enforces. A gate with no test is `NOT RUN` and says so.
 
@@ -407,8 +537,8 @@ Each gate maps to a rule it enforces. A gate with no test is `NOT RUN` and says 
 G3, G4, G5, G8, G9 and G10 are the machine-checkable form of the claims contract. Without them
 §4 is advice, and the prototype demonstrated that advice does not hold.
 
+## 18. Anti-pattern check
 
-## 17. Anti-pattern check
 
 Run before the branch merges. Each row names the prototype defect it would have caught.
 
@@ -429,14 +559,16 @@ A9 and A10 exist because the prototype's genesis-address defect passed a suite o
 suite asserted the classification logic with a monkeypatched lane, so it never saw that the real
 lane supplies a different input.
 
-## 18. Revisit when
+## 19. Revisit when
+
 
 
 - `:last_seen_txid` paging lands, which changes every coverage finding.
 - BIP-360 activates on mainnet, adding a post-quantum output type with a category above zero.
 - A second account-model chain is added, which tests whether §7 generalizes.
 
-## 19. References
+## 20. References
+
 
 
 - Esplora HTTP API, `Blockstream/esplora/API.md`, address and transaction endpoints.
