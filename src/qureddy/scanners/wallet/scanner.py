@@ -21,19 +21,32 @@ scanner emits carries level 0.
 
 from __future__ import annotations
 
+import os
+import shutil
+import urllib.parse
 from collections import Counter
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from qureddy.core.contracts import (
     Capability,
+    CollectionFailure,
+    CollectionFailureKind,
     CollectionResult,
     Scanner,
     ScanSource,
     SourceKind,
 )
+from qureddy.core.errors import CertificateParseError, QureddyError
 from qureddy.core.ids import new_id
-from qureddy.core.models import Asset, Evidence, Finding, ScanResult, ScanTarget
+from qureddy.core.models import (
+    Asset,
+    Evidence,
+    Finding,
+    ProbeResult,
+    ScanResult,
+    ScanTarget,
+)
 from qureddy.core.vocabulary import (
     WALLET_SIGNATURE_EVIDENCE,
     Confidence,
@@ -44,11 +57,15 @@ from qureddy.core.vocabulary import (
 from qureddy.scanners.common.assets import build_endpoint_asset
 from qureddy.scanners.common.metadata import build_scan_metadata
 from qureddy.scanners.common.posture import build_scan_summary
+from qureddy.scanners.tls._cert_findings import evidence_from_certificate
+from qureddy.scanners.tls.cert_probe import fetch_certificate_pem, parse_certificate
+from qureddy.scanners.tls.openssl_probe import resolve_openssl_path
+from qureddy.scanners.tls.openssl_probe._results import build_probe_result
 from qureddy.scanners.wallet import address as btc_address
 from qureddy.scanners.wallet import ethereum, indexer
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
-    from qureddy.scanners.wallet.indexer import ChainFacts, Signature
+    from qureddy.scanners.wallet.indexer import ChainFacts, HttpExchange, Signature
 
 #: secp256k1 meets no NIST post-quantum category, so Shor recovers the key outright.
 NIST_LEVEL_SECP256K1 = 0
@@ -59,10 +76,30 @@ _KEY_SIZE_BITS = 256
 #: Script classes whose output carries a readable public key with no spend.
 _KEY_IN_OUTPUT_SCRIPTS = frozenset({"p2pk", "multisig", "v1_p2tr"})
 
+#: Hash-addressed script classes. A P2PK or bare-multisig output paying the same
+#: key carries no address, so an address query cannot return it.
+_HASH_ADDRESSED_SCRIPTS = frozenset({"p2pkh", "p2sh"})
+
 #: An r value this short implies a nonce small enough to brute force.
 _LOW_ENTROPY_R_HEX = 8
 
 _NOT_TESTED = "not tested"
+_OPENSSL_ENV = "QUREDDY_OPENSSL"
+_HTTP_TIMEOUT_SECONDS = 12
+_HTTP_OK = 200
+#: Transcript characters kept per exchange. Truncation is stated in the pane.
+_TRANSCRIPT_CHARS = 40_000
+
+#: Candidates tried in order until one passes the capability gate unchanged. The
+#: gate itself is untouched: a candidate is used only when `resolve_openssl_path`
+#: accepts it. PATH alone is unreliable, because a box can carry LibreSSL at
+#: /usr/bin/openssl and a 3.6 series build ahead of the 3.5 LTS one, and neither
+#: satisfies the platform pin. The Homebrew LTS keg is listed for that reason and
+#: is the same candidate the repository's live suite already uses.
+_OPENSSL_CANDIDATES: tuple[str, ...] = (
+    "/opt/homebrew/opt/openssl@3.5/bin/openssl",
+    "/usr/local/opt/openssl@3.5/bin/openssl",
+)
 
 # A5: a bound that shapes output is named and reported, never applied silently.
 #: Transaction ids listed per defect. The full set stays in the signature evidence.
@@ -218,8 +255,58 @@ def _scan_defects(signatures: list[Signature]) -> list[tuple[str, str, list[str]
     return found
 
 
-def _record_bitcoin_chain(builder: _Builder, facts: ChainFacts) -> None:
+def _probe_result(exchange: HttpExchange) -> ProbeResult:
+    """One HTTP exchange as a ProbeResult, the structure every probe here uses.
+
+    A REST call is a probe like any other: a command went out, bytes came back,
+    and it took time. Using `ProbeResult` puts the transcript in `scan.json`
+    beside every subprocess probe's, with no structure invented for it.
+
+    `build_probe_result` is the shared builder, so the evidence-integrity
+    contract from issue 202 holds here too: each stream's sha256 and excerpt
+    derive from one value, which makes the excerpt a verifiable prefix of the
+    hashed stream. `stdout` is the curl shaped transcript, the deepest trace
+    this lane can produce.
+    """
+    return build_probe_result(
+        args=[exchange.method, exchange.url],
+        return_code=exchange.status,
+        stdout=exchange.transcript(),
+        stderr=exchange.error,
+        parser_input="",
+        duration_ms=exchange.duration_ms,
+        attempt_number=1,
+        timeout_seconds=_HTTP_TIMEOUT_SECONDS,
+        failure_category=None,
+    )
+
+
+def _record_exchanges(builder: _Builder, facts: ChainFacts) -> None:
+    """Attach every HTTP round trip as its own evidence record."""
+    for index, exchange in enumerate(facts.exchanges, start=1):
+        succeeded = exchange.status == _HTTP_OK and not exchange.error
+        item = Evidence(
+            id=new_id("evidence"),
+            asset_id=builder.asset.id,
+            evidence_type="wallet.http",
+            observation_type=(
+                ObservationType.OBSERVED if succeeded else ObservationType.NO_RESPONSE
+            ),
+            source="chain",
+            protocol=builder.protocol,
+            confidence=Confidence.HIGH if succeeded else Confidence.LOW,
+            probe_result=_probe_result(exchange),
+            notes=(
+                "lane=chain",
+                f"source=HTTP exchange {index} of {len(facts.exchanges)}",
+            ),
+        )
+        builder.evidence.append(item)
+
+
+def _record_bitcoin_chain(builder: _Builder, facts: ChainFacts, script: str = "") -> None:
     """Facts only the ledger holds, and the coverage bound C4 requires."""
+    _record_exchanges(builder, facts)
     if not facts.reachable:
         for name in (
             "key.published",
@@ -273,6 +360,7 @@ def _record_bitcoin_chain(builder: _Builder, facts: ChainFacts) -> None:
             observation=ObservationType.OBSERVED,
             readiness=Readiness.UNKNOWN,
         )
+        _record_p2pk_blind_spot(builder, script)
 
     builder.record(
         "pubkeys.recovered",
@@ -364,6 +452,45 @@ def _record_bitcoin_chain(builder: _Builder, facts: ChainFacts) -> None:
                 f"unexamined, so every count above is bounded by this page."
             ),
         )
+
+
+def _record_p2pk_blind_spot(builder: _Builder, script: str) -> None:
+    """Disclose the one exposure an address query structurally cannot see.
+
+    A P2PK or bare-multisig output carries the public key and no address, so
+    Esplora sets `scriptpubkey_address` to null and no address query returns it.
+    A P2PKH address is the hash re-encoding of the same key, which is how
+    explorers display such an output, so a key sitting in the open in a P2PK
+    output is invisible to a scan of its P2PKH form.
+
+    Block 0's coinbase is the canonical case: its output is P2PK carrying
+    04678afdb0..., and HASH160 of that key base58-encodes to
+    1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa. Scanning that address reports no
+    published key while the key has been readable since 2009.
+
+    Closing this needs the funding transactions walked by txid, which this lane
+    does not do. Until then the limit is stated, so `key.published: no` is read
+    as what this lane measured and not as a guarantee.
+    """
+    if script not in _HASH_ADDRESSED_SCRIPTS:
+        return
+    builder.record(
+        "key.p2pk_sibling",
+        _NOT_TESTED,
+        lane="chain",
+        source=(
+            "a P2PK or bare-multisig output paying this key carries no address, so "
+            "scriptpubkey_address is null and no address query returns it"
+        ),
+        observation=ObservationType.NOT_TESTABLE,
+        confidence=Confidence.LOW,
+        description=(
+            "not tested. A P2PK or bare-multisig output paying the same key carries "
+            "no address, so an address query cannot reach it. A key published that "
+            "way stays invisible here, which is why the reading above states what "
+            "this lane measured and not that the key is unpublished."
+        ),
+    )
 
 
 def _record_bitcoin_defects(builder: _Builder, facts: ChainFacts) -> None:
@@ -501,6 +628,94 @@ def _record_ethereum(builder: _Builder, facts: ethereum.AccountFacts) -> None:
     builder.not_tested("nonce.reuse", "this lane reads no signature", lane="defect")
 
 
+def _resolve_openssl() -> str | None:
+    """First OpenSSL the existing capability gate accepts, or None.
+
+    Precedence matches the TLS lane: the environment override first, then the
+    known LTS keg locations, then PATH. Each candidate goes through
+    `resolve_openssl_path`, so the gate decides and this function only chooses
+    what to offer it.
+    """
+    candidates = [
+        os.environ.get(_OPENSSL_ENV),
+        *_OPENSSL_CANDIDATES,
+        shutil.which("openssl"),
+    ]
+    for candidate in candidates:
+        if not candidate:
+            continue
+        try:
+            return resolve_openssl_path(candidate)
+        except QureddyError:
+            continue
+    return None
+
+
+def _record_indexer_certificate(builder: _Builder, host: str, port: int) -> None:
+    """Record the indexer's TLS certificate, reusing the TLS lane's own probe.
+
+    The endpoint contacted is an ordinary TLS server, so `fetch_certificate_pem`
+    and `parse_certificate` apply unchanged and `evidence_from_certificate`
+    builds the record. Setting `certificate_pem` also makes `--output-dir` write
+    `certificate.pem`, because `_write_certificate_artifact` looks for exactly
+    that field.
+
+    This certificate authenticates the API host and says nothing about the
+    account, which the finding states. The probe needs an OpenSSL 3.5 LTS
+    binary, so an unusable one yields not tested in place of a gap.
+    """
+    openssl = _resolve_openssl()
+    if openssl is None:
+        builder.not_tested(
+            "indexer.certificate",
+            "no OpenSSL on this host passes the capability gate; "
+            f"set {_OPENSSL_ENV} to a 3.5 LTS build",
+            lane="transport",
+        )
+        return
+    try:
+        pem = fetch_certificate_pem(openssl, host, port, host, timeout_seconds=15)
+    except QureddyError as exc:
+        builder.not_tested("indexer.certificate", str(exc), lane="transport")
+        return
+    if not pem:
+        builder.not_tested(
+            "indexer.certificate", "the handshake returned no leaf", lane="transport"
+        )
+        return
+    try:
+        certificate = parse_certificate(openssl, pem)
+    except (CertificateParseError, QureddyError) as exc:
+        builder.not_tested(
+            "indexer.certificate", f"the leaf did not parse: {exc}", lane="transport"
+        )
+        return
+
+    record = evidence_from_certificate(builder.asset, certificate)
+    # The TLS builder writes its own note and knows nothing of C1, so the lane
+    # and source join it rather than replace it.
+    builder.evidence.append(
+        record.model_copy(
+            update={
+                "certificate_pem": pem,
+                "notes": (*record.notes, *_note("transport", "openssl s_client leaf")),
+            }
+        )
+    )
+    builder.record(
+        "indexer.certificate",
+        f"{certificate.subject}",
+        lane="transport",
+        source="openssl s_client leaf, parsed with openssl x509",
+        observation=ObservationType.OBSERVED,
+        description=(
+            f"Issued by {certificate.issuer}, valid to {certificate.not_after}, "
+            f"signed with {certificate.signature_algorithm}. This authenticates the "
+            f"API host and carries no statement about the account."
+        ),
+    )
+
+
 def _build_result(
     target: ScanTarget, builder: _Builder, started: datetime, protocol: str
 ) -> ScanResult:
@@ -563,8 +778,13 @@ def scan_wallet(target: ScanTarget, *, timeout_seconds: int = 12) -> ScanResult:
     else:
         decoded_btc = btc_address.decode(subject)
         _record_offline(builder, decoded_btc)
-        _record_bitcoin_chain(builder, indexer.fetch(subject, timeout_seconds=timeout_seconds))
+        _record_bitcoin_chain(
+            builder,
+            indexer.fetch(subject, timeout_seconds=timeout_seconds),
+            decoded_btc.script,
+        )
 
+    _record_indexer_certificate(builder, target.host, target.port)
     builder.record(
         "chain.pki",
         "none",
@@ -573,6 +793,27 @@ def scan_wallet(target: ScanTarget, *, timeout_seconds: int = 12) -> ScanResult:
         observation=ObservationType.OBSERVED,
     )
     return _build_result(target, builder, started, protocol)
+
+
+#: Schemes this collector answers for.
+_SCHEMES = frozenset({"btc", "eth"})
+
+
+def _target_from_source(source: ScanSource, subject: str) -> ScanTarget:
+    """Rebuild the ScanTarget a locator plus a subject describe."""
+    parts = urllib.parse.urlsplit(source.locator)
+    if not parts.hostname or not parts.port:
+        msg = f"a wallet locator is scheme://host:port, and this one is {source.locator!r}"
+        raise ValueError(msg)
+    return ScanTarget(
+        original_input=subject,
+        host=parts.hostname,
+        port=parts.port,
+        sni=None,
+        scheme=parts.scheme,
+        subject=subject,
+        locator=f"{parts.scheme}://{parts.hostname}:{parts.port}",
+    )
 
 
 class WalletScanner(Scanner[ScanTarget]):
@@ -589,16 +830,42 @@ class WalletScanner(Scanner[ScanTarget]):
     capabilities = frozenset({Capability.WALLET_ACCOUNT})
 
     def collect(self, source: ScanSource, *, timeout_seconds: int) -> CollectionResult:
-        """Collect one account result through the canonical collector seam."""
-        if source.kind is not SourceKind.ENDPOINT or source.protocol not in ("btc", "eth"):
-            return CollectionResult(
-                collector=self.collector_name,
-                collector_version=self.collector_version,
-                failure=None,
+        """Collect one account result through the canonical collector seam.
+
+        A wallet source names the endpoint in `locator` and the account in
+        `metadata["subject"]`, because an account is not an endpoint and the
+        locator grammar is `scheme://host:port`. A source without a subject is
+        an unsupported source, reported as such in place of an exception.
+        """
+        unsupported = source.kind is not SourceKind.ENDPOINT or source.protocol not in _SCHEMES
+        if unsupported:
+            return self._refuse(
+                f"a wallet source is an endpoint on {sorted(_SCHEMES)}, "
+                f"and this one is {source.protocol!r} of kind {source.kind.value}"
             )
-        raise NotImplementedError(
-            "the wallet collector seam needs a ScanSource to ScanTarget parser; "
-            "the CLI builds the target directly and calls scan"
+        subject = source.metadata.get("subject", "")
+        if not subject:
+            return self._refuse("a wallet source carries the account in metadata['subject']")
+        try:
+            target = _target_from_source(source, subject)
+        except ValueError as exc:
+            return self._refuse(str(exc))
+        result = self.scan(target, timeout_seconds=timeout_seconds)
+        return CollectionResult(
+            collector=self.collector_name,
+            collector_version=self.collector_version,
+            evidence=result.evidence,
+            findings=result.findings,
+            provenance=result.scan.provenance,
+            scan_result=result,
+        )
+
+    def _refuse(self, message: str) -> CollectionResult:
+        """Report an unusable source as a failure the caller cannot mistake for a scan."""
+        return CollectionResult(
+            collector=self.collector_name,
+            collector_version=self.collector_version,
+            failure=CollectionFailure(kind=CollectionFailureKind.UNSUPPORTED, message=message),
         )
 
     def scan(self, target: ScanTarget, *, timeout_seconds: int = 12) -> ScanResult:

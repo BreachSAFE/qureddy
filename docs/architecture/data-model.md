@@ -198,6 +198,7 @@ class ExternalToolDependency
 class FailureCategory { <<enum>> }
 class Finding
 class HndlExposure { <<enum>> }
+class HttpExchange
 class HygieneStatus { <<enum>> }
 class IKEMode { <<enum>> }
 class IKEParseStatus { <<enum>> }
@@ -288,6 +289,7 @@ CatalogDefinition *-- "*" AlgorithmSpec
 CatalogDefinition *-- "*" ProtocolEntry
 CatalogDefinition *-- "*" SourceRecord
 CatalogReceipt --> DigestScope
+ChainFacts *-- "*" HttpExchange
 ChainFacts *-- "*" Signature
 Classification *-- CatalogReceipt
 Classification *-- "*" Rating

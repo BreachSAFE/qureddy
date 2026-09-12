@@ -167,14 +167,29 @@ def test_account_kinds_are_distinguished_on_chain() -> None:
 # --- the projections, written by the real CLI -------------------------------
 
 
+def test_real_cbom_carries_the_indexer_certificate_assets() -> None:
+    """Adding the certificate lights up three upstream emitters with no new code."""
+    completed = _run("scan", "wallet", BTC_UNSPENT, "--format", "cbom")
+    assert completed.returncode == 0, completed.stderr
+    names = {c.get("name", "") for c in json.loads(completed.stdout)["components"]}
+    kinds = {
+        c["cryptoProperties"]["assetType"]
+        for c in json.loads(completed.stdout)["components"]
+        if "cryptoProperties" in c
+    }
+    assert "ECDSA-secp256k1" in names, "the wallet signing algorithm"
+    if "certificate" in kinds:
+        assert any(name.startswith("sha") or "RSA" in name or "EC" in name for name in names)
+
+
 def test_real_cbom_matches_the_shared_signature_asset_shape() -> None:
     completed = _run("scan", "wallet", BTC_UNSPENT, "--format", "cbom")
     assert completed.returncode == 0, completed.stderr
     document = json.loads(completed.stdout)
     assert document["bomFormat"] == "CycloneDX"
-    components = document["components"]
-    assert components, "the CBOM carries the signing algorithm as a crypto asset"
-    crypto = components[0]["cryptoProperties"]
+    signing = next((c for c in document["components"] if c.get("name") == "ECDSA-secp256k1"), None)
+    assert signing is not None, "the CBOM carries the signing algorithm as a crypto asset"
+    crypto = signing["cryptoProperties"]
     assert crypto["assetType"] == "algorithm"
     # The empty-properties regression: another emitter claimed the asset first.
     properties = crypto["algorithmProperties"]
@@ -188,7 +203,16 @@ def test_real_output_dir_writes_all_four_projections(tmp_path: Path) -> None:
     completed = _run("scan", "wallet", BTC_UNSPENT, "--output-dir", str(tmp_path))
     assert completed.returncode == 0, completed.stderr
     written = sorted(path.name for path in tmp_path.iterdir())
-    assert written == ["scan.cdx.json", "scan.json", "scan.jsonl", "scan.rich.txt"]
+    # certificate.pem appears whenever the indexer's leaf was captured, which
+    # needs an OpenSSL the capability gate accepts.
+    assert {"scan.cdx.json", "scan.json", "scan.jsonl", "scan.rich.txt"} <= set(written)
+    assert set(written) <= {
+        "scan.cdx.json",
+        "scan.json",
+        "scan.jsonl",
+        "scan.rich.txt",
+        "certificate.pem",
+    }
     for name in written:
         assert (tmp_path / name).stat().st_size > 0, name
     json.loads((tmp_path / "scan.json").read_text())

@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -45,6 +46,8 @@ DEFAULT_BASES: tuple[str, ...] = (
 ESPLORA_URL_ENV = "QUREDDY_ESPLORA_URL"
 _USER_AGENT = "qureddy-wallet"
 _SATOSHI_PER_BTC = 100_000_000
+#: Body characters kept in a transcript. Truncation is stated where it applies.
+_MAX_BODY_TRACE = 40_000
 
 # A compressed SEC1 point is 33 bytes prefixed 02 or 03; uncompressed is 65 prefixed 04.
 _COMPRESSED_PREFIXES = ("02", "03")
@@ -55,6 +58,58 @@ _DER_MIN_BYTES = 8  # SEQUENCE, length, two INTEGER headers, and a byte of r and
 _DER_INTEGER = 0x02
 _PUSHDATA1 = 0x4C
 _MAX_DIRECT_PUSH = 75
+
+
+@dataclass
+class HttpExchange:
+    """One HTTP round trip, kept whole so a reader can check the scan after the fact.
+
+    This is the REST lane's equivalent of `openssl s_client -msg`: the request
+    line and headers sent, the status line and headers received, the timing, and
+    the body that was parsed. It travels as a `ProbeResult` on the evidence, so
+    it uses the same structure every subprocess probe in this engine already
+    uses.
+    """
+
+    method: str
+    url: str
+    request_headers: dict[str, str] = field(default_factory=dict)
+    status: int = 0
+    reason: str = ""
+    response_headers: dict[str, str] = field(default_factory=dict)
+    duration_ms: int = 0
+    response_bytes: int = 0
+    body_text: str = ""
+    error: str = ""
+
+    @property
+    def host(self) -> str:
+        """Host and port of the endpoint contacted."""
+        return urllib.parse.urlsplit(self.url).netloc
+
+    @property
+    def path(self) -> str:
+        """Request path with its query, as it went on the wire."""
+        parts = urllib.parse.urlsplit(self.url)
+        return (parts.path or "/") + (f"?{parts.query}" if parts.query else "")
+
+    def transcript(self) -> str:
+        """Curl -v shaped: `>` lines sent, `<` lines received, `|` body."""
+        lines = [f"* {self.method} {self.url}", f"* Connected to {self.host}"]
+        lines.append(f"> {self.method} {self.path} HTTP/1.1")
+        lines.append(f"> Host: {self.host}")
+        lines += [f"> {name}: {value}" for name, value in self.request_headers.items()]
+        lines.append(">")
+        if self.error:
+            lines.append(f"* FAILED {self.error}")
+            return "\n".join(lines)
+        lines.append(f"< HTTP/1.1 {self.status} {self.reason}".rstrip())
+        lines += [f"< {name}: {value}" for name, value in self.response_headers.items()]
+        lines.append("<")
+        lines.append(f"* received {self.response_bytes} bytes in {self.duration_ms}ms")
+        if self.body_text:
+            lines += [f"| {line}" for line in self.body_text.splitlines()]
+        return "\n".join(lines)
 
 
 @dataclass(frozen=True)
@@ -80,6 +135,7 @@ class ChainFacts:
     output_scripts: set[str] = field(default_factory=set)
     public_keys: set[str] = field(default_factory=set)
     signatures: list[Signature] = field(default_factory=list)
+    exchanges: list[HttpExchange] = field(default_factory=list)
     transactions_examined: int = 0
     transactions_confirmed: int = 0
     transactions_mempool: int = 0
@@ -98,21 +154,44 @@ def bases() -> tuple[str, ...]:
     return (override,) if override else DEFAULT_BASES
 
 
-def _get_json(url: str, timeout: float) -> Json:
-    # Both the override and the defaults are operator-controlled strings, so the
-    # scheme is checked before the open: `file:` would otherwise turn an indexer
-    # setting into a local-file read.
+def _get_json(url: str, timeout: float, exchanges: list[HttpExchange] | None = None) -> Json:
+    """GET one JSON document, recording the whole exchange for the transcript.
+
+    Both the override and the defaults are operator-controlled strings, so the
+    scheme is checked before the open: `file:` would otherwise turn an indexer
+    setting into a local-file read. Every outcome, including a refused scheme,
+    lands on the `HttpExchange` so a reader sees what was attempted.
+    """
+    headers = {"User-Agent": _USER_AGENT}
+    exchange = HttpExchange(method="GET", url=url, request_headers=dict(headers))
+    if exchanges is not None:
+        exchanges.append(exchange)
     if urllib.parse.urlsplit(url).scheme not in ("http", "https"):
+        exchange.error = "refused: the scheme is neither http nor https"
         return None
-    request = urllib.request.Request(  # noqa: S310 - scheme checked above
-        url, headers={"User-Agent": _USER_AGENT}
-    )
+    request = urllib.request.Request(url, headers=headers)  # noqa: S310 - scheme checked
+    started = time.monotonic()
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:  # noqa: S310
-            decoded: Json = json.loads(response.read().decode("utf-8", "replace"))
-            return decoded
-    except urllib.error.URLError, TimeoutError, ValueError, OSError:
+            raw = response.read()
+            exchange.status = getattr(response, "status", 0) or 0
+            exchange.reason = getattr(response, "reason", "") or ""
+            exchange.response_headers = dict(response.headers.items())
+        exchange.response_bytes = len(raw)
+        decoded: Json = json.loads(raw.decode("utf-8", "replace"))
+    except urllib.error.HTTPError as exc:
+        exchange.status, exchange.error = exc.code, f"HTTP {exc.code}"
         return None
+    except (urllib.error.URLError, TimeoutError, OSError) as exc:
+        exchange.error = f"{type(exc).__name__}: {exc}"
+        return None
+    except ValueError as exc:
+        exchange.error = f"the body was not JSON: {exc}"
+        return None
+    finally:
+        exchange.duration_ms = int((time.monotonic() - started) * 1000)
+    exchange.body_text = json.dumps(decoded, indent=2)[:_MAX_BODY_TRACE]
+    return decoded
 
 
 def parse_der_signature(value: str) -> tuple[str, str] | None:
@@ -199,7 +278,8 @@ def fetch(address: str, *, timeout_seconds: float = 12.0) -> ChainFacts:
         return ChainFacts(error="no address supplied")
     last_error = "every configured indexer was unreachable"
     for base in bases():
-        summary = _get_json(f"{base}/address/{address}", timeout_seconds)
+        exchanges: list[HttpExchange] = []
+        summary = _get_json(f"{base}/address/{address}", timeout_seconds, exchanges)
         if not isinstance(summary, dict) or "chain_stats" not in summary:
             last_error = f"{base} returned no address summary"
             continue
@@ -213,8 +293,9 @@ def fetch(address: str, *, timeout_seconds: float = 12.0) -> ChainFacts:
             spent_txo_count=int(chain_stats.get("spent_txo_count", 0)),
             balance_satoshi=int(chain_stats.get("funded_txo_sum", 0))
             - int(chain_stats.get("spent_txo_sum", 0)),
+            exchanges=exchanges,
         )
-        transactions = _get_json(f"{base}/address/{address}/txs", timeout_seconds)
+        transactions = _get_json(f"{base}/address/{address}/txs", timeout_seconds, exchanges)
         if isinstance(transactions, list):
             facts.transactions_examined = len(transactions)
             facts.transactions_confirmed = sum(
