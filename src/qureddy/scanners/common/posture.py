@@ -14,7 +14,6 @@ collectors own acquisition, and renderers only project this result.
 
 from __future__ import annotations
 
-from qureddy.core.evaluation import InterpretationDisplay, PostureEvaluation
 from qureddy.core.models import (
     AxisStatus,
     Evidence,
@@ -29,17 +28,21 @@ from qureddy.core.models import (
     ScanSummary,
     ScanTarget,
 )
-from qureddy.core.vocabulary import SIGNATURE_ONLY_PROTOCOLS
 from qureddy.scanners.common.evaluation import (
     PostureSignals,
     derive_signals,
     evaluate_posture,
 )
 from qureddy.scanners.common.evaluation import reason_codes as build_reason_codes
+from qureddy.scanners.common.evaluation.display import build_display
 from qureddy.scanners.common.rollup import (
     highest_severity,
     scan_nist_quantum_security_levels,
     scan_readiness,
+)
+from qureddy.scanners.common.signature_posture import (
+    protocol_hndl_exposure,
+    signature_only_pqc_axis,
 )
 
 POLICY_ID = "qureddy-readiness"
@@ -152,15 +155,12 @@ def _pqc_axis(
     pure_pq: bool,
     hybrid_failed: bool,
     not_testable: bool,
-    signature_only_classical: bool = False,
+    signature_only: tuple[PqcSupport, AxisStatus] | None = None,
 ) -> tuple[PqcSupport, AxisStatus]:
     if not_testable:
         return PqcSupport.NOT_TESTABLE, AxisStatus.NOT_TESTABLE
-    if signature_only_classical:
-        # A chain account negotiates nothing, so the key-exchange signals never
-        # fire and the axis would read UNKNOWN with the algorithm in hand. The
-        # classical signature is the whole of the observed protection here.
-        return PqcSupport.CLASSICAL_ONLY_OBSERVED, AxisStatus.CLASSICAL
+    if signature_only is not None:
+        return signature_only
     if hybrid:
         return PqcSupport.HYBRID_OBSERVED, AxisStatus.HYBRID
     if pure_pq:
@@ -230,7 +230,7 @@ def _hndl_exposure(
     signature_classical: bool = False,
 ) -> HndlExposure:
     """Classify future-quantum exposure without ranking present-day hygiene."""
-    by_protocol = _protocol_hndl_exposure(
+    by_protocol = protocol_hndl_exposure(
         protocol=protocol, not_testable=not_testable, signature_classical=signature_classical
     )
     if by_protocol is not None:
@@ -242,19 +242,6 @@ def _hndl_exposure(
     if classical:
         return HndlExposure.AT_RISK
     return HndlExposure.UNKNOWN
-
-
-def _protocol_hndl_exposure(
-    *, protocol: str, not_testable: bool, signature_classical: bool
-) -> HndlExposure | None:
-    """Settle the cases a key-exchange reading cannot answer, or return None."""
-    if protocol == "ike" or not_testable:
-        return HndlExposure.UNKNOWN
-    if protocol in SIGNATURE_ONLY_PROTOCOLS:
-        # The harvestable value is the public key itself: recorded today, solved
-        # by Shor later. A classical signing algorithm is that exposure.
-        return HndlExposure.AT_RISK if signature_classical else HndlExposure.UNKNOWN
-    return None
 
 
 def _hygiene_status(
@@ -281,71 +268,6 @@ def _hygiene_status(
     return HygieneStatus.OK if has_findings else HygieneStatus.UNKNOWN
 
 
-def _overall_status(
-    support: PqcSupport,
-    hygiene_status: HygieneStatus,
-) -> str:
-    if support is PqcSupport.PURE_PQ_OBSERVED:
-        return "Post-quantum protection observed"
-    if support is PqcSupport.HYBRID_OBSERVED:
-        return (
-            "Hybrid PQC protection observed"
-            if hygiene_status is HygieneStatus.OK
-            else "Hybrid PQC protection with hardening required"
-        )
-    if support is PqcSupport.CLASSICAL_ONLY_OBSERVED:
-        return "Classical-only protection observed"
-    return "PQC protection could not be confirmed"
-
-
-def _display(
-    axes: PostureAxes,
-    *,
-    hndl_exposure: HndlExposure,
-    hygiene_status: HygieneStatus,
-    not_testable: bool,
-    evaluation: PostureEvaluation,
-) -> InterpretationDisplay:
-    """Translate stable machine statuses into concise CISO-facing language."""
-    if not_testable:
-        return InterpretationDisplay(
-            overall_status="Unable to assess",
-            quantum_protection="PQC capability could not be tested",
-            future_quantum_risk="Exposure is unknown",
-            current_hygiene="Security hygiene could not be assessed",
-            evaluation=evaluation,
-        )
-
-    quantum_protection = {
-        PqcSupport.PURE_PQ_OBSERVED: "Pure post-quantum key exchange observed",
-        PqcSupport.HYBRID_OBSERVED: "Hybrid PQC key exchange observed",
-        PqcSupport.CLASSICAL_ONLY_OBSERVED: "Only classical key exchange observed",
-        PqcSupport.UNKNOWN: "No PQC key exchange was confirmed",
-        PqcSupport.NOT_TESTABLE: "PQC capability could not be tested",
-    }[axes.pqc_support]
-    future_quantum_risk = {
-        HndlExposure.PROTECTED: "Protected against harvest-now/decrypt-later exposure",
-        HndlExposure.PROTECTED_DEFEASIBLE: (
-            "Protected today, but a classical downgrade path remains"
-        ),
-        HndlExposure.AT_RISK: "At risk of harvest-now/decrypt-later exposure",
-        HndlExposure.UNKNOWN: "Exposure is unknown",
-    }[hndl_exposure]
-    current_hygiene = {
-        HygieneStatus.OK: "No immediate protocol hardening issue identified",
-        HygieneStatus.ACTION_NEEDED: "Protocol hardening is required",
-        HygieneStatus.WEAK: "Weak cryptography requires remediation",
-        HygieneStatus.UNKNOWN: "Security hygiene could not be assessed",
-    }[hygiene_status]
-    return InterpretationDisplay(
-        overall_status=_overall_status(axes.pqc_support, hygiene_status),
-        quantum_protection=quantum_protection,
-        future_quantum_risk=future_quantum_risk,
-        current_hygiene=current_hygiene,
-        evaluation=evaluation,
-    )
-
-
 def _build_axes(
     findings: list[Finding],
     evidence: list[Evidence],
@@ -361,8 +283,8 @@ def _build_axes(
         pure_pq=signals.pure_pq,
         hybrid_failed=signals.hybrid_failed,
         not_testable=not_testable,
-        signature_only_classical=(
-            protocol in SIGNATURE_ONLY_PROTOCOLS and signals.authentication_classical
+        signature_only=signature_only_pqc_axis(
+            protocol=protocol, signature_classical=signals.authentication_classical
         ),
     )
 
@@ -383,6 +305,27 @@ def _build_axes(
     return axes, signals, not_testable
 
 
+def _statuses(
+    signals: PostureSignals,
+    *,
+    protocol: str,
+    not_testable: bool,
+    has_findings: bool,
+) -> tuple[HndlExposure, HygieneStatus]:
+    """Compute the two independent status axes from one set of signals."""
+    return (
+        _hndl_exposure(
+            protocol=protocol,
+            classical=signals.classical_kex,
+            hybrid=signals.hybrid,
+            pure_pq=signals.pure_pq,
+            not_testable=not_testable,
+            signature_classical=signals.authentication_classical,
+        ),
+        _hygiene_status(signals, not_testable=not_testable, has_findings=has_findings),
+    )
+
+
 def build_interpretation(
     findings: list[Finding],
     evidence: list[Evidence],
@@ -397,16 +340,9 @@ def build_interpretation(
     reason_codes = build_reason_codes(findings, failure_category)
     positive_evidence = _has_positive_evidence(evidence, failure_category)
     headline, recommended_action = _ciso_text(axes, reason_codes, positive_evidence)
-    hndl_exposure = _hndl_exposure(
-        protocol=resolved_protocol,
-        classical=signals.classical_kex,
-        hybrid=signals.hybrid,
-        pure_pq=signals.pure_pq,
-        not_testable=not_testable,
-        signature_classical=signals.authentication_classical,
-    )
-    hygiene_status = _hygiene_status(
+    hndl_exposure, hygiene_status = _statuses(
         signals,
+        protocol=resolved_protocol,
         not_testable=not_testable,
         has_findings=bool(findings),
     )
@@ -422,7 +358,7 @@ def build_interpretation(
         effective=scan_readiness(findings, evidence),
         headline=headline,
         recommended_action=recommended_action,
-        display=_display(
+        display=build_display(
             axes,
             hndl_exposure=hndl_exposure,
             hygiene_status=hygiene_status,
