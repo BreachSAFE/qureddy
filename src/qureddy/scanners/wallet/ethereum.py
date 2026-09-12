@@ -21,12 +21,14 @@ from __future__ import annotations
 
 import json
 import os
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
+from qureddy.scanners.wallet.indexer import HttpExchange
 from qureddy.scanners.wallet.keccak import eip55
 
 DEFAULT_RPCS: tuple[str, ...] = (
@@ -36,6 +38,8 @@ DEFAULT_RPCS: tuple[str, ...] = (
 ETH_RPC_ENV = "QUREDDY_ETH_RPC"
 _USER_AGENT = "qureddy-wallet"
 _WEI_PER_ETHER = 10**18
+#: Body characters kept in a transcript. Truncation is stated where it applies.
+_MAX_BODY_TRACE = 40_000
 
 _ADDRESS_TOTAL_CHARS = 42
 _HEX_DIGITS = frozenset("0123456789abcdef")
@@ -79,6 +83,7 @@ class AccountFacts:
     balance_wei: int = 0
     code_bytes: int = 0
     delegate: str = ""
+    exchanges: list[HttpExchange] = field(default_factory=list)
 
     @property
     def balance_ether(self) -> str:
@@ -142,23 +147,58 @@ def delegate_of(code: str) -> str:
     return "0x" + eip55(body[len(_DELEGATION_PREFIX) :])
 
 
-def _rpc(url: str, method: str, params: list[Any], timeout: float) -> Any:
-    """One JSON-RPC call. Returns None on any failure, including a refused scheme."""
-    # The override is operator-controlled, so the scheme is checked before the open:
-    # `file:` would otherwise turn an endpoint setting into a local-file read.
-    if urllib.parse.urlsplit(url).scheme not in ("http", "https"):
-        return None
+def _rpc(
+    url: str,
+    method: str,
+    params: list[Any],
+    timeout: float,
+    exchanges: list[HttpExchange] | None = None,
+) -> Any:
+    """One JSON-RPC call, recording the whole exchange for the transcript.
+
+    The override is operator-controlled, so the scheme is checked before the
+    open: `file:` would otherwise turn an endpoint setting into a local-file
+    read. Every outcome lands on the `HttpExchange`, a refused scheme included,
+    so a reader sees what was attempted.
+    """
     payload = json.dumps({"jsonrpc": "2.0", "id": 1, "method": method, "params": params})
-    request = urllib.request.Request(  # noqa: S310 - scheme checked above
-        url,
-        data=payload.encode(),
-        headers={"Content-Type": "application/json", "User-Agent": _USER_AGENT},
+    headers = {"Content-Type": "application/json", "User-Agent": _USER_AGENT}
+    exchange = HttpExchange(
+        method="POST",
+        url=url,
+        operation=method,
+        request_headers=dict(headers),
+        request_body=payload,
     )
+    if exchanges is not None:
+        exchanges.append(exchange)
+    if urllib.parse.urlsplit(url).scheme not in ("http", "https"):
+        exchange.error = "refused: the scheme is neither http nor https"
+        return None
+    request = urllib.request.Request(  # noqa: S310 - scheme checked above
+        url, data=payload.encode(), headers=headers
+    )
+    started = time.monotonic()
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:  # noqa: S310
-            body = json.loads(response.read().decode("utf-8", "replace"))
-    except urllib.error.URLError, TimeoutError, ValueError, OSError:
+            raw = response.read()
+            exchange.status = getattr(response, "status", 0) or 0
+            exchange.reason = getattr(response, "reason", "") or ""
+            exchange.response_headers = dict(response.headers.items())
+        exchange.response_bytes = len(raw)
+        body = json.loads(raw.decode("utf-8", "replace"))
+    except urllib.error.HTTPError as exc:
+        exchange.status, exchange.error = exc.code, f"HTTP {exc.code}"
         return None
+    except (urllib.error.URLError, TimeoutError, OSError) as exc:
+        exchange.error = f"{type(exc).__name__}: {exc}"
+        return None
+    except ValueError as exc:
+        exchange.error = f"the body was not JSON: {exc}"
+        return None
+    finally:
+        exchange.duration_ms = int((time.monotonic() - started) * 1000)
+    exchange.body_text = json.dumps(body, indent=2)[:_MAX_BODY_TRACE]
     if not isinstance(body, dict) or "result" not in body:
         return None
     return body["result"]
@@ -181,11 +221,14 @@ def fetch(address: str, *, timeout_seconds: float = 12.0) -> AccountFacts:
     last_error = "every configured RPC endpoint was unreachable"
     for url in rpcs():
         host = urllib.parse.urlsplit(url).netloc
-        code = _rpc(url, "eth_getCode", [address, "latest"], timeout_seconds)
+        exchanges: list[HttpExchange] = []
+        code = _rpc(url, "eth_getCode", [address, "latest"], timeout_seconds, exchanges)
         if not isinstance(code, str):
             last_error = f"{host} did not answer eth_getCode"
             continue
-        nonce = _as_int(_rpc(url, "eth_getTransactionCount", [address, "latest"], timeout_seconds))
+        nonce = _as_int(
+            _rpc(url, "eth_getTransactionCount", [address, "latest"], timeout_seconds, exchanges)
+        )
         if nonce is None:
             last_error = f"{host} did not answer eth_getTransactionCount"
             continue
@@ -196,8 +239,11 @@ def fetch(address: str, *, timeout_seconds: float = 12.0) -> AccountFacts:
             nonce=nonce,
             delegate=delegate_of(code),
             code_bytes=max(0, (len(code) - 2) // 2),
+            exchanges=exchanges,
         )
-        balance = _as_int(_rpc(url, "eth_getBalance", [address, "latest"], timeout_seconds))
+        balance = _as_int(
+            _rpc(url, "eth_getBalance", [address, "latest"], timeout_seconds, exchanges)
+        )
         if balance is None:
             facts.error = "balance was unavailable, so it reads not tested"
         else:

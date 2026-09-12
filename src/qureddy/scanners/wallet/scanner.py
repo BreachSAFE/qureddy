@@ -269,7 +269,7 @@ def _probe_result(exchange: HttpExchange) -> ProbeResult:
     this lane can produce.
     """
     return build_probe_result(
-        args=[exchange.method, exchange.url],
+        args=[exchange.method, exchange.url, *([exchange.operation] if exchange.operation else [])],
         return_code=exchange.status,
         stdout=exchange.transcript(),
         stderr=exchange.error,
@@ -281,9 +281,9 @@ def _probe_result(exchange: HttpExchange) -> ProbeResult:
     )
 
 
-def _record_exchanges(builder: _Builder, facts: ChainFacts) -> None:
+def _record_exchanges(builder: _Builder, exchanges: list[HttpExchange]) -> None:
     """Attach every HTTP round trip as its own evidence record."""
-    for index, exchange in enumerate(facts.exchanges, start=1):
+    for index, exchange in enumerate(exchanges, start=1):
         succeeded = exchange.status == _HTTP_OK and not exchange.error
         item = Evidence(
             id=new_id("evidence"),
@@ -298,7 +298,7 @@ def _record_exchanges(builder: _Builder, facts: ChainFacts) -> None:
             probe_result=_probe_result(exchange),
             notes=(
                 "lane=chain",
-                f"source=HTTP exchange {index} of {len(facts.exchanges)}",
+                f"source=HTTP exchange {index} of {len(exchanges)}",
             ),
         )
         builder.evidence.append(item)
@@ -306,7 +306,7 @@ def _record_exchanges(builder: _Builder, facts: ChainFacts) -> None:
 
 def _record_bitcoin_chain(builder: _Builder, facts: ChainFacts, script: str = "") -> None:
     """Facts only the ledger holds, and the coverage bound C4 requires."""
-    _record_exchanges(builder, facts)
+    _record_exchanges(builder, facts.exchanges)
     if not facts.reachable:
         for name in (
             "key.published",
@@ -536,6 +536,7 @@ def _record_bitcoin_defects(builder: _Builder, facts: ChainFacts) -> None:
 
 def _record_ethereum(builder: _Builder, facts: ethereum.AccountFacts) -> None:
     """Account state. C2 holds: this lane reads no key material."""
+    _record_exchanges(builder, facts.exchanges)
     if not facts.reachable:
         for name in ("key.published", "account.kind", "account.nonce", "balance"):
             builder.not_tested(name, facts.error or "the RPC lane was unreachable", lane="rpc")

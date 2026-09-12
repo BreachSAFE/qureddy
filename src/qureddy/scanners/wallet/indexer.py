@@ -73,7 +73,15 @@ class HttpExchange:
 
     method: str
     url: str
+    operation: str = ""
+    """The call's name where the URL does not carry it, e.g. a JSON-RPC method.
+
+    Every Ethereum call posts to one URL, so without this the console's
+    `Commands run` panel, which deduplicates on the rendered command, would
+    collapse three distinct calls into one line.
+    """
     request_headers: dict[str, str] = field(default_factory=dict)
+    request_body: str = ""
     status: int = 0
     reason: str = ""
     response_headers: dict[str, str] = field(default_factory=dict)
@@ -100,6 +108,8 @@ class HttpExchange:
         lines.append(f"> Host: {self.host}")
         lines += [f"> {name}: {value}" for name, value in self.request_headers.items()]
         lines.append(">")
+        if self.request_body:
+            lines += [f"| {line}" for line in self.request_body.splitlines()]
         if self.error:
             lines.append(f"* FAILED {self.error}")
             return "\n".join(lines)
