@@ -158,6 +158,7 @@ inheritance, import, and runtime dependency edges are outside this graph's scope
 ```mermaid
 classDiagram
 direction LR
+class AddressProfile
 class AlgorithmFacts
 class AlgorithmProfile
 class AlgorithmSpec
@@ -175,6 +176,7 @@ class CertificateDetails
 class CertificateInfo
 class CertificateObservation
 class CertificateParseError
+class ChainFacts
 class Classification
 class CollectionFailure
 class CollectionFailureKind { <<enum>> }
@@ -186,6 +188,7 @@ class ComponentRole { <<enum>> }
 class Confidence { <<enum>> }
 class CryptoCatalogSnapshot
 class CryptoPrimitive { <<enum>> }
+class DecodedAddress
 class DigestScope { <<enum>> }
 class EntryKind { <<enum>> }
 class Evidence
@@ -256,6 +259,7 @@ class ScanTarget
 class Scanner
 class SemanticSignal { <<enum>> }
 class Severity { <<enum>> }
+class Signature
 class SourceKind { <<enum>> }
 class SourceRecord
 class SourceRef
@@ -280,6 +284,7 @@ CatalogDefinition *-- "*" AlgorithmSpec
 CatalogDefinition *-- "*" ProtocolEntry
 CatalogDefinition *-- "*" SourceRecord
 CatalogReceipt --> DigestScope
+ChainFacts *-- "*" Signature
 Classification *-- CatalogReceipt
 Classification *-- "*" Rating
 Classification --> MatchStatus

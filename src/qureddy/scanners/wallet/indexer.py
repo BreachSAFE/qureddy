@@ -30,6 +30,13 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass, field
+from typing import Any
+
+# A third party serves this JSON, so its shape is established by isinstance checks at
+# each use rather than by a static type. Naming that here keeps the dynamism at the
+# boundary where the bytes arrive, in place of spreading ignores through the readers.
+Json = Any
+JsonObject = dict[str, Any]
 
 DEFAULT_BASES: tuple[str, ...] = (
     "https://mempool.space/api",
@@ -44,6 +51,7 @@ _COMPRESSED_PREFIXES = ("02", "03")
 _COMPRESSED_HEX_LEN = 66
 _UNCOMPRESSED_HEX_LEN = 130
 _DER_SEQUENCE = 0x30
+_DER_MIN_BYTES = 8  # SEQUENCE, length, two INTEGER headers, and a byte of r and s each
 _DER_INTEGER = 0x02
 _PUSHDATA1 = 0x4C
 _MAX_DIRECT_PUSH = 75
@@ -80,6 +88,7 @@ class ChainFacts:
 
     @property
     def balance_btc(self) -> str:
+        """Confirmed balance in BTC. Mempool movement is excluded."""
         return f"{self.balance_satoshi / _SATOSHI_PER_BTC:.8f}"
 
 
@@ -89,7 +98,7 @@ def bases() -> tuple[str, ...]:
     return (override,) if override else DEFAULT_BASES
 
 
-def _get_json(url: str, timeout: float) -> object | None:
+def _get_json(url: str, timeout: float) -> Json:
     # Both the override and the defaults are operator-controlled strings, so the
     # scheme is checked before the open: `file:` would otherwise turn an indexer
     # setting into a local-file read.
@@ -100,8 +109,9 @@ def _get_json(url: str, timeout: float) -> object | None:
     )
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:  # noqa: S310
-            return json.loads(response.read().decode("utf-8", "replace"))
-    except (urllib.error.URLError, TimeoutError, ValueError, OSError):
+            decoded: Json = json.loads(response.read().decode("utf-8", "replace"))
+            return decoded
+    except urllib.error.URLError, TimeoutError, ValueError, OSError:
         return None
 
 
@@ -111,7 +121,7 @@ def parse_der_signature(value: str) -> tuple[str, str] | None:
         raw = bytes.fromhex(value)
     except ValueError:
         return None
-    if len(raw) < 8 or raw[0] != _DER_SEQUENCE or raw[2] != _DER_INTEGER:
+    if len(raw) < _DER_MIN_BYTES or raw[0] != _DER_SEQUENCE or raw[2] != _DER_INTEGER:
         return None
     r_length = raw[3]
     if 4 + r_length + 2 > len(raw) or raw[4 + r_length] != _DER_INTEGER:
@@ -156,10 +166,10 @@ def looks_like_public_key(value: str) -> bool:
     return compressed or uncompressed
 
 
-def _harvest(transactions: list[dict], address: str, facts: ChainFacts) -> None:
+def _harvest(transactions: list[JsonObject], address: str, facts: ChainFacts) -> None:
     """Read script classes, published public keys and signatures out of a page."""
     for transaction in transactions:
-        for output in transaction.get("vout", []):
+        for output in transaction.get("vout") or []:
             if output.get("scriptpubkey_address") == address:
                 script = output.get("scriptpubkey_type")
                 if script:
@@ -210,9 +220,7 @@ def fetch(address: str, *, timeout_seconds: float = 12.0) -> ChainFacts:
             facts.transactions_confirmed = sum(
                 1 for tx in transactions if (tx.get("status") or {}).get("confirmed")
             )
-            facts.transactions_mempool = (
-                facts.transactions_examined - facts.transactions_confirmed
-            )
+            facts.transactions_mempool = facts.transactions_examined - facts.transactions_confirmed
             facts.truncated = facts.tx_count > facts.transactions_examined
             _harvest(transactions, address, facts)
         else:

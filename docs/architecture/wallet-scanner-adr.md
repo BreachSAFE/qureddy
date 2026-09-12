@@ -363,6 +363,17 @@ Per C6, each address compiled into source or documentation carries a check.
 An address recalled without a check is removed. An address belonging to an identifiable third
 party stays out of the source, because a public ledger entry is still that person's account.
 
+Two addresses were removed under those rules. They are named here so a later reader can see what
+was dropped and why, and so this repository carries its own record:
+
+| Removed | Reason |
+|---|---|
+| `3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy` | recalled as a P2SH example, with no source stating what it is. It exists on chain with 745 transactions, and existing establishes nothing about what it is |
+| `bc1qttv968rzhpdha9rtj5k6dzp4s3jfzppdqjjuef` | an arbitrary third party's live wallet, taken by walking `vin[0].prevout` on a recent mempool transaction |
+
+`profiles.py` records both in `REMOVED_ADDRESSES`, and gate G2 asserts neither reappears in
+`PROFILES`.
+
 ## 13. CLI surface
 
 
@@ -533,6 +544,11 @@ Each gate maps to a rule it enforces. A gate with no test is `NOT RUN` and says 
 | G10 | C8 | no rendered finding value exceeds a value plus its units | `test_wallet_claims.py` |
 | G11 | contract | `just gates` passes: lint, format, typecheck, test, bandit, pip-audit, deptry, reuse | `just gates` |
 | G12 | live | one real run per chain against mainnet produces a schema-valid `ScanResult` | `tests/live/` |
+| G13 | generated docs | `docs/architecture/data-model.md` is regenerated after any model or dataclass change | `test_gen_data_model.py` |
+
+G13 exists because `docs/architecture/data-model.md` is generated from the source by
+`scripts/gen_data_model.py`, so a new dataclass under `scanners/wallet/` turns that gate red
+until the document is regenerated.
 
 G3, G4, G5, G8, G9 and G10 are the machine-checkable form of the claims contract. Without them
 §4 is advice, and the prototype demonstrated that advice does not hold.

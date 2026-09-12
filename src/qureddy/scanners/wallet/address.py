@@ -27,6 +27,15 @@ _BECH32 = "qpzry9x8gf2tvdw0s3jn54khce6mua7l"
 _BECH32_CONST = 1
 _BECH32M_CONST = 0x2BC830A3
 _MAX_ADDRESS_CHARS = 128
+_P2WPKH_PROGRAM_BYTES = 20
+_P2WSH_PROGRAM_BYTES = 32
+# BIP-141 bounds every witness program to this range; version 0 narrows it further.
+_MIN_PROGRAM_BYTES = 2
+_MAX_PROGRAM_BYTES = 40
+_MAX_WITNESS_VERSION = 16
+# base58check: a version byte, a 20-byte hash, and a 4-byte checksum.
+_BASE58_MIN_RAW_BYTES = 5
+_BASE58_PAYLOAD_BYTES = 21
 
 # base58 version byte -> (script class, network)
 _VERSION_BYTES = {
@@ -78,6 +87,7 @@ class DecodedAddress:
 
     @property
     def valid(self) -> bool:
+        """True when the address decoded and every other field carries a read value."""
         return not self.error
 
 
@@ -91,7 +101,7 @@ def _base58check(value: str) -> bytes | None:
         total = total * 58 + index
     body = total.to_bytes((total.bit_length() + 7) // 8, "big") if total else b""
     raw = b"\x00" * (len(value) - len(value.lstrip("1"))) + body
-    if len(raw) < 5:
+    if len(raw) < _BASE58_MIN_RAW_BYTES:
         return None
     payload, checksum = raw[:-4], raw[-4:]
     if hashlib.sha256(hashlib.sha256(payload).digest()).digest()[:4] != checksum:
@@ -159,13 +169,23 @@ def _decode_segwit(address: str, hrp: str, data: list[int], encoding: str) -> De
     if hrp not in _HRP_NETWORKS or not data:
         return DecodedAddress(address=address, error=f"unknown segwit prefix {hrp!r}")
     version, program = data[0], _convert_bits(data[1:], 5, 8)
-    if program is None or not 2 <= len(program) <= 40:
+    if program is None or not _MIN_PROGRAM_BYTES <= len(program) <= _MAX_PROGRAM_BYTES:
         return DecodedAddress(address=address, error="witness program length is out of range")
+    # BIP-141 narrows witness version 0 to exactly 20 or 32 bytes, on top of the
+    # generic 2 to 40 range every version shares. The generic gate alone accepts
+    # BC1QR508D6QEJXTDG4Y5R3ZARVARYV98GJ9P, a 16-byte v0 program that appears in
+    # the invalid list of both BIP-173 and BIP-350, and no consensus rule
+    # recognises it as spendable.
+    if version == 0 and len(program) not in (_P2WPKH_PROGRAM_BYTES, _P2WSH_PROGRAM_BYTES):
+        return DecodedAddress(
+            address=address,
+            error="witness version 0 program must be 20 or 32 bytes (BIP-141)",
+        )
     # BIP-350 pairs witness version 0 with bech32 and every later version with
     # bech32m; a crossed pair is a different address than the sender intended.
     version_zero_mismatch = version == 0 and encoding != "bech32"
     later_version_mismatch = version > 0 and encoding != "bech32m"
-    if version > 16 or version_zero_mismatch or later_version_mismatch:
+    if version > _MAX_WITNESS_VERSION or version_zero_mismatch or later_version_mismatch:
         return DecodedAddress(address=address, error="witness version and encoding disagree")
     script = {
         (0, 20): "v0_p2wpkh",
@@ -185,6 +205,32 @@ def _decode_segwit(address: str, hrp: str, data: list[int], encoding: str) -> De
     )
 
 
+def _decode_base58check(address: str) -> DecodedAddress:
+    """Decode a base58check address into its script class."""
+    payload = _base58check(address)
+    if payload is None:
+        return DecodedAddress(
+            address=address, error="address fails both base58check and bech32 decoding"
+        )
+    if len(payload) != _BASE58_PAYLOAD_BYTES:
+        return DecodedAddress(address=address, error="base58 payload length is unexpected")
+    script, network = _VERSION_BYTES.get(payload[0], ("", ""))
+    if not script:
+        return DecodedAddress(
+            address=address, error=f"base58 version byte 0x{payload[0]:02x} is unassigned"
+        )
+    sig_scheme, key_in_output = _SCRIPT_SCHEMES[script]
+    return DecodedAddress(
+        address=address,
+        script=script,
+        network=network,
+        scheme=sig_scheme,
+        key_in_output=key_in_output,
+        program_length=_P2WPKH_PROGRAM_BYTES,
+        encoding="base58check",
+    )
+
+
 def decode(address: str) -> DecodedAddress:
     """Decode a Bitcoin address offline. Always returns; a rejection sets `error`."""
     candidate = (address or "").strip()
@@ -200,28 +246,7 @@ def decode(address: str) -> DecodedAddress:
     if segwit is not None:
         return _decode_segwit(candidate, *segwit)
 
-    payload = _base58check(candidate)
-    if payload is None:
-        return DecodedAddress(
-            address=candidate, error="address fails both base58check and bech32 decoding"
-        )
-    if len(payload) != 21:
-        return DecodedAddress(address=candidate, error="base58 payload length is unexpected")
-    script, network = _VERSION_BYTES.get(payload[0], ("", ""))
-    if not script:
-        return DecodedAddress(
-            address=candidate, error=f"base58 version byte 0x{payload[0]:02x} is unassigned"
-        )
-    sig_scheme, key_in_output = _SCRIPT_SCHEMES[script]
-    return DecodedAddress(
-        address=candidate,
-        script=script,
-        network=network,
-        scheme=sig_scheme,
-        key_in_output=key_in_output,
-        program_length=20,
-        encoding="base58check",
-    )
+    return _decode_base58check(candidate)
 
 
 def signature_scheme(script: str) -> str:
