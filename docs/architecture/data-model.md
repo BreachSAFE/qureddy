@@ -167,6 +167,7 @@ class AlgorithmSpec
 class AlgorithmUse
 class Asset
 class AxisStatus { <<enum>> }
+class Builder
 class Capability { <<enum>> }
 class CatalogCompileError
 class CatalogDefinition
@@ -274,7 +275,6 @@ class ToolPolicy { <<enum>> }
 class WalletScanner
 class _AlgorithmFields
 class _BoundedCapture
-class _Builder
 class _KexClassification
 class _LocalOpenSSLProblem
 class _NativeEndpointCollector
