@@ -118,7 +118,7 @@ The generated table shows both Python member names and serialized values.
 | Enum | Module | Members and serialized values |
 |---|---|---|
 | `AxisStatus` | `core.vocabulary` | `HYBRID = "hybrid"`, `PURE_PQ = "pure_pq"`, `CLASSICAL = "classical"`, `ACCEPTABLE = "acceptable"`, `ACTION_NEEDED = "action_needed"`, `UNKNOWN = "unknown"`, `NOT_TESTABLE = "not_testable"`, `NOT_APPLICABLE = "not_applicable"` |
-| `Capability` | `core.contracts` | `TLS_ENDPOINT = "tls.endpoint"`, `SSH_ENDPOINT = "ssh.endpoint"`, `SSH_PUBLIC_KEY = "ssh.public_key"`, `SSH_CONFIG = "ssh.config"`, `X509_CERTIFICATE = "x509.certificate"`, `IKE_ENDPOINT = "ike.endpoint"` |
+| `Capability` | `core.contracts` | `TLS_ENDPOINT = "tls.endpoint"`, `SSH_ENDPOINT = "ssh.endpoint"`, `SSH_PUBLIC_KEY = "ssh.public_key"`, `SSH_CONFIG = "ssh.config"`, `X509_CERTIFICATE = "x509.certificate"`, `IKE_ENDPOINT = "ike.endpoint"`, `WALLET_ACCOUNT = "wallet.account"` |
 | `CollectionFailureKind` | `core.contracts` | `TIMEOUT = "timeout"`, `UNAVAILABLE = "unavailable"`, `MALFORMED = "malformed"`, `PERMISSION_DENIED = "permission_denied"`, `UNSUPPORTED = "unsupported"`, `EXECUTION = "execution"` |
 | `ComponentRole` | `core.crypto_catalog.models` | `KEY_ESTABLISHMENT = "key_establishment"`, `CONFIDENTIALITY = "confidentiality"`, `AUTHENTICATION = "authentication"`, `INTEGRITY = "integrity"`, `PRF = "prf"`, `TRADITIONAL_COMPONENT = "traditional_component"`, `POST_QUANTUM_COMPONENT = "post_quantum_component"` |
 | `Confidence` | `core.vocabulary` | `HIGH = "high"`, `MEDIUM = "medium"`, `LOW = "low"` |
@@ -158,6 +158,8 @@ inheritance, import, and runtime dependency edges are outside this graph's scope
 ```mermaid
 classDiagram
 direction LR
+class AccountDecoded
+class AccountFacts
 class AddressProfile
 class AlgorithmFacts
 class AlgorithmProfile
@@ -268,8 +270,10 @@ class TLSScanner
 class TargetParseError
 class ToolAdapter
 class ToolPolicy { <<enum>> }
+class WalletScanner
 class _AlgorithmFields
 class _BoundedCapture
+class _Builder
 class _KexClassification
 class _LocalOpenSSLProblem
 class _NativeEndpointCollector

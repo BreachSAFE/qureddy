@@ -91,6 +91,14 @@ def _summary_table(result: ScanResult) -> Table:
         # show the KEX/host-key algorithms actually observed instead.
         table.add_row("key_exchange", _style_ssh_kex(result))
         table.add_row("host_keys", _style_ssh_hostkeys(result))
+    elif scan.scanner_name == "wallet":
+        # A wallet scan negotiates nothing, so the TLS probe rows would read as
+        # dashes. The account examined and whether its key is published are the
+        # facts this scanner measures.
+        table.add_row("subject", Text(result.target.subject or "-"))
+        table.add_row("script", _style_wallet_finding(result, "script.type", "account.kind"))
+        table.add_row("key_published", _style_wallet_finding(result, "key.published"))
+        table.add_row("balance", _style_wallet_finding(result, "balance"))
     else:
         hybrid_evidence = _pick_evidence(result, role=ProbeRole.HYBRID_READINESS)
         classical_evidence = _pick_evidence(result, role=ProbeRole.CLASSICAL_CONTROL)
@@ -164,6 +172,24 @@ def _run_details_table(result: ScanResult) -> Table:
         if isinstance(dep, OpenSSLDependency):
             table.add_row(f"{dep.name}_hybrid_support", style_capability(dep))
     return table
+
+
+def _style_wallet_finding(result: ScanResult, *finding_types: str) -> Text:
+    """Render the value of the first wallet finding matching any given type.
+
+    A wallet finding's title is "name: value", so the value follows the first
+    colon. Bitcoin reports script.type where Ethereum reports account.kind, so a
+    caller passes both and the first present one wins.
+    """
+    for finding_type in finding_types:
+        for finding in result.findings:
+            if finding.finding_type == finding_type:
+                _, _, value = finding.title.partition(": ")
+                colour = "yellow" if finding.readiness is Readiness.QUANTUM_VULNERABLE else None
+                if value == "not tested":
+                    colour = "bright_black"
+                return Text(value or "-", style=colour or "")
+    return Text("-")
 
 
 def _style_ssh_kex(result: ScanResult) -> Text:

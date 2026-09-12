@@ -54,6 +54,7 @@ class Capability(StrEnum):
     SSH_CONFIG = "ssh.config"
     X509_CERTIFICATE = "x509.certificate"
     IKE_ENDPOINT = "ike.endpoint"
+    WALLET_ACCOUNT = "wallet.account"
 
 
 class CollectionFailureKind(StrEnum):

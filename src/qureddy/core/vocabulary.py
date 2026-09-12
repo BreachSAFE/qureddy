@@ -165,3 +165,9 @@ class OutputFormat(str, Enum):
     JSON = "json"
     CBOM = "cbom"
     JSONL = "jsonl"
+
+
+#: Evidence type the wallet scanner records for an account's signing algorithm.
+#: Named here because two layers read it: `scanners/wallet` writes it, and
+#: `output/cbom_wallet` selects on it, and `scanners` may not import `output`.
+WALLET_SIGNATURE_EVIDENCE = "wallet.signature"

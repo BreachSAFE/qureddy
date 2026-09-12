@@ -51,6 +51,7 @@ from cyclonedx.model.crypto import (
 
 from qureddy.core.algorithm_profile import classify_key_exchange, classify_signature_algorithm
 from qureddy.core.certificate import parse_openssl_date
+from qureddy.core.vocabulary import WALLET_SIGNATURE_EVIDENCE
 from qureddy.output.cbom_assets import (
     POSITIVE_OBSERVATIONS,
     add_algorithm_assets,
@@ -75,6 +76,7 @@ SELF_SIGNED_PROPERTY = "qureddy:certificate.is_self_signed"
 # is emitted twice and each keeps its specialized classification.
 _SPECIALIZED_EVIDENCE_TYPES = frozenset(
     {
+        WALLET_SIGNATURE_EVIDENCE,
         "ssh.hostkey",
         "ssh.kex",
         "ssh.kex.weak",

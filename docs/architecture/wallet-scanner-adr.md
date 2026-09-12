@@ -70,7 +70,17 @@ failure: a claim wider than the evidence. Defect 7 is the surface those two hide
 
 
 Add a `wallet` scanner under `scanners/wallet/` and a `qureddy scan wallet` subcommand. Produce a
-`ScanResult`, so `output/` renders rich, JSON, JSONL and CycloneDX with no change to that layer.
+`ScanResult`, so `output/` renders rich, JSON, JSONL and CycloneDX through its existing
+machinery.
+
+`output/` is extended at the seams it already defines for a protocol, and none of its
+machinery is rebuilt. `cbom_ssh.py` is the precedent: a per-protocol module that selects its
+own evidence and hands it to the shared `add_algorithm_assets` loop. The wallet equivalent is
+`cbom_wallet.py`, plus one import and one call in `cbom.py`, one entry in
+`_SPECIALIZED_EVIDENCE_TYPES` so the TLS emitter yields the asset, and one branch in
+`console/_tables.py` beside the SSH branch. A fifth change is general, and applies beyond the wallet lane: `jsonl.py` mapped a scheme through a dict subscript and raised `KeyError` for any
+scheme absent from it, so a new scanner crashed `--output-dir` before writing a file. That
+lookup now falls back to the scheme name.
 
 Introduce no grading scale. The engine already carries `nist_quantum_security_level` (0 to 5) on
 `Asset`, `Evidence`, `Finding` and `ScanSummary`, and already carries `ObservationType` and
@@ -113,12 +123,14 @@ src/qureddy/
     _errors.py       reused   EXIT_OK, EXIT_USAGE, _fail
     __init__.py      edited   one import registers the command
     wallet.py        new      command body
-  output/            reused   console/, json, jsonl, cbom and 13 emitters. No edit.
+  output/            extended at its per-protocol seams, see section 3
+    cbom_wallet.py   new      mirrors cbom_ssh.py
   scanners/
     common/          reused   posture, rollup, finding_types
     wallet/          new
       address.py       offline decode, checksum enforced
       indexer.py       Esplora REST
+      profiles.py      grounding for every hard-coded address, per C6
       keccak.py        Keccak-256 for EIP-55
       ethereum.py      JSON-RPC account state
       scanner.py       assembles ScanResult
@@ -545,6 +557,14 @@ Each gate maps to a rule it enforces. A gate with no test is `NOT RUN` and says 
 | G11 | contract | `just gates` passes: lint, format, typecheck, test, bandit, pip-audit, deptry, reuse | `just gates` |
 | G12 | live | one real run per chain against mainnet produces a schema-valid `ScanResult` | `tests/live/` |
 | G13 | generated docs | `docs/architecture/data-model.md` is regenerated after any model or dataclass change | `test_gen_data_model.py` |
+| G14 | conformance | `scripts/validate_output_bundle.py --scanner wallet` passes on a `--output-dir` bundle for each chain | run per chain |
+| G15 | conformance fixture | a captured wallet CBOM joins `tests/conformance/fixtures/positive` at the next producer-pin refresh | `tests/conformance/test_final_bytes.py` |
+
+G15 is deferred by design. Every positive conformance fixture is pinned to one producer
+build, recorded in `tests/conformance/manifest.json` under `producer`. Adding a fixture
+captured from a different build means bumping that pin and re-capturing the whole positive
+set, which belongs to a release. Writing the pinned commit into a sidecar for a file another
+build produced would be fabricated provenance, which C6 forbids, so the fixture waits.
 
 G13 exists because `docs/architecture/data-model.md` is generated from the source by
 `scripts/gen_data_model.py`, so a new dataclass under `scanners/wallet/` turns that gate red

@@ -63,6 +63,7 @@ from qureddy.output.cbom_ssh import (
     add_ssh_transport_components,
 )
 from qureddy.output.cbom_tls_handshake import add_tls_handshake_components
+from qureddy.output.cbom_wallet import add_wallet_signature_components
 
 if TYPE_CHECKING:
     from qureddy.core.certificate import CertificateObservation
@@ -131,6 +132,7 @@ def _add_observed_components(
     """Add every observed crypto asset and return the captured certificate."""
     algorithm_refs = add_algorithm_components(bom, result, provides_edges)
     add_ssh_host_key_components(bom, result, provides_edges)
+    add_wallet_signature_components(bom, result, provides_edges)
     add_ssh_kex_components(bom, result, provides_edges)
     add_ssh_transport_components(bom, result, provides_edges)
     add_ike_transport_components(bom, result, provides_edges)
