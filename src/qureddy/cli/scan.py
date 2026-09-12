@@ -90,6 +90,10 @@ EXAMPLES:
 qureddy scan tls tls-v1-2.badssl.com:1012
 
 \b
+# Upgrade a cleartext mail submission service before the TLS handshake.
+qureddy scan tls mail.example.com:587 --starttls smtp
+
+\b
 # Machine-readable JSON for CI pipelines.
 qureddy scan tls pq.cloudflareresearch.com --format json
 

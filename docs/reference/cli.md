@@ -107,7 +107,8 @@ qureddy scan tls [OPTIONS] TARGET
 | Option | Type | Default | Meaning |
 | --- | --- | --- | --- |
 | `--sni` | text | target hostname | Override TLS Server Name Indication; required for IP targets that need a virtual host |
-| `--openssl` | path | automatic | Select an OpenSSL 3.5.7 LTS binary |
+| `--starttls` | `smtp`, `pop3`, `imap`, `ftp`, `xmpp`, `xmpp-server`, `telnet`, `irc`, `mysql`, `postgres`, `lmtp`, `nntp`, `sieve`, or `ldap` | none | Upgrade a cleartext application connection before TLS through the selected OpenSSL 3.5.x LTS mode; use the service's cleartext port (for example SMTP `587`, not implicit-TLS `465`) |
+| `--openssl` | path | automatic | Select an OpenSSL 3.5.x LTS binary |
 | `--format` | `rich`, `json`, `cbom`, or `jsonl` | `rich` | Select output; repeated values use the last occurrence |
 | `--output`, `-o` | path | standard output | Write the rendered document to a file instead of standard output; standard output stays empty; a path that cannot be opened exits `4` |
 | `--compact` | flag | off | Minify `--format json` or `cbom` to a single line; no effect on `rich` |
@@ -130,6 +131,8 @@ Examples:
 
 ```bash
 qureddy scan tls pq.cloudflareresearch.com
+qureddy scan tls mail.example.com:587 --starttls smtp
+qureddy scan tls ldap.example.com:389 --starttls ldap
 qureddy scan tls 1.1.1.1:443 --sni one.one.one.one
 qureddy scan tls tls-v1-2.badssl.com:1012 --format json
 qureddy scan tls tls-v1-2.badssl.com:1012 --format json --compact --output scan.json

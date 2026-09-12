@@ -66,7 +66,13 @@ StartTLSOpt = Annotated[
     StartTLSMode | None,
     typer.Option(
         "--starttls",
-        help="Application protocol upgrade handled by OpenSSL 3.5.7.",
+        # #931/#906: describe the supported LTS series, not a stale patch-level
+        # pin; the enforced runtime floor is maintained by the capability gate.
+        help=(
+            "Upgrade from the service's cleartext port before TLS "
+            "(for example SMTP 587, not implicit TLS 465); "
+            "handled by OpenSSL 3.5.x LTS."
+        ),
         case_sensitive=False,
     ),
 ]
