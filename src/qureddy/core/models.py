@@ -56,7 +56,12 @@ HOSTNAME_PATTERN = re.compile(
 )
 
 # Constrain schemes so deserialized input cannot reach downstream tooling (#369).
-SUPPORTED_SCHEMES = frozenset({"tls", "ssh", "ike"})
+# "btc" and "eth" name a wallet scan: the endpoint contacted is a chain indexer or
+# RPC node, and the account under examination travels in ScanTarget.subject.
+SUPPORTED_SCHEMES = frozenset({"tls", "ssh", "ike", "btc", "eth"})
+
+# Schemes whose subject is an account identifier rather than the endpoint itself.
+SUBJECT_SCHEMES = frozenset({"btc", "eth"})
 
 
 def _is_ip_literal(value: str) -> bool:
@@ -115,6 +120,11 @@ class ScanTarget(BaseModel):
     sni: str | None
     scheme: str = "tls"
     starttls_mode: StartTLSMode | None = Field(default=None, exclude_if=lambda value: value is None)
+    # A wallet scan asks an indexer about an account, so the endpoint in
+    # host/port/locator and the thing examined are different identifiers. subject
+    # carries the account; locator keeps naming the endpoint actually contacted,
+    # which is what every existing consumer of locator already assumes.
+    subject: str | None = Field(default=None, exclude_if=lambda value: value is None)
     locator: str
 
     @field_validator("host")
@@ -167,6 +177,18 @@ class ScanTarget(BaseModel):
         expected = f"{self.scheme}://{rendered_host}:{self.port}"
         if self.locator != expected:
             msg = f"locator {self.locator!r} does not match host/port/scheme {expected!r}"
+            raise ValueError(msg)
+        return self
+
+    @model_validator(mode="after")
+    def _subject_belongs_to_a_subject_scheme(self) -> ScanTarget:
+        # A subject on a tls/ssh/ike target would be silently ignored by every
+        # renderer, so reject it at construction instead of carrying dead data.
+        if self.subject is not None and self.scheme not in SUBJECT_SCHEMES:
+            msg = f"subject is only valid for {sorted(SUBJECT_SCHEMES)}: scheme is {self.scheme!r}"
+            raise ValueError(msg)
+        if self.subject is not None and not self.subject.strip():
+            msg = "subject cannot be empty or whitespace-only"
             raise ValueError(msg)
         return self
 
