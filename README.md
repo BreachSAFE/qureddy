@@ -23,7 +23,9 @@ the endpoint exposes to a client, then reports the observed readiness posture.
 
 TLS scans use a local OpenSSL 3.5.8 LTS binary. SSH scans read the server's
 cleartext KEXINIT offer directly. IKE scans use stock `ike-scan` as a
-lower-trust discovery backend. The container includes both external tools.
+lower-trust discovery backend. The container also bundles `cbomkit-theia` for
+directory and container-image cryptographic asset discovery; its Docker-socket
+requirement is runtime-only and is documented in the Docker guide.
 
 > **Tip:** Start with the [Docker quickstart](#1-quickstart-with-docker). It includes
 > the pinned OpenSSL runtime and keeps the host setup small.

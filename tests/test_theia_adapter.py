@@ -46,7 +46,7 @@ printf '%s' '{\"bomFormat\":\"CycloneDX\",\"specVersion\":\"1.7\",\"components\"
     assert result.artifact_cbom == (
         b'{"bomFormat":"CycloneDX","specVersion":"1.7","components":[]}'
     )
-    assert result.collector_version == "theia-test"
+    assert result.collector_version == "unknown"
 
 
 def test_image_scan_rejects_local_path_before_subprocess(tmp_path: Path) -> None:
@@ -231,14 +231,17 @@ def test_valid_json_still_requires_cyclonedx_contract(
     assert message in result.failure.message
 
 
-def test_version_probe_oserror_is_unknown(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_unversioned_binary_reports_unknown(tmp_path: Path) -> None:
     tool = _tool(tmp_path, "exit 0")
-    monkeypatch.setattr(
-        adapter_module,
-        "run_bounded",
-        lambda *_args, **_kwargs: (_ for _ in ()).throw(OSError("gone")),
-    )
     assert CbomkitTheiaAdapter(str(tool)).version == "unknown"
+
+
+def test_declared_version_is_used_without_unsupported_probe(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    tool = _tool(tmp_path, "exit 0")
+    monkeypatch.setenv("QUREDDY_THEIA_VERSION", "1.1.2")
+    assert CbomkitTheiaAdapter(str(tool)).version == "1.1.2"
 
 
 def test_execution_oserror_is_typed(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

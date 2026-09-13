@@ -33,7 +33,6 @@ from qureddy.core.contracts import (
 from qureddy.scanners.common.process import run_bounded
 
 _DEFAULT_OUTPUT_LIMIT = 32 * 1024 * 1024
-_VERSION_TIMEOUT_SECONDS = 5
 _IMAGE_REFERENCE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9./:@_-]{0,4095}$")
 
 
@@ -71,21 +70,18 @@ class CbomkitTheiaAdapter:
 
     @cached_property
     def version(self) -> str:
-        """Return the first bounded version line, or ``unknown`` if unavailable."""
+        """Return the declared version, or ``unknown`` for an unversioned binary.
+
+        Theia exposes no ``--version`` command.  Container builds therefore
+        inject the pinned source version through ``QUREDDY_THEIA_VERSION``;
+        native installations remain honest and report ``unknown``.
+        """
+        declared = os.environ.get("QUREDDY_THEIA_VERSION")
+        if declared:
+            return declared
         if self._binary is None:
             return "unknown"
-        try:
-            output = run_bounded(
-                [self._binary, "--version"],
-                timeout_seconds=_VERSION_TIMEOUT_SECONDS,
-                output_limit=4096,
-            )
-        except OSError:
-            return "unknown"
-        if output.return_code != 0 or output.timed_out or output.output_limited:
-            return "unknown"
-        text = (output.stdout or output.stderr).decode("utf-8", errors="replace")
-        return text.splitlines()[0].strip() if text.splitlines() else "unknown"
+        return "unknown"
 
     def available(self) -> bool:
         """Return whether the configured executable is present and executable."""
