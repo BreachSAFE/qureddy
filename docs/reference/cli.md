@@ -13,12 +13,13 @@ installed help output.
 3. [`qureddy scan ssh`](#3-qureddy-scan-ssh)
 4. [`qureddy scan tls`](#4-qureddy-scan-tls)
 5. [`qureddy scan ike`](#5-qureddy-scan-ike)
-6. [Target syntax](#6-target-syntax)
-7. [Output formats](#7-output-formats)
-8. [Output streams](#8-output-streams)
-9. [Exit codes](#9-exit-codes)
-10. [Environment variables](#10-environment-variables)
-11. [Related documentation](#11-related-documentation)
+6. [`qureddy scan wallet`](#6-qureddy-scan-wallet)
+7. [Target syntax](#7-target-syntax)
+8. [Output formats](#8-output-formats)
+9. [Output streams](#9-output-streams)
+10. [Exit codes](#10-exit-codes)
+11. [Environment variables](#11-environment-variables)
+12. [Related documentation](#12-related-documentation)
 
 ## 1. Root command
 
@@ -34,7 +35,7 @@ qureddy [OPTIONS] COMMAND [ARGS]...
 | Command | Meaning |
 | --- | --- |
 | `help` | Print root help and exit |
-| `scan` | Select the TLS, SSH, or IKE endpoint scanner |
+| `scan` | Select the TLS, SSH, IKE, or wallet scanner |
 
 The version line is:
 
@@ -57,6 +58,7 @@ qureddy scan [OPTIONS] COMMAND [ARGS]...
 | `tls` | Scan a TLS endpoint |
 | `ssh` | Scan an SSH or SFTP endpoint |
 | `ike` | Scan an IKE endpoint through stock `ike-scan` |
+| `wallet` | Scan a public Bitcoin, Litecoin, or Ethereum account |
 
 ## 3. `qureddy scan ssh`
 
@@ -66,7 +68,7 @@ qureddy scan ssh [OPTIONS] TARGET
 
 | Argument | Requirement |
 | --- | --- |
-| `TARGET` | Required SSH target; see [target syntax](#6-target-syntax) |
+| `TARGET` | Required SSH target; see [target syntax](#7-target-syntax) |
 
 | Option | Type | Default | Meaning |
 | --- | --- | --- | --- |
@@ -102,7 +104,7 @@ qureddy scan tls [OPTIONS] TARGET
 
 | Argument | Requirement |
 | --- | --- |
-| `TARGET` | Required TLS target; see [target syntax](#6-target-syntax) |
+| `TARGET` | Required TLS target; see [target syntax](#7-target-syntax) |
 
 | Option | Type | Default | Meaning |
 | --- | --- | --- | --- |
@@ -148,7 +150,7 @@ qureddy scan ike [OPTIONS] TARGET
 
 | Argument | Requirement |
 | --- | --- |
-| `TARGET` | Required IKE target; see [target syntax](#6-target-syntax) |
+| `TARGET` | Required IKE target; see [target syntax](#7-target-syntax) |
 
 | Option | Type | Default | Meaning |
 | --- | --- | --- | --- |
@@ -180,7 +182,40 @@ The stock backend emits low-confidence, tool-reported discovery evidence. It doe
 an accepted proposal, authentication, Child-SA/ESP/AH posture, favorable post-quantum readiness,
 or overall IPsec HNDL protection.
 
-## 6. Target syntax
+## 6. `qureddy scan wallet`
+
+```text
+qureddy scan wallet [OPTIONS] ADDRESS
+```
+
+| Argument | Requirement |
+| --- | --- |
+| `ADDRESS` | Required public Bitcoin, Litecoin, or Ethereum address |
+
+| Option | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--type` | `bitcoin`, `litecoin`, or `ethereum` | inferred | Select the chain; the address is validated against it |
+| `--format` | `rich`, `json`, `cbom`, or `jsonl` | `rich` | Select output; repeated values use the last occurrence |
+| `--output-dir` | directory | none | Write JSON, CBOM, JSONL, and Rich projections |
+| `-v`, `--verbose` | count | `0` | Select INFO, DEBUG, or command traceability detail |
+| `-h`, `--help` | flag | n/a | Print wallet help and exit |
+
+Examples:
+
+```bash
+qureddy scan wallet 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa
+qureddy scan wallet bc1p0xlxvlhemja6c4dqv22uapctqupfhlxm9h8z3k2e72q4k9hcz7vqzk5jj0
+qureddy scan wallet 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045 --format cbom
+qureddy scan wallet 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa --output-dir ./run
+```
+
+The wallet scanner queries a configured public indexer or RPC endpoint for the
+address. It never accepts a private key, signs a transaction, proves ownership,
+or infers a balance from a hard-coded value. Bitcoin, Litecoin, and Ethereum
+accounts use classical secp256k1 signatures and therefore report NIST level 0;
+the scan separately records whether public key material was observed.
+
+## 7. Target syntax
 
 ### TLS
 
@@ -229,7 +264,7 @@ ike://[2001:db8::1]:500
 IKE defaults to UDP/500. Credentials, paths, query strings, fragments, and foreign schemes are
 rejected before the external tool runs.
 
-## 7. Output formats
+## 8. Output formats
 
 | Value | Contract |
 | --- | --- |
@@ -249,7 +284,7 @@ same `scan.scan_id`, timestamps, target, findings, and evidence. The bundle
 contains `scan.json` (`qureddy.scan.v1`), `scan.cdx.json` (CycloneDX 1.7),
 `scan.jsonl` (one finding per line), and `scan.rich.txt` (human-readable output).
 
-## 8. Output streams
+## 9. Output streams
 
 Human output and machine documents go to standard output. Diagnostic logs and
 operator hints go to standard error.
@@ -264,30 +299,32 @@ Under shell-level `2>&1`, the default machine modes suppress the courtesy hint
 so the merged stream remains parseable. Explicit `-v`, `-vv`, or `-vvv` logs
 are diagnostics and must remain on a separate stream.
 
-## 9. Exit codes
+## 10. Exit codes
 
-| Code | TLS | SSH | IKE | Meaning |
-| --- | --- | --- | --- | --- |
-| `0` | yes | yes | yes | Scan completed |
-| `2` | yes | yes | yes | Target connection, handshake, timeout, or parse failed |
-| `3` | yes | no | yes | Required local executable is missing or unusable |
-| `4` | yes | yes | yes | Usage or configuration error |
-| `70` | yes | process fallback | process fallback | Internal QuReddy error |
+| Code | TLS | SSH | IKE | Wallet | Meaning |
+| --- | --- | --- | --- | --- | --- |
+| `0` | yes | yes | yes | yes | Scan completed |
+| `2` | yes | yes | yes | yes | Target connection, handshake, timeout, or parse failed |
+| `3` | yes | no | yes | no | Required local executable is missing or unusable |
+| `4` | yes | yes | yes | yes | Usage or configuration error |
+| `70` | yes | process fallback | process fallback | process fallback | Internal QuReddy error |
 
 See the [exit code reference](exit-codes.md) for branching examples.
 
-## 10. Environment variables
+## 11. Environment variables
 
 | Variable | Scope | Meaning |
 | --- | --- | --- |
 | `QUREDDY_OPENSSL` | TLS | OpenSSL path used when `--openssl` is absent |
+| `QUREDDY_ESPLORA_URL` | Bitcoin, Litecoin wallet | Replace the public Esplora indexer base URL |
+| `QUREDDY_ETH_RPC` | Ethereum wallet | Replace the public Ethereum JSON-RPC endpoint |
 | `QUREDDY_BLOCK_INTERNAL_TARGETS` | TLS, SSH, and IKE | Set to `1` to reject literal internal, loopback, link-local, reserved, multicast, unspecified, and known metadata-hostname targets before probing |
 | `NO_COLOR` | Rich output and logs | Any value disables ANSI color |
 
 OpenSSL selection order is `--openssl`, then `QUREDDY_OPENSSL`, then
 `openssl` on `PATH`.
 
-## 11. Related documentation
+## 12. Related documentation
 
 - [Install and troubleshoot](../how-to/install.md)
 - [Scan an IKE endpoint](../how-to/scan-ike.md)
