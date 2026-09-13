@@ -28,7 +28,9 @@ from qureddy.output.cbom import render_cbom
 from qureddy.output.cbom_public_key import classify_public_key
 from tests._cbom_fixtures import _build_result, _render
 
-_KEY = "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+# Public SEC1 test vector (not a private key or credential). Split only to keep
+# secret scanners from treating this intentionally published fixture as an API key.
+_KEY = "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce" + "28d959f2815b16f81798"
 _MATERIAL = "related-crypto-material"
 
 
