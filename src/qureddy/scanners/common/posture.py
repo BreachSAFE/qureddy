@@ -55,9 +55,12 @@ def _ciso_text(
     reasons: tuple[str, ...],
     has_positive_evidence: bool,
     protocol: str = "",
+    account_without_key: bool = False,
 ) -> tuple[str, str]:
     """Create deterministic headline/action text from structured reasons."""
-    signature_only = signature_only_ciso_text(protocol=protocol)
+    signature_only = signature_only_ciso_text(
+        protocol=protocol, account_without_key=account_without_key
+    )
     if signature_only is not None:
         return signature_only
     if "weak_classical_algorithm_observed" in reasons:
@@ -348,7 +351,7 @@ def build_interpretation(
     reason_codes = build_reason_codes(findings, failure_category)
     positive_evidence = _has_positive_evidence(evidence, failure_category)
     headline, recommended_action = _ciso_text(
-        axes, reason_codes, positive_evidence, resolved_protocol
+        axes, reason_codes, positive_evidence, resolved_protocol, signals.account_without_key
     )
     hndl_exposure, hygiene_status = _statuses(
         signals,

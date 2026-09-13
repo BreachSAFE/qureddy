@@ -14,7 +14,9 @@ if TYPE_CHECKING:
     from qureddy.scanners.common.evaluation.facts import PostureFacts
 
 
-def _hndl_risk(exposure: HndlExposure) -> str:
+def _hndl_risk(facts: PostureFacts) -> str:
+    if facts.account_without_key:
+        return "No key is held at this address, so it carries no harvest exposure"
     return {
         HndlExposure.AT_RISK: "At risk of harvest-now/decrypt-later exposure",
         HndlExposure.PROTECTED_DEFEASIBLE: (
@@ -22,11 +24,13 @@ def _hndl_risk(exposure: HndlExposure) -> str:
             "but a classical downgrade path remains"
         ),
         HndlExposure.PROTECTED: "Protected against observed harvest-now/decrypt-later exposure",
-    }.get(exposure, "Exposure could not be determined")
+    }.get(facts.hndl_exposure, "Exposure could not be determined")
 
 
 def _summary(facts: PostureFacts) -> str:
     protocol = facts.protocol.upper()
+    if facts.account_without_key:
+        return _no_key_summary(facts)
     if facts.support is PqcSupport.HYBRID_OBSERVED and facts.negotiated_algorithm:
         if facts.classical_alternative:
             return (
@@ -39,6 +43,14 @@ def _summary(facts: PostureFacts) -> str:
     if facts.support is PqcSupport.CLASSICAL_ONLY_OBSERVED:
         return _classical_summary(facts, protocol)
     return f"{protocol} post-quantum protection could not be confirmed."
+
+
+def _no_key_summary(facts: PostureFacts) -> str:
+    """A contract account holds no externally owned key, so it has none to expose."""
+    return (
+        f"This {facts.protocol.upper()} address holds no key of its own. Its owner and "
+        "upgrade keys are held elsewhere and were not examined."
+    )
 
 
 def _classical_summary(facts: PostureFacts, protocol: str) -> str:
@@ -62,15 +74,19 @@ def _classical_summary(facts: PostureFacts, protocol: str) -> str:
     )
 
 
-def _protection(support: PqcSupport) -> str:
+def _protection(facts: PostureFacts) -> str:
+    if facts.account_without_key:
+        return "No key material is held at this address"
     return {
         PqcSupport.HYBRID_OBSERVED: "Hybrid post-quantum protection observed",
         PqcSupport.PURE_PQ_OBSERVED: "Pure post-quantum protection observed",
         PqcSupport.CLASSICAL_ONLY_OBSERVED: "Only classical protection observed",
-    }.get(support, "Post-quantum protection could not be confirmed")
+    }.get(facts.support, "Post-quantum protection could not be confirmed")
 
 
 def _action(facts: PostureFacts) -> str:
+    if facts.account_without_key:
+        return "Assess the owner and upgrade keys, which are held off this address."
     if facts.support is PqcSupport.HYBRID_OBSERVED:
         return "Restrict classical fallback where compatible and continue monitoring."
     if facts.support is PqcSupport.PURE_PQ_OBSERVED:
@@ -118,8 +134,8 @@ def build_evaluation(facts: PostureFacts) -> PostureEvaluation:
     )
     return PostureEvaluation(
         summary=_summary(facts),
-        hndl_risk=_hndl_risk(facts.hndl_exposure),
-        protection=_protection(facts.support),
+        hndl_risk=_hndl_risk(facts),
+        protection=_protection(facts),
         hardening=_hardening(facts),
         recommended_action=_action(facts),
         observed_facts=tuple(observed),
