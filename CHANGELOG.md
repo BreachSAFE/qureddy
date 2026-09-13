@@ -12,7 +12,8 @@ versions follow [PEP 440](https://peps.python.org/pep-0440/).
 ## Contents
 
 1. [Unreleased](#unreleased)
-2. [0.9.24](#0924---2026-09-10)
+2. [0.9.30](#0930---2026-09-12)
+3. [0.9.24](#0924---2026-09-10)
 3. [0.9.23](#0923---2026-09-09)
 4. [0.9.22](#0922---2026-09-08)
 5. [0.9.21](#0921---2026-09-08)
@@ -48,6 +49,15 @@ versions follow [PEP 440](https://peps.python.org/pep-0440/).
 35. [0.9.0.0](#0900---2026-08-24)
 
 ## Unreleased
+
+## [0.9.30] - 2026-09-12
+
+### Added
+
+- Add the wallet scanner for public Bitcoin, Litecoin, and Ethereum addresses, using bounded
+  indexer requests and the existing JSON, JSONL, Rich, and CycloneDX CBOM output contracts.
+- Record wallet chain/address type, observed ledger data, public-key material, HTTP transcripts,
+  and explicit unknown states without accepting or storing private keys.
 
 ## [0.9.24] - 2026-09-10
 
