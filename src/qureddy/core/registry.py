@@ -64,18 +64,22 @@ class CollectorRegistry:
 
 
 def _capability_for(source: ScanSource) -> Capability:
-    if source.kind is SourceKind.CERTIFICATE:
-        return Capability.X509_CERTIFICATE
-    if source.kind is SourceKind.SSH_PUBLIC_KEY:
-        return Capability.SSH_PUBLIC_KEY
-    if source.kind is SourceKind.SSH_CONFIG:
-        return Capability.SSH_CONFIG
-    if source.protocol == "tls":
-        return Capability.TLS_ENDPOINT
-    if source.protocol == "ssh":
-        return Capability.SSH_ENDPOINT
-    if source.protocol == "ike":
-        return Capability.IKE_ENDPOINT
+    by_kind = {
+        SourceKind.CONTAINER_IMAGE: Capability.CONTAINER_IMAGE,
+        SourceKind.FILESYSTEM_DIRECTORY: Capability.FILESYSTEM_DIRECTORY,
+        SourceKind.CERTIFICATE: Capability.X509_CERTIFICATE,
+        SourceKind.SSH_PUBLIC_KEY: Capability.SSH_PUBLIC_KEY,
+        SourceKind.SSH_CONFIG: Capability.SSH_CONFIG,
+    }
+    if source.kind in by_kind:
+        return by_kind[source.kind]
+    by_protocol = {
+        "tls": Capability.TLS_ENDPOINT,
+        "ssh": Capability.SSH_ENDPOINT,
+        "ike": Capability.IKE_ENDPOINT,
+    }
+    if source.protocol in by_protocol:
+        return by_protocol[source.protocol]
     raise CollectorSelectionError(
         f"source protocol is required for endpoint selection: {source.protocol!r}"
     )

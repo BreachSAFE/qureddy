@@ -25,8 +25,8 @@ from qureddy.core.models import (
     ProbeCommand,
     ProbeResult,
 )
+from qureddy.scanners.common.process import ProcessOutput, run_bounded
 from qureddy.scanners.ike.evidence import response_evidence as _response_evidence
-from qureddy.scanners.ike.execution import ProcessOutput, run_bounded
 from qureddy.scanners.ike.parser import ParsedIKEResponse, parse_ike_scan_output
 from qureddy.scanners.ike.psk import is_pskcrack_artifact, temporary_pskcrack_path
 from qureddy.scanners.ike.types import IKEMode, IKEParseStatus

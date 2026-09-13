@@ -33,6 +33,8 @@ class SourceKind(StrEnum):
     SSH_CONFIG = "ssh_config"
     CERTIFICATE = "certificate"
     STATIC_INVENTORY = "static_inventory"
+    CONTAINER_IMAGE = "container_image"
+    FILESYSTEM_DIRECTORY = "filesystem_directory"
 
 
 class ToolPolicy(StrEnum):
@@ -54,6 +56,8 @@ class Capability(StrEnum):
     SSH_CONFIG = "ssh.config"
     X509_CERTIFICATE = "x509.certificate"
     IKE_ENDPOINT = "ike.endpoint"
+    CONTAINER_IMAGE = "container.image"
+    FILESYSTEM_DIRECTORY = "filesystem.directory"
     WALLET_ACCOUNT = "wallet.account"
 
 
@@ -99,6 +103,7 @@ class CollectionResult:
     provenance: ScanProvenance | None = None
     failure: CollectionFailure | None = None
     scan_result: ScanResult | None = None
+    artifact_cbom: bytes | None = None
 
 
 class ToolAdapter(Protocol):

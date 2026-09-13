@@ -118,7 +118,7 @@ The generated table shows both Python member names and serialized values.
 | Enum | Module | Members and serialized values |
 |---|---|---|
 | `AxisStatus` | `core.vocabulary` | `HYBRID = "hybrid"`, `PURE_PQ = "pure_pq"`, `CLASSICAL = "classical"`, `ACCEPTABLE = "acceptable"`, `ACTION_NEEDED = "action_needed"`, `UNKNOWN = "unknown"`, `NOT_TESTABLE = "not_testable"`, `NOT_APPLICABLE = "not_applicable"` |
-| `Capability` | `core.contracts` | `TLS_ENDPOINT = "tls.endpoint"`, `SSH_ENDPOINT = "ssh.endpoint"`, `SSH_PUBLIC_KEY = "ssh.public_key"`, `SSH_CONFIG = "ssh.config"`, `X509_CERTIFICATE = "x509.certificate"`, `IKE_ENDPOINT = "ike.endpoint"`, `WALLET_ACCOUNT = "wallet.account"` |
+| `Capability` | `core.contracts` | `TLS_ENDPOINT = "tls.endpoint"`, `SSH_ENDPOINT = "ssh.endpoint"`, `SSH_PUBLIC_KEY = "ssh.public_key"`, `SSH_CONFIG = "ssh.config"`, `X509_CERTIFICATE = "x509.certificate"`, `IKE_ENDPOINT = "ike.endpoint"`, `CONTAINER_IMAGE = "container.image"`, `FILESYSTEM_DIRECTORY = "filesystem.directory"`, `WALLET_ACCOUNT = "wallet.account"` |
 | `CollectionFailureKind` | `core.contracts` | `TIMEOUT = "timeout"`, `UNAVAILABLE = "unavailable"`, `MALFORMED = "malformed"`, `PERMISSION_DENIED = "permission_denied"`, `UNSUPPORTED = "unsupported"`, `EXECUTION = "execution"` |
 | `ComponentRole` | `core.crypto_catalog.models` | `KEY_ESTABLISHMENT = "key_establishment"`, `CONFIDENTIALITY = "confidentiality"`, `AUTHENTICATION = "authentication"`, `INTEGRITY = "integrity"`, `PRF = "prf"`, `TRADITIONAL_COMPONENT = "traditional_component"`, `POST_QUANTUM_COMPONENT = "post_quantum_component"` |
 | `Confidence` | `core.vocabulary` | `HIGH = "high"`, `MEDIUM = "medium"`, `LOW = "low"` |
@@ -143,7 +143,7 @@ The generated table shows both Python member names and serialized values.
 | `RuleField` | `core.policy` | `NEGOTIATED_GROUP = "negotiated_group"`, `OBSERVATION_TYPE = "observation_type"`, `FAILURE_CATEGORY = "failure_category"`, `PROBE_ROLE = "probe_role"` |
 | `SemanticSignal` | `core.signals` | `HYBRID_PQC = "kex.hybrid_pqc"`, `PURE_PQC = "kex.pure_pqc"`, `CLASSICAL_KEX = "kex.classical"`, `HYBRID_PROBE_FAILED = "kex.hybrid_probe_failed"`, `DOWNGRADE_ACTION_NEEDED = "downgrade.action_needed"`, `AUTHENTICATION_CLASSICAL = "authentication.classical"`, `AUTHENTICATION_PQ = "authentication.pq"`, `CLASSICAL_CERTIFICATE = "certificate.signature.classical"`, `LEGACY_PROTOCOL = "protocol.legacy"`, `WEAK_ALGORITHM = "algorithm.weak"`, `PROTOCOL_ACTION_NEEDED = "protocol.action_needed"`, `HYGIENE_WEAK = "hygiene.weak"` |
 | `Severity` | `core.vocabulary` | `CRITICAL = "critical"`, `HIGH = "high"`, `MEDIUM = "medium"`, `LOW = "low"`, `INFO = "info"` |
-| `SourceKind` | `core.contracts` | `ENDPOINT = "endpoint"`, `SSH_PUBLIC_KEY = "ssh_public_key"`, `SSH_CONFIG = "ssh_config"`, `CERTIFICATE = "certificate"`, `STATIC_INVENTORY = "static_inventory"` |
+| `SourceKind` | `core.contracts` | `ENDPOINT = "endpoint"`, `SSH_PUBLIC_KEY = "ssh_public_key"`, `SSH_CONFIG = "ssh_config"`, `CERTIFICATE = "certificate"`, `STATIC_INVENTORY = "static_inventory"`, `CONTAINER_IMAGE = "container_image"`, `FILESYSTEM_DIRECTORY = "filesystem_directory"` |
 | `StartTLSMode` | `core.vocabulary` | `SMTP = "smtp"`, `POP3 = "pop3"`, `IMAP = "imap"`, `FTP = "ftp"`, `XMPP = "xmpp"`, `XMPP_SERVER = "xmpp-server"`, `TELNET = "telnet"`, `IRC = "irc"`, `MYSQL = "mysql"`, `POSTGRES = "postgres"`, `LMTP = "lmtp"`, `NNTP = "nntp"`, `SIEVE = "sieve"`, `LDAP = "ldap"` |
 | `ToolPolicy` | `core.contracts` | `AUTO = "auto"`, `NATIVE = "native"`, `OPENSSL = "openssl"`, `SSH_AUDIT = "ssh-audit"`, `IKE_SCAN = "ike-scan"` |
 <!-- END GENERATED: enum-table -->
@@ -174,6 +174,7 @@ class CatalogDefinition
 class CatalogModel
 class CatalogReceipt
 class CbomError
+class CbomkitTheiaAdapter
 class CertSignature
 class CertificateDetails
 class CertificateInfo
