@@ -34,6 +34,40 @@ def test_root_and_scan_help_link_to_ike_help() -> None:
     assert "qureddy scan ike --help" in scan.stdout
 
 
+def test_root_and_scan_help_expose_wallet_scanner() -> None:
+    """Issue #1021: the wallet scanner must be discoverable at both help levels."""
+    runner = CliRunner()
+    root = runner.invoke(app, ["--help"])
+    scan = runner.invoke(app, ["scan", "--help"])
+
+    assert root.exit_code == 0
+    assert "qureddy scan wallet" in root.stdout
+    assert "qureddy scan wallet --help" in root.stdout
+    assert scan.exit_code == 0
+    assert "wallet" in scan.stdout
+    assert "qureddy scan wallet --help" in scan.stdout
+
+
+def test_root_help_covers_every_scanner_and_primary_workflows() -> None:
+    """Keep the top-level quick start aligned with the discovered scan commands."""
+    root = CliRunner().invoke(app, ["--help"])
+    scan = CliRunner().invoke(app, ["scan", "--help"])
+
+    assert root.exit_code == 0
+    assert scan.exit_code == 0
+    for command in ("tls", "ssh", "ike", "wallet"):
+        assert f"qureddy scan {command}" in root.stdout
+        assert f"qureddy scan {command}" in scan.stdout
+    for workflow in (
+        "badssl.com:443",
+        "--starttls smtp",
+        "--output-dir ./run",
+        "--format json",
+        "--format cbom",
+    ):
+        assert workflow in root.stdout
+
+
 def test_scan_help_lists_documented_options() -> None:
     runner = CliRunner()
     result = runner.invoke(app, ["scan", "tls", "--help"])

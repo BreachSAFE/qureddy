@@ -44,11 +44,15 @@ _TRACEBACK_VERBOSITY = 3
 # quantum-vulnerable. Generate a CBOM. Move on." — the project's tagline),
 # and a user who never drills past root --help shouldn't miss it.
 _ROOT_EPILOG = _colorize_help_text(f"""\
-QUICK START:
+QUICKSTART:
 
 \b
-# Human-readable TLS scan against a deterministic test endpoint.
-qureddy scan tls tls-v1-2.badssl.com:1012
+# Human-readable TLS scan against the public product endpoint.
+qureddy scan tls badssl.com:443
+
+\b
+# Scan a TLS endpoint with STARTTLS.
+qureddy scan tls smtp.gmail.com:587 --starttls smtp
 
 \b
 # Scan an SSH endpoint.
@@ -59,16 +63,28 @@ qureddy scan ssh github.com
 qureddy scan ike netherlands.hide.me --nat-t
 
 \b
-# Machine-readable, for CI pipelines (real PQ hybrid endpoint).
+# Inspect a public Bitcoin account.
+qureddy scan wallet 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa
+
+\b
+# Inspect a public Litecoin account.
+qureddy scan wallet Ler4HNAEfwYhBmGXcFP2Po1NpRUEiK8km2
+
+\b
+# Inspect a public Ethereum account.
+qureddy scan wallet 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
+
+\b
+# Write JSON, CBOM, JSONL, and Rich projections to one directory.
+qureddy scan tls badssl.com:443 --output-dir ./run
+
+\b
+# Machine-readable output for CI pipelines.
 qureddy scan tls pq.cloudflareresearch.com --format json
 
 \b
-# Generate a CBOM (same real PQ hybrid endpoint).
+# Generate a CBOM from the same scan.
 qureddy scan tls pq.cloudflareresearch.com --format cbom
-
-\b
-# IP target with an SNI override for a name-based virtual host.
-qureddy scan tls 1.1.1.1:443 --sni one.one.one.one
 
 \b
 # Tolerate transient network blips (3 retries).
@@ -84,6 +100,7 @@ MORE HELP:
 qureddy scan tls --help    # full options, examples, exit codes
 qureddy scan ssh --help    # SSH options, examples, exit codes
 qureddy scan ike --help    # IKE options, trust boundary, exit codes
+qureddy scan wallet --help # wallet options, formats, trust boundary, exit codes
 qureddy --version          # show version
 
 Project: {PROJECT_URL}
@@ -92,16 +109,18 @@ Project: {PROJECT_URL}
 # Issue #266: `qureddy scan --help` names the available scanner commands and
 # explains why the CLI uses a scan command group.
 _SCAN_EPILOG = _colorize_help_text("""\
-qureddy scans TLS, SSH, and IKE endpoints. "scan" is a command group so each
+qureddy scans TLS, SSH, IKE endpoints, and public wallet targets. "scan" is a command group so each
 scanner has its own options, output formats, and exit-code behavior.
 
 \b
 qureddy scan tls <target>            # TLS endpoint (OpenSSL handshakes)
 qureddy scan ssh <target>            # SSH endpoint (reads the KEXINIT offer)
 qureddy scan ike <target>            # IKE endpoint (stock ike-scan adapter)
+qureddy scan wallet <address>       # public Bitcoin, Litecoin, or Ethereum account
 qureddy scan tls --help              # full options, examples, exit codes
 qureddy scan ssh --help              # SSH options and examples
 qureddy scan ike --help              # IKE options and trust boundary
+qureddy scan wallet --help           # wallet options and trust boundary
 """)
 
 # Issue #125: Typer's completion (`add_completion=True`) is what powers
@@ -149,7 +168,7 @@ scan_app = typer.Typer(
     # group, and the only line a user who doesn't read the epilog ever
     # sees on `qureddy --help`'s "Commands:" table. Now self-sufficient
     # without requiring the epilog below to explain what's being scanned.
-    help="Scan a TLS, SSH, or IKE endpoint for post-quantum readiness.",
+    help="Scan a TLS, SSH, or IKE endpoint, or a public wallet account, for post-quantum readiness.",
     epilog=_SCAN_EPILOG,
     no_args_is_help=True,
     rich_markup_mode=None,
