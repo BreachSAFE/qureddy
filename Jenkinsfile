@@ -135,17 +135,16 @@ pipeline {
 
 
     stage('live: IKE responder') {
-      // The IKE scanner has never run against a responder in any lane. GitHub
-      // CI and the unit stage above both pass --ignore=tests/ike_lab, and that
-      // suite needs the pinned strongSwan lab from #570, which is
-      // unprovisioned. #1019 records the guard passing the suite on a loopback
-      // reflection, which is how an absent lab reads as six failures.
+      // The IKE scanner runs against no responder in any other lane. GitHub CI
+      // and the unit stage both pass --ignore=tests/ike_lab, and that suite
+      // needs the pinned strongSwan lab from #570, which is unprovisioned.
       //
-      // A public IKEv2 endpoint closes the gap with no lab: it answers v2 and
-      // rejects both v1 modes, so one scan reaches responder-detected,
-      // proposal-rejected, classical key exchange and weak group. The target is
-      // a parameter and the suite skips when it is empty, so this node probes
-      // only an endpoint its operator named.
+      // A public IKEv2 endpoint covers the scanner without the lab. Which mode
+      // answers is not stable, since the endpoint rate-limits per source, so
+      // the suite asserts only that every attempt is classified and one
+      // answered. The target is a parameter, empty by default, so a node probes
+      // only an endpoint its operator named. A local responder is the
+      // deterministic alternative, tracked in #1023.
       steps {
         script {
           if (!env.QUREDDY_IKE_PUBLIC_TARGET?.trim()) {
@@ -177,6 +176,38 @@ pipeline {
       // invents a finding fails here instead of exiting zero.
       steps {
         sh "uv run --locked pytest tests/live/test_live_everything.py -q --junitxml=${REPORT_DIR}/cli.xml"
+      }
+    }
+
+
+    stage('live: local STARTTLS') {
+      // postgres, mysql and ftp answer STARTTLS on this box, and no other lane
+      // exercises the upgrade against a real server (#1022). They are unpinned
+      // local services, so the stage probes each only when it answers and skips
+      // the rest, which keeps the build off dev-box state it cannot depend on.
+      // #1023 tracks pinning these as containers a CI node starts.
+      steps {
+        sh '''
+          set -eu
+          probe() {
+            host=$1; port=$2; proto=$3
+            if ! nc -z -w 2 "$host" "$port" 2>/dev/null; then
+              echo "no responder on $host:$port ($proto); skipping"
+              return 0
+            fi
+            out="$REPORT_DIR/starttls-$proto.json"
+            # A weak or classical result is exit 2, which is a completed scan.
+            uv run --locked qureddy scan tls "$host:$port" --starttls "$proto" \
+              --format json -o "$out" || true
+            [ -s "$out" ] || { echo "no output for $proto" >&2; return 1; }
+            uv run --locked python -c "import json,sys; d=json.load(open(sys.argv[1])); \
+              assert d[\"schema_version\"]==\"qureddy.scan.v1\"; \
+              print(f\"$proto -> {d[\"summary\"][\"readiness\"]}, {len(d[\"findings\"])} findings\")" "$out"
+          }
+          probe 127.0.0.1 5432 postgres
+          probe 127.0.0.1 3306 mysql
+          probe 127.0.0.1 2121 ftp
+        '''
       }
     }
 
