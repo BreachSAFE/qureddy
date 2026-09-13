@@ -54,10 +54,17 @@ pipeline {
       // missing runtime reads as an environment failure at the top of the log
       // rather than as a skipped test buried in a later stage.
       steps {
-        sh '''
+        script {
+          if (!env.LEGACY_OPENSSL?.trim()) {
+            env.LEGACY_OPENSSL = sh(
+              script: 'for candidate in /opt/openssl-legacy/bin/openssl /Users/paul/Library/Caches/qureddy-app/openssl-legacy-docker/bin/openssl /Users/paul/Library/Caches/qureddy-app/openssl-legacy/bin/openssl; do if [ -x "$candidate" ]; then printf "%s" "$candidate"; break; fi; done',
+              returnStdout: true,
+            ).trim()
+          }
+          sh '''
           set -eu
           [ -n "${QUREDDY_OPENSSL:-}" ] || { echo "QUREDDY_OPENSSL Jenkins parameter is required" >&2; exit 1; }
-          [ -n "${LEGACY_OPENSSL:-}" ] || { echo "LEGACY_OPENSSL Jenkins parameter is required" >&2; exit 1; }
+          [ -n "${LEGACY_OPENSSL:-}" ] || { echo "LEGACY_OPENSSL Jenkins parameter is required and no local 1.0.2u candidate was found" >&2; exit 1; }
           "$QUREDDY_OPENSSL" version
           "$QUREDDY_OPENSSL" version | grep -q "OpenSSL 3.5" \\
             || { echo "primary lane is not OpenSSL 3.5.x" >&2; exit 1; }
@@ -72,7 +79,8 @@ pipeline {
           # (qureddy#817). A macOS-native 1.0.2u build fails exactly here.
           "$LEGACY_OPENSSL" ecparam -name prime256v1 -genkey -noout > /dev/null \\
             || { echo "compatibility lane cannot do P-256; see qureddy#817" >&2; exit 1; }
-        '''
+          '''
+        }
       }
     }
 
