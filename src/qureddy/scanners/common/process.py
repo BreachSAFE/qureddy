@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
 # SPDX-License-Identifier: Apache-2.0
-"""Runtime and output-bounded subprocess execution for the IKE adapter."""
+"""Shared runtime- and output-bounded subprocess execution for scanners."""
 
 from __future__ import annotations
 
@@ -160,7 +160,7 @@ def _start_readers(
         reader = threading.Thread(
             target=_drain_pipe,
             args=(stream, name, capture),
-            name=f"qureddy-ike-{name}",
+            name=f"qureddy-process-{name}",
             daemon=True,
         )
         reader.start()
@@ -172,7 +172,7 @@ def run_bounded(argv: list[str], *, timeout_seconds: int, output_limit: int) -> 
     """Execute list-form argv while bounding runtime and combined output bytes."""
     started = time.monotonic()
     _LOG.info(
-        "ike_scan.process_started",
+        "process.started",
         executable=argv[0],
         timeout_seconds=timeout_seconds,
         output_limit=output_limit,
@@ -195,7 +195,7 @@ def run_bounded(argv: list[str], *, timeout_seconds: int, output_limit: int) -> 
             output_limit=output_limit,
         )
     _LOG.info(
-        "ike_scan.process_completed",
+        "process.completed",
         return_code=output.return_code,
         duration_ms=output.duration_ms,
         timed_out=output.timed_out,
