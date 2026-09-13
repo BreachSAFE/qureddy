@@ -182,7 +182,7 @@ def _validate_cbom(document: bytes) -> str | None:
     """Require a JSON CycloneDX document before returning it to a caller."""
     try:
         payload = json.loads(document)
-    except UnicodeDecodeError, json.JSONDecodeError:
+    except (UnicodeDecodeError, json.JSONDecodeError):  # fmt: skip
         return "cbomkit-theia stdout is not valid JSON"
     if not isinstance(payload, dict) or payload.get("bomFormat") != "CycloneDX":
         return "cbomkit-theia stdout is not a CycloneDX document"
