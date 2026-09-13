@@ -183,27 +183,10 @@ def _decode_segwit(address: str, hrp: str, data: list[int], encoding: str) -> De
     version, program = data[0], _convert_bits(data[1:], 5, 8)
     if program is None or not _MIN_PROGRAM_BYTES <= len(program) <= _MAX_PROGRAM_BYTES:
         return DecodedAddress(address=address, error="witness program length is out of range")
-    # BIP-141 narrows witness version 0 to exactly 20 or 32 bytes, on top of the
-    # generic 2 to 40 range every version shares. The generic gate alone accepts
-    # BC1QR508D6QEJXTDG4Y5R3ZARVARYV98GJ9P, a 16-byte v0 program that appears in
-    # the invalid list of both BIP-173 and BIP-350, and no consensus rule
-    # recognises it as spendable.
-    if version == 0 and len(program) not in (_P2WPKH_PROGRAM_BYTES, _P2WSH_PROGRAM_BYTES):
-        return DecodedAddress(
-            address=address,
-            error="witness version 0 program must be 20 or 32 bytes (BIP-141)",
-        )
-    # BIP-350 pairs witness version 0 with bech32 and every later version with
-    # bech32m; a crossed pair is a different address than the sender intended.
-    version_zero_mismatch = version == 0 and encoding != "bech32"
-    later_version_mismatch = version > 0 and encoding != "bech32m"
-    if version > _MAX_WITNESS_VERSION or version_zero_mismatch or later_version_mismatch:
-        return DecodedAddress(address=address, error="witness version and encoding disagree")
-    script = {
-        (0, 20): "v0_p2wpkh",
-        (0, 32): "v0_p2wsh",
-        (1, 32): "v1_p2tr",
-    }.get((version, len(program)), f"witness_v{version}")
+    error = _validate_witness(version, len(program), encoding)
+    if error:
+        return DecodedAddress(address=address, error=error)
+    script = _witness_script(version, len(program))
     sig_scheme, key_in_output = _SCRIPT_SCHEMES.get(script, ("unknown", False))
     chain, network = _HRP_NETWORKS[hrp]
     return DecodedAddress(
@@ -217,6 +200,31 @@ def _decode_segwit(address: str, hrp: str, data: list[int], encoding: str) -> De
         program_length=len(program),
         encoding=encoding,
     )
+
+
+def _validate_witness(version: int, program_length: int, encoding: str) -> str:
+    """Return a BIP-141/BIP-350 rejection reason, or an empty string."""
+    # BIP-141 narrows witness version 0 to exactly 20 or 32 bytes, on top of the
+    # generic 2 to 40 range every version shares. The generic gate alone accepts
+    # BC1QR508D6QEJXTDG4Y5R3ZARVARYV98GJ9P, a 16-byte v0 program that appears in
+    # the invalid list of both BIP-173 and BIP-350.
+    if version == 0 and program_length not in (_P2WPKH_PROGRAM_BYTES, _P2WSH_PROGRAM_BYTES):
+        return "witness version 0 program must be 20 or 32 bytes (BIP-141)"
+    # BIP-350 pairs witness version 0 with bech32 and every later version with
+    # bech32m; a crossed pair is a different address than the sender intended.
+    if version > _MAX_WITNESS_VERSION:
+        return "witness version and encoding disagree"
+    expected = "bech32" if version == 0 else "bech32m"
+    return "witness version and encoding disagree" if encoding != expected else ""
+
+
+def _witness_script(version: int, program_length: int) -> str:
+    """Map a valid witness version/program pair to its observable script class."""
+    return {
+        (0, 20): "v0_p2wpkh",
+        (0, 32): "v0_p2wsh",
+        (1, 32): "v1_p2tr",
+    }.get((version, program_length), f"witness_v{version}")
 
 
 def _decode_base58check(address: str) -> DecodedAddress:

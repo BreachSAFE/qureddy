@@ -108,14 +108,7 @@ def _classify_classical_public_key(
     family = _PUBLIC_KEY_FAMILY.get(algorithm.lower())
     if family is None:
         return None
-    if family == "RSA":
-        primitive = CryptoPrimitive.PKE
-        strength = _RSA_CLASSICAL_STRENGTH.get(bits) if bits else None
-        weak = bits is not None and bits < _RSA_MIN_ACCEPTABLE_BITS
-    else:
-        primitive = CryptoPrimitive.SIGNATURE
-        strength = _EC_CLASSICAL_STRENGTH.get(bits) if bits else None
-        weak = False
+    primitive, strength, weak = _classical_properties(family, bits)
     name = f"{family}-{curve or bits}" if (curve or bits) else family
     properties = AlgorithmProperties(
         primitive=primitive,
@@ -128,6 +121,19 @@ def _classify_classical_public_key(
     readiness = "classically_weak" if weak else "quantum_vulnerable"
     severity = "high" if weak else "low"
     return PublicKeyAsset(name, properties, readiness, severity)
+
+
+def _classical_properties(
+    family: str, bits: int | None
+) -> tuple[CryptoPrimitive, int | None, bool]:
+    """Return the primitive, classical strength, and classical weakness for a family."""
+    if family == "RSA":
+        return (
+            CryptoPrimitive.PKE,
+            _RSA_CLASSICAL_STRENGTH.get(bits) if bits else None,
+            bits is not None and bits < _RSA_MIN_ACCEPTABLE_BITS,
+        )
+    return CryptoPrimitive.SIGNATURE, _EC_CLASSICAL_STRENGTH.get(bits) if bits else None, False
 
 
 def add_public_key_material(

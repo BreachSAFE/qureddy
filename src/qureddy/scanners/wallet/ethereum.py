@@ -198,7 +198,9 @@ def _rpc(
     )
     started = time.monotonic()
     try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:  # noqa: S310
+        # `_refused` allowlists HTTP(S) before this call; Bandit needs the
+        # security waiver on the sink itself, not a Ruff-only noqa marker.
+        with urllib.request.urlopen(request, timeout=timeout) as response:  # nosec B310  # noqa: S310
             raw = read_response(response, exchange)
         if raw is None:
             return None

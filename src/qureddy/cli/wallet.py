@@ -127,28 +127,7 @@ def _parse_wallet_target(address: str, chain: str | None) -> ScanTarget:
     if selected not in _SCHEME_BY_CHAIN:
         _fail(f"--type must be one of {sorted(_SCHEME_BY_CHAIN)}: got {selected!r}", EXIT_USAGE)
 
-    # Reject a malformed address here, so a scan never runs against a string that
-    # names no account and reports "not tested" for a reason the caller can fix.
-    if selected == _ETHEREUM:
-        decoded_eth = ethereum.decode(subject)
-        if decoded_eth.error:
-            _fail(decoded_eth.error, EXIT_USAGE)
-        subject = decoded_eth.address
-    else:
-        decoded_btc = btc_address.decode(subject)
-        if decoded_btc.error:
-            _fail(decoded_btc.error, EXIT_USAGE)
-        # Bitcoin and Litecoin share both encodings, so the version byte and the
-        # hrp decide the chain and the scan follows them. A --type naming the
-        # other one would put an indexer in the locator that the run never
-        # contacts, and every chain value would come from the other endpoint.
-        if decoded_btc.chain != selected:
-            _fail(
-                f"--type is {selected} and the address decodes as "
-                f"{decoded_btc.chain}: the address decides the chain, so drop "
-                f"--type or pass --type {decoded_btc.chain}",
-                EXIT_USAGE,
-            )
+    subject = _validate_address(subject, selected)
 
     scheme = _SCHEME_BY_CHAIN[selected]
     host, port = _endpoint(selected)
@@ -163,6 +142,25 @@ def _parse_wallet_target(address: str, chain: str | None) -> ScanTarget:
         subject=subject,
         locator=f"{scheme}://{host}:{port}",
     )
+
+
+def _validate_address(address: str, chain: str) -> str:
+    """Validate and normalize one address before it becomes a scan subject."""
+    if chain == _ETHEREUM:
+        decoded = ethereum.decode(address)
+        if decoded.error:
+            _fail(decoded.error, EXIT_USAGE)
+        return decoded.address
+    decoded = btc_address.decode(address)
+    if decoded.error:
+        _fail(decoded.error, EXIT_USAGE)
+    if decoded.chain != chain:
+        _fail(
+            f"--type is {chain} and the address decodes as {decoded.chain}: "
+            f"the address decides the chain, so drop --type or pass --type {decoded.chain}",
+            EXIT_USAGE,
+        )
+    return address
 
 
 @scan_app.command("wallet", epilog=_SCAN_WALLET_EPILOG, context_settings=_NO_WRAP_CONTEXT_SETTINGS)

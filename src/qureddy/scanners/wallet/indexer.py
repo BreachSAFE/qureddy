@@ -274,7 +274,9 @@ def _get_json(url: str, timeout: float, exchanges: list[HttpExchange] | None = N
     request = urllib.request.Request(url, headers=headers)  # noqa: S310 - scheme checked
     started = time.monotonic()
     try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:  # noqa: S310
+        # The scheme gate above runs before this sink and records refused URLs;
+        # this scoped waiver documents that the permitted schemes are deliberate.
+        with urllib.request.urlopen(request, timeout=timeout) as response:  # nosec B310  # noqa: S310
             raw = read_response(response, exchange)
         if raw is None:
             return None
@@ -349,28 +351,39 @@ def looks_like_public_key(value: str) -> bool:
 def _harvest(transactions: list[JsonObject], address: str, facts: ChainFacts) -> None:
     """Read script classes, published public keys and signatures out of a page."""
     for transaction in transactions:
-        for output in transaction.get("vout") or []:
-            if output.get("scriptpubkey_address") == address:
-                script = output.get("scriptpubkey_type")
-                if script:
-                    facts.output_scripts.add(script)
-        for spend_input in transaction.get("vin", []):
-            previous = spend_input.get("prevout") or {}
-            if previous.get("scriptpubkey_address") != address:
-                continue
-            # Only this address's own inputs can carry its signatures.
-            facts.inputs_examined += 1
-            items = list(spend_input.get("witness") or [])
-            items += script_pushes(spend_input.get("scriptsig", "") or "")
-            for item in items:
-                if looks_like_public_key(item):
-                    facts.public_keys.add(item)
-                    continue
-                parsed = parse_der_signature(item)
-                if parsed is not None:
-                    facts.signatures.append(
-                        Signature(txid=transaction.get("txid", ""), r=parsed[0], s=parsed[1])
-                    )
+        _harvest_outputs(transaction, address, facts)
+        _harvest_inputs(transaction, address, facts)
+
+
+def _harvest_outputs(transaction: JsonObject, address: str, facts: ChainFacts) -> None:
+    """Record output script classes belonging to the queried address."""
+    for output in transaction.get("vout") or []:
+        if output.get("scriptpubkey_address") == address and output.get("scriptpubkey_type"):
+            facts.output_scripts.add(output["scriptpubkey_type"])
+
+
+def _harvest_inputs(transaction: JsonObject, address: str, facts: ChainFacts) -> None:
+    """Record public keys and signatures from inputs spending this address's outputs."""
+    for spend_input in transaction.get("vin", []):
+        previous = spend_input.get("prevout") or {}
+        if previous.get("scriptpubkey_address") != address:
+            continue
+        # Only this address's own inputs can carry its signatures.
+        facts.inputs_examined += 1
+        items = list(spend_input.get("witness") or [])
+        items += script_pushes(spend_input.get("scriptsig", "") or "")
+        _record_input_items(items, transaction.get("txid", ""), facts)
+
+
+def _record_input_items(items: list[str], txid: str, facts: ChainFacts) -> None:
+    """Classify one input's witness/script pushes without guessing unknown bytes."""
+    for item in items:
+        if looks_like_public_key(item):
+            facts.public_keys.add(item)
+            continue
+        parsed = parse_der_signature(item)
+        if parsed is not None:
+            facts.signatures.append(Signature(txid=txid, r=parsed[0], s=parsed[1]))
 
 
 def fetch(address: str, *, chain: str = "bitcoin", timeout_seconds: float = 12.0) -> ChainFacts:
@@ -388,29 +401,41 @@ def fetch(address: str, *, chain: str = "bitcoin", timeout_seconds: float = 12.0
         if not isinstance(summary, dict) or "chain_stats" not in summary:
             last_error = f"{base} returned no address summary"
             continue
-        chain_stats = summary.get("chain_stats") or {}
-        mempool_stats = summary.get("mempool_stats") or {}
-        facts = ChainFacts(
-            reachable=True,
-            source=base,
-            tx_count=int(chain_stats.get("tx_count", 0)) + int(mempool_stats.get("tx_count", 0)),
-            funded_txo_count=int(chain_stats.get("funded_txo_count", 0)),
-            spent_txo_count=int(chain_stats.get("spent_txo_count", 0)),
-            balance_satoshi=int(chain_stats.get("funded_txo_sum", 0))
-            - int(chain_stats.get("spent_txo_sum", 0)),
-            chain=chain,
-            exchanges=exchanges,
-        )
+        facts = _facts_from_summary(summary, base, chain, exchanges)
         transactions = _get_json(f"{base}/address/{address}/txs", timeout_seconds, exchanges)
-        if isinstance(transactions, list):
-            facts.transactions_examined = len(transactions)
-            facts.transactions_confirmed = sum(
-                1 for tx in transactions if (tx.get("status") or {}).get("confirmed")
-            )
-            facts.transactions_mempool = facts.transactions_examined - facts.transactions_confirmed
-            facts.truncated = facts.tx_count > facts.transactions_examined
-            _harvest(transactions, address, facts)
-        else:
-            facts.error = "address summary only; the transaction page was unavailable"
+        _add_transactions(facts, transactions, address)
         return facts
     return ChainFacts(error=last_error, chain=chain, exchanges=exchanges)
+
+
+def _facts_from_summary(
+    summary: JsonObject, base: str, chain: str, exchanges: list[HttpExchange]
+) -> ChainFacts:
+    """Translate one validated Esplora address summary into canonical chain facts."""
+    chain_stats = summary.get("chain_stats") or {}
+    mempool_stats = summary.get("mempool_stats") or {}
+    return ChainFacts(
+        reachable=True,
+        source=base,
+        tx_count=int(chain_stats.get("tx_count", 0)) + int(mempool_stats.get("tx_count", 0)),
+        funded_txo_count=int(chain_stats.get("funded_txo_count", 0)),
+        spent_txo_count=int(chain_stats.get("spent_txo_count", 0)),
+        balance_satoshi=int(chain_stats.get("funded_txo_sum", 0))
+        - int(chain_stats.get("spent_txo_sum", 0)),
+        chain=chain,
+        exchanges=exchanges,
+    )
+
+
+def _add_transactions(facts: ChainFacts, transactions: Json, address: str) -> None:
+    """Attach the bounded first transaction page, or record that it was unavailable."""
+    if not isinstance(transactions, list):
+        facts.error = "address summary only; the transaction page was unavailable"
+        return
+    facts.transactions_examined = len(transactions)
+    facts.transactions_confirmed = sum(
+        1 for tx in transactions if (tx.get("status") or {}).get("confirmed")
+    )
+    facts.transactions_mempool = facts.transactions_examined - facts.transactions_confirmed
+    facts.truncated = facts.tx_count > facts.transactions_examined
+    _harvest(transactions, address, facts)
