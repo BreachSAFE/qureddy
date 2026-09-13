@@ -14,7 +14,6 @@ collectors own acquisition, and renderers only project this result.
 
 from __future__ import annotations
 
-from qureddy.core.evaluation import InterpretationDisplay, PostureEvaluation
 from qureddy.core.models import (
     AxisStatus,
     Evidence,
@@ -35,10 +34,16 @@ from qureddy.scanners.common.evaluation import (
     evaluate_posture,
 )
 from qureddy.scanners.common.evaluation import reason_codes as build_reason_codes
+from qureddy.scanners.common.evaluation.display import build_display
 from qureddy.scanners.common.rollup import (
     highest_severity,
     scan_nist_quantum_security_levels,
     scan_readiness,
+)
+from qureddy.scanners.common.signature_posture import (
+    protocol_hndl_exposure,
+    signature_only_ciso_text,
+    signature_only_pqc_axis,
 )
 
 POLICY_ID = "qureddy-readiness"
@@ -49,8 +54,15 @@ def _ciso_text(
     axes: PostureAxes,
     reasons: tuple[str, ...],
     has_positive_evidence: bool,
+    protocol: str = "",
+    account_without_key: bool = False,
 ) -> tuple[str, str]:
     """Create deterministic headline/action text from structured reasons."""
+    signature_only = signature_only_ciso_text(
+        protocol=protocol, account_without_key=account_without_key
+    )
+    if signature_only is not None:
+        return signature_only
     if "weak_classical_algorithm_observed" in reasons:
         return (
             "Classically weak algorithm exposure was observed.",
@@ -75,27 +87,30 @@ def _ciso_text(
             "PQC support could not be confirmed; classical key exchange was observed.",
             "Verify the target TLS terminator supports the requested hybrid group and re-scan.",
         )
-    return {
-        PqcSupport.PURE_PQ_OBSERVED: (
-            "Pure post-quantum key exchange was observed.",
-            "Continue monitoring negotiated posture.",
-        ),
-        PqcSupport.HYBRID_OBSERVED: (
-            "Hybrid post-quantum key exchange was observed.",
-            "Continue monitoring negotiated posture.",
-        ),
-        PqcSupport.NOT_TESTABLE: (
-            "PQC posture could not be tested.",
-            "Resolve the scan failure and re-run the assessment.",
-        ),
-        PqcSupport.CLASSICAL_ONLY_OBSERVED: (
-            "Only classical key exchange was observed.",
-            "Enable a supported hybrid group and re-run the assessment.",
-        ),
-    }.get(
+    return _CISO_TEXT_BY_SUPPORT.get(
         axes.pqc_support,
         ("PQC posture is unknown.", "Resolve probe limitations and re-run the assessment."),
     )
+
+
+_CISO_TEXT_BY_SUPPORT: dict[PqcSupport, tuple[str, str]] = {
+    PqcSupport.PURE_PQ_OBSERVED: (
+        "Pure post-quantum key exchange was observed.",
+        "Continue monitoring negotiated posture.",
+    ),
+    PqcSupport.HYBRID_OBSERVED: (
+        "Hybrid post-quantum key exchange was observed.",
+        "Continue monitoring negotiated posture.",
+    ),
+    PqcSupport.NOT_TESTABLE: (
+        "PQC posture could not be tested.",
+        "Resolve the scan failure and re-run the assessment.",
+    ),
+    PqcSupport.CLASSICAL_ONLY_OBSERVED: (
+        "Only classical key exchange was observed.",
+        "Enable a supported hybrid group and re-run the assessment.",
+    ),
+}
 
 
 def _is_not_testable(failure_category: FailureCategory | None) -> bool:
@@ -145,10 +160,18 @@ def _resolve_protocol(
 
 
 def _pqc_axis(
-    *, classical: bool, hybrid: bool, pure_pq: bool, hybrid_failed: bool, not_testable: bool
+    *,
+    classical: bool,
+    hybrid: bool,
+    pure_pq: bool,
+    hybrid_failed: bool,
+    not_testable: bool,
+    signature_only: tuple[PqcSupport, AxisStatus] | None = None,
 ) -> tuple[PqcSupport, AxisStatus]:
     if not_testable:
         return PqcSupport.NOT_TESTABLE, AxisStatus.NOT_TESTABLE
+    if signature_only is not None:
+        return signature_only
     if hybrid:
         return PqcSupport.HYBRID_OBSERVED, AxisStatus.HYBRID
     if pure_pq:
@@ -215,12 +238,14 @@ def _hndl_exposure(
     hybrid: bool,
     pure_pq: bool,
     not_testable: bool,
+    signature_classical: bool = False,
 ) -> HndlExposure:
     """Classify future-quantum exposure without ranking present-day hygiene."""
-    if protocol == "ike":
-        return HndlExposure.UNKNOWN
-    if not_testable:
-        return HndlExposure.UNKNOWN
+    by_protocol = protocol_hndl_exposure(
+        protocol=protocol, not_testable=not_testable, signature_classical=signature_classical
+    )
+    if by_protocol is not None:
+        return by_protocol
     if hybrid:
         return HndlExposure.PROTECTED_DEFEASIBLE if classical else HndlExposure.PROTECTED
     if pure_pq:
@@ -254,75 +279,11 @@ def _hygiene_status(
     return HygieneStatus.OK if has_findings else HygieneStatus.UNKNOWN
 
 
-def _overall_status(
-    support: PqcSupport,
-    hygiene_status: HygieneStatus,
-) -> str:
-    if support is PqcSupport.PURE_PQ_OBSERVED:
-        return "Post-quantum protection observed"
-    if support is PqcSupport.HYBRID_OBSERVED:
-        return (
-            "Hybrid PQC protection observed"
-            if hygiene_status is HygieneStatus.OK
-            else "Hybrid PQC protection with hardening required"
-        )
-    if support is PqcSupport.CLASSICAL_ONLY_OBSERVED:
-        return "Classical-only protection observed"
-    return "PQC protection could not be confirmed"
-
-
-def _display(
-    axes: PostureAxes,
-    *,
-    hndl_exposure: HndlExposure,
-    hygiene_status: HygieneStatus,
-    not_testable: bool,
-    evaluation: PostureEvaluation,
-) -> InterpretationDisplay:
-    """Translate stable machine statuses into concise CISO-facing language."""
-    if not_testable:
-        return InterpretationDisplay(
-            overall_status="Unable to assess",
-            quantum_protection="PQC capability could not be tested",
-            future_quantum_risk="Exposure is unknown",
-            current_hygiene="Security hygiene could not be assessed",
-            evaluation=evaluation,
-        )
-
-    quantum_protection = {
-        PqcSupport.PURE_PQ_OBSERVED: "Pure post-quantum key exchange observed",
-        PqcSupport.HYBRID_OBSERVED: "Hybrid PQC key exchange observed",
-        PqcSupport.CLASSICAL_ONLY_OBSERVED: "Only classical key exchange observed",
-        PqcSupport.UNKNOWN: "No PQC key exchange was confirmed",
-        PqcSupport.NOT_TESTABLE: "PQC capability could not be tested",
-    }[axes.pqc_support]
-    future_quantum_risk = {
-        HndlExposure.PROTECTED: "Protected against harvest-now/decrypt-later exposure",
-        HndlExposure.PROTECTED_DEFEASIBLE: (
-            "Protected today, but a classical downgrade path remains"
-        ),
-        HndlExposure.AT_RISK: "At risk of harvest-now/decrypt-later exposure",
-        HndlExposure.UNKNOWN: "Exposure is unknown",
-    }[hndl_exposure]
-    current_hygiene = {
-        HygieneStatus.OK: "No immediate protocol hardening issue identified",
-        HygieneStatus.ACTION_NEEDED: "Protocol hardening is required",
-        HygieneStatus.WEAK: "Weak cryptography requires remediation",
-        HygieneStatus.UNKNOWN: "Security hygiene could not be assessed",
-    }[hygiene_status]
-    return InterpretationDisplay(
-        overall_status=_overall_status(axes.pqc_support, hygiene_status),
-        quantum_protection=quantum_protection,
-        future_quantum_risk=future_quantum_risk,
-        current_hygiene=current_hygiene,
-        evaluation=evaluation,
-    )
-
-
 def _build_axes(
     findings: list[Finding],
     evidence: list[Evidence],
     failure_category: FailureCategory | None,
+    protocol: str,
 ) -> tuple[PostureAxes, PostureSignals, bool]:
     signals = derive_signals(findings, evidence)
     not_testable = _is_not_testable(failure_category)
@@ -333,6 +294,9 @@ def _build_axes(
         pure_pq=signals.pure_pq,
         hybrid_failed=signals.hybrid_failed,
         not_testable=not_testable,
+        signature_only=signature_only_pqc_axis(
+            protocol=protocol, signature_classical=signals.authentication_classical
+        ),
     )
 
     downgrade = _downgrade_axis(signals, not_testable=not_testable)
@@ -352,6 +316,27 @@ def _build_axes(
     return axes, signals, not_testable
 
 
+def _statuses(
+    signals: PostureSignals,
+    *,
+    protocol: str,
+    not_testable: bool,
+    has_findings: bool,
+) -> tuple[HndlExposure, HygieneStatus]:
+    """Compute the two independent status axes from one set of signals."""
+    return (
+        _hndl_exposure(
+            protocol=protocol,
+            classical=signals.classical_kex,
+            hybrid=signals.hybrid,
+            pure_pq=signals.pure_pq,
+            not_testable=not_testable,
+            signature_classical=signals.authentication_classical,
+        ),
+        _hygiene_status(signals, not_testable=not_testable, has_findings=has_findings),
+    )
+
+
 def build_interpretation(
     findings: list[Finding],
     evidence: list[Evidence],
@@ -360,19 +345,17 @@ def build_interpretation(
 ) -> ScanInterpretation:
     """Build stable posture axes and provenance from observed findings."""
     resolved_protocol = _resolve_protocol(findings, evidence, protocol)
-    axes, signals, not_testable = _build_axes(findings, evidence, failure_category)
+    axes, signals, not_testable = _build_axes(
+        findings, evidence, failure_category, resolved_protocol
+    )
     reason_codes = build_reason_codes(findings, failure_category)
     positive_evidence = _has_positive_evidence(evidence, failure_category)
-    headline, recommended_action = _ciso_text(axes, reason_codes, positive_evidence)
-    hndl_exposure = _hndl_exposure(
-        protocol=resolved_protocol,
-        classical=signals.classical_kex,
-        hybrid=signals.hybrid,
-        pure_pq=signals.pure_pq,
-        not_testable=not_testable,
+    headline, recommended_action = _ciso_text(
+        axes, reason_codes, positive_evidence, resolved_protocol, signals.account_without_key
     )
-    hygiene_status = _hygiene_status(
+    hndl_exposure, hygiene_status = _statuses(
         signals,
+        protocol=resolved_protocol,
         not_testable=not_testable,
         has_findings=bool(findings),
     )
@@ -388,7 +371,7 @@ def build_interpretation(
         effective=scan_readiness(findings, evidence),
         headline=headline,
         recommended_action=recommended_action,
-        display=_display(
+        display=build_display(
             axes,
             hndl_exposure=hndl_exposure,
             hygiene_status=hygiene_status,

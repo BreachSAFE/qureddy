@@ -187,6 +187,26 @@ def test_cbom_emits_ephemeral_public_key_material() -> None:
     assert material["state"] == "active"
 
 
+def test_ephemeral_key_material_carries_no_value() -> None:
+    """Session material is inventoried by size, and its value is withheld.
+
+    `add_public_key_material` is shared with the wallet scanner, which does emit
+    a value because a chain account's key is already published on a public
+    ledger. This asserts the TLS side keeps the opposite choice after the
+    emitter moved out of this module.
+    """
+    payload = _render(_result_with_handshake_details())
+    component = next(
+        item
+        for item in payload["components"]
+        if item["cryptoProperties"]["assetType"] == "related-crypto-material"
+    )
+    material = component["cryptoProperties"]["relatedCryptoMaterialProperties"]
+
+    assert "value" not in material
+    assert material["size"] == 253
+
+
 def test_duplicate_ephemeral_observations_emit_one_material_asset() -> None:
     result = _result_with_handshake_details()
     duplicate = result.evidence[0].model_copy(update={"id": "ev-live-auth-2"})

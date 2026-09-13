@@ -11,10 +11,13 @@ from rich.table import Table
 from rich.text import Text
 
 from qureddy.core.models import ProbeRole
+from qureddy.core.vocabulary import WALLET_SIGNATURE_EVIDENCE
 from qureddy.output._styles import BODY_TEXT
 from qureddy.scanners.common.rollup import _KEX_EVIDENCE_TYPES
 
-_SIGNATURE_EVIDENCE_TYPES = frozenset({"ssh.hostkey", "tls.cert.signature"})
+_SIGNATURE_EVIDENCE_TYPES = frozenset(
+    {"ssh.hostkey", "tls.cert.signature", WALLET_SIGNATURE_EVIDENCE}
+)
 
 if TYPE_CHECKING:
     from qureddy.core.models import Evidence, ScanResult
@@ -84,5 +87,9 @@ def _certificate_row(evidence: Evidence, level: int) -> tuple[str, str, str, str
     """Build one certificate-signature category row with its subject context."""
     if evidence.evidence_type == "ssh.hostkey":
         return ("signature", "host key", str(level), evidence.algorithm or "unknown", "")
+    if evidence.evidence_type == WALLET_SIGNATURE_EVIDENCE:
+        # Without this row the pane describes the indexer's TLS certificate and
+        # omits the account key, which is the surface the scan exists to rate.
+        return ("signature", "account key", str(level), evidence.algorithm or "unknown", "")
     subject = evidence.certificate.subject if evidence.certificate is not None else "observed"
     return ("certificate", subject, str(level), evidence.algorithm or "unknown", "")

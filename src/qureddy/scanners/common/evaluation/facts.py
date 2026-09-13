@@ -20,6 +20,12 @@ from qureddy.core.models import (
     Readiness,
 )
 from qureddy.core.signals import SemanticSignal
+from qureddy.core.vocabulary import WALLET_SIGNATURE_EVIDENCE
+
+#: Finding the wallet scanner records for what kind of account it read, and the
+#: value that means the address holds no externally owned key.
+_WALLET_ACCOUNT_KIND = "account.kind"
+_WALLET_CONTRACT = "contract"
 
 
 class PostureFacts(BaseModel):
@@ -35,6 +41,8 @@ class PostureFacts(BaseModel):
     classical_alternative: str | None = None
     certificate_chain_signature: str | None = None
     weak_algorithms: tuple[str, ...] = ()
+    #: The examined account holds no key of its own. See PostureSignals.
+    account_without_key: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -53,6 +61,10 @@ class PostureSignals:
     weak_algorithm: bool
     protocol_action_needed: bool
     hygiene_weak: bool
+    #: The examined account holds no key of its own, so there is nothing at this
+    #: address to harvest and nothing here to call unmeasured. A contract account
+    #: is the case: its owner and upgrade keys sit elsewhere (#991).
+    account_without_key: bool
     semantic: frozenset[SemanticSignal]
 
 
@@ -80,6 +92,7 @@ def derive_signals(findings: list[Finding], evidence: list[Evidence]) -> Posture
         weak_algorithm=weak_algorithm,
         protocol_action_needed=SemanticSignal.PROTOCOL_ACTION_NEEDED in semantic,
         hygiene_weak=weak_algorithm,
+        account_without_key=_account_without_key(findings, evidence_types),
         semantic=frozenset(semantic),
     )
 
@@ -171,7 +184,7 @@ def _legacy_protocol_signal(
 
 
 def _authentication_classical_signal(
-    _: list[Finding], types: set[str], _rules: set[str], evidence_types: set[str]
+    findings: list[Finding], types: set[str], _rules: set[str], evidence_types: set[str]
 ) -> bool:
     """Return whether classical authentication evidence was observed."""
     return any(
@@ -179,7 +192,34 @@ def _authentication_classical_signal(
             _has_suffix(types, "cert.classical_signature"),
             _has_suffix(evidence_types, "hostkey"),
             _has_suffix(types, "hostkey.weak"),
+            _wallet_account_signs(findings, evidence_types),
         )
+    )
+
+
+def _account_without_key(findings: list[Finding], evidence_types: set[str]) -> bool:
+    """Whether a wallet scan read an account that holds no key of its own."""
+    return WALLET_SIGNATURE_EVIDENCE in evidence_types and any(
+        finding.finding_type == _WALLET_ACCOUNT_KIND
+        and finding.title.endswith(f": {_WALLET_CONTRACT}")
+        for finding in findings
+    )
+
+
+def _wallet_account_signs(findings: list[Finding], evidence_types: set[str]) -> bool:
+    """Whether the account this scan examined authenticates with a key of its own.
+
+    The signing evidence records a chain-level fact: every account on these
+    chains signs on secp256k1. A contract account holds no externally owned key,
+    so that fact says nothing about this address, and its owner and upgrade keys
+    sit elsewhere and were never examined. Reading the evidence alone made a
+    contract read `at_risk` with no key present to harvest (#991).
+
+    Pairs the evidence with the scanner's own reading of the account, the way
+    `_finding_pair_signal` pairs a finding type with a readiness.
+    """
+    return WALLET_SIGNATURE_EVIDENCE in evidence_types and not _account_without_key(
+        findings, evidence_types
     )
 
 
@@ -227,6 +267,9 @@ def normalize_facts(
         classical_alternative=_classical_alternative(findings, evidence),
         certificate_chain_signature=_certificate_signature(findings),
         weak_algorithms=_weak_algorithms(findings, evidence),
+        account_without_key=_account_without_key(
+            findings, {item.evidence_type for item in evidence}
+        ),
     )
 
 

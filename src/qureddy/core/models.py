@@ -56,7 +56,12 @@ HOSTNAME_PATTERN = re.compile(
 )
 
 # Constrain schemes so deserialized input cannot reach downstream tooling (#369).
-SUPPORTED_SCHEMES = frozenset({"tls", "ssh", "ike"})
+# "btc" and "eth" name a wallet scan: the endpoint contacted is a chain indexer or
+# RPC node, and the account under examination travels in ScanTarget.subject.
+SUPPORTED_SCHEMES = frozenset({"tls", "ssh", "ike", "btc", "eth", "ltc"})
+
+# Schemes whose subject is an account identifier rather than the endpoint itself.
+SUBJECT_SCHEMES = frozenset({"btc", "eth", "ltc"})
 
 
 def _is_ip_literal(value: str) -> bool:
@@ -115,6 +120,11 @@ class ScanTarget(BaseModel):
     sni: str | None
     scheme: str = "tls"
     starttls_mode: StartTLSMode | None = Field(default=None, exclude_if=lambda value: value is None)
+    # A wallet scan asks an indexer about an account, so the endpoint in
+    # host/port/locator and the thing examined are different identifiers. subject
+    # carries the account; locator keeps naming the endpoint actually contacted,
+    # which is what every existing consumer of locator already assumes.
+    subject: str | None = Field(default=None, exclude_if=lambda value: value is None)
     locator: str
 
     @field_validator("host")
@@ -167,6 +177,18 @@ class ScanTarget(BaseModel):
         expected = f"{self.scheme}://{rendered_host}:{self.port}"
         if self.locator != expected:
             msg = f"locator {self.locator!r} does not match host/port/scheme {expected!r}"
+            raise ValueError(msg)
+        return self
+
+    @model_validator(mode="after")
+    def _subject_belongs_to_a_subject_scheme(self) -> ScanTarget:
+        # A subject on a tls/ssh/ike target would be silently ignored by every
+        # renderer, so reject it at construction instead of carrying dead data.
+        if self.subject is not None and self.scheme not in SUBJECT_SCHEMES:
+            msg = f"subject is only valid for {sorted(SUBJECT_SCHEMES)}: scheme is {self.scheme!r}"
+            raise ValueError(msg)
+        if self.subject is not None and not self.subject.strip():
+            msg = "subject cannot be empty or whitespace-only"
             raise ValueError(msg)
         return self
 
@@ -269,6 +291,13 @@ class Evidence(BaseModel):
     handshake_signature: str | None = None
     handshake_hash: str | None = None
     key_bits: int | None = Field(default=None, ge=1)
+    #: A public key this scanner read, hex encoded. Public by definition and, for
+    #: a chain account, already published on a public ledger, so it travels as
+    #: evidence. A private key or any secret never lands here.
+    public_key: str | None = None
+    #: Encoding of `public_key`, e.g. SEC1-compressed, so a reader knows how to
+    #: parse the bytes rather than guessing from their length.
+    public_key_format: str | None = None
     server_software: str | None = None
     server_version: str | None = None
     probe_role: ProbeRole | None = None

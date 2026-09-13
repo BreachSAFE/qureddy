@@ -10,7 +10,7 @@ declarations), `_render` (output dispatch), `main` (app assembly +
 entry point), `scan` / `ssh` (the subcommand bodies).
 
 The subcommand imports below are load-bearing: importing `scan`, `ssh`, and
-`ike` registers their commands onto `scan_app`, in that order — which
+`ike`, and `wallet` register their commands onto `scan_app`, in that order — which
 fixes the `qureddy scan --help` command listing (tls before ssh),
 matching the pre-split single-file definition order.
 """
@@ -24,6 +24,7 @@ from qureddy._branding import PROJECT_NAME, VERSION_BANNER
 from qureddy.cli import scan as scan  # command registration (see docstring)
 from qureddy.cli import ssh as ssh  # command registration (see docstring)
 from qureddy.cli import ike as ike  # command registration (see docstring)
+from qureddy.cli import wallet as wallet  # command registration (see docstring)
 
 # isort: on
 from qureddy.cli.main import app, main

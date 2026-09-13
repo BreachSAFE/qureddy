@@ -5,8 +5,8 @@
 
 [project]
 name = "breachsafe-qureddy"
-version = "0.9.24"
-description = "Open-source post-quantum readiness scanner for TLS, SSH, and IKE endpoints."
+version = "0.9.30"
+description = "Open-source post-quantum readiness scanner for TLS, SSH, IKE, and wallet endpoints."
 readme = "README.md"
 requires-python = ">=3.14"
 license = "Apache-2.0"
@@ -266,6 +266,7 @@ max-statements = 50
 "src/qureddy/cli/scan.py" = ["TC001"]
 "src/qureddy/cli/ssh.py" = ["TC001"]
 "src/qureddy/cli/ike.py" = ["TC001"]
+"src/qureddy/cli/wallet.py" = ["TC001"]
 "tests/**/*.py" = [
     "S101",     # asserts allowed in tests
     "PLR2004",  # magic numbers allowed in tests

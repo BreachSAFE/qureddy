@@ -11,6 +11,7 @@ up to UNKNOWN, and used a bare ``max`` that raised on an empty finding set.
 from __future__ import annotations
 
 from qureddy.core.models import Evidence, Finding, ObservationType, Readiness, Severity
+from qureddy.core.vocabulary import WALLET_SIGNATURE_EVIDENCE
 
 SEVERITY_ORDER: dict[Severity, int] = {
     Severity.INFO: 0,
@@ -50,7 +51,9 @@ _KEX_EVIDENCE_TYPES: frozenset[str] = frozenset(
     }
 )
 _NIST_EVIDENCE_TYPES: frozenset[str] = _KEX_EVIDENCE_TYPES | frozenset(
-    {"ssh.hostkey", "tls.cert.signature"}
+    # A wallet account signs with secp256k1, so its signing algorithm carries a
+    # NIST category the same way a host key or a certificate signature does.
+    {"ssh.hostkey", "tls.cert.signature", WALLET_SIGNATURE_EVIDENCE}
 )
 
 

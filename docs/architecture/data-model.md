@@ -118,7 +118,7 @@ The generated table shows both Python member names and serialized values.
 | Enum | Module | Members and serialized values |
 |---|---|---|
 | `AxisStatus` | `core.vocabulary` | `HYBRID = "hybrid"`, `PURE_PQ = "pure_pq"`, `CLASSICAL = "classical"`, `ACCEPTABLE = "acceptable"`, `ACTION_NEEDED = "action_needed"`, `UNKNOWN = "unknown"`, `NOT_TESTABLE = "not_testable"`, `NOT_APPLICABLE = "not_applicable"` |
-| `Capability` | `core.contracts` | `TLS_ENDPOINT = "tls.endpoint"`, `SSH_ENDPOINT = "ssh.endpoint"`, `SSH_PUBLIC_KEY = "ssh.public_key"`, `SSH_CONFIG = "ssh.config"`, `X509_CERTIFICATE = "x509.certificate"`, `IKE_ENDPOINT = "ike.endpoint"` |
+| `Capability` | `core.contracts` | `TLS_ENDPOINT = "tls.endpoint"`, `SSH_ENDPOINT = "ssh.endpoint"`, `SSH_PUBLIC_KEY = "ssh.public_key"`, `SSH_CONFIG = "ssh.config"`, `X509_CERTIFICATE = "x509.certificate"`, `IKE_ENDPOINT = "ike.endpoint"`, `WALLET_ACCOUNT = "wallet.account"` |
 | `CollectionFailureKind` | `core.contracts` | `TIMEOUT = "timeout"`, `UNAVAILABLE = "unavailable"`, `MALFORMED = "malformed"`, `PERMISSION_DENIED = "permission_denied"`, `UNSUPPORTED = "unsupported"`, `EXECUTION = "execution"` |
 | `ComponentRole` | `core.crypto_catalog.models` | `KEY_ESTABLISHMENT = "key_establishment"`, `CONFIDENTIALITY = "confidentiality"`, `AUTHENTICATION = "authentication"`, `INTEGRITY = "integrity"`, `PRF = "prf"`, `TRADITIONAL_COMPONENT = "traditional_component"`, `POST_QUANTUM_COMPONENT = "post_quantum_component"` |
 | `Confidence` | `core.vocabulary` | `HIGH = "high"`, `MEDIUM = "medium"`, `LOW = "low"` |
@@ -158,12 +158,16 @@ inheritance, import, and runtime dependency edges are outside this graph's scope
 ```mermaid
 classDiagram
 direction LR
+class AccountDecoded
+class AccountFacts
+class AddressProfile
 class AlgorithmFacts
 class AlgorithmProfile
 class AlgorithmSpec
 class AlgorithmUse
 class Asset
 class AxisStatus { <<enum>> }
+class Builder
 class Capability { <<enum>> }
 class CatalogCompileError
 class CatalogDefinition
@@ -175,6 +179,7 @@ class CertificateDetails
 class CertificateInfo
 class CertificateObservation
 class CertificateParseError
+class ChainFacts
 class Classification
 class CollectionFailure
 class CollectionFailureKind { <<enum>> }
@@ -186,6 +191,7 @@ class ComponentRole { <<enum>> }
 class Confidence { <<enum>> }
 class CryptoCatalogSnapshot
 class CryptoPrimitive { <<enum>> }
+class DecodedAddress
 class DigestScope { <<enum>> }
 class EntryKind { <<enum>> }
 class Evidence
@@ -193,6 +199,7 @@ class ExternalToolDependency
 class FailureCategory { <<enum>> }
 class Finding
 class HndlExposure { <<enum>> }
+class HttpExchange
 class HygieneStatus { <<enum>> }
 class IKEMode { <<enum>> }
 class IKEParseStatus { <<enum>> }
@@ -256,6 +263,7 @@ class ScanTarget
 class Scanner
 class SemanticSignal { <<enum>> }
 class Severity { <<enum>> }
+class Signature
 class SourceKind { <<enum>> }
 class SourceRecord
 class SourceRef
@@ -264,12 +272,14 @@ class TLSScanner
 class TargetParseError
 class ToolAdapter
 class ToolPolicy { <<enum>> }
+class WalletScanner
 class _AlgorithmFields
 class _BoundedCapture
 class _KexClassification
 class _LocalOpenSSLProblem
 class _NativeEndpointCollector
 class _RootGroup
+AccountFacts *-- "*" HttpExchange
 AlgorithmFacts --> CryptoPrimitive
 AlgorithmSpec *-- AlgorithmFacts
 AlgorithmSpec *-- "*" Identifier
@@ -280,6 +290,8 @@ CatalogDefinition *-- "*" AlgorithmSpec
 CatalogDefinition *-- "*" ProtocolEntry
 CatalogDefinition *-- "*" SourceRecord
 CatalogReceipt --> DigestScope
+ChainFacts *-- "*" HttpExchange
+ChainFacts *-- "*" Signature
 Classification *-- CatalogReceipt
 Classification *-- "*" Rating
 Classification --> MatchStatus

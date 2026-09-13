@@ -17,14 +17,23 @@ from types import MappingProxyType
 from typing import TYPE_CHECKING, NamedTuple
 
 from cyclonedx.model import Property
-from cyclonedx.model.crypto import AlgorithmProperties, CryptoPrimitive
+from cyclonedx.model.bom_ref import BomRef
+from cyclonedx.model.component import Component, ComponentType
+from cyclonedx.model.crypto import (
+    AlgorithmProperties,
+    CryptoAssetType,
+    CryptoPrimitive,
+    CryptoProperties,
+    RelatedCryptoMaterialProperties,
+    RelatedCryptoMaterialState,
+    RelatedCryptoMaterialType,
+)
 
 from qureddy.core.signatures import classify_pqc_signature
-from qureddy.output.cbom_assets import add_algorithm_component, algorithm_ref
+from qureddy.output.cbom_assets import add_algorithm_component, add_provides_edge, algorithm_ref
 
 if TYPE_CHECKING:
     from cyclonedx.model.bom import Bom
-    from cyclonedx.model.bom_ref import BomRef
 
 # NIST SP 800-57 Part 1 Rev.5, Table 2: classical security strength (bits) by asymmetric
 # key size. Only the standard sizes are listed; an off-table size yields no claimed strength.
@@ -67,7 +76,9 @@ class PublicKeyAsset(NamedTuple):
     severity: str
 
 
-def classify_public_key(algorithm: str | None, bits: int | None) -> PublicKeyAsset | None:
+def classify_public_key(
+    algorithm: str | None, bits: int | None, curve: str | None = None
+) -> PublicKeyAsset | None:
     """Classify an endpoint public key by algorithm name + size, or None if unclassifiable.
 
     Protocol-agnostic: the caller supplies the algorithm name and size in bits from whatever
@@ -87,25 +98,21 @@ def classify_public_key(algorithm: str | None, bits: int | None) -> PublicKeyAss
             nist_quantum_security_level=level,
         )
         return PublicKeyAsset(parameter_set.upper(), properties, "quantum_safe", "low")
-    return _classify_classical_public_key(algorithm, bits)
+    return _classify_classical_public_key(algorithm, bits, curve)
 
 
-def _classify_classical_public_key(algorithm: str, bits: int | None) -> PublicKeyAsset | None:
+def _classify_classical_public_key(
+    algorithm: str, bits: int | None, curve: str | None = None
+) -> PublicKeyAsset | None:
     """Classify a classical asymmetric key (RSA / EC / EdDSA / DSA), or None if unrecognized."""
     family = _PUBLIC_KEY_FAMILY.get(algorithm.lower())
     if family is None:
         return None
-    if family == "RSA":
-        primitive = CryptoPrimitive.PKE
-        strength = _RSA_CLASSICAL_STRENGTH.get(bits) if bits else None
-        weak = bits is not None and bits < _RSA_MIN_ACCEPTABLE_BITS
-    else:
-        primitive = CryptoPrimitive.SIGNATURE
-        strength = _EC_CLASSICAL_STRENGTH.get(bits) if bits else None
-        weak = False
-    name = f"{family}-{bits}" if bits else family
+    primitive, strength, weak = _classical_properties(family, bits)
+    name = f"{family}-{curve or bits}" if (curve or bits) else family
     properties = AlgorithmProperties(
         primitive=primitive,
+        parameter_set_identifier=curve,
         classical_security_level=strength,
         # CycloneDX defines level 0 as “none of the NIST categories are met”.
         # This is a valid no-category sentinel, not a fabricated NIST category.
@@ -116,18 +123,81 @@ def _classify_classical_public_key(algorithm: str, bits: int | None) -> PublicKe
     return PublicKeyAsset(name, properties, readiness, severity)
 
 
+def _classical_properties(
+    family: str, bits: int | None
+) -> tuple[CryptoPrimitive, int | None, bool]:
+    """Return the primitive, classical strength, and classical weakness for a family."""
+    if family == "RSA":
+        return (
+            CryptoPrimitive.PKE,
+            _RSA_CLASSICAL_STRENGTH.get(bits) if bits else None,
+            bits is not None and bits < _RSA_MIN_ACCEPTABLE_BITS,
+        )
+    return CryptoPrimitive.SIGNATURE, _EC_CLASSICAL_STRENGTH.get(bits) if bits else None, False
+
+
+def add_public_key_material(
+    bom: Bom,
+    *,
+    ref: str,
+    name: str,
+    algorithm_ref: str,
+    provides_edges: dict[str, list[str]],
+    size: int | None = None,
+    value: str | None = None,
+    key_format: str | None = None,
+) -> None:
+    """Emit one observed public key as `related-crypto-material`.
+
+    CycloneDX 1.7 names this exactly: `relatedCryptoMaterialProperties.type`
+    carries `public-key`, "the non-confidential key of a key pair used in
+    asymmetric cryptography". An `algorithm` asset describes what the key is
+    made of; this describes the key itself, so a scanner that reads key bytes
+    emits both and they point at each other through `algorithm_ref`.
+
+    `value` stays optional and the caller decides. A TLS ephemeral key is
+    session material and is recorded by size alone. A chain account's key is
+    already published on a public ledger, so withholding it would hide evidence
+    the scan exists to surface. A private key or any secret never reaches here.
+
+    Idempotent by bom-ref, matching `add_algorithm_component`.
+    """
+    if any(component.bom_ref.value == ref for component in bom.components):
+        return
+    bom.components.add(
+        Component(
+            name=name,
+            type=ComponentType.CRYPTOGRAPHIC_ASSET,
+            bom_ref=ref,
+            crypto_properties=CryptoProperties(
+                asset_type=CryptoAssetType.RELATED_CRYPTO_MATERIAL,
+                related_crypto_material_properties=RelatedCryptoMaterialProperties(
+                    type=RelatedCryptoMaterialType.PUBLIC_KEY,
+                    state=RelatedCryptoMaterialState.ACTIVE,
+                    algorithm_ref=BomRef(value=algorithm_ref),
+                    size=size,
+                    value=value,
+                    format=key_format,
+                ),
+            ),
+        )
+    )
+    add_provides_edge(provides_edges, ref)
+
+
 def add_public_key_component(
     bom: Bom,
     algorithm: str | None,
     bits: int | None,
     provides_edges: dict[str, list[str]],
+    curve: str | None = None,
 ) -> BomRef | None:
     """Emit one crypto-asset component for an endpoint public key; return its ref or None.
 
     None when the key cannot be classified, so a caller (e.g. the certificate emitter) simply
     leaves its reference unset rather than pointing at a fabricated component.
     """
-    asset = classify_public_key(algorithm, bits)
+    asset = classify_public_key(algorithm, bits, curve)
     if asset is None:
         return None
     return add_algorithm_component(

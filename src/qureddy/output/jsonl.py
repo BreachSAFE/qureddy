@@ -30,8 +30,19 @@ def _ip_or_none(host: str) -> str | None:
     return host
 
 
+#: Scheme to nuclei template type. A scheme absent here falls back to itself,
+#: so a new scanner writes JSONL instead of raising KeyError at render time.
+_NUCLEI_TYPES: dict[str, str] = {
+    "tls": "ssl",
+    "ssh": "ssh",
+    "ike": "ike",
+    "btc": "wallet",
+    "eth": "wallet",
+}
+
+
 def _nuclei_type(scheme: str) -> str:
-    return {"tls": "ssl", "ssh": "ssh", "ike": "ike"}[scheme]
+    return _NUCLEI_TYPES.get(scheme, scheme)
 
 
 def _finding_metadata(result: ScanResult, finding: Finding) -> dict[str, Any]:

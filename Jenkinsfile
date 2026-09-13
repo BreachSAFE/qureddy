@@ -54,10 +54,20 @@ pipeline {
       // missing runtime reads as an environment failure at the top of the log
       // rather than as a skipped test buried in a later stage.
       steps {
-        sh '''
+        script {
+          def legacyOpenSSL = env.LEGACY_OPENSSL?.trim()
+          if (!legacyOpenSSL) {
+            legacyOpenSSL = sh(
+              script: 'for candidate in /opt/openssl-legacy/bin/openssl /Users/paul/Library/Caches/qureddy-app/openssl-legacy-docker/bin/openssl /Users/paul/Library/Caches/qureddy-app/openssl-legacy/bin/openssl; do if [ -x "$candidate" ]; then printf "%s" "$candidate"; break; fi; done',
+              returnStdout: true,
+            ).trim()
+          }
+          env.LEGACY_OPENSSL_RESOLVED = legacyOpenSSL
+          withEnv(["LEGACY_OPENSSL=${legacyOpenSSL}"]) {
+            sh '''
           set -eu
           [ -n "${QUREDDY_OPENSSL:-}" ] || { echo "QUREDDY_OPENSSL Jenkins parameter is required" >&2; exit 1; }
-          [ -n "${LEGACY_OPENSSL:-}" ] || { echo "LEGACY_OPENSSL Jenkins parameter is required" >&2; exit 1; }
+          [ -n "${LEGACY_OPENSSL:-}" ] || { echo "LEGACY_OPENSSL Jenkins parameter is required and no local 1.0.2u candidate was found" >&2; exit 1; }
           "$QUREDDY_OPENSSL" version
           "$QUREDDY_OPENSSL" version | grep -q "OpenSSL 3.5" \\
             || { echo "primary lane is not OpenSSL 3.5.x" >&2; exit 1; }
@@ -72,7 +82,9 @@ pipeline {
           # (qureddy#817). A macOS-native 1.0.2u build fails exactly here.
           "$LEGACY_OPENSSL" ecparam -name prime256v1 -genkey -noout > /dev/null \\
             || { echo "compatibility lane cannot do P-256; see qureddy#817" >&2; exit 1; }
-        '''
+            '''
+          }
+        }
       }
     }
 
@@ -95,7 +107,7 @@ pipeline {
 
     stage('live: badssl cipher ratings') {
       environment {
-        QUREDDY_LEGACY_OPENSSL = "${LEGACY_OPENSSL}"
+        QUREDDY_LEGACY_OPENSSL = "${LEGACY_OPENSSL_RESOLVED}"
       }
       steps {
         sh "uv run --locked pytest tests/live/test_live_badssl_ciphers.py -q --junitxml=${REPORT_DIR}/badssl.xml"
@@ -127,7 +139,7 @@ pipeline {
       // change is visible as a diff in the viewer rather than only as a pass or
       // fail in a build log. Non-blocking: the pipeline's verdict is the tests,
       // and a viewer that is down must not turn a green suite red.
-      environment { QUREDDY_LEGACY_OPENSSL = "${LEGACY_OPENSSL}" }
+      environment { QUREDDY_LEGACY_OPENSSL = "${LEGACY_OPENSSL_RESOLVED}" }
       steps {
         script {
           if (!env.CBOMKIT_API?.trim()) {
