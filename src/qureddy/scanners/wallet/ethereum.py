@@ -147,6 +147,20 @@ def delegate_of(code: str) -> str:
     return "0x" + eip55(body[len(_DELEGATION_PREFIX) :])
 
 
+def _refused(exchange: HttpExchange, url: str) -> bool:
+    """Refuse a scheme this lane may not open, recording and logging the refusal.
+
+    The refusal returns before the block whose finally logs, so the log call is
+    explicit here. A setting pointing the lane at `file:` is the outcome an
+    operator most wants to see.
+    """
+    if urllib.parse.urlsplit(url).scheme in ("http", "https"):
+        return False
+    exchange.error = "refused: the scheme is neither http nor https"
+    log_exchange(exchange)
+    return True
+
+
 def _rpc(
     url: str,
     method: str,
@@ -172,8 +186,7 @@ def _rpc(
     )
     if exchanges is not None:
         exchanges.append(exchange)
-    if urllib.parse.urlsplit(url).scheme not in ("http", "https"):
-        exchange.error = "refused: the scheme is neither http nor https"
+    if _refused(exchange, url):
         return None
     request = urllib.request.Request(  # noqa: S310 - scheme checked above
         url, data=payload.encode(), headers=headers
@@ -220,9 +233,11 @@ def fetch(address: str, *, timeout_seconds: float = 12.0) -> AccountFacts:
     if not looks_like_address(address):
         return AccountFacts(error="no address supplied")
     last_error = "every configured RPC endpoint was unreachable"
+    # Accumulated across every endpoint, so a run that exhausts them still
+    # carries what it attempted. See the matching note in indexer.fetch.
+    exchanges: list[HttpExchange] = []
     for url in rpcs():
         host = urllib.parse.urlsplit(url).netloc
-        exchanges: list[HttpExchange] = []
         code = _rpc(url, "eth_getCode", [address, "latest"], timeout_seconds, exchanges)
         if not isinstance(code, str):
             last_error = f"{host} did not answer eth_getCode"
@@ -250,4 +265,4 @@ def fetch(address: str, *, timeout_seconds: float = 12.0) -> AccountFacts:
         else:
             facts.balance_wei = balance
         return facts
-    return AccountFacts(error=last_error)
+    return AccountFacts(error=last_error, exchanges=exchanges)

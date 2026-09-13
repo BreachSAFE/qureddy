@@ -347,6 +347,72 @@ def test_an_unreachable_indexer_reports_not_tested(tmp_path: Path) -> None:
     assert record["observation_type"] == "not_testable"
 
 
+@pytest.mark.parametrize(
+    ("override", "expected"),
+    [
+        ("http://127.0.0.1:9", "URLError"),
+        ("ftp://mempool.space", "refused: the scheme"),
+    ],
+    ids=["unreachable", "refused-scheme"],
+)
+def test_a_failed_indexer_still_records_what_was_attempted(override: str, expected: str) -> None:
+    """An exhausted lane keeps its transcripts, and every attempt reaches the log.
+
+    Two defects sat here. `fetch` scoped its exchange list inside the per-base
+    loop, so a run that exhausted every base returned `ChainFacts` with none of
+    them and the not-tested rows had no evidence behind them. The refused-scheme
+    branch returned before the block that logs, so the one outcome an operator
+    most wants in the log was the silent one.
+    """
+    environment = dict(os.environ, QUREDDY_ESPLORA_URL=override)
+    completed = subprocess.run(  # noqa: S603 - resolved binary, list-form argv
+        [_cli(), "scan", "wallet", BTC_UNSPENT, "--format", "json", "-vvv"],
+        capture_output=True,
+        text=True,
+        timeout=_TIMEOUT_SECONDS,
+        check=False,
+        env=environment,
+    )
+    assert completed.returncode == 0, completed.stderr
+    document = json.loads(completed.stdout)
+
+    attempts = [e for e in document["evidence"] if e["evidence_type"] == "wallet.http"]
+    assert attempts, "a failed attempt is still an attempt, and it is evidence"
+    assert all(item["observation_type"] == "no_response" for item in attempts)
+    transcripts = " ".join(item["probe_result"]["stdout_excerpt"] for item in attempts)
+    assert expected in transcripts
+
+    assert completed.stderr.count("wallet.http.complete") == len(attempts)
+
+
+@pytest.mark.parametrize(
+    ("override", "expected"),
+    [
+        ("http://127.0.0.1:9", "URLError"),
+        ("ftp://rpc.example", "refused: the scheme"),
+    ],
+    ids=["unreachable", "refused-scheme"],
+)
+def test_a_failed_rpc_still_records_what_was_attempted(override: str, expected: str) -> None:
+    """The Ethereum lane carried the same two defects as the Bitcoin one."""
+    environment = dict(os.environ, QUREDDY_ETH_RPC=override)
+    completed = subprocess.run(  # noqa: S603 - resolved binary, list-form argv
+        [_cli(), "scan", "wallet", ETH_ACCOUNT, "--format", "json", "-vvv"],
+        capture_output=True,
+        text=True,
+        timeout=_TIMEOUT_SECONDS,
+        check=False,
+        env=environment,
+    )
+    assert completed.returncode == 0, completed.stderr
+    document = json.loads(completed.stdout)
+    attempts = [e for e in document["evidence"] if e["evidence_type"] == "wallet.http"]
+    assert attempts, "a failed attempt is still an attempt, and it is evidence"
+    assert all(item["observation_type"] == "no_response" for item in attempts)
+    assert expected in " ".join(item["probe_result"]["stdout_excerpt"] for item in attempts)
+    assert completed.stderr.count("wallet.http.complete") == len(attempts)
+
+
 def test_help_advertises_only_options_the_command_accepts() -> None:
     """The regression where the shared help block named three rejected options."""
     completed = _run("scan", "wallet", "--help")

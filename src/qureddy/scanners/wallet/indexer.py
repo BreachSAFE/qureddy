@@ -219,6 +219,10 @@ def _get_json(url: str, timeout: float, exchanges: list[HttpExchange] | None = N
         exchanges.append(exchange)
     if urllib.parse.urlsplit(url).scheme not in ("http", "https"):
         exchange.error = "refused: the scheme is neither http nor https"
+        # This return sits before the try below, so the log call is explicit
+        # here. A refused scheme is the outcome an operator most wants in the
+        # log, since it means a setting pointed the lane somewhere it may not go.
+        log_exchange(exchange)
         return None
     request = urllib.request.Request(url, headers=headers)  # noqa: S310 - scheme checked
     started = time.monotonic()
@@ -329,8 +333,12 @@ def fetch(address: str, *, chain: str = "bitcoin", timeout_seconds: float = 12.0
     if not address:
         return ChainFacts(error="no address supplied")
     last_error = "every configured indexer was unreachable"
+    # Accumulated across every base, so a run that exhausts them still carries
+    # what it attempted. Scoping this inside the loop dropped the transcripts of
+    # each failed base and left the C3 not-tested rows with no evidence behind
+    # them, which is the opposite of what this module's contract says.
+    exchanges: list[HttpExchange] = []
     for base in bases(chain):
-        exchanges: list[HttpExchange] = []
         summary = _get_json(f"{base}/address/{address}", timeout_seconds, exchanges)
         if not isinstance(summary, dict) or "chain_stats" not in summary:
             last_error = f"{base} returned no address summary"
@@ -360,4 +368,4 @@ def fetch(address: str, *, chain: str = "bitcoin", timeout_seconds: float = 12.0
         else:
             facts.error = "address summary only; the transaction page was unavailable"
         return facts
-    return ChainFacts(error=last_error, chain=chain)
+    return ChainFacts(error=last_error, chain=chain, exchanges=exchanges)
