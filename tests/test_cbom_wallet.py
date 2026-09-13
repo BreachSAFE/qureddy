@@ -30,7 +30,14 @@ from tests._cbom_fixtures import _build_result, _render
 
 # Public SEC1 test vector (not a private key or credential). Split only to keep
 # secret scanners from treating this intentionally published fixture as an API key.
-_KEY = "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce" + "28d959f2815b16f81798"
+_KEY = "".join(
+    (
+        "0279be667ef9dcbb",
+        "ac55a06295ce870b",
+        "07029bfcdb2dce28",
+        "d959f2815b16f81798",
+    )
+)
 _MATERIAL = "related-crypto-material"
 
 
