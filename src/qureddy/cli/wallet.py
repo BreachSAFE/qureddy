@@ -83,26 +83,36 @@ WalletChainOpt = Annotated[
     str | None,
     typer.Option(
         "--type",
-        help="Chain to scan: bitcoin or ethereum. Detected from the address when unset.",
+        help="Chain to scan: bitcoin, litecoin, or ethereum. Read from the address when unset.",
         case_sensitive=False,
     ),
 ]
 
 _BITCOIN = "bitcoin"
 _ETHEREUM = "ethereum"
-_SCHEME_BY_CHAIN = {_BITCOIN: "btc", _ETHEREUM: "eth"}
+_LITECOIN = "litecoin"
+_SCHEME_BY_CHAIN = {_BITCOIN: "btc", _ETHEREUM: "eth", _LITECOIN: "ltc"}
 _DEFAULT_PORT = 443
 _TIMEOUT_SECONDS = 12
 
 
 def _detect_chain(address: str) -> str:
-    """Pick the chain from the address form. An explicit --type overrides this."""
-    return _ETHEREUM if (address or "").strip()[:2].lower() == "0x" else _BITCOIN
+    """Pick the chain from the address form. An explicit --type overrides this.
+
+    Bitcoin and Litecoin share the base58check and bech32 encodings and differ
+    by version byte and hrp, so the decoder reads the chain rather than this
+    function guessing from a prefix.
+    """
+    subject = (address or "").strip()
+    if subject[:2].lower() == "0x":
+        return _ETHEREUM
+    decoded = btc_address.decode(subject)
+    return decoded.chain if decoded.valid else _BITCOIN
 
 
 def _endpoint(chain: str) -> tuple[str, int]:
     """Host and port of the primary endpoint for a chain, from its configured base."""
-    bases = ethereum.rpcs() if chain == _ETHEREUM else indexer.bases()
+    bases = ethereum.rpcs() if chain == _ETHEREUM else indexer.bases(chain)
     parsed = urllib.parse.urlsplit(bases[0])
     port = parsed.port or (_DEFAULT_PORT if parsed.scheme == "https" else 80)
     return parsed.hostname or "", port

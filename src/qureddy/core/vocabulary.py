@@ -178,4 +178,4 @@ WALLET_SIGNATURE_EVIDENCE = "wallet.signature"
 #: falls to UNKNOWN, which renders as "could not be confirmed" when the
 #: algorithm was read. `posture._hndl_exposure` already carries the matching
 #: precedent for `ike`.
-SIGNATURE_ONLY_PROTOCOLS = frozenset({"btc", "eth"})
+SIGNATURE_ONLY_PROTOCOLS = frozenset({"btc", "eth", "ltc"})

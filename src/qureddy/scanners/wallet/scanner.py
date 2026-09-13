@@ -97,13 +97,14 @@ def _record_offline(builder: Builder, decoded: btc_address.DecodedAddress) -> No
         source="bech32 witness version and program length, or the base58 version byte",
         observation=ObservationType.OBSERVED,
     )
-    builder.record(
-        "network",
-        decoded.network,
-        lane="offline",
-        source="bech32 hrp, or the base58 version byte",
-        observation=ObservationType.OBSERVED,
-    )
+    for name, value in (("chain", decoded.chain), ("network", decoded.network)):
+        builder.record(
+            name,
+            value,
+            lane="offline",
+            source="bech32 hrp, or the base58 version byte",
+            observation=ObservationType.OBSERVED,
+        )
     builder.record(
         "address.encoding",
         decoded.encoding,
@@ -152,7 +153,7 @@ def scan_wallet(target: ScanTarget, *, timeout_seconds: int = 12) -> ScanResult:
         _record_offline(builder, decoded_btc)
         record_bitcoin_chain(
             builder,
-            indexer.fetch(subject, timeout_seconds=timeout_seconds),
+            indexer.fetch(subject, chain=decoded_btc.chain, timeout_seconds=timeout_seconds),
             decoded_btc.script,
         )
 

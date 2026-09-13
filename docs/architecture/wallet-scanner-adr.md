@@ -371,6 +371,7 @@ Per C6, each address compiled into source or documentation carries a check.
 | `bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4` | published key, recoverable from a spend | BIP-173 §Examples declares the example key `0279be667e...`; the chain yields the same bytes |
 | `0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045` | EIP-7702 delegated account | ENS registry `0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e`, `resolver.addr(namehash("vitalik.eth"))` |
 | `0xdAC17F958D2ee523a2206206994597C13D831ec7` | contract account | `eth_call` `name()` returns `Tether USD`, `symbol()` `USDT`, `decimals()` 6 |
+| `Ler4HNAEfwYhBmGXcFP2Po1NpRUEiK8km2` | Litecoin P2PK key on chain, shown under its P2PKH form | HASH160 of the Litecoin block 0 coinbase public key, base58check with version `0x30` |
 
 An address recalled without a check is removed. An address belonging to an identifiable third
 party stays out of the source, because a public ledger entry is still that person's account.
@@ -395,7 +396,7 @@ qureddy scan wallet ADDRESS [--type bitcoin|ethereum] [--format ...] [--output-d
 ```
 
 The address is positional, matching `scan tls`, `scan ssh` and `scan ike`. The chain follows
-from the address form, and `--type` overrides it. Options beyond these five are deferred; the
+from the address form, and `--type` overrides it. Options beyond these are deferred; the
 two endpoint overrides are environment variables, which keeps a credentialed or internal
 endpoint out of shell history.
 

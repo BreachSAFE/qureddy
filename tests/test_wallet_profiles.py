@@ -35,6 +35,7 @@ from qureddy.scanners.wallet import address
 from qureddy.scanners.wallet.profiles import (
     BIP173_EXAMPLE_PUBKEY,
     GENESIS_COINBASE_PUBKEY,
+    LITECOIN_GENESIS_COINBASE_PUBKEY,
     PROFILES,
     REMOVED_ADDRESSES,
     SECP256K1_GX,
@@ -262,6 +263,41 @@ def test_genesis_address_is_hash160_of_the_block_0_coinbase_key() -> None:
     assert decoded.encoding == "base58check"
 
 
+def test_litecoin_genesis_address_is_hash160_of_its_block_0_coinbase_key() -> None:
+    """G2 for the Litecoin row: recompute the grounding with no network.
+
+    Litecoin reuses base58check with version byte 0x30, read from the live
+    mainnet address LfdYLbP9F9CpmCX6atZnHZb8KkS8T6x4DK rather than recalled.
+    """
+    key = bytes.fromhex(LITECOIN_GENESIS_COINBASE_PUBKEY)
+    assert len(key) == 65, "uncompressed SEC1 is 65 bytes"
+    assert key[0] == 0x04, "uncompressed SEC1 begins with 0x04"
+
+    recomputed = _base58check_encode(b"\x30" + _hash160(key))
+
+    profile = _profile("ltc-genesis")
+    assert recomputed == profile.address
+    assert recomputed == "Ler4HNAEfwYhBmGXcFP2Po1NpRUEiK8km2"
+
+    decoded = address.decode(profile.address)
+    assert decoded.valid, decoded.error
+    assert decoded.script == "p2pkh"
+    assert decoded.chain == "litecoin"
+    assert decoded.network == "mainnet"
+    assert decoded.encoding == "base58check"
+
+
+def test_litecoin_bech32_carries_its_own_hrp() -> None:
+    """An ltc1 address decodes on the Litecoin chain, and bc1 stays Bitcoin."""
+    litecoin = address.decode("ltc1qk8mlumtzj7865hn8jg5fs5ax8rqk4mz3fjw8u5")
+    assert litecoin.valid, litecoin.error
+    assert litecoin.chain == "litecoin"
+    assert litecoin.script == "v0_p2wpkh"
+
+    bitcoin = address.decode("bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4")
+    assert bitcoin.chain == "bitcoin"
+
+
 def test_taproot_profile_is_the_bip350_generator_vector() -> None:
     profile = _profile("btc-taproot")
     decoded = address.decode(profile.address)
@@ -308,10 +344,13 @@ def test_bip173_example_key_hashes_to_the_encoded_witness_program() -> None:
 
 @pytest.mark.parametrize("profile", PROFILES, ids=lambda entry: entry.key)
 def test_every_profile_address_decodes_on_its_declared_chain(profile: AddressProfile) -> None:
-    assert profile.chain in {"bitcoin", "ethereum"}
-    if profile.chain == "bitcoin":
+    assert profile.chain in {"bitcoin", "ethereum", "litecoin"}
+    # Bitcoin and Litecoin share both encodings, so one decoder answers for each
+    # and the chain it reports has to match the chain the profile declares.
+    if profile.chain in {"bitcoin", "litecoin"}:
         decoded = address.decode(profile.address)
         assert decoded.valid, f"{profile.address}: {decoded.error}"
+        assert decoded.chain == profile.chain
         assert decoded.network == "mainnet"
         assert decoded.curve == "secp256k1"
         return
@@ -369,7 +408,7 @@ def test_profile_keys_and_addresses_are_unique() -> None:
     addresses = [entry.address for entry in PROFILES]
     assert len(set(keys)) == len(keys)
     assert len(set(addresses)) == len(addresses)
-    assert len(PROFILES) == 5, "ADR section 12 carries five rows"
+    assert len(PROFILES) == 6, "ADR section 12 carries six rows"
 
 
 def test_removed_addresses_stay_out_of_the_profiles() -> None:

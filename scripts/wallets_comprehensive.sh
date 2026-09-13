@@ -65,6 +65,10 @@ scan_case 0xdAC17F958D2ee523a2206206994597C13D831ec7 \
   eth-contract \
   'contract account, so no externally owned key exists at this address'
 
+scan_case Ler4HNAEfwYhBmGXcFP2Po1NpRUEiK8km2 \
+  ltc-genesis \
+  'Litecoin genesis re-encoding; version byte 0x30 routes to litecoinspace.org'
+
 scan_case 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNb \
   negative-bad-checksum \
   'base58check fails, exit 4, no network call'

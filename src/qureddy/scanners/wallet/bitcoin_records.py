@@ -14,6 +14,7 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from qureddy.core.vocabulary import Confidence, ObservationType, Readiness, Severity
+from qureddy.scanners.wallet.indexer import TICKER_BY_CHAIN
 from qureddy.scanners.wallet.record import NOT_TESTED
 from qureddy.scanners.wallet.transport import record_exchanges
 
@@ -165,7 +166,7 @@ _LEDGER_COUNTS: tuple[tuple[str, Callable[[ChainFacts], str], str], ...] = (
     ),
     (
         "balance",
-        lambda f: f"{f.balance_btc} BTC",
+        lambda f: f"{f.balance_btc} {TICKER_BY_CHAIN.get(f.chain, 'BTC')}",
         "(chain_stats.funded_txo_sum - chain_stats.spent_txo_sum) / 1e8",
     ),
 )

@@ -44,7 +44,7 @@ PRE_CHANGE_TARGET_KEYS = frozenset(
 )
 
 ENDPOINT_SCHEMES = ("tls", "ssh", "ike")
-WALLET_SCHEMES = ("btc", "eth")
+WALLET_SCHEMES = ("btc", "eth", "ltc")
 
 BTC_SUBJECT = "bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq"
 ETH_SUBJECT = "0x00000000219ab540356cbb839cbe05303d7705fa"

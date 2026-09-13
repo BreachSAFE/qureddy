@@ -39,13 +39,22 @@ from typing import Any
 Json = Any
 JsonObject = dict[str, Any]
 
-DEFAULT_BASES: tuple[str, ...] = (
-    "https://mempool.space/api",
-    "https://blockstream.info/api",
-)
+#: Esplora bases per chain, tried in order. Litecoin is here because
+#: litecoinspace.org serves the same Esplora shape, so the reader that walks a
+#: Bitcoin page walks a Litecoin page with no second client.
+DEFAULT_BASES_BY_CHAIN: dict[str, tuple[str, ...]] = {
+    "bitcoin": (
+        "https://mempool.space/api",
+        "https://blockstream.info/api",
+    ),
+    "litecoin": ("https://litecoinspace.org/api",),
+}
+DEFAULT_BASES: tuple[str, ...] = DEFAULT_BASES_BY_CHAIN["bitcoin"]
 ESPLORA_URL_ENV = "QUREDDY_ESPLORA_URL"
 _USER_AGENT = "qureddy-wallet"
 _SATOSHI_PER_BTC = 100_000_000
+#: Ticker per chain, for the balance label. Both chains divide by 1e8.
+TICKER_BY_CHAIN = {"bitcoin": "BTC", "litecoin": "LTC"}
 #: Body characters kept in a transcript. Truncation is stated where it applies.
 _MAX_BODY_TRACE = 40_000
 
@@ -145,6 +154,7 @@ class ChainFacts:
     output_scripts: set[str] = field(default_factory=set)
     public_keys: set[str] = field(default_factory=set)
     signatures: list[Signature] = field(default_factory=list)
+    chain: str = "bitcoin"
     exchanges: list[HttpExchange] = field(default_factory=list)
     transactions_examined: int = 0
     transactions_confirmed: int = 0
@@ -158,10 +168,16 @@ class ChainFacts:
         return f"{self.balance_satoshi / _SATOSHI_PER_BTC:.8f}"
 
 
-def bases() -> tuple[str, ...]:
-    """Indexers to try, in order. An explicit override replaces the defaults."""
+def bases(chain: str = "bitcoin") -> tuple[str, ...]:
+    """Indexers to try, in order. An explicit override replaces the defaults.
+
+    The override applies to whichever chain is being scanned, so an operator
+    pointing at an internal Esplora keeps that account inside their boundary.
+    """
     override = os.environ.get(ESPLORA_URL_ENV, "").strip().rstrip("/")
-    return (override,) if override else DEFAULT_BASES
+    if override:
+        return (override,)
+    return DEFAULT_BASES_BY_CHAIN.get(chain, DEFAULT_BASES)
 
 
 def _get_json(url: str, timeout: float, exchanges: list[HttpExchange] | None = None) -> Json:
@@ -282,12 +298,12 @@ def _harvest(transactions: list[JsonObject], address: str, facts: ChainFacts) ->
                     )
 
 
-def fetch(address: str, *, timeout_seconds: float = 12.0) -> ChainFacts:
+def fetch(address: str, *, chain: str = "bitcoin", timeout_seconds: float = 12.0) -> ChainFacts:
     """Query the chain lane for one address. Never raises."""
     if not address:
         return ChainFacts(error="no address supplied")
     last_error = "every configured indexer was unreachable"
-    for base in bases():
+    for base in bases(chain):
         exchanges: list[HttpExchange] = []
         summary = _get_json(f"{base}/address/{address}", timeout_seconds, exchanges)
         if not isinstance(summary, dict) or "chain_stats" not in summary:
@@ -303,6 +319,7 @@ def fetch(address: str, *, timeout_seconds: float = 12.0) -> ChainFacts:
             spent_txo_count=int(chain_stats.get("spent_txo_count", 0)),
             balance_satoshi=int(chain_stats.get("funded_txo_sum", 0))
             - int(chain_stats.get("spent_txo_sum", 0)),
+            chain=chain,
             exchanges=exchanges,
         )
         transactions = _get_json(f"{base}/address/{address}/txs", timeout_seconds, exchanges)
@@ -317,4 +334,4 @@ def fetch(address: str, *, timeout_seconds: float = 12.0) -> ChainFacts:
         else:
             facts.error = "address summary only; the transaction page was unavailable"
         return facts
-    return ChainFacts(error=last_error)
+    return ChainFacts(error=last_error, chain=chain)

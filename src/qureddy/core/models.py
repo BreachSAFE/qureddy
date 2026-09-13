@@ -58,10 +58,10 @@ HOSTNAME_PATTERN = re.compile(
 # Constrain schemes so deserialized input cannot reach downstream tooling (#369).
 # "btc" and "eth" name a wallet scan: the endpoint contacted is a chain indexer or
 # RPC node, and the account under examination travels in ScanTarget.subject.
-SUPPORTED_SCHEMES = frozenset({"tls", "ssh", "ike", "btc", "eth"})
+SUPPORTED_SCHEMES = frozenset({"tls", "ssh", "ike", "btc", "eth", "ltc"})
 
 # Schemes whose subject is an account identifier rather than the endpoint itself.
-SUBJECT_SCHEMES = frozenset({"btc", "eth"})
+SUBJECT_SCHEMES = frozenset({"btc", "eth", "ltc"})
 
 
 def _is_ip_literal(value: str) -> bool:

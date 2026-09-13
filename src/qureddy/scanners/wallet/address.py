@@ -37,14 +37,25 @@ _MAX_WITNESS_VERSION = 16
 _BASE58_MIN_RAW_BYTES = 5
 _BASE58_PAYLOAD_BYTES = 21
 
-# base58 version byte -> (script class, network)
+# base58 version byte -> (script class, chain, network). Litecoin reuses this
+# encoding with its own version bytes, so one table answers both chains. The
+# Litecoin values were read from live mainnet addresses rather than recalled:
+# LfdYLbP9F9CpmCX6atZnHZb8KkS8T6x4DK decodes to 0x30 and
+# MLHBTSHMafwmumhgPCkUt4utmDhDEocyjJ to 0x32.
 _VERSION_BYTES = {
-    0x00: ("p2pkh", "mainnet"),
-    0x05: ("p2sh", "mainnet"),
-    0x6F: ("p2pkh", "testnet"),
-    0xC4: ("p2sh", "testnet"),
+    0x00: ("p2pkh", "bitcoin", "mainnet"),
+    0x05: ("p2sh", "bitcoin", "mainnet"),
+    0x6F: ("p2pkh", "bitcoin", "testnet"),
+    0xC4: ("p2sh", "bitcoin", "testnet"),
+    0x30: ("p2pkh", "litecoin", "mainnet"),
+    0x32: ("p2sh", "litecoin", "mainnet"),
 }
-_HRP_NETWORKS = {"bc": "mainnet", "tb": "testnet", "bcrt": "regtest"}
+_HRP_NETWORKS = {
+    "bc": ("bitcoin", "mainnet"),
+    "tb": ("bitcoin", "testnet"),
+    "bcrt": ("bitcoin", "regtest"),
+    "ltc": ("litecoin", "mainnet"),
+}
 
 # script class -> (signature scheme, public key readable in the output itself)
 _SCRIPT_SCHEMES = {
@@ -76,6 +87,7 @@ class DecodedAddress:
 
     address: str
     script: str = ""
+    chain: str = "bitcoin"
     network: str = ""
     scheme: str = ""
     curve: str = CURVE
@@ -193,10 +205,12 @@ def _decode_segwit(address: str, hrp: str, data: list[int], encoding: str) -> De
         (1, 32): "v1_p2tr",
     }.get((version, len(program)), f"witness_v{version}")
     sig_scheme, key_in_output = _SCRIPT_SCHEMES.get(script, ("unknown", False))
+    chain, network = _HRP_NETWORKS[hrp]
     return DecodedAddress(
         address=address,
         script=script,
-        network=_HRP_NETWORKS[hrp],
+        chain=chain,
+        network=network,
         scheme=sig_scheme,
         key_in_output=key_in_output,
         witness_version=version,
@@ -214,7 +228,7 @@ def _decode_base58check(address: str) -> DecodedAddress:
         )
     if len(payload) != _BASE58_PAYLOAD_BYTES:
         return DecodedAddress(address=address, error="base58 payload length is unexpected")
-    script, network = _VERSION_BYTES.get(payload[0], ("", ""))
+    script, chain, network = _VERSION_BYTES.get(payload[0], ("", "", ""))
     if not script:
         return DecodedAddress(
             address=address, error=f"base58 version byte 0x{payload[0]:02x} is unassigned"
@@ -223,6 +237,7 @@ def _decode_base58check(address: str) -> DecodedAddress:
     return DecodedAddress(
         address=address,
         script=script,
+        chain=chain,
         network=network,
         scheme=sig_scheme,
         key_in_output=key_in_output,

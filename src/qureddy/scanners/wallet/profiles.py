@@ -36,6 +36,14 @@ from typing import Final
 #: vector below, and the 32-byte body of the BIP-173 example public key.
 SECP256K1_GX: Final = "79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
 
+#: Litecoin block 0 coinbase output public key, uncompressed SEC1. Litecoin's
+#: genesis pays to a bare P2PK output as Bitcoin's does, so this key hashes to
+#: the address the profile below carries.
+LITECOIN_GENESIS_COINBASE_PUBKEY: Final = (
+    "040184710fa689ad5023690c80f3a49c8f13f8d45b8c857fbcbc8bc4a8e4d3eb4b"
+    "10f4d4604fa08dce601aaf0f470216fe1b51850b4acf21b179c45070ac7b03a9"
+)
+
 #: Block 0 coinbase output public key, uncompressed SEC1 (65 bytes, 0x04 prefix
 #: then x then y). The block 0 coinbase pays to a bare P2PK output, so this key
 #: has been readable on chain since 2009-01-03.
@@ -150,6 +158,26 @@ PROFILES: Final[tuple[AddressProfile, ...]] = (
             "cast call 0xdAC17F958D2ee523a2206206994597C13D831ec7 'name()(string)' "
             "&& cast call 0xdAC17F958D2ee523a2206206994597C13D831ec7 'symbol()(string)' "
             "&& cast call 0xdAC17F958D2ee523a2206206994597C13D831ec7 'decimals()(uint8)'"
+        ),
+    ),
+    AddressProfile(
+        key="ltc-genesis",
+        chain="litecoin",
+        address="Ler4HNAEfwYhBmGXcFP2Po1NpRUEiK8km2",
+        demonstrates=(
+            "Litecoin genesis: the same P2PK blind spot as Bitcoin's, on a chain that "
+            "reuses both encodings with its own version bytes"
+        ),
+        grounding=(
+            f"HASH160 of the Litecoin block 0 coinbase public key "
+            f"{LITECOIN_GENESIS_COINBASE_PUBKEY}, base58check encoded with version "
+            f"byte 0x30, equals this address"
+        ),
+        check=(
+            "curl -s https://litecoinspace.org/api/tx/$(curl -s "
+            "https://litecoinspace.org/api/block/$(curl -s "
+            "https://litecoinspace.org/api/block-height/0)/txids | jq -r '.[0]') "
+            "| jq -r '.vout[0].scriptpubkey, .vout[0].scriptpubkey_type'"
         ),
     ),
 )
