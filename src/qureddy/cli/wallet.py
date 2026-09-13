@@ -103,7 +103,7 @@ def _detect_chain(address: str) -> str:
     by version byte and hrp, so the decoder reads the chain rather than this
     function guessing from a prefix.
     """
-    subject = (address or "").strip()
+    subject = address.strip()
     if subject[:2].lower() == "0x":
         return _ETHEREUM
     decoded = btc_address.decode(subject)
@@ -120,7 +120,7 @@ def _endpoint(chain: str) -> tuple[str, int]:
 
 def _parse_wallet_target(address: str, chain: str | None) -> ScanTarget:
     """Validate the address offline and build the target it belongs to."""
-    subject = (address or "").strip()
+    subject = address.strip()
     if not subject:
         _fail("a wallet address is required", EXIT_USAGE)
     selected = (chain or _detect_chain(subject)).lower()

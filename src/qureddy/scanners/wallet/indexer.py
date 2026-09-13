@@ -123,21 +123,19 @@ class HttpExchange:
     def transcript(self) -> str:
         """Curl -v shaped: `>` lines sent, `<` lines received, `|` body."""
         lines = [f"* {self.method} {self.url}", f"* Connected to {self.host}"]
-        lines.append(f"> {self.method} {self.path} HTTP/1.1")
-        lines.append(f"> Host: {self.host}")
+        lines.extend((f"> {self.method} {self.path} HTTP/1.1", f"> Host: {self.host}"))
         lines += [f"> {name}: {value}" for name, value in self.request_headers.items()]
         lines.append(">")
         if self.request_body:
-            lines += [f"| {line}" for line in self.request_body.splitlines()]
+            lines.extend(f"| {line}" for line in self.request_body.splitlines())
         if self.error:
             lines.append(f"* FAILED {self.error}")
             return "\n".join(lines)
         lines.append(f"< HTTP/1.1 {self.status} {self.reason}".rstrip())
         lines += [f"< {name}: {value}" for name, value in self.response_headers.items()]
-        lines.append("<")
-        lines.append(f"* received {self.response_bytes} bytes in {self.duration_ms}ms")
+        lines.extend(("<", f"* received {self.response_bytes} bytes in {self.duration_ms}ms"))
         if self.body_text:
-            lines += [f"| {line}" for line in self.body_text.splitlines()]
+            lines.extend(f"| {line}" for line in self.body_text.splitlines())
         return "\n".join(lines)
 
 
@@ -261,7 +259,7 @@ def _get_json(url: str, timeout: float, exchanges: list[HttpExchange] | None = N
     lands on the `HttpExchange` so a reader sees what was attempted.
     """
     headers = {"User-Agent": _USER_AGENT}
-    exchange = HttpExchange(method="GET", url=url, request_headers=dict(headers))
+    exchange = HttpExchange(method="GET", url=url, request_headers=headers.copy())
     if exchanges is not None:
         exchanges.append(exchange)
     if urllib.parse.urlsplit(url).scheme not in ("http", "https"):

@@ -104,7 +104,7 @@ def rpcs() -> tuple[str, ...]:
 
 def looks_like_address(value: str) -> bool:
     """True for a 0x-prefixed 20-byte hex string."""
-    candidate = (value or "").strip()
+    candidate = value.strip()
     return (
         len(candidate) == _ADDRESS_TOTAL_CHARS
         and candidate[:2].lower() == "0x"
@@ -114,13 +114,13 @@ def looks_like_address(value: str) -> bool:
 
 def decode(address: str) -> AccountDecoded:
     """Validate an address offline, checking the EIP-55 checksum when one is present."""
-    candidate = (address or "").strip()
+    candidate = address.strip()
     if not looks_like_address(candidate):
         return AccountDecoded(
             address=candidate, error="address is not a 0x-prefixed 20-byte hex string"
         )
     body = candidate[2:]
-    single_case = body == body.lower() or body == body.upper()
+    single_case = body in (body.lower(), body.upper())
     if single_case:
         # A single-case address is valid and carries no typo protection, so it is
         # normalized to the checksummed form the rest of the scan reports.
@@ -136,7 +136,7 @@ def decode(address: str) -> AccountDecoded:
 
 def classify_code(code: str) -> str:
     """Classify an eth_getCode result as an EOA, a delegation, or a contract."""
-    body = (code or "").lower().removeprefix("0x")
+    body = code.lower().removeprefix("0x")
     if not body or body == "0":
         return KIND_EOA
     if len(body) == _DELEGATION_HEX_LEN and body.startswith(_DELEGATION_PREFIX):
@@ -146,7 +146,7 @@ def classify_code(code: str) -> str:
 
 def delegate_of(code: str) -> str:
     """The implementation address a delegation points at, checksummed."""
-    body = (code or "").lower().removeprefix("0x")
+    body = code.lower().removeprefix("0x")
     if classify_code(code) != KIND_DELEGATED:
         return ""
     return "0x" + eip55(body[len(_DELEGATION_PREFIX) :])
@@ -186,7 +186,7 @@ def _rpc(
         method="POST",
         url=url,
         operation=method,
-        request_headers=dict(headers),
+        request_headers=headers.copy(),
         request_body=payload,
     )
     if exchanges is not None:

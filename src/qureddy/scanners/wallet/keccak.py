@@ -161,7 +161,7 @@ def _pad(data: bytes) -> bytes:
     tail = bytearray(padding)
     tail[0] = _PAD_DOMAIN
     tail[-1] ^= _PAD_FINAL
-    return bytes(data) + bytes(tail)
+    return data + bytes(tail)
 
 
 def keccak256(data: bytes) -> bytes:

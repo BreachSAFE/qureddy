@@ -29,6 +29,7 @@ import os
 import shutil
 import subprocess
 import sys
+import urllib.parse
 from pathlib import Path
 from typing import Any
 
@@ -313,7 +314,8 @@ def test_a_litecoin_address_reaches_the_litecoin_indexer() -> None:
     assert completed.returncode == 0, completed.stderr
     document = json.loads(completed.stdout)
     assert document["target"]["scheme"] == "ltc"
-    assert "litecoinspace.org" in document["target"]["locator"]
+    locator = urllib.parse.urlsplit(document["target"]["locator"])
+    assert locator.hostname == "litecoinspace.org"
     findings = {f["finding_type"]: f["title"].split(": ", 1)[1] for f in document["findings"]}
     assert findings["chain"] == "litecoin"
     assert findings["balance"].endswith(" LTC")
@@ -325,7 +327,7 @@ def test_a_litecoin_address_reaches_the_litecoin_indexer() -> None:
         if line.startswith("http")
     }
     assert hosts, "the chain lane records its HTTP exchanges"
-    assert all("litecoinspace.org" in host for host in hosts), hosts
+    assert all(urllib.parse.urlsplit(host).hostname == "litecoinspace.org" for host in hosts), hosts
 
 
 def test_an_unreachable_indexer_reports_not_tested(tmp_path: Path) -> None:

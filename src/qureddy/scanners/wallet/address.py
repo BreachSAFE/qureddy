@@ -256,7 +256,7 @@ def _decode_base58check(address: str) -> DecodedAddress:
 
 def decode(address: str) -> DecodedAddress:
     """Decode a Bitcoin address offline. Always returns; a rejection sets `error`."""
-    candidate = (address or "").strip()
+    candidate = address.strip()
     if not candidate:
         return DecodedAddress(address=candidate, error="address is empty")
     if len(candidate) > _MAX_ADDRESS_CHARS:

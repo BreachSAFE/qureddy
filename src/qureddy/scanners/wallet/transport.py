@@ -166,7 +166,7 @@ def record_indexer_certificate(builder: Builder, host: str, port: int) -> None:
     )
     builder.record(
         "indexer.certificate",
-        f"{certificate.subject}",
+        str(certificate.subject),
         lane="transport",
         source="openssl s_client leaf, parsed with openssl x509",
         observation=ObservationType.OBSERVED,
