@@ -24,8 +24,6 @@ from pathlib import Path
 
 import pytest
 
-from qureddy.scanners.wallet.profiles import PROFILES
-
 _TIMEOUT_SECONDS = 300
 _EXPECTED_FILES = ("scan.json", "scan.cdx.json", "scan.jsonl", "scan.rich.txt")
 _SCHEMA = "qureddy.scan.v1"
@@ -48,27 +46,38 @@ def _listening(host: str, port: int) -> bool:
         return False
 
 
-def _tls_target() -> str:
-    return os.environ.get("QUREDDY_CLI_TLS_TARGET", "mozilla.org")
+# Every scheme is opt-in. A target is read from an environment variable and the
+# scheme skips when it is unset, so a bare `pytest tests/live` run probes no
+# public host and CI names exactly what it authorizes. Codex asked for this:
+# defaults that reach mozilla.org or a chain indexer on every run are not
+# controlled gating.
+_TLS_ENV = "QUREDDY_CLI_TLS_TARGET"
+_SSH_ENV = "QUREDDY_CLI_SSH_TARGET"
+_IKE_ENV = "QUREDDY_IKE_PUBLIC_TARGET"
+_WALLET_ENV = "QUREDDY_CLI_WALLET_TARGET"
 
 
-def _ssh_target() -> str:
-    return os.environ.get("QUREDDY_CLI_SSH_TARGET", "127.0.0.1:22")
+def _endpoint_listening(value: str, default_port: int) -> bool:
+    host, _, port = value.partition(":")
+    return _listening(host, int(port) if port else default_port)
 
 
 _CASES = {
-    "tls": (lambda: ["tls", _tls_target()], lambda: _listening(_tls_target(), 443)),
+    "tls": (
+        lambda: ["tls", os.environ.get(_TLS_ENV, "")],
+        lambda: bool(os.environ.get(_TLS_ENV)) and _endpoint_listening(os.environ[_TLS_ENV], 443),
+    ),
     "ssh": (
-        lambda: ["ssh", _ssh_target()],
-        lambda: _listening(_ssh_target().split(":")[0], int(_ssh_target().split(":")[1])),
+        lambda: ["ssh", os.environ.get(_SSH_ENV, "")],
+        lambda: bool(os.environ.get(_SSH_ENV)) and _endpoint_listening(os.environ[_SSH_ENV], 22),
     ),
     "ike": (
-        lambda: ["ike", os.environ.get("QUREDDY_IKE_PUBLIC_TARGET", "")],
-        lambda: bool(os.environ.get("QUREDDY_IKE_PUBLIC_TARGET")),
+        lambda: ["ike", os.environ.get(_IKE_ENV, "")],
+        lambda: bool(os.environ.get(_IKE_ENV)),
     ),
     "wallet": (
-        lambda: ["wallet", next(p.address for p in PROFILES if p.key == "btc-bip173-example")],
-        lambda: True,
+        lambda: ["wallet", os.environ.get(_WALLET_ENV, "")],
+        lambda: bool(os.environ.get(_WALLET_ENV)),
     ),
 }
 

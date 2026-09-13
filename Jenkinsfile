@@ -174,6 +174,17 @@ pipeline {
       // contract, and --output-dir writing the bundle. It also compares the
       // four projections against each other, so a renderer that drops or
       // invents a finding fails here instead of exiting zero.
+      //
+      // Every scheme is opt-in and skips when its target is unset, so this node
+      // names the ones it authorizes. tls and wallet reach public endpoints and
+      // are always set here; ssh points at the local sshd; ike inherits the
+      // IKE_PUBLIC_TARGET parameter and stays empty by default. The `no skipped
+      // tests` stage excludes this file for that reason (see below).
+      environment {
+        QUREDDY_CLI_TLS_TARGET    = 'pq.cloudflareresearch.com'
+        QUREDDY_CLI_SSH_TARGET    = '127.0.0.1:22'
+        QUREDDY_CLI_WALLET_TARGET = 'bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4'
+      }
       steps {
         sh "uv run --locked pytest tests/live/test_live_everything.py -q --junitxml=${REPORT_DIR}/cli.xml"
       }
