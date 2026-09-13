@@ -30,9 +30,6 @@ if TYPE_CHECKING:  # pragma: no cover - typing only
 _OPENSSL_ENV = "QUREDDY_OPENSSL"
 _HTTP_TIMEOUT_SECONDS = 12
 _HTTP_OK = 200
-#: Transcript characters kept per exchange. Truncation is stated in the pane.
-_TRANSCRIPT_CHARS = 40_000
-
 #: Candidates tried in order until one passes the capability gate unchanged. The
 #: gate itself is untouched: a candidate is used only when `resolve_openssl_path`
 #: accepts it. PATH alone is unreliable, because a box can carry LibreSSL at

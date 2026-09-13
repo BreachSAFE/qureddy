@@ -184,6 +184,23 @@ def bases(chain: str = "bitcoin") -> tuple[str, ...]:
     return DEFAULT_BASES_BY_CHAIN.get(chain, DEFAULT_BASES)
 
 
+def _bounded_body(rendered: str) -> str:
+    """Keep the body inside the trace bound, and state the bound when it bites.
+
+    A5: a bound that shapes output is named and reported, never applied
+    silently. A transcript that prints `received 227802 bytes` and then stops
+    mid-object without saying so reads as the whole exchange, and the sha256
+    that travels with it covers the shortened text.
+    """
+    if len(rendered) <= _MAX_BODY_TRACE:
+        return rendered
+    dropped = len(rendered) - _MAX_BODY_TRACE
+    return (
+        f"{rendered[:_MAX_BODY_TRACE]}\n"
+        f"... body truncated at {_MAX_BODY_TRACE} characters, {dropped} dropped"
+    )
+
+
 def log_exchange(exchange: HttpExchange) -> None:
     """Emit one HTTP round trip to the run log, as the subprocess probes are.
 
@@ -246,7 +263,7 @@ def _get_json(url: str, timeout: float, exchanges: list[HttpExchange] | None = N
     finally:
         exchange.duration_ms = int((time.monotonic() - started) * 1000)
         log_exchange(exchange)
-    exchange.body_text = json.dumps(decoded, indent=2)[:_MAX_BODY_TRACE]
+    exchange.body_text = _bounded_body(json.dumps(decoded, indent=2))
     return decoded
 
 

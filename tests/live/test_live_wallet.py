@@ -34,6 +34,7 @@ from typing import Any
 
 import pytest
 
+from qureddy.scanners.wallet.indexer import _MAX_BODY_TRACE, fetch
 from qureddy.scanners.wallet.profiles import PROFILES
 
 _TIMEOUT_SECONDS = 90
@@ -411,6 +412,27 @@ def test_a_failed_rpc_still_records_what_was_attempted(override: str, expected: 
     assert all(item["observation_type"] == "no_response" for item in attempts)
     assert expected in " ".join(item["probe_result"]["stdout_excerpt"] for item in attempts)
     assert completed.stderr.count("wallet.http.complete") == len(attempts)
+
+
+def test_a_large_page_states_its_transcript_bound() -> None:
+    """A5 at the call site: the real /txs page runs past the body bound.
+
+    The unit test for `_bounded_body` passes whether or not `_get_json` calls
+    it, so this one goes through the real fetch against a live indexer and reads
+    the transcript the ProbeResult would carry.
+    """
+    facts = fetch(BTC_PUBLISHED)
+    assert facts.reachable, facts.error
+    transcripts = [exchange.transcript() for exchange in facts.exchanges]
+    assert transcripts, "the lane records its exchanges"
+
+    page = max(transcripts, key=len)
+    assert len(page) > _MAX_BODY_TRACE, "the /txs page is the one that exceeds the bound"
+    assert "body truncated at" in page, "a bound that shapes output states itself"
+    assert str(_MAX_BODY_TRACE) in page
+
+    summary = min(transcripts, key=len)
+    assert "body truncated at" not in summary, "a body inside the bound carries no marker"
 
 
 def test_help_advertises_only_options_the_command_accepts() -> None:
