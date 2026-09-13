@@ -147,17 +147,17 @@ def _parse_wallet_target(address: str, chain: str | None) -> ScanTarget:
 def _validate_address(address: str, chain: str) -> str:
     """Validate and normalize one address before it becomes a scan subject."""
     if chain == _ETHEREUM:
-        decoded = ethereum.decode(address)
-        if decoded.error:
-            _fail(decoded.error, EXIT_USAGE)
-        return decoded.address
-    decoded = btc_address.decode(address)
-    if decoded.error:
-        _fail(decoded.error, EXIT_USAGE)
-    if decoded.chain != chain:
+        decoded_eth = ethereum.decode(address)
+        if decoded_eth.error:
+            _fail(decoded_eth.error, EXIT_USAGE)
+        return decoded_eth.address
+    decoded_btc = btc_address.decode(address)
+    if decoded_btc.error:
+        _fail(decoded_btc.error, EXIT_USAGE)
+    if decoded_btc.chain != chain:
         _fail(
-            f"--type is {chain} and the address decodes as {decoded.chain}: "
-            f"the address decides the chain, so drop --type or pass --type {decoded.chain}",
+            f"--type is {chain} and the address decodes as {decoded_btc.chain}: "
+            f"the address decides the chain, so drop --type or pass --type {decoded_btc.chain}",
             EXIT_USAGE,
         )
     return address
