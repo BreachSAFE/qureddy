@@ -246,7 +246,11 @@ def test_the_cbom_carries_the_nist_level_the_scan_measured(
     ]
     measured = document["summary"]["nist_quantum_security_level_max"]
     if measured is None:
-        pytest.skip(f"{scheme}: the scan measured no NIST level")
+        # An absence is a claim too, and both documents have to make it. An IKE
+        # scan of a responder that rejects the proposal grades no algorithm, so
+        # the summary and the CBOM must agree on having nothing to report.
+        assert not levels, f"{scheme}: the summary graded nothing and the CBOM graded {levels}"
+        return
 
     assert levels, f"{scheme}: the summary reports level {measured} and the CBOM reports none"
     assert max(levels) == measured

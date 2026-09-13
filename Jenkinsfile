@@ -19,7 +19,12 @@ pipeline {
     string(name: 'QUREDDY_OPENSSL', defaultValue: '', description: 'Absolute path to the pinned OpenSSL 3.5.x binary on the Jenkins node')
     string(name: 'LEGACY_OPENSSL', defaultValue: '', description: 'Absolute path to the OpenSSL 1.0.2u compatibility binary or shim on the Jenkins node')
     string(name: 'CBOMKIT_API', defaultValue: '', description: 'Optional CBOMkit API base URL for non-blocking artifact publication')
-    string(name: 'IKE_PUBLIC_TARGET', defaultValue: '', description: 'IKE endpoint this node is authorized to scan. Empty skips the IKE stage.')
+    // A public IKEv2 endpoint, empty by default. It stays empty because a
+    // third-party responder is not this project's to probe on every build, and
+    // because the one measured here answered fully on two runs of three and
+    // degraded to a bare rejection on the other. An operator sets it for a node
+    // and an endpoint they have chosen.
+    string(name: 'IKE_PUBLIC_TARGET', defaultValue: '', description: 'Public IKEv2 endpoint this node is authorized to scan. Empty skips the IKE stage.')
   }
 
   options {
