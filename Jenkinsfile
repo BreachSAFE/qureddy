@@ -19,6 +19,7 @@ pipeline {
     string(name: 'QUREDDY_OPENSSL', defaultValue: '', description: 'Absolute path to the pinned OpenSSL 3.5.x binary on the Jenkins node')
     string(name: 'LEGACY_OPENSSL', defaultValue: '', description: 'Absolute path to the OpenSSL 1.0.2u compatibility binary or shim on the Jenkins node')
     string(name: 'CBOMKIT_API', defaultValue: '', description: 'Optional CBOMkit API base URL for non-blocking artifact publication')
+    string(name: 'IKE_PUBLIC_TARGET', defaultValue: '', description: 'IKE endpoint this node is authorized to scan. Empty skips the IKE stage.')
   }
 
   options {
@@ -39,6 +40,7 @@ pipeline {
     QUREDDY_OPENSSL = "${params.QUREDDY_OPENSSL}"
     LEGACY_OPENSSL  = "${params.LEGACY_OPENSSL}"
     CBOMKIT_API     = "${params.CBOMKIT_API}"
+    QUREDDY_IKE_PUBLIC_TARGET = "${params.IKE_PUBLIC_TARGET}"
   }
 
   stages {
@@ -127,6 +129,41 @@ pipeline {
     }
 
 
+    stage('live: IKE responder') {
+      // The IKE scanner has never run against a responder in any lane. GitHub
+      // CI and the unit stage above both pass --ignore=tests/ike_lab, and that
+      // suite needs the pinned strongSwan lab from #570, which is
+      // unprovisioned. #1019 records the guard passing the suite on a loopback
+      // reflection, which is how an absent lab reads as six failures.
+      //
+      // A public IKEv2 endpoint closes the gap with no lab: it answers v2 and
+      // rejects both v1 modes, so one scan reaches responder-detected,
+      // proposal-rejected, classical key exchange and weak group. The target is
+      // a parameter and the suite skips when it is empty, so this node probes
+      // only an endpoint its operator named.
+      steps {
+        script {
+          if (!env.QUREDDY_IKE_PUBLIC_TARGET?.trim()) {
+            echo 'IKE_PUBLIC_TARGET is not set; skipping the IKE responder stage'
+            return
+          }
+          sh "uv run --locked pytest tests/live/test_live_ike_public.py -q --junitxml=${REPORT_DIR}/ike.xml"
+        }
+      }
+    }
+
+
+    stage('live: wallet accounts') {
+      // Bitcoin, Litecoin and Ethereum against live indexers. The unit lane
+      // cannot reach the chain lane at all, so every finding this suite asserts
+      // exists only here: recovered key bytes, the signing-defect scan, the
+      // coverage bound, and the indexer certificate.
+      steps {
+        sh "uv run --locked pytest tests/live/test_live_wallet.py tests/live/test_live_wallet_contract.py -q --junitxml=${REPORT_DIR}/wallet.xml"
+      }
+    }
+
+
     stage('live: canonical targets') {
       steps {
         sh "uv run --locked pytest tests/live/test_live_targets.py -q --junitxml=${REPORT_DIR}/live.xml"
@@ -167,6 +204,25 @@ pipeline {
                 "$CBOMKIT_API/api/v1/cbom/qureddy-$slug-$sha-$stamp" \
                 -H 'Content-Type: application/json' --data-binary @"$out")
               echo "$target -> HTTP $code"
+            done
+            # Three chains, one grounded profile each. The wallet CBOM carries
+            # the account key as related-crypto-material, which no other scanner
+            # emits, so a change to that shape is visible here as a diff.
+            for address in bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4 \
+                           Ler4HNAEfwYhBmGXcFP2Po1NpRUEiK8km2 \
+                           0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045; do
+              slug=$(echo "$address" | cut -c1-12)
+              # scan wallet takes --output-dir and rejects -o, so the run writes
+              # its bundle and the CBOM is read out of it.
+              run_dir="$REPORT_DIR/cbom/wallet-$slug"
+              out="$run_dir/scan.cdx.json"
+              mkdir -p "$run_dir"
+              uv run --locked qureddy scan wallet "$address" --output-dir "$run_dir" || true
+              [ -s "$out" ] || { echo "no CBOM for $address" >&2; continue; }
+              code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 30 -X POST \
+                "$CBOMKIT_API/api/v1/cbom/qureddy-wallet-$slug-$sha-$stamp" \
+                -H 'Content-Type: application/json' --data-binary @"$out")
+              echo "$address -> HTTP $code"
             done
             uv run --locked qureddy scan ssh 127.0.0.1:22 --format cbom \
               -o "$REPORT_DIR/cbom/ssh-localhost.cdx.json" || true
