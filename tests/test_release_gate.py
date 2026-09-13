@@ -325,6 +325,7 @@ def test_gitleaks_false_positive_classification_is_exactly_scoped() -> None:
         "OpenSSL transcript field documentation fixture",
         "Wrapped OpenSSL transcript field documentation fixture",
         "Wrapped OpenSSL transcript identifier",
+        "Superseded SEC1 public-key fixture spelling",
     ]
     assert all(entry["targetRules"] == ["generic-api-key"] for entry in config["allowlists"])
     assert all(entry["condition"] == "AND" for entry in config["allowlists"])
