@@ -1,6 +1,17 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
 # SPDX-License-Identifier: Apache-2.0
 
+# Theia is compiled as a static Go helper and copied into the runtime image.
+# The source archive and builder image are pinned so the default artifact-scan
+# capability is reproducible rather than an unverified download.
+FROM docker.io/library/golang:1.26-alpine@sha256:ce864e7223ac17b1775e6fd0b4c0db580c2eb50e7953a427916379e4b92a1628 AS theia-build
+WORKDIR /src
+ADD --checksum=sha256:bb2859dc623e9ba53b4eccff72f6dc0c7d18190f5efe958aa3d5d5c6d17b5bdb \
+    https://github.com/cbomkit/cbomkit-theia/archive/refs/tags/v1.1.2.tar.gz /tmp/theia.tar.gz
+RUN tar -xzf /tmp/theia.tar.gz --strip-components=1 \
+    && CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o /out/cbomkit-theia . \
+    && rm -rf /tmp/theia.tar.gz /root/.cache/go-build
+
 # Both OpenSSL builds come from the pinned toolchain image. Nothing is compiled
 # here. They are product requirements everywhere and they change only on a version
 # bump, so the compile belongs once at the root of the chain, not on every build of
@@ -46,6 +57,7 @@ ARG QUREDDY_VERSION=0.9.30
 ARG QUREDDY_SOURCE_REVISION
 ARG IKE_SCAN_VERSION=1.9.5-1+b1
 ARG OPENSSL_VERSION=3.5.8
+ARG THEIA_VERSION=1.1.2
 LABEL org.opencontainers.image.title="QuReddy" \
       org.opencontainers.image.description="Post-quantum readiness scanner for TLS, SSH, and IKE endpoints" \
       org.opencontainers.image.source="https://github.com/breachsafe/qureddy" \
@@ -54,13 +66,15 @@ LABEL org.opencontainers.image.title="QuReddy" \
       org.opencontainers.image.revision="${QUREDDY_SOURCE_REVISION}" \
       io.breachsafe.qureddy.openssl.version="${OPENSSL_VERSION}" \
       io.breachsafe.qureddy.openssl-legacy.version="1.0.2u" \
-      io.breachsafe.qureddy.ike-scan.version="${IKE_SCAN_VERSION}"
+      io.breachsafe.qureddy.ike-scan.version="${IKE_SCAN_VERSION}" \
+      io.breachsafe.qureddy.cbomkit-theia.version="${THEIA_VERSION}"
 
 COPY --from=openssl-src /opt/openssl /opt/openssl
 # Isolated legacy compatibility helper. OpenSSL 1.0.2u is EOL and must never
 # replace the production OpenSSL or enter PATH. It is retained only for
 # explicitly selected legacy cipher/STARTTLS evidence collection.
 COPY --from=openssl-legacy-src /opt/openssl-legacy /opt/openssl-legacy
+COPY --from=theia-build /out/cbomkit-theia /usr/local/bin/cbomkit-theia
 
 # IKE scans invoke Debian's stock ike-scan as a separate process. Keep the
 # package's installed copyright and license notice with the runtime image.
@@ -71,6 +85,7 @@ RUN apt-get update \
 
 ENV QUREDDY_OPENSSL=/opt/openssl/bin/openssl \
     QUREDDY_LEGACY_OPENSSL=/opt/openssl-legacy/bin/openssl \
+    QUREDDY_THEIA_VERSION=${THEIA_VERSION} \
     QUREDDY_DISTRIBUTION=container \
     QUREDDY_SOURCE_REVISION=${QUREDDY_SOURCE_REVISION} \
     QUREDDY_SOURCE_DIRTY=false \
