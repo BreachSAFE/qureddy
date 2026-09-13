@@ -138,6 +138,17 @@ def _parse_wallet_target(address: str, chain: str | None) -> ScanTarget:
         decoded_btc = btc_address.decode(subject)
         if decoded_btc.error:
             _fail(decoded_btc.error, EXIT_USAGE)
+        # Bitcoin and Litecoin share both encodings, so the version byte and the
+        # hrp decide the chain and the scan follows them. A --type naming the
+        # other one would put an indexer in the locator that the run never
+        # contacts, and every chain value would come from the other endpoint.
+        if decoded_btc.chain != selected:
+            _fail(
+                f"--type is {selected} and the address decodes as "
+                f"{decoded_btc.chain}: the address decides the chain, so drop "
+                f"--type or pass --type {decoded_btc.chain}",
+                EXIT_USAGE,
+            )
 
     scheme = _SCHEME_BY_CHAIN[selected]
     host, port = _endpoint(selected)

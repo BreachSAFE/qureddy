@@ -28,6 +28,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -45,6 +46,7 @@ BTC_TAPROOT = _BY_KEY["btc-taproot"].address
 # BIP-173 declares this example's key, so a real spend republishes it.
 BTC_PUBLISHED = _BY_KEY["btc-bip173-example"].address
 ETH_ACCOUNT = _BY_KEY["eth-delegated-account"].address
+LTC_GENESIS = _BY_KEY["ltc-genesis"].address
 ETH_CONTRACT = _BY_KEY["eth-contract"].address
 
 
@@ -227,7 +229,10 @@ def test_real_bundle_passes_the_cross_format_validator(tmp_path: Path) -> None:
     validator = Path(__file__).resolve().parents[2] / "scripts" / "validate_output_bundle.py"
     completed = subprocess.run(  # noqa: S603 - resolved path, list-form argv
         [
-            "python",
+            # sys.executable, so the validator runs under the interpreter that
+            # imported qureddy. A bare "python" resolves against PATH and can
+            # be a different environment, which is what ruff S607 names.
+            sys.executable,
             str(validator),
             "--run-dir",
             str(tmp_path),
@@ -281,6 +286,45 @@ def test_a_mistyped_eip55_checksum_is_refused() -> None:
 def test_an_unsupported_chain_is_refused() -> None:
     completed = _run("scan", "wallet", BTC_UNSPENT, "--type", "solana")
     assert completed.returncode == _EXIT_USAGE
+
+
+@pytest.mark.parametrize(
+    ("address", "declared"),
+    [(BTC_PUBLISHED, "litecoin"), (LTC_GENESIS, "bitcoin")],
+    ids=["bitcoin-address-declared-litecoin", "litecoin-address-declared-bitcoin"],
+)
+def test_a_type_disagreeing_with_the_address_is_refused(address: str, declared: str) -> None:
+    """Bitcoin and Litecoin share both encodings, so the address decides.
+
+    Before this gate the run honoured --type for the locator and the decoded
+    chain for the HTTP GET, so a report named an indexer it never contacted and
+    carried balances from the other one.
+    """
+    completed = _run("scan", "wallet", address, "--type", declared)
+    assert completed.returncode == _EXIT_USAGE
+    assert completed.stdout.strip() == "", "a refused target renders no report"
+    assert "the address decides the chain" in completed.stderr
+
+
+def test_a_litecoin_address_reaches_the_litecoin_indexer() -> None:
+    """Every chain value has to come from the endpoint the locator names."""
+    completed = _run("scan", "wallet", LTC_GENESIS, "--format", "json")
+    assert completed.returncode == 0, completed.stderr
+    document = json.loads(completed.stdout)
+    assert document["target"]["scheme"] == "ltc"
+    assert "litecoinspace.org" in document["target"]["locator"]
+    findings = {f["finding_type"]: f["title"].split(": ", 1)[1] for f in document["findings"]}
+    assert findings["chain"] == "litecoin"
+    assert findings["balance"].endswith(" LTC")
+    hosts = {
+        line
+        for evidence in document["evidence"]
+        if (probe := evidence.get("probe_result"))
+        for line in probe["command"]["args"]
+        if line.startswith("http")
+    }
+    assert hosts, "the chain lane records its HTTP exchanges"
+    assert all("litecoinspace.org" in host for host in hosts), hosts
 
 
 def test_an_unreachable_indexer_reports_not_tested(tmp_path: Path) -> None:
