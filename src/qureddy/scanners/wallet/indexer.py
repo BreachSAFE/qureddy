@@ -61,6 +61,12 @@ _SATOSHI_PER_BTC = 100_000_000
 TICKER_BY_CHAIN = {"bitcoin": "BTC", "litecoin": "LTC"}
 #: Body characters kept in a transcript. Truncation is stated where it applies.
 _MAX_BODY_TRACE = 40_000
+#: Response bytes read before the lane gives up. The transcript bound applies
+#: after the body is already resident, so it caps what is kept and not what is
+#: allocated. An indexer is an operator-controlled endpoint and this scanner
+#: reads it unauthenticated, so the read itself needs a ceiling. Sized well
+#: above the largest page seen from a real Esplora, around 230 KB.
+_MAX_RESPONSE_BYTES = 8 * 1024 * 1024
 
 # A compressed SEC1 point is 33 bytes prefixed 02 or 03; uncompressed is 65 prefixed 04.
 _COMPRESSED_PREFIXES = ("02", "03")
@@ -184,7 +190,31 @@ def bases(chain: str = "bitcoin") -> tuple[str, ...]:
     return DEFAULT_BASES_BY_CHAIN.get(chain, DEFAULT_BASES)
 
 
-def _bounded_body(rendered: str) -> str:
+def read_response(response: Any, exchange: HttpExchange) -> bytes | None:
+    """Read a response up to the byte ceiling, or refuse it.
+
+    One reader for both lanes, so the ceiling cannot hold on one and not the
+    other. `read(limit + 1)` is deliberate: a body that fills the extra byte is
+    over the ceiling, which is how a chunked response with no Content-Length is
+    caught as well as one that declares its size.
+
+    A refused body returns None and the caller treats it as no answer, so an
+    oversized response never reaches the JSON decoder or a chain value.
+    """
+    raw: bytes = response.read(_MAX_RESPONSE_BYTES + 1)
+    exchange.status = getattr(response, "status", 0) or 0
+    exchange.reason = getattr(response, "reason", "") or ""
+    exchange.response_headers = dict(response.headers.items())
+    exchange.response_bytes = len(raw)
+    if len(raw) > _MAX_RESPONSE_BYTES:
+        exchange.error = (
+            f"refused: the response passed {_MAX_RESPONSE_BYTES} bytes, the read ceiling"
+        )
+        return None
+    return raw
+
+
+def bounded_body(rendered: str) -> str:
     """Keep the body inside the trace bound, and state the bound when it bites.
 
     A5: a bound that shapes output is named and reported, never applied
@@ -245,11 +275,9 @@ def _get_json(url: str, timeout: float, exchanges: list[HttpExchange] | None = N
     started = time.monotonic()
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:  # noqa: S310
-            raw = response.read()
-            exchange.status = getattr(response, "status", 0) or 0
-            exchange.reason = getattr(response, "reason", "") or ""
-            exchange.response_headers = dict(response.headers.items())
-        exchange.response_bytes = len(raw)
+            raw = read_response(response, exchange)
+        if raw is None:
+            return None
         decoded: Json = json.loads(raw.decode("utf-8", "replace"))
     except urllib.error.HTTPError as exc:
         exchange.status, exchange.error = exc.code, f"HTTP {exc.code}"
@@ -263,7 +291,7 @@ def _get_json(url: str, timeout: float, exchanges: list[HttpExchange] | None = N
     finally:
         exchange.duration_ms = int((time.monotonic() - started) * 1000)
         log_exchange(exchange)
-    exchange.body_text = _bounded_body(json.dumps(decoded, indent=2))
+    exchange.body_text = bounded_body(json.dumps(decoded, indent=2))
     return decoded
 
 

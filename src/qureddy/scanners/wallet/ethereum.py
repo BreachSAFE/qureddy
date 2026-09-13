@@ -28,7 +28,12 @@ import urllib.request
 from dataclasses import dataclass, field
 from typing import Any
 
-from qureddy.scanners.wallet.indexer import HttpExchange, log_exchange
+from qureddy.scanners.wallet.indexer import (
+    HttpExchange,
+    bounded_body,
+    log_exchange,
+    read_response,
+)
 from qureddy.scanners.wallet.keccak import eip55
 
 DEFAULT_RPCS: tuple[str, ...] = (
@@ -194,11 +199,9 @@ def _rpc(
     started = time.monotonic()
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:  # noqa: S310
-            raw = response.read()
-            exchange.status = getattr(response, "status", 0) or 0
-            exchange.reason = getattr(response, "reason", "") or ""
-            exchange.response_headers = dict(response.headers.items())
-        exchange.response_bytes = len(raw)
+            raw = read_response(response, exchange)
+        if raw is None:
+            return None
         body = json.loads(raw.decode("utf-8", "replace"))
     except urllib.error.HTTPError as exc:
         exchange.status, exchange.error = exc.code, f"HTTP {exc.code}"
@@ -212,7 +215,16 @@ def _rpc(
     finally:
         exchange.duration_ms = int((time.monotonic() - started) * 1000)
         log_exchange(exchange)
-    exchange.body_text = json.dumps(body, indent=2)[:_MAX_BODY_TRACE]
+    return _result_of(exchange, body)
+
+
+def _result_of(exchange: HttpExchange, body: Any) -> Any:
+    """Record the bounded body, then return the JSON-RPC result it carries.
+
+    `bounded_body` is shared with the chain lane, so the truncation marker A5
+    requires holds here too. This slice was raw when the Bitcoin side was fixed.
+    """
+    exchange.body_text = bounded_body(json.dumps(body, indent=2))
     if not isinstance(body, dict) or "result" not in body:
         return None
     return body["result"]
