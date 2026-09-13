@@ -34,7 +34,7 @@ SPDX-License-Identifier: Apache-2.0
 
 
 
-A wallet holds a key on the same curve families QuReddy already grades. Bitcoin and Ethereum
+A wallet holds a key on the same curve families QuReddy already grades. Bitcoin, Litecoin and Ethereum
 both sign with secp256k1, which meets no NIST post-quantum category, so every account on either
 chain carries `nistQuantumSecurityLevel` 0. That value is constant and therefore uninteresting
 on its own. What varies per account, and what a scan can measure, is whether the public key has
@@ -135,7 +135,7 @@ src/qureddy/
       ethereum.py      JSON-RPC account state
       scanner.py       assembles ScanResult
   core/
-    models.py        edited   btc and eth schemes, ScanTarget.subject
+    models.py        edited   btc, ltc and eth schemes, ScanTarget.subject
     vocabulary.py    reused   ObservationType, Readiness, Severity, Confidence
     contracts.py     reused   Scanner[SubjectT] is already generic
     logging.py       reused   start_run_logging
@@ -171,7 +171,7 @@ ChainFacts                                     evidence     -> Evidence tuple
   spent_txo_count balance_satoshi
   output_scripts public_keys                 ScanTarget
   signatures                                   original_input host port sni
-  transactions_examined                        scheme in {tls ssh ike btc eth}
+  transactions_examined                        scheme in {tls ssh ike btc ltc eth}
   transactions_confirmed                       subject          the one new field
   transactions_mempool                         locator == scheme://host:port
   inputs_examined truncated
@@ -218,7 +218,7 @@ qureddy scan wallet ADDRESS --type --format --output-dir -v
          +-> _parse_wallet_target(ADDRESS, --type)
          |      +- address.decode(ADDRESS)            -> DecodedAddress
          |      +- ScanTarget(host=indexer_host, port=443,
-         |                    scheme=btc|eth,
+         |                    scheme=btc|ltc|eth,
          |                    subject=ADDRESS,
          |                    locator=scheme://host:443)
          |

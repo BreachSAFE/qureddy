@@ -28,16 +28,23 @@ EXAMPLES:
 \b
 qureddy scan wallet 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa
 qureddy scan wallet bc1p0xlxvlhemja6c4dqv22uapctqupfhlxm9h8z3k2e72q4k9hcz7vqzk5jj0
+qureddy scan wallet Ler4HNAEfwYhBmGXcFP2Po1NpRUEiK8km2
 qureddy scan wallet 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045 --format cbom
 qureddy scan wallet 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa --output-dir ./run
 
 WHAT IS MEASURED:
 
 \b
-Bitcoin and Ethereum both sign with secp256k1, which meets no NIST post-quantum
-category, so every account reports level 0. That value is constant across the
-chain. What varies, and what this scan measures, is whether the public key has
-been published on chain, since publication is the input Shor's algorithm needs.
+Bitcoin, Litecoin and Ethereum all sign with secp256k1, which meets no NIST
+post-quantum category, so every account reports level 0. That value is constant
+across each chain. What varies, and what this scan measures, is whether the
+public key has been published on chain, since publication is the input Shor's
+algorithm needs.
+
+\b
+Bitcoin and Litecoin share base58check and bech32 and differ by version byte and
+hrp, so the address decides the chain and the indexer follows it. A --type that
+disagrees with the address is refused rather than scanned.
 
 \b
 A second finding class is separate in kind: a repeated ECDSA nonce yields the
@@ -76,7 +83,10 @@ SEE ALSO: {PROJECT_URL}
 WalletAddressArg = Annotated[
     str,
     typer.Argument(
-        help="Wallet address: bc1..., 1..., 3... for Bitcoin, or 0x... for Ethereum.",
+        help=(
+            "Wallet address: bc1/1/3 for Bitcoin, ltc1/L/M for Litecoin, "
+            "or 0x for Ethereum. The address decides the chain."
+        ),
     ),
 ]
 WalletChainOpt = Annotated[

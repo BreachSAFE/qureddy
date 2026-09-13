@@ -58,6 +58,7 @@ The whole scanner as one process, every external entity around it.
   [ Chain indexer ]--+            |                 |   === Run directory ===
     mempool.space                 |                 |
     blockstream.info              |            leaf certificate
+    litecoinspace.org             |                 |
                                   |                 |
   [ RPC node ]--------------------+        [ Indexer TLS endpoint ]
     ethereum-rpc.publicnode.com
@@ -80,6 +81,8 @@ identifier the operator supplies.
   - - - - - - - - -  T2 host to public internet  - - - - - - - - - - -  |
         |                                                               |
         +--account query--->[ Chain indexer ]----ledger facts-----+      |
+        |                    Bitcoin and Litecoin, selected by the     |
+        |                    address, not by a second detector         |
         +--account query--->[ RPC node ]--------account state-----+      |
         +--handshake------->[ Indexer TLS ]-----leaf certificate--+      |
                                                                   v      v
