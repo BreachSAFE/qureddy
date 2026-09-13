@@ -164,6 +164,18 @@ pipeline {
     }
 
 
+    stage('live: CLI contract, every scheme') {
+      // Four of the live files call the scanner in-process, which proves the
+      // scanner and skips what the CLI owns: argument parsing, the exit-code
+      // contract, and --output-dir writing the bundle. It also compares the
+      // four projections against each other, so a renderer that drops or
+      // invents a finding fails here instead of exiting zero.
+      steps {
+        sh "uv run --locked pytest tests/live/test_live_everything.py -q --junitxml=${REPORT_DIR}/cli.xml"
+      }
+    }
+
+
     stage('live: canonical targets') {
       steps {
         sh "uv run --locked pytest tests/live/test_live_targets.py -q --junitxml=${REPORT_DIR}/live.xml"
