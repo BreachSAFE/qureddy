@@ -33,10 +33,14 @@ import urllib.request
 from dataclasses import dataclass, field
 from typing import Any
 
+from qureddy.core.logging import get_logger
+
 # A third party serves this JSON, so its shape is established by isinstance checks at
 # each use rather than by a static type. Naming that here keeps the dynamism at the
 # boundary where the bytes arrive, in place of spreading ignores through the readers.
 Json = Any
+
+_log = get_logger(__name__)
 JsonObject = dict[str, Any]
 
 #: Esplora bases per chain, tried in order. Litecoin is here because
@@ -180,6 +184,27 @@ def bases(chain: str = "bitcoin") -> tuple[str, ...]:
     return DEFAULT_BASES_BY_CHAIN.get(chain, DEFAULT_BASES)
 
 
+def log_exchange(exchange: HttpExchange) -> None:
+    """Emit one HTTP round trip to the run log, as the subprocess probes are.
+
+    At -vvv the log carried `cert_probe.fetch.*` for the one openssl call and
+    nothing for the REST calls, so the lane that produced most of the findings
+    was the quiet one. Every field here is already on the exchange; the
+    transcript itself stays on the `ProbeResult`, which is where a reader who
+    wants the bytes goes.
+    """
+    _log.info(
+        "wallet.http.complete",
+        method=exchange.method,
+        url=exchange.url,
+        operation=exchange.operation or None,
+        status=exchange.status,
+        duration_ms=exchange.duration_ms,
+        response_bytes=exchange.response_bytes,
+        error=exchange.error or None,
+    )
+
+
 def _get_json(url: str, timeout: float, exchanges: list[HttpExchange] | None = None) -> Json:
     """GET one JSON document, recording the whole exchange for the transcript.
 
@@ -216,6 +241,7 @@ def _get_json(url: str, timeout: float, exchanges: list[HttpExchange] | None = N
         return None
     finally:
         exchange.duration_ms = int((time.monotonic() - started) * 1000)
+        log_exchange(exchange)
     exchange.body_text = json.dumps(decoded, indent=2)[:_MAX_BODY_TRACE]
     return decoded
 

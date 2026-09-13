@@ -28,7 +28,7 @@ import urllib.request
 from dataclasses import dataclass, field
 from typing import Any
 
-from qureddy.scanners.wallet.indexer import HttpExchange
+from qureddy.scanners.wallet.indexer import HttpExchange, log_exchange
 from qureddy.scanners.wallet.keccak import eip55
 
 DEFAULT_RPCS: tuple[str, ...] = (
@@ -198,6 +198,7 @@ def _rpc(
         return None
     finally:
         exchange.duration_ms = int((time.monotonic() - started) * 1000)
+        log_exchange(exchange)
     exchange.body_text = json.dumps(body, indent=2)[:_MAX_BODY_TRACE]
     if not isinstance(body, dict) or "result" not in body:
         return None
