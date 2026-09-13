@@ -88,8 +88,11 @@ def _ciso_summary(interpretation: ScanInterpretation) -> tuple[Text, Text]:
         "",
         f"Evaluation: {evaluation.summary}",
         f"Protection: {evaluation.protection}",
-        f"Hardening:  {evaluation.hardening}",
     ]
+    # An empty hardening value means the protocol has no hygiene axis, so the
+    # row is dropped instead of printing a label with nothing after it.
+    if evaluation.hardening:
+        lines.append(f"Hardening:  {evaluation.hardening}")
     if evaluation.observed_facts:
         lines.extend(("", "Observed:", *(f"  - {fact}" for fact in evaluation.observed_facts)))
     return Text("\n".join(lines)), Text(f"Action: {evaluation.recommended_action}")

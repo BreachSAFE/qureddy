@@ -149,29 +149,43 @@ lives in `core.vocabulary` where both layers reach it.
 
 ## 6. Component view
 
+Line counts from `wc -l`, and the size policy caps a source file at 400 lines and a function
+at 50.
+
 ```text
-  NEW                             EXTENDED                 REUSED UNTOUCHED
-  --------------------------      -------------------      --------------------------
-  scanners/wallet/                output/cbom.py     +2     add_algorithm_assets
-    address.py    indexer.py      cbom_components.py +2     add_algorithm_component
-    ethereum.py   keccak.py       jsonl.py          +12     select_by_evidence_type
-    profiles.py   scanner.py      console/_tables.py +22    signature_algorithm_properties
-  output/cbom_wallet.py    38     core/vocabulary.py  +1    build_probe_result
-  cli/wallet.py                   core/models.py     +24    fetch_certificate_pem
-  tests/live/test_live_wallet.py  scanners/common/          parse_certificate
-                                    rollup.py         +2    evidence_from_certificate
-                                                            render_json, render_jsonl
-                                                            render_rich, _render_bundle
-                                                            _execute_scan
-                                                            build_scan_metadata
-                                                            build_scan_summary
-                                                            build_endpoint_asset
-                                                            validate_output_bundle.py
+  NEW                                  EXTENDED                       REUSED UNTOUCHED
+  ---------------------------------    -------------------------      ----------------------
+  scanners/wallet/                     output/cbom.py          +2     add_algorithm_assets
+    scanner.py        276  orchestrate cbom_components.py      +2     add_algorithm_component
+    record.py         103  Builder     jsonl.py               +12     select_by_evidence_type
+    transport.py      181  HTTP, cert  console/_tables.py     +22     signature_algorithm_...
+    bitcoin_records.py 287 ledger      console/_nist.py        +6     build_probe_result
+    eth_records.py    119  account     console/_verdict.py     +4     fetch_certificate_pem
+    indexer.py        320  Esplora     core/vocabulary.py     +10     parse_certificate
+    ethereum.py       252  JSON-RPC    core/models.py         +24     evidence_from_certificate
+    address.py        254  decode      evaluation/facts.py     +2     resolve_openssl_path
+    keccak.py         226  EIP-55      evaluation/builder.py  +18     render_json, render_jsonl
+    profiles.py       171  grounding   scanners/common/               render_rich
+  scanners/common/                       rollup.py             +2     _render_bundle
+    signature_posture.py  51                                          _execute_scan
+  evaluation/display.py   84                                          build_scan_metadata
+  output/cbom_wallet.py   40                                          build_scan_summary
+  cli/wallet.py          176                                          build_endpoint_asset
+  tests/live/test_live_wallet.py                                      validate_output_bundle.py
 ```
 
+Three seams carried this work, and each already existed for another protocol.
+
 `output/cbom_wallet.py` mirrors `cbom_ssh.py`: a per-protocol module that selects its own
-evidence and hands it to the shared asset loop. That is the seam the output layer already
-defines for a protocol, so extending it rebuilds nothing.
+evidence and hands it to the shared asset loop.
+
+`scanners/common/signature_posture.py` answers the two posture questions a key-exchange reading
+has no input for. `posture.py` already carried the precedent in its `protocol == "ike"` branch.
+Its callers are `_pqc_axis`, `_hndl_exposure`, and `_ciso_text`, each of which falls through to
+its existing logic when the protocol negotiates a key.
+
+`transport.py` calls the TLS scanner's own certificate probe, so the indexer's leaf is parsed by
+the code that parses every other leaf in this engine.
 
 ## 7. Sequence: one Bitcoin scan
 

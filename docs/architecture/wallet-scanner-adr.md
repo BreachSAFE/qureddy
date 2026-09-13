@@ -401,115 +401,134 @@ endpoint out of shell history.
 
 ## 14. Rendered output
 
-
 The engine owns the scan and its four projections. An application layer reads the JSON and
 decides how to present it. Neither adds a grading scale, per C5.
 
-The rich projection follows the shape `scan ssh` and `scan tls` already produce: a banner, an
-HNDL verdict block, a scan-details table, the NIST categories table, and the findings. The
-sketch below is the target for `scanner.py`; it was written from the live `scan ssh github.com`
-render and is unverified until that module exists.
+Captured from `qureddy scan wallet bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4`, the BIP-173
+example address, at 92 columns. The ids and the certificate validity window vary per run.
 
 ```text
-$ qureddy scan wallet bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4
-
-QuReddy 0.9.24 by BreachSAFE
-
- --------------- QuReddy scan: btc://mempool.space:443 ------------------
- subject: bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4
+ --------------- QuReddy scan: btc://mempool.space:443 -----------------
  Future Harvest-Now, Decrypt-Later Risk (HNDL):
-   Public key published on chain; secp256k1 meets no NIST category
+   At risk of harvest-now/decrypt-later exposure
 
- Evaluation: Signing key is recoverable by a CRQC from published data.
- Protection: None observed
- Hardening:  Move funds to an unspent output
+ Evaluation: BTC accounts sign with ECDSA-secp256k1, which meets no NIST
+ post-quantum category.
+ Protection: Only classical protection observed
 
  Observed:
-   - Public key read from vin[].witness[1]: 0279be667e...f81798
-   - Signature nonce reuse: none in 25 examined
- Action: Spend to a fresh address and stop reusing this one.
- ------------------------------------------------------------------------
+   - BTC negotiated ECDSA-secp256k1
+ Action: Track the published key, since exposure begins at publication.
+ -----------------------------------------------------------------------
 
 Scan details
  Field            Value
- ----------------------------------------------
+ -----------------------------------------------------------
  schema_version   qureddy.scan.v1
  status           completed
  nist_levels      0
  nist_max         0
- posture          EXPOSED
- subject          bc1qw508d6...kv8f3t4
+ posture          CLASSICAL
+ subject          bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4
  script           v0_p2wpkh
  key_published    yes
- findings         13
- attempts         1
+ balance          0.00000000 BTC
+ findings         20
+ attempts         2
+
+Certificate
+ Field         Value
+ -----------------------------------------------------------
+ subject       C=JP, ST=Tokyo, O=Mempool Space Co. Ltd., CN=mempool.space
+ issuer        C=GB, O=Sectigo Limited, CN=Sectigo Public Server Auth CA OV R36
+ signature     sha256WithRSAEncryption
+ public_key    rsaEncryption (2048 bits)
+ self_signed   false
 
 NIST quantum categories observed
- Surface      Context     Level   Algorithm            Note
- -----------------------------------------------------------------------
- signature    observed        0   ECDSA-secp256k1      key read from witness
- public key   observed        0   secp256k1 pubkey     0279be667e...f81798
-
-Findings
- Lane       Name                       Value                Source
- -----------------------------------------------------------------------
- offline    script.type                v0_p2wpkh            bech32 ver+len
- offline    network                    mainnet              bech32 hrp
- constant   nist.level                 0                    core/pqc
- chain #02  key.published              yes                  vin[] key bytes
- chain #02  pubkeys.recovered          1                    02|03+32B push
- chain #01  outputs.funded / spent     172 / 97             chain_stats
- chain #02  transactions.examined      50 / 172             len(/txs page)
- chain #02   - confirmed               47                   status.confirmed
- chain #02   - mempool                  3                   status absent
- chain #02  inputs.from_this_address   25                   prevout==target
- chain #02  signatures.examined        25                   DER 0x30
- defect     nonce.reuse                none in 25           Counter(r)
- chain #01  balance                    0.01607723 BTC       funded-spent/1e8
- coverage   paging                     first page only      no :last_seen_txid
+ Surface       Context                   Level   Algorithm
+ -----------------------------------------------------------
+ signature     account key                   0   ECDSA-secp256k1
+ certificate   CN=mempool.space              0   sha256WithRSAEncryption
 ```
 
-Every row carries a lane and a source expression, which is C1 rendered. When a lane fails, C3
-governs and the offline lane still answers:
+The `Hardening` row the other scanners print is absent. It reports `HygieneStatus`, which
+`posture.py` derives from protocol-hygiene signals, and a chain account offers none. The
+present-day question here is whether a signing defect already yields the key, which the
+`nonce.reuse` finding answers on its own row.
+
+`signature / account key` is the row the scan exists to produce. `certificate` describes the
+indexer that served the data. Both read level 0, for unrelated reasons.
+
+### 14.1 Every finding, and the expression behind it
+
+Twenty findings for this address. C1 requires the lane and the source expression, so both are columns. `wallet.http` rows are omitted here: one per HTTP exchange, each
+carrying a curl shaped transcript as its `ProbeResult`.
+
+| Lane | Finding | Value | Source expression |
+|---|---|---|---|
+| offline | `algorithm` | `ECDSA secp256k1` | `address._SCRIPT_SCHEMES[script]` |
+| constant | `nist.quantum_security_level` | `0` | `scanner.NIST_LEVEL_SECP256K1` |
+| offline | `script.type` | `v0_p2wpkh` | bech32 witness version and program length |
+| offline | `network` | `mainnet` | bech32 hrp, or the base58 version byte |
+| offline | `address.encoding` | `bech32` | the checksum that validated |
+| chain | `key.published` | `yes` | key bytes read from `vin[].witness` or a scriptsig push |
+| chain | `pubkeys.recovered` | `1` | `vin[]` pushes matching `02`/`03` + 32B, or `04` + 64B |
+| chain | `pubkey` | `0279be667e...f81798` | `vin[].witness[1]` or a scriptsig push |
+| chain | `outputs.funded` | `97` | `chain_stats.funded_txo_count` |
+| chain | `outputs.spent` | `97` | `chain_stats.spent_txo_count` |
+| chain | `transactions.examined` | `50 of 172` | `len` of the page over `chain_stats + mempool_stats` |
+| chain | `transactions.confirmed` | `50` | `tx[].status.confirmed` is true in the page |
+| chain | `transactions.mempool` | `0` | `tx[].status.confirmed` absent |
+| chain | `inputs.from_this_address` | `25` | `vin[]` where `prevout.scriptpubkey_address` equals the subject |
+| chain | `signatures.examined` | `25` | DER `0x30` parses in `vin[].witness[0]` or a scriptsig push |
+| chain | `balance` | `0.00000000 BTC` | `(funded_txo_sum - spent_txo_sum) / 1e8` |
+| defect | `nonce.reuse` | `none in 25` | `Counter` over signature `r` values, maximum count one |
+| chain | `scan.coverage` | `50 of 172 transactions` | one indexer page; `:last_seen_txid` paging is unused |
+| transport | `indexer.certificate` | `CN=mempool.space` | `openssl s_client` leaf, parsed with `openssl x509` |
+| offline | `chain.pki` | `none` | this chain defines no certificate format |
+
+The recovered key is the BIP-173 example key, so a reader can close the loop offline:
+HASH160 of `0279be667e...f81798` is the 20-byte witness program this address encodes.
+
+### 14.2 What the run writes
+
+`--output-dir` writes five files. The first four are the standard projections; the fifth is
+the transport artifact this scanner adds.
+
+| File | Contents |
+|---|---|
+| `scan.json` | `qureddy.scan.v1`, every finding with its evidence and `ProbeResult` transcripts |
+| `scan.cdx.json` | CycloneDX 1.7, the account key as a signature crypto asset at level 0 |
+| `scan.jsonl` | the findings stream, one object per line |
+| `scan.rich.txt` | the render above, ANSI stripped |
+| `certificate.pem` | the indexer's TLS leaf |
+
+### 14.3 When a lane fails
+
+C3 governs. The offline lane answers from the address string alone, and each chain row states
+what went unmeasured.
 
 ```text
- chain      key.published              not tested           indexer unreachable
- chain      balance                    not tested           indexer unreachable
- offline    script.type                v0_p2wpkh            bech32 ver+len
+ chain      key.published              not tested       indexer unreachable
+ chain      balance                    not tested       indexer unreachable
+ offline    script.type                v0_p2wpkh        bech32 ver+len
 ```
 
-The application tab consumes `scan.json` and adds no grading:
+### 14.4 The application surface
+
+`BreachSAFE/qureddy-app` renders this scan as the `Wallet` tab, declared in
+`tools/wallet/wallet.yaml`. The descriptor invokes the CLI, declares the five artifacts above,
+and routes each to the viewer that already exists: `renderer: cbom` to the CBOMkit viewer,
+`renderer: certificate` to the certificate viewer, `renderer: findings` to the findings
+renderer. Every value it displays is a `find_prop` against a `qureddy:scan.*` property on the
+CBOM, so the tab classifies nothing and a posture change here reaches it with no edit there.
 
 ```text
-+-- itsqday ----------------------------------------------------------+
-|  [11] WALLET                                                      ^ |
-|  +----------------------------------------------+                  |
-|  | bc1q... / 1... / 3... / bc1p... / 0x...       |  [ Check ]       |
-|  +----------------------------------------------+                  |
-|                                                                     |
-|  NIST QUANTUM SECURITY LEVEL 0 . NONE      ECDSA secp256k1          |
-|  +----+----+----+----+----+----+                                    |
-|  | 0  | 1  | 2  | 3  | 4  | 5  |   none AES-128 SHA-256 AES-192 ... |
-|  +----+----+----+----+----+----+                                    |
-|                                                                     |
-|  name                   value              lane       source        |
-|  ------------------------------------------------------------------ |
-|  script.type            v0_p2wpkh          OFFLINE    bech32 ver+len|
-|  key.published          yes                CHAIN #02  witness bytes |
-|  pubkey                 0279be667e...798   CHAIN #02  witness[1]    |
-|  nonce.reuse            none in 25         DEFECT     Counter(r)    |
-|  balance                0.01607723 BTC     CHAIN #01  funded-spent  |
-|                                                                     |
-|  ARTIFACTS  scan.json . scan.cdx.json . certificate.pem . scan.pcap |
-+---------------------------------------------------------------------+
-```
-
-```text
-qureddy scan wallet  ->  ScanResult  ->  rich | json | jsonl | cbom
+qureddy scan wallet  ->  ScanResult  ->  rich | json | jsonl | cbom | certificate.pem
                                           |
-                          run-<UTC>-btc/scan.json
-                                          |
-                                          +-> the application tab reads it
+                          run-<UTC>-btc/  |
+                                          +-> the Wallet tab reads the CBOM properties
 ```
 
 ## 15. Alternatives considered

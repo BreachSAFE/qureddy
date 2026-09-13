@@ -83,7 +83,17 @@ def _action(facts: PostureFacts) -> str:
     return "Resolve probe limitations and re-run the assessment."
 
 
-def _hardening(status: HygieneStatus) -> str:
+def _hardening(facts: PostureFacts) -> str:
+    """Present-day hygiene, or an empty string where the axis does not apply.
+
+    A chain account has no protocol to harden. Its present-day question is
+    whether a signing defect makes the key derivable today, which the defect
+    findings answer, so "Protocol hardening is required" named a control that
+    does not exist and a reader who knows the chain can see that.
+    """
+    if facts.protocol in SIGNATURE_ONLY_PROTOCOLS:
+        return ""
+    status = facts.hygiene_status
     if status in {HygieneStatus.ACTION_NEEDED, HygieneStatus.WEAK}:
         return "Protocol hardening is required"
     if status is HygieneStatus.UNKNOWN:
@@ -110,7 +120,7 @@ def build_evaluation(facts: PostureFacts) -> PostureEvaluation:
         summary=_summary(facts),
         hndl_risk=_hndl_risk(facts.hndl_exposure),
         protection=_protection(facts.support),
-        hardening=_hardening(facts.hygiene_status),
+        hardening=_hardening(facts),
         recommended_action=_action(facts),
         observed_facts=tuple(observed),
     )
