@@ -11,7 +11,7 @@
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/breachsafe/qureddy/badge)](https://securityscorecards.dev/viewer/?uri=github.com/breachsafe/qureddy)
 [![Python](https://img.shields.io/badge/python-3.14%2B-blue?style=flat-square&logo=python&logoColor=white)](https://www.python.org/downloads/)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue?style=flat-square)](LICENSE)
-[![OpenSSL 3.5.7 LTS](https://img.shields.io/badge/OpenSSL-3.5.7%20LTS-721412?style=flat-square&logo=openssl)](https://github.com/openssl/openssl/releases/tag/openssl-3.5.7)
+[![OpenSSL 3.5.x LTS](https://img.shields.io/badge/OpenSSL-3.5.x%20LTS-721412?style=flat-square&logo=openssl)](https://www.openssl.org/source/)
 [![CycloneDX 1.7 CBOM](https://img.shields.io/badge/CycloneDX-1.7%20CBOM-2f6690?style=flat-square)](https://cyclonedx.org/docs/1.7/)
 [![GHCR image](https://img.shields.io/badge/GHCR-qureddy-blue?style=flat-square&logo=docker)](https://github.com/BreachSAFE/qureddy/pkgs/container/qureddy)
 [![Docker Hub image](https://img.shields.io/badge/Docker%20Hub-qureddy-blue?style=flat-square&logo=docker)](https://hub.docker.com/r/breachsafe/qureddy)
@@ -84,7 +84,7 @@ shows which of your TLS, SSH, and IKE endpoints expose classical key establishme
 ## 1. Quickstart with Docker
 
 Docker is the primary supported way to run QuReddy and the fastest path to a
-result. The image bundles the verified OpenSSL 3.5.7 LTS runtime, so TLS scanning
+result. The image bundles a verified OpenSSL 3.5.x LTS runtime, so TLS scanning
 needs no local setup, and it runs as an unprivileged user. GHCR is the canonical
 image registry; Docker Hub provides a mirror for environments that restrict GitHub
 package access. The image entrypoint is
@@ -220,7 +220,7 @@ successful scan exits `0` even when it reports a vulnerable posture.
 
 ## 4. Prepare OpenSSL for TLS
 
-TLS scanning requires OpenSSL 3.5.7 LTS with the
+TLS scanning requires OpenSSL 3.5.x LTS (3.5.7 or newer within the 3.5 series) with the
 `X25519MLKEM768` TLS group. LibreSSL is not supported.
 
 On macOS, Homebrew's `openssl@3.5` formula is a moving 3.5.x channel. Inspect
@@ -234,7 +234,7 @@ QUREDDY_OPENSSL_CANDIDATE="$(brew --prefix openssl@3.5)/bin/openssl"
 ```
 
 Export the candidate only when the executable and any explicitly reported
-`Library:` version are both exactly 3.5.7 and the group list contains
+`Library:` version is in the 3.5.x LTS series and is at least 3.5.7, and the group list contains
 `X25519MLKEM768`:
 
 ```bash
@@ -243,7 +243,7 @@ qureddy scan tls --help
 ```
 
 If the formula has moved, use the repository's
-[checksum-pinned 3.5.7 source-build recipe](.github/actions/setup-openssl/action.yml)
+[checksum-pinned 3.5.x source-build recipe](.github/actions/setup-openssl/action.yml)
 or the [QuReddy container](docs/how-to/docker.md); do not bypass the version gate.
 
 Linux and Windows installations vary by distribution. Confirm the selected
@@ -382,7 +382,7 @@ operator's system unless the operator sends them elsewhere.
 
 - Python `>=3.14`
 - Network reachability to the named target
-- OpenSSL 3.5.7 LTS for TLS scans only
+- OpenSSL 3.5.x LTS, at least 3.5.7, for TLS scans only
 - Stock `ike-scan` for IKE scans only
 
 The clean-install matrix installs the wheel, source distribution, and pipx

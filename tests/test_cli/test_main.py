@@ -75,6 +75,25 @@ def test_scan_tls_help_assigns_subprocess_boundaries_to_vv() -> None:
     assert "Use `-vvv` to see every subprocess start and completion" not in help_text
 
 
+def test_scan_tls_help_documents_starttls_with_cleartext_port() -> None:
+    """Guard the help contract without pretending it proves live interoperability.
+
+    The assertion path is intentionally small and observable:
+
+        source option -> rendered ``scan tls --help`` -> operator-facing text
+
+    A source-only assertion would miss Typer/Click rendering drift; a live scan
+    would make this documentation regression dependent on network state.
+    """
+    result = CliRunner().invoke(app, ["scan", "tls", "--help"])
+    help_text = " ".join(result.stdout.split())
+
+    assert result.exit_code == 0
+    assert "qureddy scan tls mail.example.com:587 --starttls smtp" in help_text
+    assert "service's cleartext port" in help_text
+    assert "OpenSSL 3.5.7" not in help_text
+
+
 def test_deterministic_flag_and_deprecated_alias_enable_same_mode(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

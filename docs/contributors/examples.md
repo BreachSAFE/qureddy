@@ -200,7 +200,7 @@ OpenSSL subprocess calls live **only** in `src/qureddy/scanners/tls/openssl_prob
 
 ```python
 # SPDX-License-Identifier: Apache-2.0
-"""Exact OpenSSL 3.5.7 LTS subprocess probe for TLS scans."""
+"""OpenSSL 3.5.x LTS subprocess probe for TLS scans."""
 from __future__ import annotations
 
 import hashlib
@@ -387,7 +387,7 @@ class LocalOpenSSLMissing(QureddyError):
 
 
 class LocalOpenSSLTooOld(QureddyError):
-    """OpenSSL found but version is below 3.5.7.
+    """OpenSSL found but version is below the 3.5.7 baseline.
 
     Raised by the capability check. Maps to FailureCategory.LOCAL_OPENSSL_TOO_OLD.
     """

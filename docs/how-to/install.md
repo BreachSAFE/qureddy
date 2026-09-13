@@ -5,7 +5,8 @@
 Install the `breachsafe-qureddy` distribution with Python 3.14 or newer. Use `pipx` for
 the command line application or install into a managed virtual environment.
 SSH scanning works without OpenSSL. TLS scanning requires a separate OpenSSL
-3.5.7 LTS binary. IKE scanning requires a separate stock `ike-scan` executable.
+3.5.x LTS binary (3.5.7 or newer within the 3.5 series). IKE scanning requires
+a separate stock `ike-scan` executable.
 
 ## Contents
 
@@ -28,7 +29,7 @@ QuReddy requires:
 - Python `>=3.14`
 - macOS, Linux, or Windows
 - network reachability to the target
-- OpenSSL 3.5.7 LTS for `scan tls` only
+- OpenSSL 3.5.x LTS, at least 3.5.7, for `scan tls` only
 - stock `ike-scan` for `scan ike` only
 
 Check Python before installing:
@@ -122,7 +123,7 @@ QUREDDY_OPENSSL_CANDIDATE="$(brew --prefix openssl@3.5)/bin/openssl"
 ```
 
 Export the candidate only when the executable and any explicitly reported
-`Library:` version are both exactly 3.5.7 and the group list contains
+`Library:` version is in the 3.5.x LTS series and is at least 3.5.7, and the group list contains
 `X25519MLKEM768`:
 
 ```bash
@@ -130,7 +131,7 @@ export QUREDDY_OPENSSL="$QUREDDY_OPENSSL_CANDIDATE"
 ```
 
 If the formula has moved, use the repository's
-[checksum-pinned 3.5.7 source-build recipe](../../.github/actions/setup-openssl/action.yml)
+[checksum-pinned 3.5.x source-build recipe](../../.github/actions/setup-openssl/action.yml)
 or the [QuReddy container](docker.md); do not bypass the version gate.
 
 ## 4. Install on Linux
@@ -153,10 +154,10 @@ openssl version
 openssl list -tls1_3 -tls-groups
 ```
 
-If the executable or any explicitly reported linked-library version is not
-exactly 3.5.7, or the group list does not contain `X25519MLKEM768`, install an
-supported OpenSSL 3.5.x LTS vendor build or use the repository's
-[checksum-pinned 3.5.7 source-build recipe](../../.github/actions/setup-openssl/action.yml)
+If the executable or any explicitly reported linked-library version is not in
+the 3.5.x LTS series at 3.5.7 or newer, or the group list does not contain `X25519MLKEM768`, install
+a supported OpenSSL 3.5.x LTS vendor build or use the repository's
+[checksum-pinned 3.5.x source-build recipe](../../.github/actions/setup-openssl/action.yml)
 against the [official OpenSSL source](https://openssl-library.org/source/).
 Do not substitute a current or moving release. Record the resulting path in
 `QUREDDY_OPENSSL`.
@@ -188,7 +189,8 @@ py -3.14 -m pipx install `
   breachsafe-qureddy
 ```
 
-For TLS scans, install a trusted OpenSSL 3.5.7 LTS Windows build. QuReddy
+For TLS scans, install a trusted OpenSSL 3.5.x LTS Windows build (3.5.7 or newer
+within the 3.5 series). QuReddy
 does not bundle or endorse a third party OpenSSL binary. Set the full path:
 
 ```powershell
@@ -241,8 +243,8 @@ Confirm both the version and required group:
 "${QUREDDY_OPENSSL:-openssl}" list -tls1_3 -tls-groups
 ```
 
-The selected binary must report exactly OpenSSL 3.5.7 and list
-`X25519MLKEM768`.
+The selected binary must report OpenSSL 3.5.7 or newer within the 3.5.x LTS
+series and list `X25519MLKEM768`.
 
 ## 8. Verify the installation
 

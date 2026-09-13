@@ -81,7 +81,7 @@ favorable readiness result.
 
 ## 5. Prepare OpenSSL
 
-TLS scans require OpenSSL 3.5.7 LTS with the `X25519MLKEM768` group. Check
+TLS scans require OpenSSL 3.5.7 or newer within the 3.5.x LTS series with the `X25519MLKEM768` group. Check
 the selected binary:
 
 ```bash
@@ -100,7 +100,7 @@ QUREDDY_OPENSSL_CANDIDATE="$(brew --prefix openssl@3.5)/bin/openssl"
 ```
 
 Export the candidate only when the executable and any explicitly reported
-`Library:` version are both exactly 3.5.7 and the group list contains
+`Library:` version are in the 3.5.x LTS series and the group list contains
 `X25519MLKEM768`:
 
 ```bash

@@ -3,7 +3,8 @@
 [![Diátaxis how-to](https://img.shields.io/badge/Di%C3%A1taxis-how--to-2ea44f?style=flat-square)](https://diataxis.fr/how-to-guides/)
 
 The QuReddy container packages the release wheel with a checksum-verified
-OpenSSL 3.5.7 runtime and stock `ike-scan`. It runs as an unprivileged user and
+OpenSSL 3.5.x runtime (currently built from the pinned 3.5.8 source) and stock
+`ike-scan`. It runs as an unprivileged user and
 is published to the BreachSAFE GitHub Container Registry (GHCR) and Docker Hub
 mirror.
 
