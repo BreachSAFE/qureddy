@@ -72,4 +72,4 @@ condition = "AND"
 commits = ["08647d61f90c87c42e777cded2de681b628bead2"]
 paths = ['''^tests/test_cbom_wallet\.py$''']
 regexTarget = "line"
-regexes = ['''^\s*_KEY\s*=\s*"0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce"\s*$''']
+regexes = ['''^\s*_KEY\s*=\s*"0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce"\s*\+\s*"28d959f2815b16f81798"\s*$''']
