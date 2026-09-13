@@ -62,3 +62,14 @@ commits = ["16623fa5ac76f032f9ac2cb7ad93576bd422ae29"]
 paths = ['''^docs/contributors/local-release-gate\.md$''']
 regexTarget = "secret"
 regexes = ['''^X25519MLKEM768$''']
+
+# The first release-gate attempt used one long public-key chunk; retain a
+# commit-specific exception for that superseded test-only spelling.
+[[allowlists]]
+description = "Superseded SEC1 public-key fixture spelling"
+targetRules = ["generic-api-key"]
+condition = "AND"
+commits = ["08647d61f90c87c42e777cded2de681b628bead2"]
+paths = ['''^tests/test_cbom_wallet\.py$''']
+regexTarget = "line"
+regexes = ['''^\s*_KEY\s*=\s*"0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce"\s*$''']
