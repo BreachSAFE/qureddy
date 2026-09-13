@@ -133,6 +133,8 @@ The Docker socket grants access to the host daemon; use it only for trusted
 inputs. Theia's trace diagnostics belong on stderr and the CBOM remains on
 stdout. QuReddy does not regenerate Theia's CycloneDX document. The future
 `qureddy scan image|dir` commands will reuse this same executable boundary.
+Theia's `dir` mode is an artifact-directory scan, not source-code AST analysis;
+use CBOMkit's Sonar Cryptography integration for source-code scanning.
 
 ## 6. Write JSON or CBOM output
 

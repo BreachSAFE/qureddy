@@ -27,6 +27,10 @@ lower-trust discovery backend. The container also bundles `cbomkit-theia` for
 directory and container-image cryptographic asset discovery; its Docker-socket
 requirement is runtime-only and is documented in the Docker guide.
 
+Theia is not a source-code AST scanner. For source-code cryptography analysis,
+use the CBOMkit Sonar Cryptography integration; Theia inventories artifacts
+already present in a directory or container image.
+
 > **Tip:** Start with the [Docker quickstart](#1-quickstart-with-docker). It includes
 > the pinned OpenSSL runtime and keeps the host setup small.
 
