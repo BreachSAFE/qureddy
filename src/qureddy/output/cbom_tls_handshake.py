@@ -7,23 +7,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from cyclonedx.model import Property
-from cyclonedx.model.bom_ref import BomRef
-from cyclonedx.model.component import Component, ComponentType
-from cyclonedx.model.crypto import (
-    CryptoAssetType,
-    CryptoProperties,
-    RelatedCryptoMaterialProperties,
-    RelatedCryptoMaterialState,
-    RelatedCryptoMaterialType,
-)
 
 from qureddy.output.cbom_assets import (
     POSITIVE_OBSERVATIONS,
     add_algorithm_component,
-    add_provides_edge,
     algorithm_ref,
 )
 from qureddy.output.cbom_components import signature_algorithm_properties
+from qureddy.output.cbom_public_key import add_public_key_material
 
 if TYPE_CHECKING:
     from cyclonedx.model.bom import Bom
@@ -91,23 +82,15 @@ def _add_ephemeral_key(
     group = evidence.negotiated_group
     if group is None or evidence.key_bits is None or group not in algorithm_refs:
         return
-    ref = f"crypto/related-material/tls-ephemeral-{group.lower()}"
-    if any(component.bom_ref.value == ref for component in bom.components):
-        return
-    bom.components.add(
-        Component(
-            name=f"TLS ephemeral public key ({group})",
-            type=ComponentType.CRYPTOGRAPHIC_ASSET,
-            bom_ref=ref,
-            crypto_properties=CryptoProperties(
-                asset_type=CryptoAssetType.RELATED_CRYPTO_MATERIAL,
-                related_crypto_material_properties=RelatedCryptoMaterialProperties(
-                    type=RelatedCryptoMaterialType.PUBLIC_KEY,
-                    state=RelatedCryptoMaterialState.ACTIVE,
-                    algorithm_ref=BomRef(value=algorithm_refs[group]),
-                    size=evidence.key_bits,
-                ),
-            ),
-        )
+    # The value is withheld on purpose: an ephemeral key is session material,
+    # and its size is what the inventory needs. `add_public_key_material` is the
+    # shared emitter, so this keeps the component shape one scanner cannot drift
+    # from another.
+    add_public_key_material(
+        bom,
+        ref=f"crypto/related-material/tls-ephemeral-{group.lower()}",
+        name=f"TLS ephemeral public key ({group})",
+        algorithm_ref=algorithm_refs[group],
+        provides_edges=provides_edges,
+        size=evidence.key_bits,
     )
-    add_provides_edge(provides_edges, ref)

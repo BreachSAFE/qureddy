@@ -291,6 +291,13 @@ class Evidence(BaseModel):
     handshake_signature: str | None = None
     handshake_hash: str | None = None
     key_bits: int | None = Field(default=None, ge=1)
+    #: A public key this scanner read, hex encoded. Public by definition and, for
+    #: a chain account, already published on a public ledger, so it travels as
+    #: evidence. A private key or any secret never lands here.
+    public_key: str | None = None
+    #: Encoding of `public_key`, e.g. SEC1-compressed, so a reader knows how to
+    #: parse the bytes rather than guessing from their length.
+    public_key_format: str | None = None
     server_software: str | None = None
     server_version: str | None = None
     probe_role: ProbeRole | None = None

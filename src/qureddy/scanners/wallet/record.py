@@ -50,6 +50,8 @@ class Builder:
         observation: ObservationType,
         evidence_type: str | None = None,
         negotiated_group: str | None = None,
+        public_key: str | None = None,
+        public_key_format: str | None = None,
         severity: Severity = Severity.INFO,
         readiness: Readiness = Readiness.NOT_APPLICABLE,
         confidence: Confidence = Confidence.HIGH,
@@ -62,6 +64,8 @@ class Builder:
             evidence_type=evidence_type or name,
             observation_type=observation,
             negotiated_group=negotiated_group,
+            public_key=public_key,
+            public_key_format=public_key_format,
             source=lane,
             protocol=self.protocol,
             algorithm=f"ECDSA-{CURVE}",
@@ -72,22 +76,48 @@ class Builder:
         )
         self.evidence.append(item)
         self.findings.append(
-            Finding(
-                id=new_id("finding"),
-                asset_id=self.asset.id,
-                evidence_ids=(item.id,),
-                rule_id=f"wallet.{name}",
-                finding_type=name,
-                title=f"{name}: {value}",
-                description=description or f"{value}. Read by the {lane} lane from {source}.",
+            self._finding(
+                item.id,
+                name,
+                value,
+                lane=lane,
+                source=source,
                 severity=severity,
                 readiness=readiness,
                 confidence=confidence,
-                protocol=self.protocol,
-                algorithm=f"ECDSA-{CURVE}",
-                primitive=PRIMITIVE,
-                nist_quantum_security_level=NIST_LEVEL_SECP256K1,
+                description=description,
             )
+        )
+
+    def _finding(
+        self,
+        evidence_id: str,
+        name: str,
+        value: str,
+        *,
+        lane: str,
+        source: str,
+        severity: Severity,
+        readiness: Readiness,
+        confidence: Confidence,
+        description: str,
+    ) -> Finding:
+        """The finding that reports one observation, C1 source line included."""
+        return Finding(
+            id=new_id("finding"),
+            asset_id=self.asset.id,
+            evidence_ids=(evidence_id,),
+            rule_id=f"wallet.{name}",
+            finding_type=name,
+            title=f"{name}: {value}",
+            description=description or f"{value}. Read by the {lane} lane from {source}.",
+            severity=severity,
+            readiness=readiness,
+            confidence=confidence,
+            protocol=self.protocol,
+            algorithm=f"ECDSA-{CURVE}",
+            primitive=PRIMITIVE,
+            nist_quantum_security_level=NIST_LEVEL_SECP256K1,
         )
 
     def not_tested(self, name: str, reason: str, *, lane: str) -> None:

@@ -29,6 +29,11 @@ _KEY_IN_OUTPUT_SCRIPTS = frozenset({"p2pk", "multisig", "v1_p2tr"})
 #: key carries no address, so an address query cannot return it.
 _HASH_ADDRESSED_SCRIPTS = frozenset({"p2pkh", "p2sh"})
 
+#: SEC1 encodings the chain lane recovers, named so a reader can parse the bytes.
+_SEC1_COMPRESSED = "SEC1-compressed"
+_SEC1_UNCOMPRESSED = "SEC1-uncompressed"
+_COMPRESSED = ("02", "03")
+
 #: An r value this short implies a nonce small enough to brute force.
 _LOW_ENTROPY_R_HEX = 8
 
@@ -185,6 +190,10 @@ def _record_ledger_counts(builder: Builder, facts: ChainFacts) -> None:
             lane="chain",
             source="vin[].witness[1] or a scriptsig push",
             observation=ObservationType.OBSERVED,
+            # The bytes travel as evidence. A public key on a public ledger is
+            # already published; withholding it would hide what the scan read.
+            public_key=key,
+            public_key_format=_SEC1_COMPRESSED if key[:2] in _COMPRESSED else _SEC1_UNCOMPRESSED,
         )
 
 
