@@ -11,21 +11,21 @@
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/breachsafe/qureddy/badge)](https://securityscorecards.dev/viewer/?uri=github.com/breachsafe/qureddy)
 [![Python](https://img.shields.io/badge/python-3.14%2B-blue?style=flat-square&logo=python&logoColor=white)](https://www.python.org/downloads/)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue?style=flat-square)](LICENSE)
-[![OpenSSL 3.5.7 LTS](https://img.shields.io/badge/OpenSSL-3.5.7%20LTS-721412?style=flat-square&logo=openssl)](https://github.com/openssl/openssl/releases/tag/openssl-3.5.7)
+[![OpenSSL 3.5.x](https://img.shields.io/badge/OpenSSL-3.5.x-721412?style=flat-square&logo=openssl)](https://github.com/openssl/openssl)
 [![CycloneDX 1.7 CBOM](https://img.shields.io/badge/CycloneDX-1.7%20CBOM-2f6690?style=flat-square)](https://cyclonedx.org/docs/1.7/)
 [![GHCR image](https://img.shields.io/badge/GHCR-qureddy-blue?style=flat-square&logo=docker)](https://github.com/BreachSAFE/qureddy/pkgs/container/qureddy)
 [![Docker Hub image](https://img.shields.io/badge/Docker%20Hub-qureddy-blue?style=flat-square&logo=docker)](https://hub.docker.com/r/breachsafe/qureddy)
 [![TestPyPI package](https://img.shields.io/badge/TestPyPI-breachsafe--qureddy-blue?style=flat-square&logo=pypi)](https://test.pypi.org/project/breachsafe-qureddy/)
 
-QuReddy is an open-source command line scanner for post-quantum readiness at
-TLS, SSH, and IKE endpoints. It records the protocol and cryptographic evidence that
-the endpoint exposes to a client, then reports the observed readiness posture.
+QuReddy is an open-source command-line scanner for post-quantum readiness and
+cryptographic inventory. It records the protocol and cryptographic evidence that a
+target exposes to a client, then reports the observed posture with its limits intact.
 
-TLS scans use a local OpenSSL 3.5.8 LTS binary. SSH scans read the server's
-cleartext KEXINIT offer directly. IKE scans use stock `ike-scan` as a
-lower-trust discovery backend. The container also bundles `cbomkit-theia` for
-directory and container-image cryptographic asset discovery; its Docker-socket
-requirement is runtime-only and is documented in the Docker guide.
+TLS scans use a supported OpenSSL 3.5.x LTS binary. SSH scans read the server's
+cleartext KEXINIT offer directly. IKE scans use stock `ike-scan` as a lower-trust
+discovery backend. Wallet scans query configured public indexers. Directory and
+container-image scans use bundled `cbomkit-theia` for cryptographic asset discovery;
+image scans require Docker socket access at runtime, as documented in the Docker guide.
 
 Theia is not a source-code AST scanner. For source-code cryptography analysis,
 use the CBOMkit Sonar Cryptography integration; Theia inventories artifacts
@@ -36,12 +36,14 @@ already present in a directory or container image.
 
 ## At a glance
 
-| Target | QuReddy observes | Useful outputs |
-| --- | --- | --- |
-| TLS endpoint | handshake, certificate, key exchange, protocol hygiene | Rich, JSON, JSONL, CBOM |
-| SSH endpoint | banner, KEXINIT algorithms, host-key and authentication evidence | Rich, JSON, JSONL, CBOM |
-| IKE endpoint | responder modes, tool-reported transforms, NOTIFY responses | Rich, JSON, JSONL, CBOM |
-| EnXemble host | scan bundle and CISO evaluation | JSONL, JSON, CBOM |
+| Target | Command | QuReddy observes | Useful outputs |
+| --- | --- | --- | --- |
+| TLS endpoint | `scan tls` | handshake, certificate, key exchange, protocol hygiene | Rich, JSON, JSONL, CBOM |
+| SSH endpoint | `scan ssh` | banner, KEXINIT algorithms, host-key and authentication evidence | Rich, JSON, JSONL, CBOM |
+| IKE endpoint | `scan ike` | responder modes, tool-reported transforms, NOTIFY responses | Rich, JSON, JSONL, CBOM |
+| Directory | `scan dir` | artifact files through CBOMkit Theia | Rich, JSON, JSONL, CBOM |
+| Container image | `scan image` | image artifacts through CBOMkit Theia | Rich, JSON, JSONL, CBOM |
+| Wallet address | `scan wallet` | public indexer observations and cryptographic metadata | Rich, JSON, JSONL, CBOM |
 
 <details>
 <summary>Try a real scan</summary>
@@ -52,7 +54,7 @@ docker run --rm ghcr.io/breachsafe/qureddy:latest scan ssh github.com --format j
 ```
 
 The first command renders the human report. The second emits one deterministic
-JSONL record per finding for CI, EnXemble, or another downstream consumer.
+JSONL record per finding for a CI or data pipeline.
 
 </details>
 
@@ -90,7 +92,7 @@ shows which of your TLS, SSH, and IKE endpoints expose classical key establishme
 ## 1. Quickstart with Docker
 
 Docker is the primary supported way to run QuReddy and the fastest path to a
-result. The image bundles the verified OpenSSL 3.5.7 LTS runtime, so TLS scanning
+result. The image bundles a verified OpenSSL 3.5.x LTS runtime, so TLS scanning
 needs no local setup, and it runs as an unprivileged user. GHCR is the canonical
 image registry; Docker Hub provides a mirror for environments that restrict GitHub
 package access. The image entrypoint is
@@ -101,7 +103,7 @@ If Docker is already installed, copy and paste one of these commands:
 
 ```console
 # TLS scan
-docker run --rm docker.io/breachsafe/qureddy:latest scan tls mozilla.org
+docker run --rm docker.io/breachsafe/qureddy:latest scan tls badssl.com
 
 # SSH scan
 docker run --rm docker.io/breachsafe/qureddy:latest scan ssh github.com
@@ -117,7 +119,7 @@ TCP port 22 for SSH, or UDP port 500/4500 for IKE.
 If Docker Hub is unavailable, use the GHCR copy of the same release:
 
 ```bash
-docker run --rm ghcr.io/breachsafe/qureddy:latest scan tls mozilla.org
+docker run --rm ghcr.io/breachsafe/qureddy:latest scan tls badssl.com
 docker run --rm ghcr.io/breachsafe/qureddy:latest scan ssh github.com
 ```
 
@@ -158,13 +160,13 @@ For a browser-based TLS/SSH host that consumes QuReddy CBOM output, see
 
 Prefer to be prompted? [`examples/guided-scan.sh`](examples/guided-scan.sh) asks for the scan
 type, target, and an authorization confirmation, then runs the scan in Docker. Every prompt has
-a default, so pressing Enter through them scans `mozilla.org` over TLS and `github.com` over SSH:
+a default, so pressing Enter through them scans `badssl.com` over TLS and `github.com` over SSH:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/BreachSAFE/qureddy/main/examples/guided-scan.sh -o guided-scan.sh
 bash guided-scan.sh
 # Scan TLS, SSH, or both? [tls/ssh/both] (default: both):   <Enter>
-# Authorized to scan mozilla.org:443 over tls? [Y/n]:       <Enter>
+# Authorized to scan badssl.com:443 over tls? [Y/n]:         <Enter>
 # Authorized to scan github.com:22 over ssh? [Y/n]:         <Enter>
 ```
 
@@ -226,7 +228,7 @@ successful scan exits `0` even when it reports a vulnerable posture.
 
 ## 4. Prepare OpenSSL for TLS
 
-TLS scanning requires OpenSSL 3.5.7 LTS with the
+TLS scanning requires a supported OpenSSL 3.5.x LTS build with the
 `X25519MLKEM768` TLS group. LibreSSL is not supported.
 
 On macOS, Homebrew's `openssl@3.5` formula is a moving 3.5.x channel. Inspect
@@ -240,7 +242,7 @@ QUREDDY_OPENSSL_CANDIDATE="$(brew --prefix openssl@3.5)/bin/openssl"
 ```
 
 Export the candidate only when the executable and any explicitly reported
-`Library:` version are both exactly 3.5.7 and the group list contains
+`Library:` version are supported 3.5.x releases and the group list contains
 `X25519MLKEM768`:
 
 ```bash
@@ -249,7 +251,7 @@ qureddy scan tls --help
 ```
 
 If the formula has moved, use the repository's
-[checksum-pinned 3.5.7 source-build recipe](.github/actions/setup-openssl/action.yml)
+[checksum-pinned OpenSSL source-build recipe](.github/actions/setup-openssl/action.yml)
 or the [QuReddy container](docs/how-to/docker.md); do not bypass the version gate.
 
 Linux and Windows installations vary by distribution. Confirm the selected
@@ -388,7 +390,7 @@ operator's system unless the operator sends them elsewhere.
 
 - Python `>=3.14`
 - Network reachability to the named target
-- OpenSSL 3.5.7 LTS for TLS scans only
+- OpenSSL 3.5.x LTS for TLS scans only
 - Stock `ike-scan` for IKE scans only
 
 The clean-install matrix installs the wheel, source distribution, and pipx
