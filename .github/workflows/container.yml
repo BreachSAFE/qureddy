@@ -120,7 +120,9 @@ jobs:
       - name: Verify Theia artifact scans
         run: |
           set -euo pipefail
-          docker run --rm -v "$GITHUB_WORKSPACE:/scan:ro" qureddy-container:smoke \
+          fixture="$(mktemp -d)"
+          cp Dockerfile "$fixture/Dockerfile"
+          docker run --rm -v "$fixture:/scan:ro" qureddy-container:smoke \
             scan dir /scan > artifact-dir.cdx.json
           python -c 'import json; d=json.load(open("artifact-dir.cdx.json")); assert d["bomFormat"] == "CycloneDX"; assert isinstance(d["specVersion"], str)'
           docker run --rm --group-add 0 \
