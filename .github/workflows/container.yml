@@ -126,9 +126,11 @@ jobs:
           docker run --rm -v "$fixture:/scan:ro" qureddy-container:smoke \
             scan dir /scan > artifact-dir.cdx.json
           python -c 'import json; d=json.load(open("artifact-dir.cdx.json")); assert d["bomFormat"] == "CycloneDX"; assert isinstance(d["specVersion"], str)'
-          docker run --rm --group-add 0 \
+          docker pull alpine:latest
+          docker_gid="$(stat -c '%g' /var/run/docker.sock)"
+          docker run --rm --group-add "$docker_gid" \
             -v /var/run/docker.sock:/var/run/docker.sock:ro \
-            qureddy-container:smoke scan image qureddy-container:smoke --timeout 120 \
+            qureddy-container:smoke scan image alpine:latest --timeout 120 \
             > artifact-image.cdx.json
           python -c 'import json; d=json.load(open("artifact-image.cdx.json")); assert d["bomFormat"] == "CycloneDX"; assert isinstance(d["specVersion"], str)'
 

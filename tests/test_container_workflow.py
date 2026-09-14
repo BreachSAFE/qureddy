@@ -45,9 +45,10 @@ def test_container_smoke_executes_theia_artifact_scans() -> None:
     smoke = WORKFLOW[: WORKFLOW.index("\n  version:\n")]
 
     assert "scan dir /scan" in smoke
-    assert "scan image qureddy-container:smoke" in smoke
+    assert "scan image alpine:latest" in smoke
     assert "var/run/docker.sock:/var/run/docker.sock:ro" in smoke
-    assert "--group-add 0" in smoke
+    assert "docker_gid=\"$(stat -c '%g' /var/run/docker.sock)\"" in smoke
+    assert 'docker run --rm --group-add "$docker_gid"' in smoke
     assert 'd["bomFormat"] == "CycloneDX"' in smoke
 
 
