@@ -75,6 +75,14 @@ qureddy scan wallet Ler4HNAEfwYhBmGXcFP2Po1NpRUEiK8km2
 qureddy scan wallet 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
 
 \b
+# Inventory artifact files with the bundled Theia CBOM scanner.
+qureddy scan dir /opt/application
+
+\b
+# Inventory a container image (Docker socket access is required in Docker).
+qureddy scan image ghcr.io/example/application:latest
+
+\b
 # Write JSON, CBOM, JSONL, and Rich projections to one directory.
 qureddy scan tls badssl.com:443 --output-dir ./run
 
@@ -101,6 +109,8 @@ qureddy scan tls --help    # full options, examples, exit codes
 qureddy scan ssh --help    # SSH options, examples, exit codes
 qureddy scan ike --help    # IKE options, trust boundary, exit codes
 qureddy scan wallet --help # wallet options, formats, trust boundary, exit codes
+qureddy scan dir --help    # artifact directory CBOM options
+qureddy scan image --help  # container image CBOM options
 qureddy --version          # show version
 
 Project: {PROJECT_URL}
@@ -153,7 +163,9 @@ class _RootGroup(TyperGroup):
 app = typer.Typer(
     name="qureddy",
     cls=_RootGroup,
-    help=(f"{PROJECT_NAME} {PROJECT_VERSION} -- {DESCRIPTION}."),
+    help=(
+        f"{PROJECT_NAME} {PROJECT_VERSION} -- {DESCRIPTION} for endpoints, wallets, and artifacts."
+    ),
     epilog=_ROOT_EPILOG,
     no_args_is_help=True,
     add_completion=True,
@@ -170,7 +182,7 @@ scan_app = typer.Typer(
     # group, and the only line a user who doesn't read the epilog ever
     # sees on `qureddy --help`'s "Commands:" table. Now self-sufficient
     # without requiring the epilog below to explain what's being scanned.
-    help="Scan a TLS, SSH, or IKE endpoint, or a public wallet account, for post-quantum readiness.",
+    help="Scan TLS, SSH, and IKE endpoints; public wallets; or artifact directories/images.",
     epilog=_SCAN_EPILOG,
     no_args_is_help=True,
     rich_markup_mode=None,
