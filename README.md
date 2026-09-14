@@ -41,7 +41,7 @@ already present in a directory or container image.
 | TLS endpoint | handshake, certificate, key exchange, protocol hygiene | Rich, JSON, JSONL, CBOM |
 | SSH endpoint | banner, KEXINIT algorithms, host-key and authentication evidence | Rich, JSON, JSONL, CBOM |
 | IKE endpoint | responder modes, tool-reported transforms, NOTIFY responses | Rich, JSON, JSONL, CBOM |
-| EnXemble host | scan bundle and CISO evaluation | JSONL, JSON, CBOM |
+| Downstream consumer | scan bundle and CISO evaluation | JSONL, JSON, CBOM |
 
 <details>
 <summary>Try a real scan</summary>
@@ -52,7 +52,7 @@ docker run --rm ghcr.io/breachsafe/qureddy:latest scan ssh github.com --format j
 ```
 
 The first command renders the human report. The second emits one deterministic
-JSONL record per finding for CI, EnXemble, or another downstream consumer.
+JSONL record per finding for CI, a data pipeline, or another downstream consumer.
 
 </details>
 
