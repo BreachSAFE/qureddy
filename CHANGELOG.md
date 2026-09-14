@@ -55,8 +55,10 @@ versions follow [PEP 440](https://peps.python.org/pep-0440/).
 
 ### Added
 
-- Add the bounded Theia artifact-scanning adapter and bundle the pinned Theia
-  helper in the container image for CycloneDX CBOM generation ([PR #1026](https://github.com/BreachSAFE/qureddy/pull/1026)).
+- Add `qureddy scan dir PATH` and `qureddy scan image NAME:TAG` for artifact
+  discovery through the bundled, bounded Theia adapter. Each command emits
+  Theia's validated CycloneDX CBOM unchanged and keeps diagnostics on stderr.
+  The underlying adapter and container bundle landed in [PR #1026](https://github.com/BreachSAFE/qureddy/pull/1026).
 
 ## [0.9.30] - 2026-09-12
 
