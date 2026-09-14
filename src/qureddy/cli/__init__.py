@@ -25,6 +25,7 @@ from qureddy.cli import scan as scan  # command registration (see docstring)
 from qureddy.cli import ssh as ssh  # command registration (see docstring)
 from qureddy.cli import ike as ike  # command registration (see docstring)
 from qureddy.cli import wallet as wallet  # command registration (see docstring)
+from qureddy.cli import artifact as artifact  # command registration (see docstring)
 
 # isort: on
 from qureddy.cli.main import app, main

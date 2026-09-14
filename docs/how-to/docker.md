@@ -123,6 +123,7 @@ docker run --rm \
   --log-level trace dir /scan > scan.cdx.json 2> theia.trace.log
 
 docker run --rm \
+  --group-add "$(stat -c '%g' /var/run/docker.sock)" \
   -v /var/run/docker.sock:/var/run/docker.sock:ro \
   --entrypoint cbomkit-theia \
   docker.io/breachsafe/qureddy:latest \
@@ -130,9 +131,28 @@ docker run --rm \
 ```
 
 The Docker socket grants access to the host daemon; use it only for trusted
-inputs. Theia's trace diagnostics belong on stderr and the CBOM remains on
+inputs. On Linux, `--group-add` supplies the mounted socket's group to the
+unprivileged container user; Docker Desktop commonly reports group `0` (use
+`--group-add 0` there if the host `stat` command cannot read the socket group).
+Theia's trace diagnostics belong on stderr and the CBOM remains on
 stdout. QuReddy does not regenerate Theia's CycloneDX document. The future
-`qureddy scan image|dir` commands will reuse this same executable boundary.
+`qureddy scan image|dir` commands reuse this same executable boundary.
+Theia's `dir` mode is an artifact-directory scan, not source-code AST analysis;
+use CBOMkit's Sonar Cryptography integration for source-code scanning.
+
+The QuReddy command aliases the same boundary and writes the untouched CBOM to
+stdout:
+
+```bash
+docker run --rm -v "$PWD:/scan:ro" docker.io/breachsafe/qureddy:latest \
+  scan dir /scan > scan.cdx.json
+
+docker run --rm \
+  --group-add "$(stat -c '%g' /var/run/docker.sock)" \
+  -v /var/run/docker.sock:/var/run/docker.sock:ro \
+  docker.io/breachsafe/qureddy:latest \
+  scan image nginx --timeout 120 > scan.cdx.json
+```
 
 ## 6. Write JSON or CBOM output
 

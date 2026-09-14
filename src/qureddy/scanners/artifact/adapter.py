@@ -33,6 +33,7 @@ from qureddy.core.contracts import (
 from qureddy.scanners.common.process import run_bounded
 
 _DEFAULT_OUTPUT_LIMIT = 32 * 1024 * 1024
+_ERROR_DETAIL_LIMIT = 4096
 _IMAGE_REFERENCE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9./:@_-]{0,4095}$")
 
 
@@ -131,10 +132,15 @@ class CbomkitTheiaAdapter:
                 CollectionFailureKind.MALFORMED, "cbomkit-theia output exceeded limit"
             )
         if output.return_code != 0:
-            return self._failure(CollectionFailureKind.EXECUTION, "cbomkit-theia exited nonzero")
+            return self._failure(
+                CollectionFailureKind.EXECUTION,
+                _with_stderr_detail("cbomkit-theia exited nonzero", output.stderr),
+            )
         error = _validate_cbom(output.stdout)
         if error is not None:
-            return self._failure(CollectionFailureKind.MALFORMED, error)
+            return self._failure(
+                CollectionFailureKind.MALFORMED, _with_stderr_detail(error, output.stderr)
+            )
         return CollectionResult(
             collector=self.tool_id,
             collector_version=self.version,
@@ -185,3 +191,13 @@ def _validate_cbom(document: bytes) -> str | None:
     if not isinstance(payload.get("specVersion"), str):
         return "CycloneDX document has no specVersion"
     return None
+
+
+def _with_stderr_detail(message: str, stderr: bytes) -> str:
+    """Attach a bounded tool diagnostic without making it part of CBOM stdout."""
+    detail = stderr.decode("utf-8", errors="replace").strip()
+    if not detail:
+        return message
+    if len(detail) > _ERROR_DETAIL_LIMIT:
+        detail = f"{detail[:_ERROR_DETAIL_LIMIT]}… [truncated]"
+    return f"{message}; tool stderr: {detail}"

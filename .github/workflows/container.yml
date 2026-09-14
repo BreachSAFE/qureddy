@@ -20,7 +20,7 @@ on:
       version:
         description: Image version to publish
         required: true
-        default: 0.9.30
+        default: 0.9.31
       publish:
         description: Push the multi-architecture image to GHCR and Docker Hub
         required: true
@@ -117,6 +117,22 @@ jobs:
           python -c 'import json; d=json.load(open("ssh.json")); assert d["specVersion"] == "1.7"'
           docker run --rm qureddy-container:smoke scan tls badssl.com --format json > badssl.json
           python -c 'import json; d=json.load(open("badssl.json")); assert d["scan"]["status"] == "completed"; assert d["summary"]["failure_category"] is None'
+      - name: Verify Theia artifact scans
+        run: |
+          set -euo pipefail
+          fixture="$(mktemp -d)"
+          chmod 755 "$fixture"
+          cp Dockerfile "$fixture/Dockerfile"
+          docker run --rm -v "$fixture:/scan:ro" qureddy-container:smoke \
+            scan dir /scan > artifact-dir.cdx.json
+          python -c 'import json; d=json.load(open("artifact-dir.cdx.json")); assert d["bomFormat"] == "CycloneDX"; assert isinstance(d["specVersion"], str)'
+          docker pull alpine:latest
+          docker_gid="$(stat -c '%g' /var/run/docker.sock)"
+          docker run --rm --group-add "$docker_gid" \
+            -v /var/run/docker.sock:/var/run/docker.sock:ro \
+            qureddy-container:smoke scan image alpine:latest --timeout 120 \
+            > artifact-image.cdx.json
+          python -c 'import json; d=json.load(open("artifact-image.cdx.json")); assert d["bomFormat"] == "CycloneDX"; assert isinstance(d["specVersion"], str)'
 
   # Resolve the image version once, from the release tag on a `release` event
   # (strip the leading `v` from `vX.Y.Z`) or from the dispatch input otherwise.

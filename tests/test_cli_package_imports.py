@@ -53,9 +53,9 @@ def test_subcommands_registered_in_display_order() -> None:
     """Importing the package registers a stable display order for every subcommand.
 
     The endpoint scanners stay first, in the order they were added, and wallet
-    follows. `qureddy scan --help` lists commands in registration order, so this
+    plus artifact commands follow. `qureddy scan --help` lists commands in registration order, so this
     pins the listing a user sees.
     """
     scan_main = importlib.import_module("qureddy.cli.main")
     registered = [command.name for command in scan_main.scan_app.registered_commands]
-    assert registered == ["tls", "ssh", "ike", "wallet"]
+    assert registered == ["tls", "ssh", "ike", "wallet", "dir", "image"]

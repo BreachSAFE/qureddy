@@ -99,7 +99,39 @@ def test_nonzero_tool_exit_is_not_a_successful_empty_cbom(tmp_path: Path) -> Non
 
     assert result.failure is not None
     assert result.failure.kind is CollectionFailureKind.EXECUTION
+    assert "image backend unavailable" in result.failure.message
     assert result.artifact_cbom is None
+
+
+def test_empty_stdout_includes_bounded_tool_diagnostic(tmp_path: Path) -> None:
+    """An exit-zero empty document reports Theia's reason instead of masking it."""
+    directory = tmp_path / "input"
+    directory.mkdir()
+    tool = _tool(tmp_path, "echo MANIFEST_UNKNOWN >&2; exit 0")
+
+    result = CbomkitTheiaAdapter(str(tool)).run(
+        _source(SourceKind.CONTAINER_IMAGE, "registry.example/missing:latest"), timeout_seconds=2
+    )
+
+    assert result.failure is not None
+    assert result.failure.kind is CollectionFailureKind.MALFORMED
+    assert "stdout is not valid JSON" in result.failure.message
+    assert "MANIFEST_UNKNOWN" in result.failure.message
+
+
+def test_tool_diagnostic_is_bounded(tmp_path: Path) -> None:
+    """A noisy external tool cannot turn its bounded stderr into terminal spam."""
+    directory = tmp_path / "input"
+    directory.mkdir()
+    tool = _tool(tmp_path, "printf '%5000s' '' | tr ' ' x >&2; exit 0")
+
+    result = CbomkitTheiaAdapter(str(tool)).run(
+        _source(SourceKind.CONTAINER_IMAGE, "registry.example/missing:latest"), timeout_seconds=2
+    )
+
+    assert result.failure is not None
+    assert result.failure.message.endswith("… [truncated]")
+    assert len(result.failure.message) < 4200
 
 
 def test_output_limit_is_typed(tmp_path: Path) -> None:

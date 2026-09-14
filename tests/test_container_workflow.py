@@ -40,6 +40,18 @@ def test_container_smoke_executes_bundled_ike_scan() -> None:
     assert "test -r /usr/share/doc/ike-scan/copyright" in smoke
 
 
+def test_container_smoke_executes_theia_artifact_scans() -> None:
+    """CI must exercise both shipped Theia CLI modes in the built image."""
+    smoke = WORKFLOW[: WORKFLOW.index("\n  version:\n")]
+
+    assert "scan dir /scan" in smoke
+    assert "scan image alpine:latest" in smoke
+    assert "var/run/docker.sock:/var/run/docker.sock:ro" in smoke
+    assert "docker_gid=\"$(stat -c '%g' /var/run/docker.sock)\"" in smoke
+    assert 'docker run --rm --group-add "$docker_gid"' in smoke
+    assert 'd["bomFormat"] == "CycloneDX"' in smoke
+
+
 def test_container_build_passes_exact_source_revision() -> None:
     """The published image must receive the source revision it claims."""
     assert '--build-arg "QUREDDY_SOURCE_REVISION=${GITHUB_SHA}"' in WORKFLOW

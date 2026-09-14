@@ -14,12 +14,14 @@ installed help output.
 4. [`qureddy scan tls`](#4-qureddy-scan-tls)
 5. [`qureddy scan ike`](#5-qureddy-scan-ike)
 6. [`qureddy scan wallet`](#6-qureddy-scan-wallet)
-7. [Target syntax](#7-target-syntax)
-8. [Output formats](#8-output-formats)
-9. [Output streams](#9-output-streams)
-10. [Exit codes](#10-exit-codes)
-11. [Environment variables](#11-environment-variables)
-12. [Related documentation](#12-related-documentation)
+7. [`qureddy scan dir`](#7-qureddy-scan-dir)
+8. [`qureddy scan image`](#8-qureddy-scan-image)
+9. [Target syntax](#9-target-syntax)
+10. [Output formats](#10-output-formats)
+11. [Output streams](#11-output-streams)
+12. [Exit codes](#12-exit-codes)
+13. [Environment variables](#13-environment-variables)
+14. [Related documentation](#14-related-documentation)
 
 ## 1. Root command
 
@@ -59,6 +61,8 @@ qureddy scan [OPTIONS] COMMAND [ARGS]...
 | `ssh` | Scan an SSH or SFTP endpoint |
 | `ike` | Scan an IKE endpoint through stock `ike-scan` |
 | `wallet` | Scan a public Bitcoin, Litecoin, or Ethereum account |
+| `dir` | Scan artifact files in a directory with bundled `cbomkit-theia` |
+| `image` | Scan a container image with bundled `cbomkit-theia` |
 
 ## 3. `qureddy scan ssh`
 
@@ -68,7 +72,7 @@ qureddy scan ssh [OPTIONS] TARGET
 
 | Argument | Requirement |
 | --- | --- |
-| `TARGET` | Required SSH target; see [target syntax](#7-target-syntax) |
+| `TARGET` | Required SSH target; see [target syntax](#9-target-syntax) |
 
 | Option | Type | Default | Meaning |
 | --- | --- | --- | --- |
@@ -104,7 +108,7 @@ qureddy scan tls [OPTIONS] TARGET
 
 | Argument | Requirement |
 | --- | --- |
-| `TARGET` | Required TLS target; see [target syntax](#7-target-syntax) |
+| `TARGET` | Required TLS target; see [target syntax](#9-target-syntax) |
 
 | Option | Type | Default | Meaning |
 | --- | --- | --- | --- |
@@ -150,7 +154,7 @@ qureddy scan ike [OPTIONS] TARGET
 
 | Argument | Requirement |
 | --- | --- |
-| `TARGET` | Required IKE target; see [target syntax](#7-target-syntax) |
+| `TARGET` | Required IKE target; see [target syntax](#9-target-syntax) |
 
 | Option | Type | Default | Meaning |
 | --- | --- | --- | --- |
@@ -215,7 +219,59 @@ or infers a balance from a hard-coded value. Bitcoin, Litecoin, and Ethereum
 accounts use classical secp256k1 signatures and therefore report NIST level 0;
 the scan separately records whether public key material was observed.
 
-## 7. Target syntax
+## 7. `qureddy scan dir`
+
+```text
+qureddy scan dir [OPTIONS] REFERENCE
+```
+
+| Argument | Requirement |
+| --- | --- |
+| `REFERENCE` | Required readable directory containing artifact files |
+
+| Option | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--timeout` | integer `1..300` | `120` | Theia subprocess timeout in seconds |
+| `--output` | path | standard output | Write Theia's CycloneDX CBOM to a file; standard output stays empty |
+| `-h`, `--help` | flag | n/a | Print directory-scan help and exit |
+
+The command inventories artifact bytes with Theia and emits Theia's validated CycloneDX CBOM
+unchanged. It is not source-code AST analysis; use CBOMkit Sonar Cryptography for source code.
+Diagnostics are written to standard error.
+
+Example:
+
+```bash
+qureddy scan dir /opt/application --output application.cdx.json
+```
+
+## 8. `qureddy scan image`
+
+```text
+qureddy scan image [OPTIONS] REFERENCE
+```
+
+| Argument | Requirement |
+| --- | --- |
+| `REFERENCE` | Required OCI image reference such as `registry.example/app:tag` |
+
+| Option | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--timeout` | integer `1..300` | `120` | Theia subprocess timeout in seconds |
+| `--output` | path | standard output | Write Theia's CycloneDX CBOM to a file; standard output stays empty |
+| `-h`, `--help` | flag | n/a | Print image-scan help and exit |
+
+The command requires Theia's image runtime access. In the container, this normally means a
+read-only Docker socket mount plus access to its socket group. It emits Theia's validated
+CycloneDX CBOM unchanged and writes diagnostics to standard error.
+
+Example:
+
+```bash
+qureddy scan image ghcr.io/example/application:latest --output application.cdx.json
+```
+
+## 9. Target syntax
 
 ### TLS
 
@@ -264,7 +320,7 @@ ike://[2001:db8::1]:500
 IKE defaults to UDP/500. Credentials, paths, query strings, fragments, and foreign schemes are
 rejected before the external tool runs.
 
-## 8. Output formats
+## 10. Output formats
 
 | Value | Contract |
 | --- | --- |
@@ -284,7 +340,7 @@ same `scan.scan_id`, timestamps, target, findings, and evidence. The bundle
 contains `scan.json` (`qureddy.scan.v1`), `scan.cdx.json` (CycloneDX 1.7),
 `scan.jsonl` (one finding per line), and `scan.rich.txt` (human-readable output).
 
-## 9. Output streams
+## 11. Output streams
 
 Human output and machine documents go to standard output. Diagnostic logs and
 operator hints go to standard error.
@@ -299,7 +355,7 @@ Under shell-level `2>&1`, the default machine modes suppress the courtesy hint
 so the merged stream remains parseable. Explicit `-v`, `-vv`, or `-vvv` logs
 are diagnostics and must remain on a separate stream.
 
-## 10. Exit codes
+## 12. Exit codes
 
 | Code | TLS | SSH | IKE | Wallet | Meaning |
 | --- | --- | --- | --- | --- | --- |
@@ -311,7 +367,7 @@ are diagnostics and must remain on a separate stream.
 
 See the [exit code reference](exit-codes.md) for branching examples.
 
-## 11. Environment variables
+## 13. Environment variables
 
 | Variable | Scope | Meaning |
 | --- | --- | --- |
@@ -324,7 +380,7 @@ See the [exit code reference](exit-codes.md) for branching examples.
 OpenSSL selection order is `--openssl`, then `QUREDDY_OPENSSL`, then
 `openssl` on `PATH`.
 
-## 12. Related documentation
+## 14. Related documentation
 
 - [Install and troubleshoot](../how-to/install.md)
 - [Scan an IKE endpoint](../how-to/scan-ike.md)
