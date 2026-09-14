@@ -119,6 +119,21 @@ def test_empty_stdout_includes_bounded_tool_diagnostic(tmp_path: Path) -> None:
     assert "MANIFEST_UNKNOWN" in result.failure.message
 
 
+def test_tool_diagnostic_is_bounded(tmp_path: Path) -> None:
+    """A noisy external tool cannot turn its bounded stderr into terminal spam."""
+    directory = tmp_path / "input"
+    directory.mkdir()
+    tool = _tool(tmp_path, "printf '%5000s' '' | tr ' ' x >&2; exit 0")
+
+    result = CbomkitTheiaAdapter(str(tool)).run(
+        _source(SourceKind.CONTAINER_IMAGE, "registry.example/missing:latest"), timeout_seconds=2
+    )
+
+    assert result.failure is not None
+    assert result.failure.message.endswith("… [truncated]")
+    assert len(result.failure.message) < 4200
+
+
 def test_output_limit_is_typed(tmp_path: Path) -> None:
     directory = tmp_path / "input"
     directory.mkdir()
