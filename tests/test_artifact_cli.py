@@ -87,6 +87,7 @@ def test_artifact_command_reports_unwritable_output(
     theia_tool: Path, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     """An output filesystem error is reported as a usage failure."""
+
     def fail_write(self: Path, data: bytes) -> int:
         raise OSError(28, "No space left on device")
 
