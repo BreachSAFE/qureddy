@@ -11,6 +11,8 @@ import pytest
 from typer.testing import CliRunner
 
 from qureddy.cli import app
+from qureddy.cli import artifact as artifact_cli
+from qureddy.core.contracts import CollectionResult
 
 _RUNNER = CliRunner()
 _CBOM = b'{"bomFormat":"CycloneDX","specVersion":"1.7","components":[]}'
@@ -54,3 +56,45 @@ def test_artifact_command_rejects_missing_directory(theia_tool: Path) -> None:
 
     assert result.exit_code == 2
     assert "not a directory" in result.output
+
+
+def test_artifact_command_closes_diagnostic_stream_and_rejects_empty_cbom(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A successful tool call without a document remains a failed scan."""
+    closed = False
+
+    class LogStream:
+        def close(self) -> None:
+            nonlocal closed
+            closed = True
+
+    class EmptyAdapter:
+        def run(self, source: object, *, timeout_seconds: int) -> CollectionResult:
+            return CollectionResult(collector="test", collector_version="test")
+
+    monkeypatch.setattr(artifact_cli, "start_run_logging", lambda **_: LogStream())
+    monkeypatch.setattr(artifact_cli, "CbomkitTheiaAdapter", EmptyAdapter)
+
+    result = _RUNNER.invoke(app, ["scan", "dir", "."])
+
+    assert result.exit_code == 2
+    assert "returned no CBOM" in result.output
+    assert closed
+
+
+def test_artifact_command_reports_unwritable_output(
+    theia_tool: Path, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """An output filesystem error is reported as a usage failure."""
+    def fail_write(self: Path, data: bytes) -> int:
+        raise OSError(28, "No space left on device")
+
+    monkeypatch.setattr(Path, "write_bytes", fail_write)
+
+    result = _RUNNER.invoke(
+        app, ["scan", "dir", ".", "--output", str(tmp_path / "artifact.cdx.json")]
+    )
+
+    assert result.exit_code == 4
+    assert "cannot write --output file" in result.output
