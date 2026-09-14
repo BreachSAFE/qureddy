@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 """Artifact-surface scanners backed by external CBOM producers."""
 
+from __future__ import annotations
+
 from qureddy.scanners.artifact.adapter import CbomkitTheiaAdapter
 
 __all__ = ["CbomkitTheiaAdapter"]
