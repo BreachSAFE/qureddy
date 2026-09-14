@@ -109,7 +109,7 @@ Project: {PROJECT_URL}
 # Issue #266: `qureddy scan --help` names the available scanner commands and
 # explains why the CLI uses a scan command group.
 _SCAN_EPILOG = _colorize_help_text("""\
-qureddy scans TLS, SSH, IKE endpoints, and public wallet targets. "scan" is a command group so each
+qureddy scans TLS, SSH, IKE endpoints, public wallet targets, and artifact directories/images. "scan" is a command group so each
 scanner has its own options, output formats, and exit-code behavior.
 
 \b
@@ -117,6 +117,8 @@ qureddy scan tls <target>            # TLS endpoint (OpenSSL handshakes)
 qureddy scan ssh <target>            # SSH endpoint (reads the KEXINIT offer)
 qureddy scan ike <target>            # IKE endpoint (stock ike-scan adapter)
 qureddy scan wallet <address>       # public Bitcoin, Litecoin, or Ethereum account
+qureddy scan dir <path>              # artifact files in a directory (Theia CBOM)
+qureddy scan image <name:tag>        # container-image artifacts (Theia CBOM)
 qureddy scan tls --help              # full options, examples, exit codes
 qureddy scan ssh --help              # SSH options and examples
 qureddy scan ike --help              # IKE options and trust boundary
