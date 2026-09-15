@@ -17,6 +17,22 @@
 [![Docker Hub image](https://img.shields.io/badge/Docker%20Hub-qureddy-blue?style=flat-square&logo=docker)](https://hub.docker.com/r/breachsafe/qureddy)
 [![TestPyPI package](https://img.shields.io/badge/TestPyPI-breachsafe--qureddy-blue?style=flat-square&logo=pypi)](https://test.pypi.org/project/breachsafe-qureddy/)
 
+## Contents
+
+1. [1. Start here](#1-start-here)
+2. [2. What QuReddy scans](#2-what-qureddy-scans)
+3. [3. Install locally](#3-install-locally)
+4. [4. Docker and development](#4-docker-and-development)
+5. [5. Run the scan lanes](#5-run-the-scan-lanes)
+6. [6. Choose an output format](#6-choose-an-output-format)
+7. [7. Read the result correctly](#7-read-the-result-correctly)
+8. [8. Exit codes](#8-exit-codes)
+9. [9. Network and privacy](#9-network-and-privacy)
+10. [10. Documentation](#10-documentation)
+11. [11. Contributing](#11-contributing)
+12. [12. Open-source stack](#12-open-source-stack)
+13. [13. License](#13-license)
+
 QuReddy is an open-source field kit for finding out what cryptography is
 actually in use and assessing readiness for the age when quantum computers can
 attack today’s public-key cryptography. It helps you investigate the “harvest
@@ -32,23 +48,7 @@ CycloneDX CBOM when the result belongs in a cryptographic inventory. QuReddy
 connects observed algorithms, certificates, key establishment, legacy
 protocols, and post-quantum signals to the evidence collected during the run.
 
-## Contents
-
-1. [Start here](#start-here)
-2. [What QuReddy scans](#what-qureddy-scans)
-3. [Install locally](#install-locally)
-4. [Docker and development](#docker-and-development)
-5. [Run the scan lanes](#run-the-scan-lanes)
-6. [Choose an output format](#choose-an-output-format)
-7. [Read the result correctly](#read-the-result-correctly)
-8. [Exit codes](#exit-codes)
-9. [Network and privacy](#network-and-privacy)
-10. [Documentation](#documentation)
-11. [Contributing](#contributing)
-12. [Open-source stack](#open-source-stack)
-13. [License](#license)
-
-## Start here
+## 1. Start here
 
 The container is the quickest way to try QuReddy. It includes the runtime tools
 needed for TLS, IKE, and artifact scans, including two isolated OpenSSL
@@ -78,7 +78,7 @@ $ docker run --rm docker.io/breachsafe/qureddy:latest \
 Run `qureddy --help` for the short command map, or open the
 [CLI reference](docs/reference/cli.md) for every option and exit code.
 
-## What QuReddy scans
+## 2. What QuReddy scans
 
 | Target | Command | Evidence collected | Output |
 | --- | --- | --- | --- |
@@ -86,9 +86,9 @@ Run `qureddy --help` for the short command map, or open the
 | STARTTLS service | `scan tls --starttls SERVICE` | Cleartext upgrade followed by TLS evidence | Rich, JSON, JSONL, CBOM |
 | SSH or SFTP endpoint | `scan ssh` | Server identification, KEXINIT algorithms, host keys, and authentication methods | Rich, JSON, JSONL, CBOM |
 | IKE endpoint | `scan ike` | Responder discovery, transforms, modes, and explicit tool responses | Rich, JSON, JSONL, CBOM |
-| Wallet account | `scan wallet` | Public account state, key publication, signatures, nonce reuse, and indexer evidence | Rich, JSON, JSONL, CBOM |
 | Artifact directory | `scan dir` | Cryptographic artifacts discovered by CBOMkit Theia | CycloneDX CBOM |
 | Container image | `scan image` | Cryptographic artifacts discovered from image layers by CBOMkit Theia | CycloneDX CBOM |
+| Wallet account | `scan wallet` | Public account state, key publication, signatures, nonce reuse, and indexer evidence | Rich, JSON, JSONL, CBOM |
 
 The wallet lane supports Bitcoin, Litecoin, and Ethereum. STARTTLS supports
 SMTP, POP3, IMAP, FTP, XMPP, XMPP server, Telnet, IRC, MySQL, PostgreSQL,
@@ -96,7 +96,7 @@ LMTP, NNTP, Sieve, and LDAP. See the [STARTTLS profile
 reference](docs/reference/starttls-profiles.md) for service-specific ports and
 upgrade behavior.
 
-## Install locally
+## 3. Install locally
 
 QuReddy currently distributes the package through TestPyPI. Python 3.14 or
 newer is required:
@@ -123,7 +123,7 @@ scans require stock `ike-scan`. Directory and image scans require
 See [installation and troubleshooting](docs/how-to/install.md) for platform
 setup, executable discovery, and failure diagnostics.
 
-## Docker and development
+## 4. Docker and development
 
 GHCR is the canonical container registry, with Docker Hub as a mirror:
 
@@ -144,7 +144,7 @@ For a guided TLS or SSH run, use
 [`examples/guided-scan.sh`](examples/guided-scan.sh). It asks for the target
 and authorization before invoking the container.
 
-## Run the scan lanes
+## 5. Run the scan lanes
 
 ### TLS
 
@@ -197,17 +197,6 @@ pinned package. IKE results represent lower-trust responder discovery and
 tool-reported transforms. Run probes only against systems you are authorized
 to test.
 
-### Wallets
-
-```bash
-qureddy scan wallet 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa
-qureddy scan wallet Ler4HNAEfwYhBmGXcFP2Po1NpRUEiK8km2 --type litecoin
-qureddy scan wallet 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
-```
-
-Wallet scans query the configured public indexer or RPC endpoint and inspect
-published account data.
-
 ### Directories and images
 
 Directory scans pass local artifact files to Theia:
@@ -230,24 +219,35 @@ Both artifact commands emit Theia's CycloneDX CBOM to standard output and
 write diagnostics to standard error. They preserve the CBOM document produced
 by Theia, including its `specVersion` and component model.
 
-## Choose an output format
+### Wallets
+
+```bash
+qureddy scan wallet 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa
+qureddy scan wallet Ler4HNAEfwYhBmGXcFP2Po1NpRUEiK8km2 --type litecoin
+qureddy scan wallet 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
+```
+
+Wallet scans query the configured public indexer or RPC endpoint and inspect
+published account data.
+
+## 6. Choose an output format
 
 Network and wallet scans derive every projection from one canonical scan result:
 
 ```bash
-# Human-readable terminal report
+### Human-readable terminal report
 qureddy scan ssh github.com --format rich
 
-# Complete QuReddy scan document
+### Complete QuReddy scan document
 qureddy scan ssh github.com --format json > scan.json
 
-# One finding record per line, followed by a summary record
+### One finding record per line, followed by a summary record
 qureddy scan ssh github.com --format jsonl > scan.jsonl
 
-# CycloneDX 1.7 cryptographic inventory
+### CycloneDX 1.7 cryptographic inventory
 qureddy scan ssh github.com --format cbom > scan.cdx.json
 
-# Write all four projections from one scan
+### Write all four projections from one scan
 qureddy scan ssh github.com --output-dir evidence/github-ssh
 ```
 
@@ -263,7 +263,7 @@ lane forwards Theia's own CycloneDX document. See the
 [CBOM reference](docs/reference/cbom.md) for the exact schemas and evidence
 model.
 
-## Read the result correctly
+## 7. Read the result correctly
 
 QuReddy reports observations, local scanner capabilities, findings, and
 interpretations as separate parts of a result. A finding can identify weak or
@@ -275,7 +275,7 @@ The scan describes the evidence collected from the selected target. TLS
 certificate trust and revocation, SSH authentication, and an authenticated IKE
 tunnel require evidence outside the corresponding discovery probe.
 
-## Exit codes
+## 8. Exit codes
 
 | Code | Meaning |
 | ---: | --- |
@@ -289,7 +289,7 @@ Scripts should branch on the exit code and then inspect the structured result.
 See the [exit-code reference](docs/reference/exit-codes.md) for scanner-specific
 behavior.
 
-## Network and privacy
+## 9. Network and privacy
 
 QuReddy connects to the target named on the command line. TLS, SSH, and IKE
 scans use bounded probes; wallet scans contact the configured indexer or RPC
@@ -299,7 +299,7 @@ operator's system unless the operator sends them elsewhere.
 
 Scan only systems and accounts you are authorized to inspect.
 
-## Documentation
+## 10. Documentation
 
 - [Documentation index](docs/README.md)
 - [CLI reference](docs/reference/cli.md)
@@ -311,14 +311,14 @@ Scan only systems and accounts you are authorized to inspect.
 - [Security policy](SECURITY.md)
 - [Issue tracker](https://github.com/breachsafe/qureddy/issues)
 
-## Contributing
+## 11. Contributing
 
 Read [`CONTRIBUTING.md`](CONTRIBUTING.md) and the
 [contributor documentation](docs/contributors/). Changes should preserve the
 single canonical result model, bounded subprocess behavior, output parity, and
 the evidence contracts documented in this repository.
 
-## Open-source stack
+## 12. Open-source stack
 
 <p align="center">
   <a href="https://www.python.org/"><img src="https://cdn.simpleicons.org/python/3776AB" alt="Python" width="48" height="48"></a>&nbsp;&nbsp;
@@ -332,7 +332,7 @@ CLI: [Click](https://click.palletsprojects.com/) and
 [CycloneDX CBOM](https://cyclonedx.org/) · Tooling:
 [uv](https://docs.astral.sh/uv/)
 
-## License
+## 13. License
 
 Apache License 2.0. See [`LICENSE`](LICENSE), [`LICENSES/`](LICENSES/), and
 [`REUSE.toml`](REUSE.toml).
