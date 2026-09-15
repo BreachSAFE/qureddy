@@ -18,9 +18,14 @@
 [![TestPyPI package](https://img.shields.io/badge/TestPyPI-breachsafe--qureddy-blue?style=flat-square&logo=pypi)](https://test.pypi.org/project/breachsafe-qureddy/)
 
 QuReddy is an open-source field kit for finding out what cryptography is
-actually in use. Point it at a hostname, SSH server, VPN gateway, wallet
-address, artifact directory, or container image, and QuReddy probes the target,
-records the evidence, and shows what it found.
+actually in use and assessing readiness for the age when quantum computers can
+attack today’s public-key cryptography. It helps you investigate the “harvest
+now, decrypt later” risk: data that can be collected today and decrypted when
+more capable quantum machines arrive.
+
+Point QuReddy at a hostname, SSH server, VPN gateway, wallet address, artifact
+directory, or container image. It probes the target, records the evidence, and
+shows what it found.
 
 Use Rich output while investigating, JSON or JSONL in automation, and
 CycloneDX CBOM when the result belongs in a cryptographic inventory. QuReddy
