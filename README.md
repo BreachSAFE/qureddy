@@ -159,6 +159,15 @@ so the combined scan covers both current post-quantum capability and older
 weak-cipher exposure. The legacy executable is used only for evidence
 collection; it does not replace the modern TLS runtime.
 
+The compatibility lane is designed to widen suite coverage across the families
+that modern OpenSSL builds commonly remove or disable: RC4, single DES, 3DES,
+EXPORT, NULL encryption, and older suites such as SEED, IDEA, and CAMELLIA.
+QuReddy records the exact suite a target accepts, the protocol version, the
+runtime that produced the evidence, and the associated finding severity and
+CWE when one is defined. Coverage remains target- and runtime-dependent; the
+result reports the suites actually observed rather than claiming a suite that
+was only listed locally.
+
 ### SSH
 
 ```bash
