@@ -160,11 +160,11 @@ weak-cipher exposure. The legacy executable supplies compatibility evidence;
 the modern TLS runtime remains the primary collector.
 
 The compatibility lane is designed to widen suite coverage across the families
-that modern OpenSSL builds commonly remove or disable. Its live coverage
-includes RC4, single DES, 3DES, EXPORT, NULL encryption, SEED, IDEA, CAMELLIA,
-and ARIA. The shared cipher catalog also recognizes AES, ChaCha20, RC4/Arcfour,
-RC2, DES/3DES, NULL, EXPORT, SEED, IDEA, Camellia, ARIA, Twofish, Serpent,
-CAST-128, Blowfish, Rijndael, and GOST spellings.
+that modern OpenSSL builds commonly remove or disable. The live badssl.com
+coverage exercises RC4, 3DES, NULL encryption, SEED, and CAMELLIA. The shared
+cipher catalog also recognizes AES, ChaCha20, RC4/Arcfour, single DES, 3DES,
+RC2, NULL, EXPORT, SEED, IDEA, Camellia, ARIA, Twofish, Serpent, CAST-128,
+Blowfish, Rijndael, and GOST spellings.
 
 QuReddy records the exact suite a target accepts, the protocol version, the
 runtime that produced the evidence, and the associated finding severity and
