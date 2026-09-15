@@ -160,8 +160,8 @@ TLS scanning uses the selected OpenSSL 3.5.x LTS executable. Set
 the one you want. QuReddy also runs an isolated legacy OpenSSL 1.0.2u lane
 when `QUREDDY_LEGACY_OPENSSL` is available. That fallback exposes historical
 TLS protocol and cipher suites that the modern OpenSSL build no longer offers,
-so the combined scan covers both current post-quantum capability and older
-weak-cipher exposure. The legacy executable supplies compatibility evidence;
+so a configured run can include both current post-quantum capability and older
+weak-cipher evidence. The run details identify the legacy runtime separately;
 the modern TLS runtime remains the primary collector.
 
 The compatibility lane is designed to widen suite coverage across the families
