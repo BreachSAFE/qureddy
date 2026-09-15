@@ -15,5 +15,6 @@ specific task. Return to [the documentation index](../README.md).
 4. [Scan an IKE endpoint](scan-ike.md)
 5. [Scan an IP target with a custom SNI](scan-ip-with-sni.md)
 6. [How to generate a CBOM](generate-a-cbom.md)
-7. [Capture machine-readable output for CI](json-output-for-ci.md)
-8. [Run QuReddy with a GUI](run-with-a-gui.md)
+7. [Use cases and live examples](use-cases.md)
+8. [Capture machine-readable output for CI](json-output-for-ci.md)
+9. [Run QuReddy with a GUI](run-with-a-gui.md)

@@ -55,6 +55,7 @@ Task-oriented recipes for someone who already knows the basics.
 - [Scan an IKE endpoint](how-to/scan-ike.md)
 - [Capture machine-readable output for CI](how-to/json-output-for-ci.md)
 - [Generate a CBOM](how-to/generate-a-cbom.md)
+- [Use cases and live examples](how-to/use-cases.md)
 - [Run QuReddy with a GUI](how-to/run-with-a-gui.md)
 
 ### [Reference](reference/)
