@@ -34,9 +34,9 @@ The document is native CycloneDX throughout (see
 1. Crypto inventory. Observed algorithms, protocols, and the certificate are
    real CycloneDX `components` with native `cryptoProperties`
    (`algorithmProperties`/`protocolProperties`/`certificateProperties`) and a
-   native `provides` graph. Any CycloneDX 1.7, crypto-aware tool (for example IBM
-   CBOMkit or Dependency-Track's crypto support) understands this layer, including
-   the post-quantum posture, with no CVE identifiers required.
+   native `provides` graph. CycloneDX 1.7 parsers can read this layer, and
+   crypto-aware consumers such as IBM CBOMkit or Dependency-Track can interpret
+   its crypto properties and post-quantum posture. No CVE identifier is required.
 2. Findings and evidence, also native (0.2.23, #287). Each observation is attached
    to the asset it describes as `component.evidence.occurrences`; each finding is a
    top-level `annotation` whose `subjects` link to that asset, carrying the title and
@@ -46,12 +46,12 @@ The document is native CycloneDX throughout (see
 3. A small `qureddy:`-namespaced `metadata.properties` layer for scan, target, and
    tool provenance only.
 
-Consequences: the document parses in every CycloneDX 1.7 tool; the inventory,
-evidence occurrences, and annotations are natively understood; a QuReddy-aware
-consumer such as Qurum additionally reads the verdict properties as fields rather
-than parsing prose. `properties`/`annotations`/`occurrences` are all valid
-CycloneDX, so a tool that ignores the `qureddy:` verdict keys never fails
-ingestion. Because `cryptoProperties` is CycloneDX 1.6+ and this document is 1.7,
+Consequences: the document uses CycloneDX 1.7 structures for the inventory,
+evidence occurrences, and annotations; a QuReddy-aware consumer such as Qurum
+additionally reads the verdict properties as fields rather than parsing prose.
+`properties`/`annotations`/`occurrences` are valid CycloneDX structures; the
+`qureddy:` fields add producer-specific verdict and provenance data. Because
+`cryptoProperties` is CycloneDX 1.6+ and this document is 1.7,
 tooling pinned to 1.6 or earlier will not accept it. The full scan report is also
 available in `--format json`; Prowler and TAO consume that report
 (`qureddy.scan.v1`), not the CBOM.

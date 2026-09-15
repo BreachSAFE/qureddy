@@ -68,8 +68,8 @@ separate flat `qureddy:` findings/evidence dump.
    (`qureddy:scan.*`, `qureddy:target.*`, `qureddy:openssl.*`, including the
    run-level `qureddy:scan.readiness` and `qureddy:scan.status`) remain as
    `qureddy:`-namespaced `metadata.properties`. `properties` is a first-class
-   CycloneDX extension point, so these keep the document valid and are ignored
-   gracefully by any tool that does not understand them.
+   CycloneDX extension point, so these remain producer-specific metadata while
+   the document retains its CycloneDX structure.
 
 Content addressing is opt-in: `--deterministic` omits the per-run identity fields
 (serialNumber, metadata timestamp, scan id and timing, evidence duration, the
@@ -78,12 +78,12 @@ host-specific OpenSSL path, retry-varying attempt count) and pins every annotati
 
 ## 3. What a consumer can rely on
 
-- The document is valid CycloneDX 1.7 and parses in every 1.7 tool. There is no
-  tool it breaks; worst case for an unaware tool is that the annotations,
-  occurrences, and `qureddy:` verdict properties are inert, never that ingestion
-  fails.
-- Crypto-aware tools understand the full crypto inventory and post-quantum posture
-  natively, with no CVE identifiers required.
+- The document is valid CycloneDX 1.7. Its inventory, evidence occurrences, and
+  annotations use the corresponding CycloneDX structures; `qureddy:` properties
+  carry QuReddy-specific verdict and provenance fields.
+- CycloneDX consumers that implement the crypto extension can interpret the
+  native crypto inventory and post-quantum fields. CVE identifiers are not
+  required for this inventory.
 - Findings, evidence, and the machine verdict are native CycloneDX: findings are
   top-level annotations, evidence is occurrences on the asset, and the verdict is
   queryable `qureddy:` properties on the subject component. A generic tool that does

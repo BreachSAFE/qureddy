@@ -39,7 +39,7 @@ target, local-dependency, usage, or internal failure.
 IKE scanning requires stock `ike-scan` and emits low-confidence inventory evidence:
 
 ```bash
-qureddy scan ike vpn.example.com --nat-t --format cbom > vpn-ike.cbom.json
+qureddy scan ike netherlands.hide.me --nat-t --format cbom > vpn-ike.cbom.json
 ```
 
 The CBOM inventories tool-reported IKE protocol and algorithm assets. It does not claim

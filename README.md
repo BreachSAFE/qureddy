@@ -18,31 +18,30 @@
 [![TestPyPI package](https://img.shields.io/badge/TestPyPI-breachsafe--qureddy-blue?style=flat-square&logo=pypi)](https://test.pypi.org/project/breachsafe-qureddy/)
 
 QuReddy is an open-source command-line scanner for post-quantum readiness and
-cryptographic inventory. It records the protocol and cryptographic evidence that a
-target exposes to a client, then reports the observed posture with its limits intact.
+cryptographic inventory. It collects evidence from the target, records where
+each value came from, and reports the resulting posture together with the
+coverage limits that affect the result.
 
-TLS scans use a supported OpenSSL 3.5.x LTS binary. SSH scans read the server's
-cleartext KEXINIT offer directly. IKE scans use stock `ike-scan` as a lower-trust
-discovery backend. Wallet scans query configured public indexers. Directory and
-container-image scans use bundled `cbomkit-theia` for cryptographic asset discovery;
-image scans require Docker socket access at runtime, as documented in the Docker guide.
-
-Theia is not a source-code AST scanner. For source-code cryptography analysis,
-use the CBOMkit Sonar Cryptography integration; Theia inventories artifacts
-already present in a directory or container image.
+Each scan lane uses the collector that fits its target. TLS uses a supported
+OpenSSL 3.5.x LTS binary. SSH reads the server's identification and KEXINIT
+offer. IKE uses stock `ike-scan` for lower-trust discovery. Wallet scans query
+the configured public indexer or RPC endpoint. Directory and container-image
+scans pass artifact bytes to the bundled `cbomkit-theia` collector; image scans
+also require Docker socket access at runtime. The [Docker guide](docs/how-to/docker.md)
+shows the required mounts and trust boundary.
 
 > **Tip:** Start with the [Docker quickstart](#1-quickstart-with-docker). It includes
-> the pinned OpenSSL runtime and keeps the host setup small.
+> a verified OpenSSL runtime and keeps host setup small.
 
 ## At a glance
 
-| Target | Command | QuReddy observes | Useful outputs |
+| Target | Command | QuReddy observes | Output |
 | --- | --- | --- | --- |
 | TLS endpoint | `scan tls` | handshake, certificate, key exchange, protocol hygiene | Rich, JSON, JSONL, CBOM |
 | SSH endpoint | `scan ssh` | banner, KEXINIT algorithms, host-key and authentication evidence | Rich, JSON, JSONL, CBOM |
 | IKE endpoint | `scan ike` | responder modes, tool-reported transforms, NOTIFY responses | Rich, JSON, JSONL, CBOM |
-| Directory | `scan dir` | artifact files through CBOMkit Theia | Rich, JSON, JSONL, CBOM |
-| Container image | `scan image` | image artifacts through CBOMkit Theia | Rich, JSON, JSONL, CBOM |
+| Directory | `scan dir` | artifact files through CBOMkit Theia | CycloneDX CBOM |
+| Container image | `scan image` | image artifacts through CBOMkit Theia | CycloneDX CBOM |
 | Wallet address | `scan wallet` | public indexer observations and cryptographic metadata | Rich, JSON, JSONL, CBOM |
 
 <details>
@@ -79,15 +78,16 @@ shows which of your TLS, SSH, and IKE endpoints expose classical key establishme
 6. [Prepare OpenSSL for TLS](#4-prepare-openssl-for-tls)
 7. [Run the first TLS scan](#5-run-the-first-tls-scan)
 8. [Run an IKE scan](#6-run-an-ike-scan)
-9. [Write JSON, JSONL, CBOM, or a bundle](#7-write-json-jsonl-cbom-or-a-bundle)
-10. [Interpret the evidence](#8-interpret-the-evidence)
-11. [Exit codes](#9-exit-codes)
-12. [Network and privacy scope](#10-network-and-privacy-scope)
-13. [Requirements](#11-requirements)
-14. [Documentation and support](#12-documentation-and-support)
-15. [Contributing](#13-contributing)
-16. [Open-source stack](#open-source-stack)
-17. [License](#14-license)
+9. [Scan an artifact directory or container image](#7-scan-an-artifact-directory-or-container-image)
+10. [Write JSON, JSONL, CBOM, or a bundle](#8-write-json-jsonl-cbom-or-a-bundle)
+11. [Interpret the evidence](#9-interpret-the-evidence)
+12. [Exit codes](#10-exit-codes)
+13. [Network and privacy scope](#11-network-and-privacy-scope)
+14. [Requirements](#12-requirements)
+15. [Documentation and support](#13-documentation-and-support)
+16. [Contributing](#14-contributing)
+17. [Open-source stack](#open-source-stack)
+18. [License](#15-license)
 
 ## 1. Quickstart with Docker
 
@@ -109,7 +109,7 @@ docker run --rm docker.io/breachsafe/qureddy:latest scan tls badssl.com
 docker run --rm docker.io/breachsafe/qureddy:latest scan ssh github.com
 
 # IKE scan
-docker run --rm docker.io/breachsafe/qureddy:latest scan ike vpn.example.com
+docker run --rm docker.io/breachsafe/qureddy:latest scan ike netherlands.hide.me
 ```
 
 Docker downloads the image automatically. No Python or OpenSSL installation is
@@ -129,7 +129,7 @@ limits to unauthenticated pulls.
 Each command needs outbound network access to the named target: TCP port 443 for
 the TLS example, TCP port 22 for the SSH example. Add `--format json`,
 `--format jsonl`, or `--format cbom` for machine output, as shown in
-[section 7](#7-write-json-jsonl-cbom-or-a-bundle).
+[section 8](#8-write-json-jsonl-cbom-or-a-bundle).
 
 For reproducible deployments, pin an immutable reference instead of `:latest`.
 Use an explicit version tag, or preferably a `@sha256:` digest:
@@ -277,8 +277,8 @@ qureddy scan tls pq.cloudflareresearch.com
 
 A TLS scan separately checks hybrid TLS 1.3 key exchange, a classical TLS 1.3
 control, legacy TLS protocol offers, and the leaf certificate signature
-algorithm. The scan does not validate certificate trust, revocation, or the
-remote software implementation.
+algorithm. Certificate trust, revocation, and remote software identity are
+outside this scan's evidence scope.
 
 For an IP target that requires Server Name Indication (SNI):
 
@@ -294,16 +294,47 @@ test:
 
 ```bash
 ike-scan --version
-qureddy scan ike vpn.example.com --nat-t
-docker run --rm ghcr.io/breachsafe/qureddy:latest scan ike vpn.example.com --nat-t
+qureddy scan ike netherlands.hide.me --nat-t
+docker run --rm ghcr.io/breachsafe/qureddy:latest scan ike netherlands.hide.me --nat-t
 ```
 
-The backend records lower-trust, tool-reported discovery evidence. It does not claim a
-bound accepted proposal, authenticated tunnel, Child-SA/ESP/AH posture, favorable
-post-quantum readiness, or HNDL protection. Overall IPsec HNDL exposure remains unknown.
+The backend records lower-trust, tool-reported discovery evidence. Its scope is
+responder discovery: accepted proposals, authentication, Child-SA/ESP/AH
+posture, post-quantum readiness, and HNDL protection require additional
+evidence. Overall IPsec HNDL exposure remains unknown.
 See [Scan an IKE endpoint](docs/how-to/scan-ike.md) for the exact limits and options.
 
-## 7. Write JSON, JSONL, CBOM, or a bundle
+## 7. Scan an artifact directory or container image
+
+Use `scan dir` to inspect files that already exist in a directory. Use
+`scan image` to inspect the contents of a container image through the Docker
+daemon. Both commands invoke the bundled `cbomkit-theia` collector and write
+the collector's CycloneDX CBOM to standard output. This lane has a CBOM-only
+output contract; JSON, JSONL, and Rich belong to endpoint and wallet scans.
+
+Directory scan:
+
+```bash
+qureddy scan dir /opt/homebrew/opt/openssl@3.5 --timeout 120 \
+  --output openssl.cdx.json
+```
+
+Container-image scan:
+
+```bash
+docker run --rm \
+  --group-add "$(stat -c '%g' /var/run/docker.sock)" \
+  -v /var/run/docker.sock:/var/run/docker.sock:ro \
+  docker.io/breachsafe/qureddy:latest \
+  scan image nginx:latest --timeout 120 > nginx.cdx.json
+```
+
+The local directory must contain artifacts that the Theia plugins can inspect.
+The image command needs access to the Docker socket because the collector reads
+image layers from the daemon. Treat that socket as equivalent to host-daemon
+access.
+
+## 8. Write JSON, JSONL, CBOM, or a bundle
 
 Use JSON for QuReddy's complete scan result:
 
@@ -334,8 +365,8 @@ qureddy scan ssh github.com --output-dir evidence/github-ssh
 The directory contains `scan.json`, `scan.jsonl`, `scan.cdx.json`, and
 `scan.rich.txt`. Bundle mode cannot be combined with `--output`.
 
-The crypto assets use native CycloneDX `cryptoProperties`, so any CycloneDX 1.7
-crypto-aware tool understands the inventory and post-quantum posture. QuReddy's
+The crypto assets use native CycloneDX `cryptoProperties`, so CycloneDX 1.7
+tools that implement the crypto extension can consume the inventory. QuReddy's
 interpretation and provenance are native CycloneDX too: evidence is
 `component.evidence.occurrences`, findings are top-level `annotations`, and each
 finding's verdict is `qureddy:`-namespaced `properties` on the subject component;
@@ -352,7 +383,7 @@ See [generate and validate a CBOM](docs/how-to/generate-a-cbom.md),
 [CBOM output](docs/reference/cbom.md)
 for the exact contracts.
 
-## 8. Interpret the evidence
+## 9. Interpret the evidence
 
 QuReddy separates four kinds of statement:
 
@@ -362,7 +393,7 @@ QuReddy separates four kinds of statement:
 - A finding interprets one or more observations under a named rule.
 - `unknown` or `not_testable` preserves a missing or failed observation.
 
-## 9. Exit codes
+## 10. Exit codes
 
 | Code | Meaning | Scanner |
 | --- | --- | --- |
@@ -375,18 +406,19 @@ QuReddy separates four kinds of statement:
 Scripts must branch on the exit code instead of treating a readiness finding
 as process failure. See the [exit code reference](docs/reference/exit-codes.md).
 
-## 10. Network and privacy scope
+## 11. Network and privacy scope
 
 QuReddy connects only to the target named on the command line. TLS scans make
 bounded TLS handshakes. SSH scans read the server identification and KEXINIT
 offer without authenticating or opening an SSH session. IKE scans invoke a bounded
 local `ike-scan` process and send unauthenticated discovery probes to UDP/500 or UDP/4500.
 
-The scanner does not change the target, send telemetry, store scan history, or
-contact a BreachSAFE service. Redirected JSON and CBOM files remain on the
-operator's system unless the operator sends them elsewhere.
+QuReddy's network activity is limited to the target named on the command line;
+it sends no telemetry and contacts no BreachSAFE service. Scan history and
+redirected JSON or CBOM files remain on the operator's system unless the
+operator sends them elsewhere.
 
-## 11. Requirements
+## 12. Requirements
 
 - Python `>=3.14`
 - Network reachability to the named target
@@ -399,7 +431,7 @@ Platform support does not imply that every operating system package repository
 supplies a suitable OpenSSL build; the container bundles a verified one and is
 Linux.
 
-## 12. Documentation and support
+## 13. Documentation and support
 
 - [Documentation index](docs/README.md)
 - [CLI reference](docs/reference/cli.md)
@@ -413,7 +445,7 @@ Do not file security vulnerabilities in the public issue tracker. Follow
 [`SECURITY.md`](SECURITY.md)
 for private reporting.
 
-## 13. Contributing
+## 14. Contributing
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md)
 and the
@@ -439,7 +471,7 @@ artifact checks.
   &nbsp;|&nbsp; Tooling: <a href="https://docs.astral.sh/uv/">uv</a>
 </p>
 
-## 14. License
+## 15. License
 
 Apache License 2.0 (OSI-approved open source). See [`LICENSE`](LICENSE),
 [`LICENSES/`](LICENSES/), and [`REUSE.toml`](REUSE.toml).

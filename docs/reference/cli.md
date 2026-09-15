@@ -243,8 +243,10 @@ the copy found on `PATH`. The command emits CycloneDX only; diagnostics remain
 on standard error.
 
 The command inventories artifact bytes with Theia and emits Theia's validated CycloneDX CBOM
-unchanged. It is not source-code AST analysis; use CBOMkit Sonar Cryptography for source code.
-Diagnostics are written to standard error.
+unchanged. Diagnostics are written to standard error.
+
+The artifact lane preserves the `specVersion` and component model supplied by
+Theia. It does not apply QuReddy's endpoint CBOM renderer.
 
 Example:
 
@@ -337,7 +339,7 @@ rejected before the external tool runs.
 | --- | --- |
 | `rich` | Human terminal report with optional color |
 | `json` | QuReddy scan document with schema version `qureddy.scan.v1` |
-| `cbom` | CycloneDX 1.7 CBOM containing positively observed cryptographic assets |
+| `cbom` | CycloneDX 1.7 CBOM containing positively observed cryptographic assets for endpoint and wallet scans |
 
 `json` and `cbom` are indented by default. `jsonl` emits one finding object per
 line with stable `finding_hash` identity. `--compact` minifies either to a

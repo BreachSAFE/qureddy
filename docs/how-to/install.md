@@ -349,7 +349,7 @@ QuReddy could not interpret safely. Confirm UDP reachability to the target,
 then inspect process diagnostics:
 
 ```bash
-qureddy scan ike vpn.example.com --nat-t -vv
+qureddy scan ike netherlands.hide.me --nat-t -vv
 ```
 
 ### IKE scan exits 3
@@ -360,7 +360,7 @@ explicitly:
 
 ```bash
 ike-scan --version
-qureddy scan ike vpn.example.com --ike-scan /absolute/path/to/ike-scan
+qureddy scan ike netherlands.hide.me --ike-scan /absolute/path/to/ike-scan
 ```
 
 Direct probes bind UDP source port `500`; NAT-T probes bind source port `4500`.

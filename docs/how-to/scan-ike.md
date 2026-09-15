@@ -26,8 +26,9 @@ ike-scan --version
 qureddy scan ike --help
 ```
 
-The working-tree acceptance test uses `ike-scan 1.9.5`. The QuReddy wheel and current container do
-not bundle the GPL-licensed executable.
+The working-tree acceptance test uses `ike-scan 1.9.5`. The Python package
+requires a local `ike-scan`; the QuReddy container includes the pinned Debian
+package.
 
 Direct IKE probes use UDP source port 500 because many gateways reject requests
 from an ephemeral source port. On platforms that restrict ports below 1024, grant
@@ -38,7 +39,7 @@ appropriate privilege. NAT-T probes default to source port 4500. Use
 If the executable is not on `PATH`, select it explicitly:
 
 ```bash
-qureddy scan ike vpn.example.com --ike-scan /absolute/path/to/ike-scan
+qureddy scan ike netherlands.hide.me --ike-scan /absolute/path/to/ike-scan
 ```
 
 ## 2. Run a direct scan
@@ -46,13 +47,13 @@ qureddy scan ike vpn.example.com --ike-scan /absolute/path/to/ike-scan
 The default target port is UDP/500:
 
 ```bash
-qureddy scan ike vpn.example.com
+qureddy scan ike netherlands.hide.me
 ```
 
 Use an explicit target port when required:
 
 ```bash
-qureddy scan ike ike://vpn.example.com:500
+qureddy scan ike ike://netherlands.hide.me:500
 ```
 
 ## 3. Probe NAT-T
@@ -61,7 +62,7 @@ Use `--nat-t` to probe RFC 3947 framing on UDP/4500 first. QuReddy probes the ta
 individual exchange mode only when the NAT-T probe did not return an observed responder record.
 
 ```bash
-qureddy scan ike vpn.example.com --nat-t
+qureddy scan ike netherlands.hide.me --nat-t
 ```
 
 ## 4. Write machine output
@@ -69,10 +70,10 @@ qureddy scan ike vpn.example.com --nat-t
 All formats derive from one canonical scan result:
 
 ```bash
-qureddy scan ike vpn.example.com --nat-t --format json > vpn.json
-qureddy scan ike vpn.example.com --nat-t --format jsonl > vpn.jsonl
-qureddy scan ike vpn.example.com --nat-t --format cbom > vpn.cdx.json
-qureddy scan ike vpn.example.com --nat-t --output-dir evidence/vpn
+qureddy scan ike netherlands.hide.me --nat-t --format json > vpn.json
+qureddy scan ike netherlands.hide.me --nat-t --format jsonl > vpn.jsonl
+qureddy scan ike netherlands.hide.me --nat-t --format cbom > vpn.cdx.json
+qureddy scan ike netherlands.hide.me --nat-t --output-dir evidence/vpn
 ```
 
 Use `--output-dir` when the four projections must share the same scan and evidence identifiers.
