@@ -156,17 +156,20 @@ the one you want. QuReddy also runs an isolated legacy OpenSSL 1.0.2u lane
 when `QUREDDY_LEGACY_OPENSSL` is available. That fallback exposes historical
 TLS protocol and cipher suites that the modern OpenSSL build no longer offers,
 so the combined scan covers both current post-quantum capability and older
-weak-cipher exposure. The legacy executable is used only for evidence
-collection; it does not replace the modern TLS runtime.
+weak-cipher exposure. The legacy executable supplies compatibility evidence;
+the modern TLS runtime remains the primary collector.
 
 The compatibility lane is designed to widen suite coverage across the families
-that modern OpenSSL builds commonly remove or disable: RC4, single DES, 3DES,
-EXPORT, NULL encryption, and older suites such as SEED, IDEA, and CAMELLIA.
+that modern OpenSSL builds commonly remove or disable. Its live coverage
+includes RC4, single DES, 3DES, EXPORT, NULL encryption, SEED, IDEA, CAMELLIA,
+and ARIA. The shared cipher catalog also recognizes AES, ChaCha20, RC4/Arcfour,
+RC2, DES/3DES, NULL, EXPORT, SEED, IDEA, Camellia, ARIA, Twofish, Serpent,
+CAST-128, Blowfish, Rijndael, and GOST spellings.
+
 QuReddy records the exact suite a target accepts, the protocol version, the
 runtime that produced the evidence, and the associated finding severity and
-CWE when one is defined. Coverage remains target- and runtime-dependent; the
-result reports the suites actually observed rather than claiming a suite that
-was only listed locally.
+CWE when one is defined. Coverage depends on the target and runtime. The result
+names the suites accepted by the target.
 
 ### SSH
 
