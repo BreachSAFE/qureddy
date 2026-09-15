@@ -46,7 +46,13 @@ protocols, and post-quantum signals to the evidence collected during the run.
 ## Start here
 
 The container is the quickest way to try QuReddy. It includes the runtime tools
-needed for TLS, IKE, and artifact scans:
+needed for TLS, IKE, and artifact scans, including two isolated OpenSSL
+versions for broad TLS coverage:
+
+```text
+OpenSSL 3.5.x  → modern TLS and post-quantum capability probes
+OpenSSL 1.0.2u → legacy fallback probes for historical cipher suites
+```
 
 ```console
 $ docker run --rm docker.io/breachsafe/qureddy:latest scan tls badssl.com:443
@@ -146,9 +152,12 @@ qureddy scan tls 1.1.1.1:443 --sni one.one.one.one
 
 TLS scanning uses the selected OpenSSL 3.5.x LTS executable. Set
 `QUREDDY_OPENSSL` or pass `--openssl PATH` when automatic discovery is not
-the one you want. The isolated `QUREDDY_LEGACY_OPENSSL` path enables
-additional legacy-protocol and cipher evidence when a compatible OpenSSL
-1.0.2u executable is available.
+the one you want. QuReddy also runs an isolated legacy OpenSSL 1.0.2u lane
+when `QUREDDY_LEGACY_OPENSSL` is available. That fallback exposes historical
+TLS protocol and cipher suites that the modern OpenSSL build no longer offers,
+so the combined scan covers both current post-quantum capability and older
+weak-cipher exposure. The legacy executable is used only for evidence
+collection; it does not replace the modern TLS runtime.
 
 ### SSH
 
