@@ -30,7 +30,7 @@ fully enumerate weak suites that a target still accepts. A server exposing TLS 1
 SWEET32-vulnerable 3DES suite can therefore report `hygiene=ok` (#672).
 
 Two related gaps increase the impact. The summary and CBOM can disagree about a detected weak
-cipher (#705), and suites compiled out of pinned OpenSSL 3.5.7 are absent without a user-visible
+cipher (#705), and suites compiled out of the supported OpenSSL 3.5.x build are absent without a user-visible
 coverage state (#706).
 
 This ADR defines the source, classification, acquisition, output, and grading boundaries behind the

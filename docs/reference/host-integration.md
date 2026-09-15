@@ -5,7 +5,7 @@
 
 [![Diátaxis reference](https://img.shields.io/badge/Di%C3%A1taxis-reference-1f6feb?style=flat-square)](https://diataxis.fr/reference/)
 
-This page documents the contract used by a BreachSAFE EnXemble host to run
+This page documents the contract used by a BreachSAFE host application to run
 QuReddy and consume its machine-readable result.
 
 ## Contents

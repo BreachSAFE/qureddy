@@ -17,7 +17,8 @@ implementation and is not placed on `PATH`.
 
 The Docker build compiles this source for the target architecture and exposes
 the binary at `/opt/openssl-legacy/bin/openssl` through
-`QUREDDY_LEGACY_OPENSSL`. The normal `QUREDDY_OPENSSL` remains OpenSSL 3.5.7.
+`QUREDDY_LEGACY_OPENSSL`. The normal `QUREDDY_OPENSSL` remains the supported
+OpenSSL 3.5.x LTS series (minimum 3.5.8).
 
 ## Coverage and limits
 

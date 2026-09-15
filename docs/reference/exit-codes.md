@@ -25,7 +25,7 @@ process-wide last-resort internal-error code.
 |---|---|---|---|
 | **0** | `EXIT_OK` | Scan succeeded | The scan produced a canonical result. IKE silence and explicit rejection also exit `0` with unknown posture because neither is a process failure. |
 | **2** | `EXIT_TARGET_FAILED` | Target scan failed | A target probe timed out, failed, or produced malformed or over-limit output. |
-| **3** | `EXIT_LOCAL_DEPENDENCY` | Required local executable is missing or unsupported | TLS requires the supported OpenSSL 3.5.7 LTS capability. IKE requires a usable stock `ike-scan` executable. |
+| **3** | `EXIT_LOCAL_DEPENDENCY` | Required local executable is missing or unsupported | TLS requires a supported OpenSSL 3.5.x LTS capability (minimum 3.5.8). IKE requires a usable stock `ike-scan` executable. |
 | **4** | `EXIT_USAGE` | Usage or configuration error | Bad flag value (e.g. `--format yaml`), unknown retry category, `--retries` without `--retry-on`, malformed target string. |
 | **70** | `EXIT_INTERNAL_ERROR` | Internal qureddy bug | An unhandled exception escaped to `main()`'s last-resort catch (e.g., a programming error in qureddy itself, an unhandled dependency failure). **This is qureddy's problem, not yours.** Open an issue with the printed error message and a reproducer. Code 70 is BSD `sysexits.h` `EX_SOFTWARE`. |
 
@@ -53,7 +53,7 @@ case $? in
     exit 1
     ;;
   3)
-    echo "Runner is misconfigured (OpenSSL missing, broken, non-3.5.7, or lacks the required group)"
+    echo "Runner is misconfigured (OpenSSL missing, broken, outside 3.5.x, or lacks the required group)"
     exit 1
     ;;
   4)
@@ -72,7 +72,7 @@ esac
 ```bash
 qureddy scan tls "$TARGET" --format json > scan.json
 case $? in
-  3) echo "::error::Exact OpenSSL 3.5.7 LTS missing on this runner" ;;
+  3) echo "::error::Supported OpenSSL 3.5.x LTS missing on this runner" ;;
   2) echo "::warning::Scan against $TARGET failed" ;;
   4) echo "::error::Bad flags in CI config" ;;
 esac
