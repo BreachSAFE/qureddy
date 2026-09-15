@@ -5,7 +5,7 @@
 
 [![Diátaxis how-to](https://img.shields.io/badge/Di%C3%A1taxis-how--to-2ea44f?style=flat-square)](https://diataxis.fr/how-to-guides/)
 
-Use the BreachSAFE EnXemble reference host when you want a browser UI for
+Use a BreachSAFE reference host when you want a browser UI for
 QuReddy's TLS and SSH scans. The host captures the CLI's CycloneDX CBOM and
 displays evidence validity separately from readiness posture.
 
@@ -24,7 +24,7 @@ published deployment image and descriptor for the current image name:
 
 ```bash
 docker run --rm --pull=always -p 7860:7860 \
-  --name enxemble <enxemble-image>:latest
+  --name qureddy-host <qureddy-host-image>:latest
 ```
 
 Open <http://127.0.0.1:7860>. Pin the image by digest for a reproducible
@@ -61,7 +61,7 @@ The base QuReddy package does not emit an OSCAL compliance verdict.
 
 ## 5. Run from source
 
-For host development, follow the EnXemble source instructions in the
-BreachSAFE organization. The host must be able to resolve a Python 3.14+
+For host development, follow the reference-host source instructions in its
+repository. The host must be able to resolve a Python 3.14+
 QuReddy installation on `PATH`. Use the descriptor files in the host repository
 as the source of truth for command arguments and artifact handling.

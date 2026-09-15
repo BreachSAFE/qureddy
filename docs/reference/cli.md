@@ -113,7 +113,8 @@ qureddy scan tls [OPTIONS] TARGET
 | Option | Type | Default | Meaning |
 | --- | --- | --- | --- |
 | `--sni` | text | target hostname | Override TLS Server Name Indication; required for IP targets that need a virtual host |
-| `--openssl` | path | automatic | Select an OpenSSL 3.5.7 LTS binary |
+| `--starttls` | `smtp`, `pop3`, `imap`, `ftp`, `xmpp`, `xmpp-server`, `telnet`, `irc`, `mysql`, `postgres`, `lmtp`, `nntp`, `sieve`, or `ldap` | none | Upgrade a cleartext service before TLS; use the service's cleartext port, such as SMTP `587` rather than implicit-TLS `465` |
+| `--openssl` | path | automatic | Select a supported OpenSSL 3.5.x LTS binary (minimum 3.5.8) |
 | `--format` | `rich`, `json`, `cbom`, or `jsonl` | `rich` | Select output; repeated values use the last occurrence |
 | `--output`, `-o` | path | standard output | Write the rendered document to a file instead of standard output; standard output stays empty; a path that cannot be opened exits `4` |
 | `--compact` | flag | off | Minify `--format json` or `cbom` to a single line; no effect on `rich` |
@@ -144,6 +145,8 @@ qureddy scan tls tls-v1-2.badssl.com:1012 --min-severity medium
 qureddy scan tls tls-v1-2.badssl.com:1012 --format cbom
 qureddy scan tls tls-v1-2.badssl.com:1012 --openssl /absolute/path/to/openssl
 qureddy scan tls tls-v1-2.badssl.com:1012 --retry-on tls_handshake_failed --retries 3
+qureddy scan tls smtp.gmail.com:587 --starttls smtp
+qureddy scan tls ldap.example.com:389 --starttls ldap
 ```
 
 ## 5. `qureddy scan ike`
@@ -235,6 +238,10 @@ qureddy scan dir [OPTIONS] REFERENCE
 | `--output` | path | standard output | Write Theia's CycloneDX CBOM to a file; standard output stays empty |
 | `-h`, `--help` | flag | n/a | Print directory-scan help and exit |
 
+`QUREDDY_THEIA`, when set, selects the `cbomkit-theia` executable instead of
+the copy found on `PATH`. The command emits CycloneDX only; diagnostics remain
+on standard error.
+
 The command inventories artifact bytes with Theia and emits Theia's validated CycloneDX CBOM
 unchanged. It is not source-code AST analysis; use CBOMkit Sonar Cryptography for source code.
 Diagnostics are written to standard error.
@@ -260,6 +267,10 @@ qureddy scan image [OPTIONS] REFERENCE
 | `--timeout` | integer `1..300` | `120` | Theia subprocess timeout in seconds |
 | `--output` | path | standard output | Write Theia's CycloneDX CBOM to a file; standard output stays empty |
 | `-h`, `--help` | flag | n/a | Print image-scan help and exit |
+
+`QUREDDY_THEIA`, when set, selects the `cbomkit-theia` executable instead of
+the copy found on `PATH`. Image scans also require access to the image runtime,
+normally through the Docker socket described in the Docker guide.
 
 The command requires Theia's image runtime access. In the container, this normally means a
 read-only Docker socket mount plus access to its socket group. It emits Theia's validated
@@ -372,6 +383,8 @@ See the [exit code reference](exit-codes.md) for branching examples.
 | Variable | Scope | Meaning |
 | --- | --- | --- |
 | `QUREDDY_OPENSSL` | TLS | OpenSSL path used when `--openssl` is absent |
+| `QUREDDY_LEGACY_OPENSSL` | TLS | Optional isolated OpenSSL 1.0.2u path used for legacy-cipher and legacy-protocol evidence |
+| `QUREDDY_THEIA` | Directory and image artifact scans | `cbomkit-theia` path used instead of the executable on `PATH` |
 | `QUREDDY_ESPLORA_URL` | Bitcoin, Litecoin wallet | Replace the public Esplora indexer base URL |
 | `QUREDDY_ETH_RPC` | Ethereum wallet | Replace the public Ethereum JSON-RPC endpoint |
 | `QUREDDY_BLOCK_INTERNAL_TARGETS` | TLS, SSH, and IKE | Set to `1` to reject literal internal, loopback, link-local, reserved, multicast, unspecified, and known metadata-hostname targets before probing |

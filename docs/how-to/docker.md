@@ -26,7 +26,7 @@ directly; Docker downloads the image automatically:
 
 ```bash
 docker run --rm docker.io/breachsafe/qureddy:latest \
-  scan tls mozilla.org
+  scan tls badssl.com:443
 ```
 
 For SSH:
@@ -49,7 +49,7 @@ port 500/4500 for IKE.
 If Docker Hub is unavailable, run the same commands from GHCR:
 
 ```bash
-docker run --rm ghcr.io/breachsafe/qureddy:latest scan tls mozilla.org
+docker run --rm ghcr.io/breachsafe/qureddy:latest scan tls badssl.com:443
 docker run --rm ghcr.io/breachsafe/qureddy:latest scan ssh github.com
 docker run --rm ghcr.io/breachsafe/qureddy:latest scan ike vpn.example.com
 ```
@@ -135,7 +135,7 @@ inputs. On Linux, `--group-add` supplies the mounted socket's group to the
 unprivileged container user; Docker Desktop commonly reports group `0` (use
 `--group-add 0` there if the host `stat` command cannot read the socket group).
 Theia's trace diagnostics belong on stderr and the CBOM remains on
-stdout. QuReddy does not regenerate Theia's CycloneDX document. The future
+stdout. QuReddy does not regenerate Theia's CycloneDX document. The shipped
 `qureddy scan image|dir` commands reuse this same executable boundary.
 Theia's `dir` mode is an artifact-directory scan, not source-code AST analysis;
 use CBOMkit's Sonar Cryptography integration for source-code scanning.

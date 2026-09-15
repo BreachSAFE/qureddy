@@ -23,8 +23,8 @@ the process exit code. TLS retries accept a strict subset.
 | `local_openssl_broken` | `3` | no | The selected executable or its linked runtime failed capability inspection |
 | `local_openssl_version_unreadable` | `3` | no | Version output did not match supported OpenSSL syntax |
 | `local_openssl_is_libressl` | `3` | no | The selected binary identified itself as LibreSSL |
-| `local_openssl_too_old` | `3` | no | OpenSSL version is below 3.5.7 |
-| `local_openssl_version_mismatch` | `3` | no | The OpenSSL executable or linked library does not match the exact supported 3.5.7 LTS release |
+| `local_openssl_too_old` | `3` | no | OpenSSL version is below the 3.5.x floor (3.5.8) |
+| `local_openssl_version_mismatch` | `3` | no | The OpenSSL executable or linked library is outside the supported 3.5.x LTS series |
 | `local_openssl_lacks_group` | `3` | no | OpenSSL does not list `X25519MLKEM768` as a TLS 1.3 group |
 | `local_ike_scan_missing` | `3` | no | No `ike-scan` executable resolved |
 | `local_ike_scan_broken` | `3` | no | `ike-scan` could not execute or exited nonzero |

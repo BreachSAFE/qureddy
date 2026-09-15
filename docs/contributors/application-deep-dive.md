@@ -44,7 +44,7 @@ The source-of-truth order for behavior is:
 6. Tests, fixtures, and checked-in schemas for executable contracts.
 
 The existing architecture documentation remains normative for layering:
-`docs/architecture/scan-contract.md` and `docs/explanation/architecture.md`.
+`docs/reference/scan-contract.md` and `docs/explanation/architecture.md`.
 This document expands those contracts with the concrete implementation inventory.
 
 ## 2. Repository map

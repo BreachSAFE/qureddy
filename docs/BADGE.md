@@ -97,12 +97,12 @@ on the form.
 ## 6. Security
 
 QuReddy implements no first-party cryptography. It shells out to the system
-OpenSSL 3.5.7 LTS binary for TLS observation and reads the server's cleartext
+supported OpenSSL 3.5.x LTS binary for TLS observation and reads the server's cleartext
 SSH KEXINIT offer. The `crypto_*` criteria are answered on that basis.
 
 | id | status | evidence |
 |---|---|---|
-| `crypto_published` | Met | No custom crypto; relies on OpenSSL 3.5.7 LTS (published, standard). |
+| `crypto_published` | Met | No custom crypto; relies on the published, standard OpenSSL 3.5.x LTS series. |
 | `crypto_call` | Met | Calls system OpenSSL; implements no primitive itself. |
 | `crypto_floss` | Met | OpenSSL is FLOSS. |
 | `crypto_keylength` | N/A | The scanner selects no keys; it observes and reports the endpoint's. |
