@@ -23,7 +23,7 @@
 2. [2. What QuReddy scans](#2-what-qureddy-scans)
 3. [3. Install locally](#3-install-locally)
 4. [4. Docker and development](#4-docker-and-development)
-5. [5. Run the scan lanes](#5-run-the-scan-lanes)
+5. [5. Use cases and scan lanes](#5-use-cases-and-scan-lanes)
 6. [6. Choose an output format](#6-choose-an-output-format)
 7. [7. Read the result correctly](#7-read-the-result-correctly)
 8. [8. Exit codes](#8-exit-codes)
@@ -144,7 +144,23 @@ For a guided TLS or SSH run, use
 [`examples/guided-scan.sh`](examples/guided-scan.sh). It asks for the target
 and authorization before invoking the container.
 
-## 5. Run the scan lanes
+## 5. Use cases and scan lanes
+
+QuReddy turns a broad quantum-readiness question into evidence you can act on:
+
+| Risk area | Use QuReddy when you need to… | Example | How it helps |
+| --- | --- | --- | --- |
+| Harvest now, decrypt later | Find public services whose key exchange or certificate chain is still classical | `qureddy scan tls badssl.com:443` | Records negotiated protocol, key exchange, certificate signatures, and post-quantum signals for a remediation baseline |
+| Legacy TLS exposure | Check whether a service still accepts weak or deprecated protocol and cipher combinations | `qureddy scan tls rc4.badssl.com:443` | Exercises legacy protocol paths and reports weak-cipher findings with severity and CWE identifiers when available |
+| STARTTLS downgrade surface | Assess mail, directory, database, or other cleartext-to-TLS upgrades | `qureddy scan tls smtp.gmail.com:587 --starttls smtp` | Captures the application upgrade and TLS evidence in one scan record |
+| SSH fallback | Review the algorithms an SSH server offers before a policy or migration change | `qureddy scan ssh github.com` | Reads the server’s algorithm offer directly and separates hybrid, classical, and weak options |
+| VPN negotiation | Inspect an IKE responder’s transforms and explicit responses | `qureddy scan ike netherlands.hide.me --nat-t` | Preserves responder discovery and tool-reported evidence with its lower-trust boundary visible |
+| Public-key wallet exposure | Understand whether a public account has published key material or signing history | `qureddy scan wallet 1A1zP1eP5Gefi2DMPTfTL5SLmv7DivfNa` | Connects address type, public-key status, signatures, nonce reuse, and balance to public indexer evidence |
+| Artifact inventory | Inventory cryptographic material already present in a directory or image | `qureddy scan dir /opt/application` | Produces the CycloneDX CBOM emitted by CBOMkit Theia for downstream inventory and review |
+
+Each lane keeps the observed evidence, the assessment, and the limits of the
+probe together. That makes the output useful for an engineering baseline,
+remediation ticket, or repeatable migration check.
 
 ### TLS
 
