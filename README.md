@@ -146,17 +146,23 @@ and authorization before invoking the container.
 
 ## 5. Use cases and scan lanes
 
-QuReddy turns a broad quantum-readiness question into evidence you can act on:
+Quantum migration starts with a simple question: where is classical
+cryptography still doing important work? QuReddy gives engineering and security
+teams a fast path from that question to evidence. Scan the public edge, the
+protocols behind it, the wallets that publish keys, and the artifacts waiting
+to ship. Use the results to prioritize upgrades, prove hardening work, and give
+the next review a baseline it can compare with.
 
-| Risk area | Use QuReddy when you need to… | Example | How it helps |
+| Risk area | Use QuReddy when you need to… | Copy and paste | How it helps you decide |
 | --- | --- | --- | --- |
-| Harvest now, decrypt later | Find public services whose key exchange or certificate chain is still classical | `qureddy scan tls badssl.com:443` | Records negotiated protocol, key exchange, certificate signatures, and post-quantum signals for a remediation baseline |
-| Legacy TLS exposure | Check whether a service still accepts weak or deprecated protocol and cipher combinations | `qureddy scan tls rc4.badssl.com:443` | Exercises legacy protocol paths and reports weak-cipher findings with severity and CWE identifiers when available |
-| STARTTLS downgrade surface | Assess mail, directory, database, or other cleartext-to-TLS upgrades | `qureddy scan tls smtp.gmail.com:587 --starttls smtp` | Captures the application upgrade and TLS evidence in one scan record |
-| SSH fallback | Review the algorithms an SSH server offers before a policy or migration change | `qureddy scan ssh github.com` | Reads the server’s algorithm offer directly and separates hybrid, classical, and weak options |
-| VPN negotiation | Inspect an IKE responder’s transforms and explicit responses | `qureddy scan ike netherlands.hide.me --nat-t` | Preserves responder discovery and tool-reported evidence with its lower-trust boundary visible |
-| Public-key wallet exposure | Understand whether a public account has published key material or signing history | `qureddy scan wallet 1A1zP1eP5Gefi2DMPTfTL5SLmv7DivfNa` | Connects address type, public-key status, signatures, nonce reuse, and balance to public indexer evidence |
-| Artifact inventory | Inventory cryptographic material already present in a directory or image | `qureddy scan dir /opt/application` | Produces the CycloneDX CBOM emitted by CBOMkit Theia for downstream inventory and review |
+| Harvest now, decrypt later | Find public services whose key exchange or certificate chain protects long-lived data | `docker run --rm docker.io/breachsafe/qureddy:latest scan tls badssl.com:443` | Shows the negotiated exchange, certificate signatures, and post-quantum signals so teams can identify migration work at the public edge |
+| Legacy TLS exposure | Find weak or deprecated protocol and cipher combinations that modern defaults can hide | `docker run --rm docker.io/breachsafe/qureddy:latest scan tls rc4.badssl.com:443` | Produces concrete weak-cipher findings, severity, and CWE identifiers when available, giving remediation tickets an actionable starting point |
+| STARTTLS downgrade surface | Check whether mail, directory, or database services complete their cleartext-to-TLS upgrade | `docker run --rm docker.io/breachsafe/qureddy:latest scan tls smtp.gmail.com:587 --starttls smtp` | Connects the application upgrade to the resulting TLS evidence, so a “TLS enabled” claim can be checked at the service boundary |
+| SSH fallback | Review the algorithms an SSH server offers before a policy or migration change | `docker run --rm docker.io/breachsafe/qureddy:latest scan ssh github.com` | Separates hybrid, classical, and weak options from the server’s direct algorithm offer, helping teams choose what to retire |
+| VPN negotiation | Inspect an IKE responder before trusting its negotiated protection | `docker run --rm docker.io/breachsafe/qureddy:latest scan ike netherlands.hide.me --nat-t` | Preserves the responder’s transforms and explicit tool responses so network teams can distinguish observed support from assumptions |
+| Public-key wallet exposure | Understand whether a public account has published key material or signing history | `docker run --rm docker.io/breachsafe/qureddy:latest scan wallet 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa` | Connects address type, key publication, signatures, nonce reuse, and balance to public indexer evidence for a defensible account review |
+| Artifact inventory | Inventory cryptographic material already present in a directory before release | `docker run --rm -v "$PWD:/scan:ro" docker.io/breachsafe/qureddy:latest scan dir /scan` | Produces a CycloneDX CBOM from the artifact bytes so inventory can enter build, review, and governance workflows |
+| Container-image inventory | Inspect an image’s layers before deployment | `docker run --rm --group-add 0 -v /var/run/docker.sock:/var/run/docker.sock:ro docker.io/breachsafe/qureddy:latest scan image nginx:latest` | Carries image-layer findings into a CycloneDX CBOM, making crypto dependencies visible before the image reaches production |
 
 Each lane keeps the observed evidence, the assessment, and the limits of the
 probe together. That makes the output useful for an engineering baseline,
