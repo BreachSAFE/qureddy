@@ -128,6 +128,57 @@ class TestTLSScannerOrchestration:
         assert result.scan.total_attempts == 1
         assert result.evidence[0].failure_category is FailureCategory.TARGET_CONNECT_FAILED
 
+    def test_unreachable_group_stops_remaining_probe_plan(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A transport timeout must not be multiplied across every group.
+
+        The probe plan has one readiness group plus five coverage groups.  A
+        filtered port cannot answer any of them, so repeating the same timeout
+        only inflates latency and duplicate evidence:
+
+            first group ──TARGET_CONNECT_FAILED──▶ return one transport fact
+                 │
+                 └──────────────X───────────────▶ remaining groups
+        """
+        scanner = TLSScanner(openssl_path="/fixture/openssl")
+        target = self._target()
+        asset = build_asset(target)
+        calls: list[str] = []
+
+        def unreachable(*args: object, **kwargs: object) -> ProbeResult:
+            del args
+            group = kwargs["group"]
+            assert isinstance(group, str)
+            calls.append(group)
+            return ProbeResult(
+                command=ProbeCommand(executable="/fixture/openssl", args=(), timeout_seconds=1),
+                return_code=-1,
+                stdout_sha256="",
+                stderr_sha256="",
+                duration_ms=1,
+                failure_category=FailureCategory.TARGET_CONNECT_FAILED,
+            )
+
+        monkeypatch.setattr(scanner_module, "run_group_probe", unreachable)
+
+        def unexpected_classical(*args: object, **kwargs: object) -> ProbeResult:
+            del args, kwargs
+            pytest.fail("classical probe ran after an unreachable target")
+
+        monkeypatch.setattr(scanner_module, "run_classical_probe", unexpected_classical)
+        evidence, attempts = scanner._collect_evidence(  # noqa: SLF001
+            target=target,
+            asset=asset,
+            openssl_path="/fixture/openssl",
+            timeout_seconds=1,
+        )
+
+        assert calls == [HYBRID_GROUP]
+        assert attempts == 1
+        assert len(evidence) == 1
+        assert evidence[0].failure_category is FailureCategory.TARGET_CONNECT_FAILED
+
     def test_certificate_collection_covers_missing_and_observed_paths(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
