@@ -184,7 +184,7 @@ def test_scan_markdown_preserves_model_field_order_and_header_block() -> None:
     assert document.index("- scan_id:") < document.index("- started_at:")
     assert document.index("- started_at:") < document.index("- completed_at:")
     assert (
-        "- projection_version: qureddy-scan-v1\n- schema_version: qureddy.scan.v1\n\n"
+        "- projection_version: qureddy.scan.v3\n- schema_version: qureddy.scan.v1\n\n"
     ) in document
 
 
@@ -203,7 +203,7 @@ def test_cbom_markdown_uses_qureddy_identity_and_json_safe_scalars() -> None:
 
     output = document.getvalue()
     assert "- document_type: qureddy_cbom_markdown\n" in output
-    assert "- projection_version: qureddy-cbom-v1\n" in output
+    assert "- projection_version: qureddy.cbom.v3\n" in output
     assert "<object object at" not in output
 
 
@@ -219,6 +219,35 @@ def test_cbom_markdown_rejects_wrong_shapes(payload: dict[str, Any], message: st
     """Invalid CBOM section shapes fail instead of becoming misleading bullets."""
     with pytest.raises(TypeError, match=message):
         render_cbom_markdown(payload, io.StringIO())
+
+
+def test_markdown_escapes_invisible_unicode_controls() -> None:
+    """Bidi and zero-width controls cannot hide content in a document."""
+    document = io.StringIO()
+    render_cbom_markdown(
+        {"metadata": {"subject": "safe\u202eevil\u200b"}, "components": []}, document
+    )
+
+    output = document.getvalue()
+    assert "safe\\u202eevil\\u200b" in output
+    assert "\u202e" not in output
+    assert "\u200b" not in output
+
+
+def test_markdown_rejects_non_string_mapping_keys() -> None:
+    """A non-JSON object key must fail instead of leaking Python repr syntax."""
+    with pytest.raises(TypeError, match="mapping keys must be strings"):
+        render_cbom_markdown({"metadata": {(1, 2): "value"}}, io.StringIO())  # type: ignore[dict-item]
+
+
+def test_markdown_distinguishes_dotted_keys_from_nested_paths() -> None:
+    """Literal ``a.b`` and nested ``a -> b`` remain distinct paths."""
+    document = io.StringIO()
+    render_cbom_markdown({"metadata": {"a.b": 1, "a": {"b": 2}}, "components": []}, document)
+
+    output = document.getvalue()
+    assert '- "a.b": 1\n' in output
+    assert "- a.b: 2\n" in output
 
 
 def test_cbom_markdown_projects_components_and_future_fields() -> None:

@@ -17,29 +17,44 @@ from __future__ import annotations
 
 import json
 import sys
+import unicodedata
 from collections.abc import Mapping, Sequence
-from typing import IO, TYPE_CHECKING, Any
+from typing import IO, TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
     from qureddy.core.models import ScanResult
 
 
-SCAN_MARKDOWN_PROJECTION_VERSION = "1"
-CBOM_MARKDOWN_PROJECTION_VERSION = "1"
+type JsonValue = (
+    bool | int | float | str | bytes | Mapping[str, "JsonValue"] | Sequence["JsonValue"] | None
+)
+
+SCAN_MARKDOWN_PROJECTION_VERSION = "qureddy.scan.v3"
+CBOM_MARKDOWN_PROJECTION_VERSION = "qureddy.cbom.v3"
 CBOM_IDENTITY_FIELDS = ("bomFormat", "specVersion", "serialNumber", "version")
 CBOM_SECTION_FIELDS = ("metadata", "components", "dependencies", "annotations")
 CBOM_KNOWN_FIELDS = CBOM_IDENTITY_FIELDS + CBOM_SECTION_FIELDS
 
 
-def _scalar(value: object) -> str:
+def _safe_text(value: str) -> str:
+    """Keep visible text readable while escaping invisible format controls."""
+    normalized = " ".join(value.split())
+    if not normalized:
+        return '""'
+    return "".join(
+        f"\\u{ord(character):04x}" if unicodedata.category(character) in {"Cc", "Cf"} else character
+        for character in normalized
+    )
+
+
+def _scalar(value: JsonValue) -> str:
     """Render one scalar as a single safe Markdown line."""
     if value is None:
         return "null"
     if isinstance(value, bool):
         return str(value).lower()
     if isinstance(value, str):
-        normalized = " ".join(value.split())
-        return normalized if normalized else '""'
+        return _safe_text(value)
     if isinstance(value, (int, float)):
         return str(value)
     if isinstance(value, bytes):
@@ -54,7 +69,7 @@ def _scalar(value: object) -> str:
     ).strip('"')
 
 
-def _write_value(stream: IO[str], path: str, value: object) -> None:
+def _write_value(stream: IO[str], path: str, value: JsonValue) -> None:
     """Recursively write one mapping value with stable array indexes."""
     if isinstance(value, Mapping):
         if not value:
@@ -70,14 +85,22 @@ def _write_value(stream: IO[str], path: str, value: object) -> None:
         stream.write(f"- {path}: {_scalar(value)}\n")
 
 
-def _write_mapping(stream: IO[str], value: Mapping[str, Any], prefix: str = "") -> None:
+def _path_for_key(prefix: str, key: str) -> str:
+    """Build a path that distinguishes literal dotted keys from nesting."""
+    component = key if "." not in key and "[" not in key and "]" not in key else json.dumps(key)
+    return f"{prefix}.{component}" if prefix else component
+
+
+def _write_mapping(stream: IO[str], value: Mapping[str, JsonValue], prefix: str = "") -> None:
     """Flatten mappings and sequences into deterministic field/value bullets."""
     for key in value:
-        path = f"{prefix}.{key}" if prefix else str(key)
+        if not isinstance(key, str):
+            raise TypeError(f"mapping keys must be strings, got {type(key).__name__}")
+        path = _path_for_key(prefix, key)
         _write_value(stream, path, value[key])
 
 
-def _write_section(stream: IO[str], heading: str, value: object) -> None:
+def _write_section(stream: IO[str], heading: str, value: JsonValue) -> None:
     """Write one mapping section, including explicit empty-state output."""
     stream.write(f"## {heading}\n\n")
     if value is None:
@@ -92,7 +115,7 @@ def _write_section(stream: IO[str], heading: str, value: object) -> None:
     stream.write("\n")
 
 
-def _write_records(stream: IO[str], heading: str, records: object, label: str) -> None:
+def _write_records(stream: IO[str], heading: str, records: JsonValue, label: str) -> None:
     """Write each record under a stable heading for independent retrieval chunks."""
     stream.write(f"## {heading}\n\n")
     if records is None:
@@ -107,7 +130,7 @@ def _write_records(stream: IO[str], heading: str, records: object, label: str) -
         return
     for index, record in enumerate(records, start=1):
         stream.write(f"### {label} {index}\n\n")
-        _write_mapping(stream, record)
+        _write_mapping(stream, cast("Mapping[str, JsonValue]", record))
         stream.write("\n")
 
 
@@ -116,7 +139,7 @@ def render_scan_markdown(result: ScanResult, stream: IO[str]) -> None:
     payload = result.model_dump(mode="json")
     stream.write("# QuReddy Scan\n\n")
     stream.write("- document_type: qureddy_scan_markdown\n")
-    stream.write(f"- projection_version: qureddy-scan-v{SCAN_MARKDOWN_PROJECTION_VERSION}\n")
+    stream.write(f"- projection_version: {SCAN_MARKDOWN_PROJECTION_VERSION}\n")
     stream.write(f"- schema_version: {_scalar(payload.get('schema_version'))}\n\n")
     _write_section(stream, "Run", payload.get("scan"))
     _write_section(stream, "Target", payload.get("target"))
@@ -132,11 +155,11 @@ def render_markdown(result: ScanResult, stream: IO[str] | None = None) -> None:
     render_scan_markdown(result, stream if stream is not None else sys.stdout)
 
 
-def render_cbom_markdown(payload: Mapping[str, Any], stream: IO[str]) -> None:
+def render_cbom_markdown(payload: Mapping[str, JsonValue], stream: IO[str]) -> None:
     """Write a generic, CycloneDX-aware Markdown projection of a CBOM payload."""
     stream.write("# QuReddy CBOM\n\n")
     stream.write("- document_type: qureddy_cbom_markdown\n")
-    stream.write(f"- projection_version: qureddy-cbom-v{CBOM_MARKDOWN_PROJECTION_VERSION}\n\n")
+    stream.write(f"- projection_version: {CBOM_MARKDOWN_PROJECTION_VERSION}\n\n")
     for key in CBOM_IDENTITY_FIELDS:
         if key in payload:
             stream.write(f"- {key}: {_scalar(payload[key])}\n")

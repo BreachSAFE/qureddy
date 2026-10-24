@@ -101,6 +101,7 @@ RUN_DIR/
 ├── scan.rich.txt
 ├── scan.md
 ├── cbom.md
+├── manifest.json           # complete-bundle marker and artifact hashes
 └── certificate.pem        # only when certificate evidence exists
 ```
 
