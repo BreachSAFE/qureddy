@@ -28,7 +28,7 @@ from __future__ import annotations
 import json
 import sys
 import warnings
-from typing import IO, TYPE_CHECKING, Any
+from typing import IO, TYPE_CHECKING, Any, cast
 
 from cyclonedx.model.bom import Bom
 from cyclonedx.model.component import Component, ComponentType
@@ -297,6 +297,8 @@ def _build_payload_with_library_gap_patches(
         warnings.filterwarnings("ignore", message=".*no defined dependencies.*")
         serialized = JsonV1Dot7(bom).output_as_string(indent=2)
     payload = json.loads(serialized)
+    if not isinstance(payload, dict):
+        raise TypeError("CycloneDX serializer returned a non-object payload")
     _assert_library_serialization_shape(payload, certificate_serial is not None)
     _patch_provides_edges(payload, provides_edges)
     if certificate_serial:
@@ -305,7 +307,7 @@ def _build_payload_with_library_gap_patches(
     _patch_tls_group_fields(payload, result)
     _attach_native_findings(payload, result, reproducible=reproducible)
     validate_cbom_semantics(payload)
-    return payload
+    return cast("dict[str, Any]", payload)
 
 
 def _assert_library_serialization_shape(payload: dict[str, Any], has_certificate: bool) -> None:
