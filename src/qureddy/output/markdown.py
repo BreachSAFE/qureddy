@@ -87,7 +87,13 @@ def _write_value(stream: IO[str], path: str, value: JsonValue) -> None:
 
 def _path_for_key(prefix: str, key: str) -> str:
     """Build a path that distinguishes literal dotted keys from nesting."""
-    component = key if "." not in key and "[" not in key and "]" not in key else json.dumps(key)
+    needs_quoting = (
+        "." in key
+        or "[" in key
+        or "]" in key
+        or any(unicodedata.category(character) in {"Cc", "Cf"} for character in key)
+    )
+    component = json.dumps(key, ensure_ascii=True) if needs_quoting else key
     return f"{prefix}.{component}" if prefix else component
 
 

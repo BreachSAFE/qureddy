@@ -250,6 +250,16 @@ def test_markdown_distinguishes_dotted_keys_from_nested_paths() -> None:
     assert "- a.b: 2\n" in output
 
 
+def test_markdown_escapes_invisible_unicode_controls_in_keys() -> None:
+    """Control characters in field names cannot enter the Markdown path."""
+    document = io.StringIO()
+    render_cbom_markdown({"metadata": {"safe\u202e-key": 1}, "components": []}, document)
+
+    output = document.getvalue()
+    assert '"safe\\u202e-key": 1' in output
+    assert "\u202e" not in output
+
+
 def test_cbom_markdown_projects_components_and_future_fields() -> None:
     """CBOM Markdown retains component semantics without scanner-specific rules."""
     payload = build_cbom_payload(_build_result(), reproducible=True)
