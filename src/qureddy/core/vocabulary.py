@@ -165,6 +165,7 @@ class OutputFormat(str, Enum):
     JSON = "json"
     CBOM = "cbom"
     JSONL = "jsonl"
+    MARKDOWN = "markdown"
 
 
 #: Evidence type the wallet scanner records for an account's signing algorithm.

@@ -209,12 +209,21 @@ def test_real_output_dir_writes_all_four_projections(tmp_path: Path) -> None:
     written = sorted(path.name for path in tmp_path.iterdir())
     # certificate.pem appears whenever the indexer's leaf was captured, which
     # needs an OpenSSL the capability gate accepts.
-    assert {"scan.cdx.json", "scan.json", "scan.jsonl", "scan.rich.txt"} <= set(written)
+    assert {
+        "scan.cdx.json",
+        "scan.json",
+        "scan.jsonl",
+        "scan.rich.txt",
+        "scan.md",
+        "cbom.md",
+    } <= set(written)
     assert set(written) <= {
         "scan.cdx.json",
         "scan.json",
         "scan.jsonl",
         "scan.rich.txt",
+        "scan.md",
+        "cbom.md",
         "certificate.pem",
     }
     for name in written:

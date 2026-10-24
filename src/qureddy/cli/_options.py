@@ -84,7 +84,7 @@ FormatOpt = Annotated[
     # command line.
     typer.Option(
         "--format",
-        help="Output format: rich | json | cbom | jsonl (repeat to override; last wins).",
+        help="Output format: rich | json | cbom | jsonl | markdown (repeat to override; last wins).",
         case_sensitive=False,
     ),
 ]

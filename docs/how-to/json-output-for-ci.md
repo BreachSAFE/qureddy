@@ -44,7 +44,7 @@ qureddy scan tls api.example.com --output-dir evidence/run-001
 ```
 
 This performs one scan and writes the complete artifact bundle: `scan.json`,
-`scan.cdx.json`, `scan.jsonl`, and `scan.rich.txt`. All projections share the
+`scan.cdx.json`, `scan.jsonl`, `scan.rich.txt`, `scan.md`, and `cbom.md`. All projections share the
 same scan ID, timestamps, target identity, findings, and evidence. Every artifact
 is written for target or local-collector failures too, preserving the failure
 evidence alongside the exit code.

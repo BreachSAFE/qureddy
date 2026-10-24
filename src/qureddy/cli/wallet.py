@@ -60,8 +60,8 @@ internal node keeps the queried account inside your boundary.
 OUTPUT:
 
 \b
---format         rich | json | cbom | jsonl (repeat to override; last wins).
---output-dir     Write all four projections into one run directory.
+--format         rich | json | cbom | jsonl | markdown (repeat to override; last wins).
+--output-dir     Write all supported projections into one run directory.
 
 EXIT CODES:
 

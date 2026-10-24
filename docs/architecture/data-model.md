@@ -133,7 +133,7 @@ The generated table shows both Python member names and serialized values.
 | `LaunchStatus` | `scanners.tls.openssl_probe.executor` | `OK = "ok"`, `MISSING = "missing"`, `UNLAUNCHABLE = "unlaunchable"` |
 | `MatchStatus` | `core.crypto_catalog.models` | `EXACT = "exact"`, `FAMILY_ONLY = "family_only"`, `UNKNOWN = "unknown"` |
 | `ObservationType` | `core.vocabulary` | `NEGOTIATED = "negotiated"`, `OFFERED = "offered"`, `OBSERVED = "observed"`, `INFERRED = "inferred"`, `NOT_OFFERED = "not_offered"`, `NOT_TESTABLE = "not_testable"`, `NO_RESPONSE = "no_response"` |
-| `OutputFormat` | `core.vocabulary` | `RICH = "rich"`, `JSON = "json"`, `CBOM = "cbom"`, `JSONL = "jsonl"` |
+| `OutputFormat` | `core.vocabulary` | `RICH = "rich"`, `JSON = "json"`, `CBOM = "cbom"`, `JSONL = "jsonl"`, `MARKDOWN = "markdown"` |
 | `PqcSupport` | `core.vocabulary` | `HYBRID_OBSERVED = "hybrid_observed"`, `PURE_PQ_OBSERVED = "pure_pq_observed"`, `CLASSICAL_ONLY_OBSERVED = "classical_only_observed"`, `UNKNOWN = "unknown"`, `NOT_TESTABLE = "not_testable"` |
 | `ProbeRole` | `core.vocabulary` | `HYBRID_READINESS = "hybrid_readiness"`, `CLASSICAL_CONTROL = "classical_control"`, `HYBRID_COVERAGE = "hybrid_coverage"`, `PURE_PQ_COVERAGE = "pure_pq_coverage"` |
 | `Protocol` | `core.crypto_catalog.models` | `TLS = "tls"`, `SSH = "ssh"`, `IKE = "ike"`, `CERTIFICATE = "certificate"` |

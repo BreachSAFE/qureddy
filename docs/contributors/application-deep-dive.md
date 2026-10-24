@@ -157,7 +157,7 @@ sequenceDiagram
 
 `--output-dir` does not run the network scan four times. `_render_bundle` renders
 the same `ScanResult` once into each current projection: `scan.json`,
-`scan.cdx.json`, `scan.jsonl`, and `scan.rich.txt`.
+`scan.cdx.json`, `scan.jsonl`, `scan.rich.txt`, `scan.md`, and `cbom.md`.
 
 ## 4. Canonical data model
 
@@ -183,7 +183,7 @@ cannot be mutated after construction.
 | `HygieneStatus` | `ok`, `action_needed`, `weak`, `unknown` | Present-day protocol hygiene |
 | `Confidence` | `high`, `medium`, `low` | Confidence in a finding |
 | `ProbeRole` | `hybrid_readiness`, `classical_control`, `hybrid_coverage` | Why a TLS probe ran |
-| `OutputFormat` | `rich`, `json`, `cbom`, `jsonl` | CLI projection |
+| `OutputFormat` | `rich`, `json`, `cbom`, `jsonl`, `markdown` | CLI projection |
 
 `FailureCategory` additionally distinguishes local OpenSSL capability failures from
 target, handshake, middlebox/MTU, and parser failures. This is important: target
@@ -453,14 +453,16 @@ refs, and required relationships.
 
 ### 9.5 Output directory
 
-`cli._render._render_bundle` renders all four projections from one result:
+`cli._render._render_bundle` renders all supported projections from one result:
 
 ```text
 <output-dir>/
 ├── scan.json
 ├── scan.cdx.json
 ├── scan.jsonl
-└── scan.rich.txt
+├── scan.rich.txt
+├── scan.md
+└── cbom.md
 ```
 
 `--output` and `--output-dir` are mutually exclusive. Directory/file creation is

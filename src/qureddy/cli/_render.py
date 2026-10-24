@@ -11,10 +11,11 @@ from typing import IO
 
 from qureddy.cli._errors import EXIT_USAGE, _fail
 from qureddy.core.models import OutputFormat, ScanResult, Severity
-from qureddy.output.cbom import render_cbom
+from qureddy.output.cbom import build_cbom_payload, render_cbom, render_cbom_payload
 from qureddy.output.console import render_rich
 from qureddy.output.json import render_json
 from qureddy.output.jsonl import render_jsonl
+from qureddy.output.markdown import render_cbom_markdown, render_markdown
 
 
 def _open_output_file(output: Path | None) -> IO[str] | None:
@@ -56,15 +57,24 @@ def _render_bundle(
     cbom_stream = io.StringIO()
     jsonl_stream = io.StringIO()
     rich_stream = io.StringIO()
+    markdown_stream = io.StringIO()
+    cbom_markdown_stream = io.StringIO()
     render_json(result, json_stream, compact=compact)
-    render_cbom(result, cbom_stream, reproducible=reproducible, compact=compact)
+    cbom_payload = build_cbom_payload(result, reproducible=reproducible)
+    render_cbom_payload(cbom_payload, cbom_stream, compact=compact)
     render_jsonl(result, jsonl_stream)
     render_rich(result, rich_stream)
+    render_markdown(result, markdown_stream)
+    render_cbom_markdown(cbom_payload, cbom_markdown_stream)
     try:
         (output_dir / "scan.json").write_text(json_stream.getvalue(), encoding="utf-8")
         (output_dir / "scan.cdx.json").write_text(cbom_stream.getvalue(), encoding="utf-8")
         (output_dir / "scan.jsonl").write_text(jsonl_stream.getvalue(), encoding="utf-8")
         (output_dir / "scan.rich.txt").write_text(rich_stream.getvalue(), encoding="utf-8")
+        (output_dir / "scan.md").write_text(markdown_stream.getvalue(), encoding="utf-8")
+        (output_dir / "cbom.md").write_text(
+            cbom_markdown_stream.getvalue(), encoding="utf-8"
+        )
         _write_certificate_artifact(result, output_dir)
     except OSError as exc:
         _fail(f"cannot write scan bundle in {output_dir}: {exc.strerror or exc}", EXIT_USAGE)
@@ -90,7 +100,7 @@ def _render(
     stream: IO[str] | None = None,
     output_dir: Path | None = None,
 ) -> None:
-    """Dispatch to the JSON, CBOM, JSONL, or Rich renderer.
+    """Dispatch to the JSON, CBOM, JSONL, Markdown, or Rich renderer.
 
     ``stream`` defaults to the current ``sys.stdout``; ``--output`` supplies a
     file stream instead, which keeps stdout empty (and byte-clean) for the
@@ -108,5 +118,7 @@ def _render(
         render_cbom(result, target, reproducible=reproducible, compact=compact)
     elif output_format is OutputFormat.JSONL:
         render_jsonl(result, target)
+    elif output_format is OutputFormat.MARKDOWN:
+        render_markdown(result, target)
     else:
         render_rich(result, target, verbosity=verbose, min_severity=min_severity)

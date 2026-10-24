@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
 # SPDX-License-Identifier: Apache-2.0
-"""Regression tests for the five-format output conformance harness."""
+"""Regression tests for the output conformance harness."""
 
 from __future__ import annotations
 

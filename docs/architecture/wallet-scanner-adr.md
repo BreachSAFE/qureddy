@@ -402,7 +402,7 @@ endpoint out of shell history.
 
 ## 14. Rendered output
 
-The engine owns the scan and its four projections. An application layer reads the JSON and
+The engine owns the scan and its supported projections. An application layer reads the JSON and
 decides how to present it. Neither adds a grading scale, per C5.
 
 Captured from `qureddy scan wallet bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4`, the BIP-173
