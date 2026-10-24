@@ -289,9 +289,9 @@ def _build_payload_with_library_gap_patches(
 ) -> dict[str, Any]:
     """Build the final payload, then fill the 1.7 fields the library omits.
 
-    The library serialization is only an intermediate parsed back into a dict,
-    so its indentation is irrelevant; the final ``json.dumps`` controls the
-    emitted layout — indented by default, single-line minified when ``compact``.
+    The library serialization is only an intermediate parsed back into a dict.
+    The public renderer controls the final byte layout after these semantic
+    patches have completed.
     """
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", message=".*no defined dependencies.*")

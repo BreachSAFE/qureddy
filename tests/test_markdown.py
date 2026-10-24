@@ -184,8 +184,41 @@ def test_scan_markdown_preserves_model_field_order_and_header_block() -> None:
     assert document.index("- scan_id:") < document.index("- started_at:")
     assert document.index("- started_at:") < document.index("- completed_at:")
     assert (
-        "- projection_version: qureddyai-scan-v2\n- schema_version: qureddy.scan.v1\n\n"
+        "- projection_version: qureddy-scan-v1\n- schema_version: qureddy.scan.v1\n\n"
     ) in document
+
+
+def test_scan_markdown_preserves_empty_nested_mappings() -> None:
+    """An empty nested object remains observable instead of disappearing."""
+    document = io.StringIO()
+    render_cbom_markdown({"metadata": {"empty": {}}, "components": []}, document)
+
+    assert "- empty: {}\n" in document.getvalue()
+
+
+def test_cbom_markdown_uses_qureddy_identity_and_json_safe_scalars() -> None:
+    """The CBOM projection has a stable identity and no Python repr values."""
+    document = io.StringIO()
+    render_cbom_markdown({"metadata": {}, "components": [{"created": object()}]}, document)
+
+    output = document.getvalue()
+    assert "- document_type: qureddy_cbom_markdown\n" in output
+    assert "- projection_version: qureddy-cbom-v1\n" in output
+    assert "<object object at" not in output
+
+
+@pytest.mark.parametrize(
+    ("payload", "message"),
+    [
+        ({"metadata": []}, "Metadata must be a mapping"),
+        ({"metadata": {}, "components": {}}, "Components must be a sequence"),
+        ({"metadata": {}, "components": ["wrong"]}, "Components records must be mappings"),
+    ],
+)
+def test_cbom_markdown_rejects_wrong_shapes(payload: dict[str, Any], message: str) -> None:
+    """Invalid CBOM section shapes fail instead of becoming misleading bullets."""
+    with pytest.raises(TypeError, match=message):
+        render_cbom_markdown(payload, io.StringIO())
 
 
 def test_cbom_markdown_projects_components_and_future_fields() -> None:

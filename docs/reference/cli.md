@@ -78,7 +78,7 @@ qureddy scan ssh [OPTIONS] TARGET
 | --- | --- | --- | --- |
 | `--format` | `rich`, `json`, `cbom`, `jsonl`, or `markdown` | `rich` | Select output; repeated values use the last occurrence |
 | `--output`, `-o` | path | standard output | Write the rendered document to a file instead of standard output; standard output stays empty; a path that cannot be opened exits `4` |
-| `--output-dir` | directory | none | Run one scan and write every supported projection (`scan.json`, `scan.cdx.json`, `scan.jsonl`, `scan.rich.txt`, `scan.md`, `cbom.md`); cannot be combined with `--output` |
+| `--output-dir` | directory | none | Run one scan and write every supported projection plus `manifest.json` (`scan.json`, `scan.cdx.json`, `scan.jsonl`, `scan.rich.txt`, `scan.md`, `cbom.md`); cannot be combined with `--output` |
 | `--compact` | flag | off | Minify `--format json` or `cbom` to a single line; JSONL is always one object per line; no effect on `rich` |
 | `--min-severity` | `critical`, `high`, `medium`, `low`, or `info` | none | Rich output only: hide findings below this severity; machine formats stay complete |
 | `--timeout` | integer `1..300` | `8` | Socket timeout in seconds |
@@ -166,7 +166,7 @@ qureddy scan ike [OPTIONS] TARGET
 | `--source-port` | integer `0..65535` | `0` | Override the UDP source port; `0` selects 500 direct or 4500 with NAT-T, and binding 500 may require privilege |
 | `--format` | `rich`, `json`, `cbom`, `jsonl`, or `markdown` | `rich` | Select output; repeated values use the last occurrence |
 | `--output`, `-o` | path | standard output | Write one rendered document to a file |
-| `--output-dir` | directory | none | Run one scan and write JSON, CBOM, JSONL, and Rich projections |
+| `--output-dir` | directory | none | Run one scan and write all projections plus `manifest.json` |
 | `--compact` | flag | off | Minify JSON or CBOM output |
 | `--min-severity` | severity | none | Filter the Rich findings table only |
 | `--timeout` | integer `1..300` | `8` | Per-probe timeout in seconds |
@@ -203,7 +203,7 @@ qureddy scan wallet [OPTIONS] ADDRESS
 | --- | --- | --- | --- |
 | `--type` | `bitcoin`, `litecoin`, or `ethereum` | inferred | Select the chain; the address is validated against it |
 | `--format` | `rich`, `json`, `cbom`, `jsonl`, or `markdown` | `rich` | Select output; repeated values use the last occurrence |
-| `--output-dir` | directory | none | Write JSON, CBOM, JSONL, and Rich projections |
+| `--output-dir` | directory | none | Write all projections plus `manifest.json` |
 | `-v`, `--verbose` | count | `0` | Select INFO, DEBUG, or command traceability detail |
 | `-h`, `--help` | flag | n/a | Print wallet help and exit |
 

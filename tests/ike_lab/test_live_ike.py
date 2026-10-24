@@ -251,7 +251,7 @@ def test_real_ikev1_output_preserves_space_form_key_length(live_responder: None)
 
 
 def test_real_cli_writes_every_output_from_one_scan(live_responder: None, tmp_path: Path) -> None:
-    """Exercise Rich, JSON, JSONL, and CBOM through one real CLI scan."""
+    """Exercise every projection and the completion manifest through one real CLI scan."""
     result = CliRunner().invoke(
         app,
         [
@@ -279,6 +279,7 @@ def test_real_cli_writes_every_output_from_one_scan(live_responder: None, tmp_pa
         "scan.rich.txt",
         "scan.md",
         "cbom.md",
+        "manifest.json",
     }
     canonical = json.loads((tmp_path / "scan.json").read_text())
     cbom = json.loads((tmp_path / "scan.cdx.json").read_text())

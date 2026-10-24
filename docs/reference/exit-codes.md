@@ -27,7 +27,7 @@ process-wide last-resort internal-error code.
 | **2** | `EXIT_TARGET_FAILED` | Target scan failed | A target probe timed out, failed, or produced malformed or over-limit output. |
 | **3** | `EXIT_LOCAL_DEPENDENCY` | Required local executable is missing or unsupported | TLS requires a supported OpenSSL 3.5.x LTS capability (minimum 3.5.8). IKE requires a usable stock `ike-scan` executable. |
 | **4** | `EXIT_USAGE` | Usage or configuration error | Bad flag value (e.g. `--format yaml`), unknown retry category, `--retries` without `--retry-on`, malformed target string. |
-| **70** | `EXIT_INTERNAL_ERROR` | Internal qureddy bug | An unhandled exception escaped to `main()`'s last-resort catch (e.g., a programming error in qureddy itself, an unhandled dependency failure). **This is qureddy's problem, not yours.** Open an issue with the printed error message and a reproducer. Code 70 is BSD `sysexits.h` `EX_SOFTWARE`. |
+| **70** | `EXIT_INTERNAL_ERROR` | Internal qureddy or output-publication failure | An unhandled exception escaped to `main()`'s last-resort catch, or QuReddy could not publish a completed output bundle. **This is qureddy's problem, not yours.** Open an issue with the printed error message and a reproducer. Code 70 is BSD `sysexits.h` `EX_SOFTWARE`. |
 
 ## 3. Why these values
 

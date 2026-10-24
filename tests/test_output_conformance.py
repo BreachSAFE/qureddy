@@ -26,8 +26,8 @@ def _write_bundle(directory: Path, result=None) -> None:
     )
 
 
-def test_bundle_validator_accepts_canonical_four_format_bundle(tmp_path: Path) -> None:
-    """A real renderer bundle passes JSON, JSONL, Rich, and CBOM checks."""
+def test_bundle_validator_accepts_canonical_projection_bundle(tmp_path: Path) -> None:
+    """A real renderer bundle passes all projection and manifest checks."""
     _write_bundle(tmp_path)
 
     result = validate_bundle(tmp_path, "tls", "example.com")

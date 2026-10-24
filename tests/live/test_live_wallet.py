@@ -202,7 +202,7 @@ def test_real_cbom_matches_the_shared_signature_asset_shape() -> None:
     assert set(properties["cryptoFunctions"]) == {"sign", "verify"}
 
 
-def test_real_output_dir_writes_all_four_projections(tmp_path: Path) -> None:
+def test_real_output_dir_writes_the_complete_projection_bundle(tmp_path: Path) -> None:
     """The KeyError regression: rich and cbom passed while this wrote nothing."""
     completed = _run("scan", "wallet", BTC_UNSPENT, "--output-dir", str(tmp_path))
     assert completed.returncode == 0, completed.stderr
@@ -216,6 +216,7 @@ def test_real_output_dir_writes_all_four_projections(tmp_path: Path) -> None:
         "scan.rich.txt",
         "scan.md",
         "cbom.md",
+        "manifest.json",
     } <= set(written)
     assert set(written) <= {
         "scan.cdx.json",
@@ -224,6 +225,7 @@ def test_real_output_dir_writes_all_four_projections(tmp_path: Path) -> None:
         "scan.rich.txt",
         "scan.md",
         "cbom.md",
+        "manifest.json",
         "certificate.pem",
     }
     for name in written:

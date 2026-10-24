@@ -152,12 +152,13 @@ sequenceDiagram
     Scanner-->>Collector: evidence/findings
     Collector-->>Result: one canonical result graph
     Result->>Renderers: selected format or output-dir bundle
-    Renderers-->>User: rich/json/jsonl/cbom
+    Renderers-->>User: rich/json/jsonl/markdown/cbom
 ```
 
 `--output-dir` does not run the network scan four times. `_render_bundle` renders
 the same `ScanResult` once into each current projection: `scan.json`,
-`scan.cdx.json`, `scan.jsonl`, `scan.rich.txt`, `scan.md`, and `cbom.md`.
+`scan.cdx.json`, `scan.jsonl`, `scan.rich.txt`, `scan.md`, and `cbom.md`, then
+publishes `manifest.json` as the hashed completion marker.
 
 ## 4. Canonical data model
 
