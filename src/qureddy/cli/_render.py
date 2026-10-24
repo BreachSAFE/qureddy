@@ -102,12 +102,18 @@ def _render_bundle(
             json.dumps(manifest, indent=2, ensure_ascii=True) + "\n", encoding="utf-8"
         )
         backup = Path(tempfile.mkdtemp(prefix=".qureddy-backup-", dir=output_dir))
-        for name in (*files, "manifest.json"):
+        # ``certificate.pem`` is managed even when this scan has no certificate:
+        # otherwise a previous run can leave a stale certificate beside a new
+        # complete bundle.  Moving it into the rollback directory keeps the
+        # replacement atomic while making the current bundle authoritative.
+        managed_names = (*files, "manifest.json", "certificate.pem")
+        for name in managed_names:
             destination = output_dir / name
             if destination.exists():
                 destination.replace(backup / name)
-            (stage / name).replace(destination)
-            installed.append(destination)
+            if name in files or name == "manifest.json":
+                (stage / name).replace(destination)
+                installed.append(destination)
     except OSError as exc:
         for destination in installed:
             destination.unlink(missing_ok=True)

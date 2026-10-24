@@ -37,6 +37,31 @@ def test_output_dir_writes_observed_certificate(tmp_path: Path) -> None:
     )
 
 
+def test_output_dir_removes_certificate_from_previous_run(tmp_path: Path) -> None:
+    """A run without certificate evidence cannot retain an older leaf PEM."""
+    run_dir = tmp_path / "run"
+    run_dir.mkdir()
+    stale = run_dir / "certificate.pem"
+    stale.write_text("-----BEGIN CERTIFICATE-----\nstale\n", encoding="utf-8")
+
+    result = CliRunner().invoke(
+        app,
+        [
+            "scan",
+            "tls",
+            "example.com",
+            "--openssl",
+            fake_openssl("openssl_too_old"),
+            "--output-dir",
+            str(run_dir),
+        ],
+    )
+
+    assert result.exit_code == 3, result.output
+    assert not stale.exists()
+    assert json.loads((run_dir / "manifest.json").read_text())["status"] == "complete"
+
+
 def test_json_output_top_level_keys_in_locked_order() -> None:
     runner = CliRunner()
     result = runner.invoke(
