@@ -116,6 +116,29 @@ def test_bundle_rollback_failure_preserves_diagnostic_backup(
             shutil.rmtree(path, ignore_errors=True)
 
 
+def test_bundle_install_failure_removes_partial_public_bundle(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A failure after one public replacement restores the previous bundle."""
+    _write_bundle(tmp_path)
+    before = {path.name: path.read_bytes() for path in tmp_path.iterdir() if path.is_file()}
+    original_replace = Path.replace
+
+    def fail_after_first_install(self: Path, target: Path) -> Path:
+        if self.parent.name.startswith(".qureddy-bundle-") and self.name == "scan.md":
+            raise OSError(28, "simulated install failure")
+        return original_replace(self, target)
+
+    monkeypatch.setattr(Path, "replace", fail_after_first_install)
+    with pytest.raises(typer.Exit) as failure:
+        _render_bundle(_build_result(), tmp_path, reproducible=True, compact=False)
+
+    assert failure.value.exit_code == 70
+    after = {path.name: path.read_bytes() for path in tmp_path.iterdir() if path.is_file()}
+    assert after == before
+    assert not list(tmp_path.glob(".qureddy-backup-*"))
+
+
 def test_bundle_validator_rejects_jsonl_finding_drift(tmp_path: Path) -> None:
     """A changed JSONL finding cannot silently diverge from canonical JSON."""
     _write_bundle(tmp_path)

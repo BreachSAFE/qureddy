@@ -73,7 +73,7 @@ def _render_bundle(
     try:
         stage = _stage_bundle(output_dir, files)
         backup = Path(tempfile.mkdtemp(prefix=".qureddy-backup-", dir=output_dir))
-        installed = _install_staged_bundle(output_dir, stage, files, backup)
+        _install_staged_bundle(output_dir, stage, files, backup, installed)
     except OSError as exc:
         preserve_backup, rollback_error = _rollback_bundle(output_dir, backup, installed)
         if rollback_error is not None:
@@ -139,10 +139,13 @@ def _stage_bundle(output_dir: Path, files: dict[str, str]) -> Path:
 
 
 def _install_staged_bundle(
-    output_dir: Path, stage: Path, files: dict[str, str], backup: Path
-) -> list[Path]:
-    """Replace the managed public files and return the installed paths."""
-    installed: list[Path] = []
+    output_dir: Path,
+    stage: Path,
+    files: dict[str, str],
+    backup: Path,
+    installed: list[Path],
+) -> None:
+    """Replace managed files while exposing partial progress to rollback."""
     # ``certificate.pem`` is managed even when this scan has no certificate;
     # moving it into the rollback directory removes stale evidence safely.
     managed_names = dict.fromkeys((*files, "manifest.json", "certificate.pem"))
@@ -153,7 +156,6 @@ def _install_staged_bundle(
         if name in files or name == "manifest.json":
             (stage / name).replace(destination)
             installed.append(destination)
-    return installed
 
 
 def _rollback_bundle(
