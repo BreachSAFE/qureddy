@@ -119,23 +119,20 @@ def test_bundle_rollback_failure_preserves_diagnostic_backup(
 def test_bundle_install_failure_removes_partial_public_bundle(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """A failure after one public replacement restores the previous bundle."""
-    _write_bundle(tmp_path)
-    before = {path.name: path.read_bytes() for path in tmp_path.iterdir() if path.is_file()}
+    """A first-run failure after partial publication leaves no artifacts."""
     original_replace = Path.replace
 
-    def fail_after_first_install(self: Path, target: Path) -> Path:
-        if self.parent.name.startswith(".qureddy-bundle-") and self.name == "scan.md":
+    def fail_after_five_installs(self: Path, target: Path) -> Path:
+        if self.parent.name.startswith(".qureddy-bundle-") and self.name == "cbom.md":
             raise OSError(28, "simulated install failure")
         return original_replace(self, target)
 
-    monkeypatch.setattr(Path, "replace", fail_after_first_install)
+    monkeypatch.setattr(Path, "replace", fail_after_five_installs)
     with pytest.raises(typer.Exit) as failure:
         _render_bundle(_build_result(), tmp_path, reproducible=True, compact=False)
 
     assert failure.value.exit_code == 70
-    after = {path.name: path.read_bytes() for path in tmp_path.iterdir() if path.is_file()}
-    assert after == before
+    assert not [path for path in tmp_path.iterdir() if path.is_file()]
     assert not list(tmp_path.glob(".qureddy-backup-*"))
 
 
