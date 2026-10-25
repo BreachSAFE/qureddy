@@ -65,56 +65,15 @@ def _render_bundle(
     partial bundle visible.  ``manifest.json`` is the completion marker and
     records hashes for the published artifacts.
     """
-    json_stream = io.StringIO()
-    cbom_stream = io.StringIO()
-    jsonl_stream = io.StringIO()
-    rich_stream = io.StringIO()
-    markdown_stream = io.StringIO()
-    cbom_markdown_stream = io.StringIO()
-    render_json(result, json_stream, compact=compact)
-    cbom_payload = build_cbom_payload(result, reproducible=reproducible)
-    render_cbom_payload(cbom_payload, cbom_stream, compact=compact)
-    render_jsonl(result, jsonl_stream)
-    render_rich(result, rich_stream)
-    render_markdown(result, markdown_stream)
-    render_cbom_markdown(cbom_payload, cbom_markdown_stream)
-    files = {
-        "scan.json": json_stream.getvalue(),
-        "scan.cdx.json": cbom_stream.getvalue(),
-        "scan.jsonl": jsonl_stream.getvalue(),
-        "scan.rich.txt": rich_stream.getvalue(),
-        "scan.md": markdown_stream.getvalue(),
-        "cbom.md": cbom_markdown_stream.getvalue(),
-    }
-    certificate_pem = _certificate_text(result)
-    if certificate_pem is not None:
-        files["certificate.pem"] = certificate_pem
-
+    files = _render_projection_files(result, reproducible=reproducible, compact=compact)
     stage: Path | None = None
     backup: Path | None = None
     preserve_backup = False
     installed: list[Path] = []
     try:
-        stage = Path(tempfile.mkdtemp(prefix=".qureddy-bundle-", dir=output_dir))
-        for name, content in files.items():
-            (stage / name).write_text(content, encoding="utf-8")
-        manifest = _bundle_manifest(stage, files)
-        (stage / "manifest.json").write_text(
-            json.dumps(manifest, indent=2, ensure_ascii=True) + "\n", encoding="utf-8"
-        )
+        stage = _stage_bundle(output_dir, files)
         backup = Path(tempfile.mkdtemp(prefix=".qureddy-backup-", dir=output_dir))
-        # ``certificate.pem`` is managed even when this scan has no certificate:
-        # otherwise a previous run can leave a stale certificate beside a new
-        # complete bundle.  Moving it into the rollback directory keeps the
-        # replacement atomic while making the current bundle authoritative.
-        managed_names = dict.fromkeys((*files, "manifest.json", "certificate.pem"))
-        for name in managed_names:
-            destination = output_dir / name
-            if destination.exists():
-                destination.replace(backup / name)
-            if name in files or name == "manifest.json":
-                (stage / name).replace(destination)
-                installed.append(destination)
+        _install_staged_bundle(output_dir, stage, files, backup, installed)
     except OSError as exc:
         preserve_backup, rollback_error = _rollback_bundle(output_dir, backup, installed)
         if rollback_error is not None:
@@ -130,6 +89,73 @@ def _render_bundle(
             shutil.rmtree(stage, ignore_errors=True)
         if backup is not None and not preserve_backup:
             shutil.rmtree(backup, ignore_errors=True)
+
+
+def _render_projection_files(
+    result: ScanResult, *, reproducible: bool, compact: bool
+) -> dict[str, str]:
+    """Render every bundle projection from one canonical result."""
+    json_stream = io.StringIO()
+    cbom_stream = io.StringIO()
+    jsonl_stream = io.StringIO()
+    rich_stream = io.StringIO()
+    markdown_stream = io.StringIO()
+    render_json(result, json_stream, compact=compact)
+    cbom_payload = build_cbom_payload(result, reproducible=reproducible)
+    render_cbom_payload(cbom_payload, cbom_stream, compact=compact)
+    render_jsonl(result, jsonl_stream)
+    render_rich(result, rich_stream)
+    render_markdown(result, markdown_stream)
+    cbom_markdown = io.StringIO()
+    render_cbom_markdown(cbom_payload, cbom_markdown)
+    files = {
+        "scan.json": json_stream.getvalue(),
+        "scan.cdx.json": cbom_stream.getvalue(),
+        "scan.jsonl": jsonl_stream.getvalue(),
+        "scan.rich.txt": rich_stream.getvalue(),
+        "scan.md": markdown_stream.getvalue(),
+        "cbom.md": cbom_markdown.getvalue(),
+    }
+    certificate_pem = _certificate_text(result)
+    if certificate_pem is not None:
+        files["certificate.pem"] = certificate_pem
+    return files
+
+
+def _stage_bundle(output_dir: Path, files: dict[str, str]) -> Path:
+    """Write all projections and their manifest into a private stage."""
+    stage = Path(tempfile.mkdtemp(prefix=".qureddy-bundle-", dir=output_dir))
+    try:
+        for name, content in files.items():
+            (stage / name).write_text(content, encoding="utf-8")
+        manifest = _bundle_manifest(stage, files)
+        (stage / "manifest.json").write_text(
+            json.dumps(manifest, indent=2, ensure_ascii=True) + "\n", encoding="utf-8"
+        )
+    except OSError:
+        shutil.rmtree(stage, ignore_errors=True)
+        raise
+    return stage
+
+
+def _install_staged_bundle(
+    output_dir: Path,
+    stage: Path,
+    files: dict[str, str],
+    backup: Path,
+    installed: list[Path],
+) -> None:
+    """Replace managed files while exposing partial progress to rollback."""
+    # ``certificate.pem`` is managed even when this scan has no certificate;
+    # moving it into the rollback directory removes stale evidence safely.
+    managed_names = dict.fromkeys((*files, "manifest.json", "certificate.pem"))
+    for name in managed_names:
+        destination = output_dir / name
+        if destination.exists():
+            destination.replace(backup / name)
+        if name in files or name == "manifest.json":
+            (stage / name).replace(destination)
+            installed.append(destination)
 
 
 def _rollback_bundle(
@@ -179,13 +205,6 @@ def _bundle_manifest(stage: Path, files: dict[str, str]) -> dict[str, object]:
         "status": "complete",
         "artifacts": artifacts,
     }
-
-
-def _write_certificate_artifact(result: ScanResult, output_dir: Path) -> None:
-    """Write the observed leaf PEM without adding it to machine results."""
-    certificate_pem = _certificate_text(result)
-    if certificate_pem is not None:
-        (output_dir / "certificate.pem").write_text(certificate_pem, encoding="utf-8")
 
 
 def _render(

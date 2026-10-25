@@ -9,7 +9,6 @@ import re
 import subprocess
 from datetime import datetime
 from pathlib import Path
-from types import SimpleNamespace
 from urllib.parse import urlsplit
 
 import pytest
@@ -19,6 +18,7 @@ from qureddy._branding import HEADER
 from qureddy.cli import _render as render_module
 from qureddy.cli import app, main
 from qureddy.scanners.tls.openssl_probe import executor
+from tests._cbom_fixtures import _build_result
 from tests._fake_openssl import fake_openssl
 
 
@@ -26,11 +26,17 @@ def test_output_dir_writes_observed_certificate(tmp_path: Path) -> None:
     """Bundle mode persists the leaf PEM when certificate evidence exists."""
     run_dir = tmp_path / "run"
     run_dir.mkdir()
-    result = SimpleNamespace(
-        evidence=(SimpleNamespace(certificate_pem="-----BEGIN CERTIFICATE-----\nleaf"),)
+    result = _build_result()
+    evidence = result.evidence[0].model_copy(
+        update={"certificate_pem": "-----BEGIN CERTIFICATE-----\nleaf"}
     )
 
-    render_module._write_certificate_artifact(result, run_dir)  # noqa: SLF001
+    render_module._render_bundle(  # noqa: SLF001
+        result.model_copy(update={"evidence": (evidence,)}),
+        run_dir,
+        reproducible=True,
+        compact=False,
+    )
 
     assert (run_dir / "certificate.pem").read_text(encoding="utf-8") == (
         "-----BEGIN CERTIFICATE-----\nleaf\n"

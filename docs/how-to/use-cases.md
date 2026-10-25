@@ -167,7 +167,7 @@ $ qureddy scan tls badssl.com:443 --format json \
 ```
 
 The endpoint and wallet bundle contains `scan.json`, `scan.jsonl`,
-`scan.cdx.json`, `scan.rich.txt`, `scan.md`, and `cbom.md`, plus the run log
+`scan.cdx.json`, `scan.rich.txt`, `scan.md`, `cbom.md`, and `manifest.json`, plus the run log
 when requested.
 
 ## 8. Read the result

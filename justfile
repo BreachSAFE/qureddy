@@ -21,7 +21,7 @@ setup:
 # ---------------------------------------------------------------------------
 
 # Run the full Tier 1 gate suite.
-gates: lint format-check typecheck test bandit pip-audit deptry reuse-lint
+gates: lint format-check typecheck size complexity test bandit pip-audit deptry reuse-lint
 
 # Lint only.
 lint:
@@ -38,6 +38,14 @@ format:
 # Strict type check.
 typecheck:
     uv run --locked mypy src/qureddy --strict
+
+# Enforce source file, function, and class size ceilings.
+size:
+    uv run --locked python scripts/check_size_policy.py
+
+# Match the CI cyclomatic-complexity ceiling locally.
+complexity:
+    uv run --locked xenon --max-absolute B --max-modules A --max-average A src/qureddy
 
 # Run the test suite with coverage.
 test:

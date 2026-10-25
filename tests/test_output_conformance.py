@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import json
 import shutil
+from hashlib import sha256
 from pathlib import Path
 
 import pytest
@@ -66,6 +67,27 @@ def test_bundle_validator_rejects_manifest_that_omits_artifacts(tmp_path: Path) 
         validate_bundle(tmp_path, "tls", "example.com")
 
 
+def test_bundle_validator_rejects_markdown_identity_drift(tmp_path: Path) -> None:
+    """A digest-consistent Markdown mutation cannot bypass canonical parity."""
+    _write_bundle(tmp_path)
+    scan_markdown = tmp_path / "scan.md"
+    scan_markdown.write_text(
+        scan_markdown.read_text(encoding="utf-8").replace("scan-test", "different-scan"),
+        encoding="utf-8",
+    )
+    manifest_path = tmp_path / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    for artifact in manifest["artifacts"]:
+        if artifact["name"] == "scan.md":
+            data = scan_markdown.read_bytes()
+            artifact["size"] = len(data)
+            artifact["sha256"] = sha256(data).hexdigest()
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    with pytest.raises(ValueError, match=r"scan\.md: missing canonical scan_id"):
+        validate_bundle(tmp_path, "tls", "example.com")
+
+
 def test_bundle_rollback_failure_preserves_diagnostic_backup(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -92,6 +114,26 @@ def test_bundle_rollback_failure_preserves_diagnostic_backup(
     finally:
         for path in tmp_path.glob(".qureddy-backup-*"):
             shutil.rmtree(path, ignore_errors=True)
+
+
+def test_bundle_install_failure_removes_partial_public_bundle(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A first-run failure after partial publication leaves no artifacts."""
+    original_replace = Path.replace
+
+    def fail_after_five_installs(self: Path, target: Path) -> Path:
+        if self.parent.name.startswith(".qureddy-bundle-") and self.name == "cbom.md":
+            raise OSError(28, "simulated install failure")
+        return original_replace(self, target)
+
+    monkeypatch.setattr(Path, "replace", fail_after_five_installs)
+    with pytest.raises(typer.Exit) as failure:
+        _render_bundle(_build_result(), tmp_path, reproducible=True, compact=False)
+
+    assert failure.value.exit_code == 70
+    assert not [path for path in tmp_path.iterdir() if path.is_file()]
+    assert not list(tmp_path.glob(".qureddy-backup-*"))
 
 
 def test_bundle_validator_rejects_jsonl_finding_drift(tmp_path: Path) -> None:

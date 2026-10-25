@@ -16,6 +16,7 @@ remain in the typed model and the CycloneDX builder.
 from __future__ import annotations
 
 import json
+import re
 import sys
 import unicodedata
 from collections.abc import Mapping, Sequence
@@ -34,6 +35,7 @@ CBOM_MARKDOWN_PROJECTION_VERSION = "qureddy.cbom.v3"
 CBOM_IDENTITY_FIELDS = ("bomFormat", "specVersion", "serialNumber", "version")
 CBOM_SECTION_FIELDS = ("metadata", "components", "dependencies", "annotations")
 CBOM_KNOWN_FIELDS = CBOM_IDENTITY_FIELDS + CBOM_SECTION_FIELDS
+_PLAIN_KEY = re.compile(r"[A-Za-z0-9_$-]+")
 
 
 def _safe_text(value: str) -> str:
@@ -86,14 +88,8 @@ def _write_value(stream: IO[str], path: str, value: JsonValue) -> None:
 
 
 def _path_for_key(prefix: str, key: str) -> str:
-    """Build a path that distinguishes literal dotted keys from nesting."""
-    needs_quoting = (
-        "." in key
-        or "[" in key
-        or "]" in key
-        or any(unicodedata.category(character) in {"Cc", "Cf"} for character in key)
-    )
-    component = json.dumps(key, ensure_ascii=True) if needs_quoting else key
+    """Build a path that distinguishes literal keys from nesting syntax."""
+    component = key if _PLAIN_KEY.fullmatch(key) else json.dumps(key, ensure_ascii=True)
     return f"{prefix}.{component}" if prefix else component
 
 

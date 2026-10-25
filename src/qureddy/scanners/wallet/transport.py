@@ -118,9 +118,8 @@ def record_indexer_certificate(builder: Builder, host: str, port: int) -> None:
 
     The endpoint contacted is an ordinary TLS server, so `fetch_certificate_pem`
     and `parse_certificate` apply unchanged and `evidence_from_certificate`
-    builds the record. Setting `certificate_pem` also makes `--output-dir` write
-    `certificate.pem`, because `_write_certificate_artifact` looks for exactly
-    that field.
+    builds the record. Setting `certificate_pem` makes the bundle renderer add
+    `certificate.pem` to its staged artifact map.
 
     This certificate authenticates the API host and says nothing about the
     account, which the finding states. The probe needs an OpenSSL 3.5 LTS
