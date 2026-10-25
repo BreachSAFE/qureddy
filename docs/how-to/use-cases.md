@@ -167,7 +167,8 @@ $ qureddy scan tls badssl.com:443 --format json \
 ```
 
 The endpoint and wallet bundle contains `scan.json`, `scan.jsonl`,
-`scan.cdx.json`, and `scan.rich.txt`, plus the run log when requested.
+`scan.cdx.json`, `scan.rich.txt`, `scan.md`, and `cbom.md`, plus the run log
+when requested.
 
 ## 8. Read the result
 
@@ -185,4 +186,3 @@ An `UNKNOWN` or incomplete result is useful operational information: it tells
 you which probe or dependency needs attention before treating the target as
 assessed. See the [exit-code reference](../reference/exit-codes.md) and
 [CBOM reference](../reference/cbom.md) for the complete contracts.
-

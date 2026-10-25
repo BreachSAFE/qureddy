@@ -51,6 +51,15 @@ versions follow [PEP 440](https://peps.python.org/pep-0440/).
 
 ## Unreleased
 
+### Fixed
+
+- Keep Markdown output free of diagnostic logs and give scan and CBOM
+  projections stable dotted v3 identities, explicit empty values, JSON-safe
+  scalar rendering, and safe field paths for untrusted text.
+- Publish `--output-dir` bundles atomically with a hashed `manifest.json`,
+  rollback on write failure, exit code 70 for publication failures, and no
+  stale certificate artifact from a previous run.
+
 ## [0.9.31] - 2026-09-13
 
 ### Added

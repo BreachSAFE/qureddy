@@ -139,6 +139,7 @@ class TestTLSScannerOrchestration:
             asset=asset,
             openssl_path="/fixture/openssl",
             timeout_seconds=1,
+            now=datetime(2026, 9, 6, tzinfo=UTC),
         )
         assert findings == ()
         assert evidence.observation_type is ObservationType.NOT_TESTABLE
@@ -167,6 +168,7 @@ class TestTLSScannerOrchestration:
             asset=asset,
             openssl_path="/fixture/openssl",
             timeout_seconds=1,
+            now=datetime(2026, 9, 6, tzinfo=UTC),
         )
         assert evidence.observation_type is ObservationType.OBSERVED
         assert evidence.algorithm == "sha256WithRSAEncryption"
@@ -241,6 +243,7 @@ class TestTLSScannerOrchestration:
             asset=asset,
             openssl_path="/fixture/openssl",
             timeout_seconds=1,
+            now=datetime(2026, 9, 6, tzinfo=UTC),
         )
         assert evidence.algorithm == "vendorSignature42"
         assert evidence.primitive == "signature"

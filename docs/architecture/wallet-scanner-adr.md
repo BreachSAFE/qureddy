@@ -402,7 +402,7 @@ endpoint out of shell history.
 
 ## 14. Rendered output
 
-The engine owns the scan and its four projections. An application layer reads the JSON and
+The engine owns the scan and its supported projections. An application layer reads the JSON and
 decides how to present it. Neither adds a grading scale, per C5.
 
 Captured from `qureddy scan wallet bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4`, the BIP-173
@@ -494,8 +494,9 @@ HASH160 of `0279be667e...f81798` is the 20-byte witness program this address enc
 
 ### 14.2 What the run writes
 
-`--output-dir` writes five files. The first four are the standard projections; the fifth is
-the transport artifact this scanner adds.
+`--output-dir` writes the standard projection bundle and, when certificate evidence exists,
+the transport artifact this scanner adds. `manifest.json` records the hashes of every
+published projection and marks the bundle complete.
 
 | File | Contents |
 |---|---|
@@ -503,6 +504,9 @@ the transport artifact this scanner adds.
 | `scan.cdx.json` | CycloneDX 1.7, the account key as a signature crypto asset at level 0 |
 | `scan.jsonl` | the findings stream, one object per line |
 | `scan.rich.txt` | the render above, ANSI stripped |
+| `scan.md` | the retrieval-friendly typed scan projection |
+| `cbom.md` | the retrieval-friendly CycloneDX projection |
+| `manifest.json` | the hashed completion marker for the bundle |
 | `certificate.pem` | the indexer's TLS leaf |
 
 ### 14.3 When a lane fails

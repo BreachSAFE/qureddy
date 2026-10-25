@@ -76,7 +76,7 @@ qureddy scan ike netherlands.hide.me --nat-t --format cbom > vpn.cdx.json
 qureddy scan ike netherlands.hide.me --nat-t --output-dir evidence/vpn
 ```
 
-Use `--output-dir` when the four projections must share the same scan and evidence identifiers.
+Use `--output-dir` when all projections must share the same scan and evidence identifiers.
 
 ## 5. Interpret the result
 

@@ -269,15 +269,15 @@ qureddy scan ssh github.com --format jsonl > scan.jsonl
 ### CycloneDX 1.7 cryptographic inventory
 qureddy scan ssh github.com --format cbom > scan.cdx.json
 
-### Write all four projections from one scan
+### Write all projections from one scan
 qureddy scan ssh github.com --output-dir evidence/github-ssh
 ```
 
-The bundle contains `scan.json`, `scan.jsonl`, `scan.cdx.json`, and
-`scan.rich.txt`. Machine-readable data goes to standard output; diagnostics go
-to standard error. Use `-v`, `-vv`, or `-vvv` for progressively more process
-diagnostics. Use `--deterministic` when stable bytes are required for content
-addressing.
+The bundle contains `scan.json`, `scan.jsonl`, `scan.cdx.json`, `scan.rich.txt`,
+`scan.md`, and `cbom.md`. Machine-readable data goes to standard output;
+diagnostics go to standard error. Use `-v`, `-vv`, or `-vvv` for progressively
+more process diagnostics. Use `--deterministic` when stable bytes are required
+for content addressing.
 
 QuReddy's endpoint and wallet CBOMs use CycloneDX 1.7 crypto properties,
 evidence occurrences, annotations, and namespaced provenance. The artifact

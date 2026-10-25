@@ -37,6 +37,31 @@ def test_output_dir_writes_observed_certificate(tmp_path: Path) -> None:
     )
 
 
+def test_output_dir_removes_certificate_from_previous_run(tmp_path: Path) -> None:
+    """A run without certificate evidence cannot retain an older leaf PEM."""
+    run_dir = tmp_path / "run"
+    run_dir.mkdir()
+    stale = run_dir / "certificate.pem"
+    stale.write_text("-----BEGIN CERTIFICATE-----\nstale\n", encoding="utf-8")
+
+    result = CliRunner().invoke(
+        app,
+        [
+            "scan",
+            "tls",
+            "example.com",
+            "--openssl",
+            fake_openssl("openssl_too_old"),
+            "--output-dir",
+            str(run_dir),
+        ],
+    )
+
+    assert result.exit_code == 3, result.output
+    assert not stale.exists()
+    assert json.loads((run_dir / "manifest.json").read_text())["status"] == "complete"
+
+
 def test_json_output_top_level_keys_in_locked_order() -> None:
     runner = CliRunner()
     result = runner.invoke(
@@ -132,6 +157,71 @@ def test_output_dir_emits_correlated_json_and_cbom_from_one_scan(tmp_path: Path)
     assert records[-1]["type"] == "scan_summary"
     assert records[-1]["scan_id"] == json_payload["scan"]["scan_id"]
     assert (run_dir / "scan.rich.txt").read_text(encoding="utf-8").startswith("QuReddy")
+    manifest = json.loads((run_dir / "manifest.json").read_text(encoding="utf-8"))
+    assert manifest["schema_version"] == "qureddy.output_bundle.v1"
+    assert manifest["status"] == "complete"
+    assert {item["name"] for item in manifest["artifacts"]} >= {
+        "scan.json",
+        "scan.cdx.json",
+        "scan.jsonl",
+        "scan.rich.txt",
+        "scan.md",
+        "cbom.md",
+    }
+
+
+def test_markdown_stdout_is_machine_clean() -> None:
+    """Markdown receives the same stdout/stderr purity boundary as JSON."""
+    result = CliRunner().invoke(
+        app,
+        [
+            "scan",
+            "tls",
+            "example.com",
+            "--openssl",
+            fake_openssl("openssl_too_old"),
+            "--format",
+            "markdown",
+        ],
+    )
+
+    assert result.exit_code == 3, result.output
+    assert result.stdout.startswith("# QuReddy Scan\n")
+    assert "INFO" not in result.stdout
+
+
+def test_output_bundle_write_failure_leaves_no_partial_bundle(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A staging failure cannot expose projections without a completion marker."""
+    fake = fake_openssl("openssl_too_old")
+    run_dir = tmp_path / "run"
+    run_dir.mkdir()
+    original_write_text = Path.write_text
+
+    def fail_write_text(self: Path, *args: object, **kwargs: object) -> int:
+        if self.name == "scan.cdx.json":
+            raise OSError(28, "no space left on device")
+        return original_write_text(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "write_text", fail_write_text)
+    result = CliRunner().invoke(
+        app,
+        [
+            "scan",
+            "tls",
+            "example.com",
+            "--openssl",
+            fake,
+            "--output-dir",
+            str(run_dir),
+        ],
+    )
+
+    assert result.exit_code == 70
+    assert "cannot publish scan bundle" in (result.stdout + result.stderr)
+    assert not any(path.is_file() for path in run_dir.iterdir())
 
 
 def test_jsonl_format_emits_one_machine_record_per_finding() -> None:
@@ -200,35 +290,6 @@ def test_output_dir_creation_failure_is_usage_error(
     )
     assert result.exit_code == 4
     assert "cannot create --output-dir" in (result.stdout + result.stderr)
-
-
-def test_output_bundle_write_failure_is_usage_error(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Bundle persistence errors remain distinct from scan failures."""
-    fake = fake_openssl("openssl_too_old")
-    run_dir = tmp_path / "run"
-    run_dir.mkdir()
-
-    def fail_write_text(self: Path, *args: object, **kwargs: object) -> int:
-        raise OSError(28, "no space left on device")
-
-    monkeypatch.setattr(Path, "write_text", fail_write_text)
-    result = CliRunner().invoke(
-        app,
-        [
-            "scan",
-            "tls",
-            "example.com",
-            "--openssl",
-            fake,
-            "--output-dir",
-            str(run_dir),
-        ],
-    )
-    assert result.exit_code == 4
-    assert "cannot write scan bundle" in (result.stdout + result.stderr)
 
 
 def test_rich_format_renders_header() -> None:

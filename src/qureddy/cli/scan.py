@@ -295,11 +295,10 @@ def _scan_and_render(
 
 def _is_machine_format(output_dir: Path | None, output_format: OutputFormat) -> bool:
     """Return whether stdout must remain free of human-readable diagnostics."""
-    return output_dir is not None or output_format in (
-        OutputFormat.JSON,
-        OutputFormat.CBOM,
-        OutputFormat.JSONL,
-    )
+    # Markdown is a retrieval document, not a terminal report.  Treating it as
+    # Rich lets structlog warnings land in the document when stdout/stderr are
+    # redirected together (issue #1076).
+    return output_dir is not None or output_format is not OutputFormat.RICH
 
 
 def _render_result(

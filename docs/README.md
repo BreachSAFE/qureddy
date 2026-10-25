@@ -78,6 +78,7 @@ Conceptual discussion. Why we made the choices we did.
 - [Why hybrid post-quantum?](explanation/why-hybrid-pq.md) — the X25519MLKEM768 design call
 - [Harvest now, decrypt later (HNDL)](explanation/hndl.md) — the threat model that drives the timeline
 - [Threat model and scope](explanation/threat-model.md) — what QuReddy assumes, what it doesn't try to defend against
+- [Markdown output projection](explanation/markdown-output-architecture.md) — designed architecture for retrieval-oriented Markdown output
 
 ## 3. Contributor documentation
 

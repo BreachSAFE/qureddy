@@ -28,7 +28,7 @@ from __future__ import annotations
 import json
 import sys
 import warnings
-from typing import IO, TYPE_CHECKING, Any
+from typing import IO, TYPE_CHECKING, Any, cast
 
 from cyclonedx.model.bom import Bom
 from cyclonedx.model.component import Component, ComponentType
@@ -94,6 +94,27 @@ def render_cbom(
     CycloneDX document plus a trailing newline is written (issue #30).
     """
     target_stream = stream if stream is not None else sys.stdout
+    payload = build_cbom_payload(result, reproducible=reproducible)
+    render_cbom_payload(payload, target_stream, compact=compact)
+
+
+def render_cbom_payload(
+    payload: dict[str, Any],
+    stream: IO[str] | None = None,
+    *,
+    compact: bool = False,
+) -> None:
+    """Serialize one validated CBOM payload to the requested output stream."""
+    target_stream = stream if stream is not None else sys.stdout
+    _write_payload(target_stream, payload, compact=compact)
+
+
+def build_cbom_payload(
+    result: ScanResult,
+    *,
+    reproducible: bool = False,
+) -> dict[str, Any]:
+    """Build the final CycloneDX payload once for multiple output projections."""
     bom = Bom()
     if reproducible:
         # The Bom() constructor auto-generates a random serialNumber and an
@@ -115,14 +136,12 @@ def render_cbom(
     add_scan_target_metadata(bom, result, reproducible=reproducible)
     certificate = _add_observed_components(bom, result, provides_edges)
     bom.register_dependency(endpoint)
-    _write_with_library_gap_patches(
+    return _build_payload_with_library_gap_patches(
         bom,
         provides_edges,
         certificate.serial if certificate is not None else None,
-        target_stream,
         result=result,
         reproducible=reproducible,
-        compact=compact,
     )
 
 
@@ -260,26 +279,26 @@ def _attach_native_findings(
         _reanchor_annotations(payload, annotations)
 
 
-def _write_with_library_gap_patches(
+def _build_payload_with_library_gap_patches(
     bom: Bom,
     provides_edges: dict[str, list[str]],
     certificate_serial: str | None,
-    stream: IO[str],
     *,
     result: ScanResult,
     reproducible: bool = False,
-    compact: bool = False,
-) -> None:
-    """Serialize with the library, then fill the 1.7 fields it does not expose.
+) -> dict[str, Any]:
+    """Build the final payload, then fill the 1.7 fields the library omits.
 
-    The library serialization is only an intermediate parsed back into a dict,
-    so its indentation is irrelevant; the final ``json.dumps`` controls the
-    emitted layout — indented by default, single-line minified when ``compact``.
+    The library serialization is only an intermediate parsed back into a dict.
+    The public renderer controls the final byte layout after these semantic
+    patches have completed.
     """
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", message=".*no defined dependencies.*")
         serialized = JsonV1Dot7(bom).output_as_string(indent=2)
     payload = json.loads(serialized)
+    if not isinstance(payload, dict):
+        raise TypeError("CycloneDX serializer returned a non-object payload")
     _assert_library_serialization_shape(payload, certificate_serial is not None)
     _patch_provides_edges(payload, provides_edges)
     if certificate_serial:
@@ -288,7 +307,7 @@ def _write_with_library_gap_patches(
     _patch_tls_group_fields(payload, result)
     _attach_native_findings(payload, result, reproducible=reproducible)
     validate_cbom_semantics(payload)
-    _write_payload(stream, payload, compact=compact)
+    return cast("dict[str, Any]", payload)
 
 
 def _assert_library_serialization_shape(payload: dict[str, Any], has_certificate: bool) -> None:

@@ -3,11 +3,11 @@
 # SPDX-License-Identifier: Apache-2.0
 """Validate the correlated output bundle emitted by one QuReddy scan.
 
-One canonical ``ScanResult`` is projected into JSON, JSONL, Rich, and CBOM.
+One canonical ``ScanResult`` is projected into JSON, JSONL, Rich, Markdown, and CBOM.
 This validator checks the machine contracts, the visible Rich contract, and
 the independent CycloneDX 1.7 oracle without re-scanning or re-interpreting
-the endpoint.  SARIF is accepted as an optional fifth artifact once a SARIF
-renderer exists; it is deliberately not fabricated by this tool.
+the endpoint.  SARIF is accepted as an optional artifact once a SARIF renderer
+exists; it is deliberately not fabricated by this tool.
 """
 
 from __future__ import annotations
@@ -16,6 +16,7 @@ import argparse
 import json
 import re
 import sys
+from hashlib import sha256
 from pathlib import Path
 from typing import Any
 
@@ -24,7 +25,15 @@ sys.path.insert(0, str(REPOSITORY_ROOT))
 
 from tests.conformance.harness import official_errors, semantic_errors  # noqa: E402
 
-_REQUIRED_ARTIFACTS = ("scan.json", "scan.cdx.json", "scan.jsonl", "scan.rich.txt")
+_REQUIRED_ARTIFACTS = (
+    "scan.json",
+    "scan.cdx.json",
+    "scan.jsonl",
+    "scan.rich.txt",
+    "scan.md",
+    "cbom.md",
+    "manifest.json",
+)
 _SUMMARY_FIELDS = (
     "readiness",
     "nist_quantum_security_levels",
@@ -57,6 +66,46 @@ def _read_json(path: Path) -> dict[str, Any]:
     if not isinstance(payload, dict):
         raise ValueError(f"{path.name}: top level must be an object")
     return payload
+
+
+def _validate_manifest(run_dir: Path, optional_artifacts: frozenset[str] = frozenset()) -> None:
+    """Reject an incomplete or tampered bundle before validating projections."""
+    manifest = _read_json(run_dir / "manifest.json")
+    if manifest.get("schema_version") != "qureddy.output_bundle.v1":
+        raise ValueError("manifest.json: unsupported schema_version")
+    if manifest.get("status") != "complete":
+        raise ValueError("manifest.json: bundle is not complete")
+    artifacts = manifest.get("artifacts")
+    if not isinstance(artifacts, list):
+        raise ValueError("manifest.json: artifacts must be an array")
+    names: list[str] = []
+    for artifact in artifacts:
+        if not isinstance(artifact, dict) or not isinstance(artifact.get("name"), str):
+            raise ValueError("manifest.json: malformed artifact entry")
+        name = artifact["name"]
+        if Path(name).name != name:
+            raise ValueError(f"manifest.json: invalid artifact name: {name}")
+        names.append(name)
+        path = run_dir / name
+        try:
+            data = path.read_bytes()
+        except OSError as exc:
+            raise ValueError(f"manifest.json: cannot read artifact {name}: {exc}") from exc
+        if artifact.get("size") != len(data):
+            raise ValueError(f"manifest.json: size mismatch for {path.name}")
+        if artifact.get("sha256") != sha256(data).hexdigest():
+            raise ValueError(f"manifest.json: digest mismatch for {path.name}")
+    listed = set(names)
+    if len(listed) != len(names):
+        raise ValueError("manifest.json: duplicate artifact names")
+    expected = set(_REQUIRED_ARTIFACTS) - {"manifest.json"}
+    present = {
+        path.name
+        for path in run_dir.iterdir()
+        if path.is_file() and path.name != "manifest.json" and path.name not in optional_artifacts
+    }
+    if listed != present or not expected <= listed:
+        raise ValueError(f"manifest.json: artifact list does not match bundle: {listed ^ present}")
 
 
 def _finding_key(finding: dict[str, Any]) -> tuple[Any, ...]:
@@ -314,10 +363,11 @@ def validate_bundle(run_dir: Path, scanner: str, target: str, sarif: Path | None
     _validate_cbom_summary(cbom, scan, summary)
     jsonl_count = _validate_jsonl_parity(run_dir, scan, summary, findings)
     _validate_rich(run_dir, scanner, findings)
-
     sarif_count = "not-requested"
     if sarif is not None:
         sarif_count = str(_validate_sarif(sarif, findings))
+    optional_artifacts = frozenset({sarif.name}) if sarif is not None else frozenset()
+    _validate_manifest(run_dir, optional_artifacts)
     return (
         f"status={scan['status']} findings={len(findings)} "
         f"evidence={len(canonical.get('evidence', []))} "

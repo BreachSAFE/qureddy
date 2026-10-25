@@ -102,14 +102,17 @@ system `/tmp` only as a documented exception and report it in the handoff.
 
 ## Output conformance tools
 
-QuReddy emits four supported projections from one canonical `ScanResult`:
+QuReddy emits six supported projections plus a completion manifest from one canonical `ScanResult`:
 
 ```text
 ScanResult
 ├── scan.json       native machine contract
 ├── scan.jsonl      finding-stream contract + trailing summary
 ├── scan.cdx.json   CycloneDX 1.7 CBOM inventory
-└── scan.rich.txt   human-readable terminal report
+├── scan.rich.txt   human-readable terminal report
+├── scan.md         retrieval-friendly scan projection
+├── cbom.md         retrieval-friendly CBOM projection
+└── manifest.json   hashed completion marker for the bundle
 ```
 
 `scripts/validate_output_bundle.py` is the cross-format validator. It checks
@@ -123,7 +126,7 @@ uv run --locked python scripts/validate_output_bundle.py \
 ```
 
 `scripts/smoke_cbom_live.sh` uses the real CLI and exercises live TLS, SSH, and
-IKE targets. It writes all four projections from each scan and invokes the
+IKE targets. It writes the complete projection bundle from each scan and invokes the
 validator above. Preserve artifacts while investigating a failure:
 
 ```bash

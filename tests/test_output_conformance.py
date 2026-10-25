@@ -1,13 +1,15 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
 # SPDX-License-Identifier: Apache-2.0
-"""Regression tests for the five-format output conformance harness."""
+"""Regression tests for the output conformance harness."""
 
 from __future__ import annotations
 
 import json
+import shutil
 from pathlib import Path
 
 import pytest
+import typer
 from scripts.validate_output_bundle import _rich_contains_value, validate_bundle
 
 from qureddy.cli._render import _render_bundle
@@ -26,8 +28,8 @@ def _write_bundle(directory: Path, result=None) -> None:
     )
 
 
-def test_bundle_validator_accepts_canonical_four_format_bundle(tmp_path: Path) -> None:
-    """A real renderer bundle passes JSON, JSONL, Rich, and CBOM checks."""
+def test_bundle_validator_accepts_canonical_projection_bundle(tmp_path: Path) -> None:
+    """A real renderer bundle passes all projection and manifest checks."""
     _write_bundle(tmp_path)
 
     result = validate_bundle(tmp_path, "tls", "example.com")
@@ -35,6 +37,61 @@ def test_bundle_validator_accepts_canonical_four_format_bundle(tmp_path: Path) -
     assert "findings=1" in result
     assert "jsonl_records=2" in result
     assert "sarif_results=not-requested" in result
+
+
+def test_bundle_with_certificate_publishes_each_artifact_once(tmp_path: Path) -> None:
+    """Certificate evidence must not make the atomic bundle commit repeat a file."""
+    result = _build_result()
+    evidence = result.evidence[0].model_copy(
+        update={"certificate_pem": "-----BEGIN CERTIFICATE-----\nleaf"}
+    )
+
+    _write_bundle(tmp_path, result.model_copy(update={"evidence": (evidence,)}))
+
+    manifest = json.loads((tmp_path / "manifest.json").read_text(encoding="utf-8"))
+    names = [artifact["name"] for artifact in manifest["artifacts"]]
+    assert names.count("certificate.pem") == 1
+    assert (tmp_path / "certificate.pem").is_file()
+
+
+def test_bundle_validator_rejects_manifest_that_omits_artifacts(tmp_path: Path) -> None:
+    """A complete bundle manifest must enumerate every file on disk."""
+    _write_bundle(tmp_path)
+    manifest_path = tmp_path / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["artifacts"] = []
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="artifact list does not match bundle"):
+        validate_bundle(tmp_path, "tls", "example.com")
+
+
+def test_bundle_rollback_failure_preserves_diagnostic_backup(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A failed restore returns a controlled error and preserves the backup."""
+    _write_bundle(tmp_path)
+    original_replace = Path.replace
+    install_failed = False
+
+    def fail_install_and_rollback(self: Path, target: Path) -> Path:
+        nonlocal install_failed
+        if self.parent.name.startswith(".qureddy-bundle-") and self.name == "scan.md":
+            install_failed = True
+            raise OSError(5, "simulated install failure")
+        if install_failed and self.parent.name.startswith(".qureddy-backup-"):
+            raise OSError(5, "simulated rollback failure")
+        return original_replace(self, target)
+
+    monkeypatch.setattr(Path, "replace", fail_install_and_rollback)
+    try:
+        with pytest.raises(typer.Exit) as failure:
+            _render_bundle(_build_result(), tmp_path, reproducible=True, compact=False)
+        assert failure.value.exit_code == 70
+        assert any(path.name.startswith(".qureddy-backup-") for path in tmp_path.iterdir())
+    finally:
+        for path in tmp_path.glob(".qureddy-backup-*"):
+            shutil.rmtree(path, ignore_errors=True)
 
 
 def test_bundle_validator_rejects_jsonl_finding_drift(tmp_path: Path) -> None:

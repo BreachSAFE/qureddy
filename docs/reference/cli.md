@@ -76,9 +76,9 @@ qureddy scan ssh [OPTIONS] TARGET
 
 | Option | Type | Default | Meaning |
 | --- | --- | --- | --- |
-| `--format` | `rich`, `json`, `cbom`, or `jsonl` | `rich` | Select output; repeated values use the last occurrence |
+| `--format` | `rich`, `json`, `cbom`, `jsonl`, or `markdown` | `rich` | Select output; repeated values use the last occurrence |
 | `--output`, `-o` | path | standard output | Write the rendered document to a file instead of standard output; standard output stays empty; a path that cannot be opened exits `4` |
-| `--output-dir` | directory | none | Run one scan and write every supported projection (`scan.json`, `scan.cdx.json`, `scan.jsonl`, `scan.rich.txt`); cannot be combined with `--output` |
+| `--output-dir` | directory | none | Run one scan and write every supported projection plus `manifest.json` (`scan.json`, `scan.cdx.json`, `scan.jsonl`, `scan.rich.txt`, `scan.md`, `cbom.md`); cannot be combined with `--output` |
 | `--compact` | flag | off | Minify `--format json` or `cbom` to a single line; JSONL is always one object per line; no effect on `rich` |
 | `--min-severity` | `critical`, `high`, `medium`, `low`, or `info` | none | Rich output only: hide findings below this severity; machine formats stay complete |
 | `--timeout` | integer `1..300` | `8` | Socket timeout in seconds |
@@ -115,7 +115,7 @@ qureddy scan tls [OPTIONS] TARGET
 | `--sni` | text | target hostname | Override TLS Server Name Indication; required for IP targets that need a virtual host |
 | `--starttls` | `smtp`, `pop3`, `imap`, `ftp`, `xmpp`, `xmpp-server`, `telnet`, `irc`, `mysql`, `postgres`, `lmtp`, `nntp`, `sieve`, or `ldap` | none | Upgrade a cleartext service before TLS; use the service's cleartext port, such as SMTP `587` rather than implicit-TLS `465` |
 | `--openssl` | path | automatic | Select a supported OpenSSL 3.5.x LTS binary (minimum 3.5.8) |
-| `--format` | `rich`, `json`, `cbom`, or `jsonl` | `rich` | Select output; repeated values use the last occurrence |
+| `--format` | `rich`, `json`, `cbom`, `jsonl`, or `markdown` | `rich` | Select output; repeated values use the last occurrence |
 | `--output`, `-o` | path | standard output | Write the rendered document to a file instead of standard output; standard output stays empty; a path that cannot be opened exits `4` |
 | `--compact` | flag | off | Minify `--format json` or `cbom` to a single line; no effect on `rich` |
 | `--min-severity` | `critical`, `high`, `medium`, `low`, or `info` | none | Rich output only: hide findings below this severity; machine formats stay complete |
@@ -164,9 +164,9 @@ qureddy scan ike [OPTIONS] TARGET
 | `--ike-scan` | path or command | `ike-scan` | Select the stock executable |
 | `--nat-t` | flag | off | Probe RFC 3947 framing on UDP/4500 first and use the target port as fallback per exchange mode |
 | `--source-port` | integer `0..65535` | `0` | Override the UDP source port; `0` selects 500 direct or 4500 with NAT-T, and binding 500 may require privilege |
-| `--format` | `rich`, `json`, `cbom`, or `jsonl` | `rich` | Select output; repeated values use the last occurrence |
+| `--format` | `rich`, `json`, `cbom`, `jsonl`, or `markdown` | `rich` | Select output; repeated values use the last occurrence |
 | `--output`, `-o` | path | standard output | Write one rendered document to a file |
-| `--output-dir` | directory | none | Run one scan and write JSON, CBOM, JSONL, and Rich projections |
+| `--output-dir` | directory | none | Run one scan and write all projections plus `manifest.json` |
 | `--compact` | flag | off | Minify JSON or CBOM output |
 | `--min-severity` | severity | none | Filter the Rich findings table only |
 | `--timeout` | integer `1..300` | `8` | Per-probe timeout in seconds |
@@ -202,8 +202,8 @@ qureddy scan wallet [OPTIONS] ADDRESS
 | Option | Type | Default | Meaning |
 | --- | --- | --- | --- |
 | `--type` | `bitcoin`, `litecoin`, or `ethereum` | inferred | Select the chain; the address is validated against it |
-| `--format` | `rich`, `json`, `cbom`, or `jsonl` | `rich` | Select output; repeated values use the last occurrence |
-| `--output-dir` | directory | none | Write JSON, CBOM, JSONL, and Rich projections |
+| `--format` | `rich`, `json`, `cbom`, `jsonl`, or `markdown` | `rich` | Select output; repeated values use the last occurrence |
+| `--output-dir` | directory | none | Write all projections plus `manifest.json` |
 | `-v`, `--verbose` | count | `0` | Select INFO, DEBUG, or command traceability detail |
 | `-h`, `--help` | flag | n/a | Print wallet help and exit |
 
@@ -340,6 +340,8 @@ rejected before the external tool runs.
 | `rich` | Human terminal report with optional color |
 | `json` | QuReddy scan document with schema version `qureddy.scan.v1` |
 | `cbom` | CycloneDX 1.7 CBOM containing positively observed cryptographic assets for endpoint and wallet scans |
+| `jsonl` | One finding record per line followed by a scan summary |
+| `markdown` | Native Markdown projection of the complete `ScanResult` |
 
 `json` and `cbom` are indented by default. `jsonl` emits one finding object per
 line with stable `finding_hash` identity. `--compact` minifies either to a
@@ -351,7 +353,7 @@ finding, so the machine-document contract holds regardless of the filter.
 writes every supported projection from the same in-memory result, preserving the
 same `scan.scan_id`, timestamps, target, findings, and evidence. The bundle
 contains `scan.json` (`qureddy.scan.v1`), `scan.cdx.json` (CycloneDX 1.7),
-`scan.jsonl` (one finding per line), and `scan.rich.txt` (human-readable output).
+`scan.jsonl` (one finding per line), `scan.rich.txt`, `scan.md`, and `cbom.md`.
 
 ## 11. Output streams
 
