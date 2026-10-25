@@ -34,11 +34,11 @@ RUN tar -xzf /tmp/theia.tar.gz --strip-components=1 \
 #
 # The prefixes are built on python:3.14-slim-bookworm, the same base as the final
 # stage below, so these binaries link the same libc.
-FROM ghcr.io/paul007ex/breachsafe-openssl:3.5.8@sha256:36dbb1ef300eab5ff775dd51b73efe7351273ddd90c533bf3f8013d0c47e8fa9 AS openssl-src
+FROM ghcr.io/paul007ex/breachsafe-openssl:3.5.8@sha256:a2671024598c5e31179722826c78ac7a5effafb53dda97825da652df9241b46f AS openssl-src
 
 # Isolated legacy compatibility helper, its own image and its own digest so it can
 # never be confused with the production OpenSSL above.
-FROM ghcr.io/paul007ex/breachsafe-openssl:1.0.2u@sha256:f1ea087b0e6b44f7134773b0d567d7b2fb01a88451cc360e0915e229e6d8c8c7 AS openssl-legacy-src
+FROM ghcr.io/paul007ex/breachsafe-openssl:4.0.2@sha256:bac311be72adf9465798f482062d3626f062b5eba8aa0d0c5d953ebf95df9337 AS openssl-legacy-src
 
 # Build the wheel from source inside the image (#253) so a fresh `docker build .`
 # needs no host-built dist/ artifact. hatchling reads the static version from
