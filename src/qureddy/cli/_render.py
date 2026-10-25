@@ -92,6 +92,7 @@ def _render_bundle(
 
     stage: Path | None = None
     backup: Path | None = None
+    preserve_backup = False
     installed: list[Path] = []
     try:
         stage = Path(tempfile.mkdtemp(prefix=".qureddy-bundle-", dir=output_dir))
@@ -106,7 +107,7 @@ def _render_bundle(
         # otherwise a previous run can leave a stale certificate beside a new
         # complete bundle.  Moving it into the rollback directory keeps the
         # replacement atomic while making the current bundle authoritative.
-        managed_names = (*files, "manifest.json", "certificate.pem")
+        managed_names = dict.fromkeys((*files, "manifest.json", "certificate.pem"))
         for name in managed_names:
             destination = output_dir / name
             if destination.exists():
@@ -115,11 +116,11 @@ def _render_bundle(
                 (stage / name).replace(destination)
                 installed.append(destination)
     except OSError as exc:
-        for destination in installed:
-            destination.unlink(missing_ok=True)
-        if backup is not None:
-            for saved in backup.iterdir():
-                saved.replace(output_dir / saved.name)
+        preserve_backup, rollback_error = _rollback_bundle(output_dir, backup, installed)
+        if rollback_error is not None:
+            _fail(rollback_error, EXIT_INTERNAL_ERROR)
+        if not preserve_backup:
+            backup = None
         _fail(
             f"cannot publish scan bundle in {output_dir}: {exc.strerror or exc}",
             EXIT_INTERNAL_ERROR,
@@ -127,8 +128,30 @@ def _render_bundle(
     finally:
         if stage is not None:
             shutil.rmtree(stage, ignore_errors=True)
-        if backup is not None:
+        if backup is not None and not preserve_backup:
             shutil.rmtree(backup, ignore_errors=True)
+
+
+def _rollback_bundle(
+    output_dir: Path, backup: Path | None, installed: list[Path]
+) -> tuple[bool, str | None]:
+    """Restore a prior bundle and report whether a failed restore needs preserving."""
+    try:
+        for destination in installed:
+            destination.unlink(missing_ok=True)
+        if backup is not None:
+            for saved in backup.iterdir():
+                saved.replace(output_dir / saved.name)
+    except OSError as rollback_exc:
+        backup_location = backup if backup is not None else output_dir
+        return (
+            True,
+            f"cannot publish scan bundle in {output_dir}; rollback failed "
+            f"({rollback_exc}) - originals kept in {backup_location}",
+        )
+    if backup is not None:
+        shutil.rmtree(backup, ignore_errors=True)
+    return False, None
 
 
 def _certificate_text(result: ScanResult) -> str | None:
