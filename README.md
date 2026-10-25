@@ -274,7 +274,7 @@ qureddy scan ssh github.com --output-dir evidence/github-ssh
 ```
 
 The bundle contains `scan.json`, `scan.jsonl`, `scan.cdx.json`, `scan.rich.txt`,
-`scan.md`, and `cbom.md`. Machine-readable data goes to standard output;
+`scan.md`, `cbom.md`, and `manifest.json`. Machine-readable data goes to standard output;
 diagnostics go to standard error. Use `-v`, `-vv`, or `-vvv` for progressively
 more process diagnostics. Use `--deterministic` when stable bytes are required
 for content addressing.

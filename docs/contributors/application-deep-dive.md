@@ -463,7 +463,8 @@ refs, and required relationships.
 ├── scan.jsonl
 ├── scan.rich.txt
 ├── scan.md
-└── cbom.md
+├── cbom.md
+└── manifest.json
 ```
 
 `--output` and `--output-dir` are mutually exclusive. Directory/file creation is

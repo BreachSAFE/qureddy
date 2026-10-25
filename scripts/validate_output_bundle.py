@@ -326,6 +326,50 @@ def _validate_rich(run_dir: Path, scanner: str, findings: list[Any]) -> None:
                 raise ValueError(f"Rich output dropped finding value: {value}")
 
 
+def _markdown_has(path: Path, field: str, value: Any) -> bool:
+    """Return whether one Markdown projection carries an exact field value."""
+    marker = f"- {field}: {value}"
+    return marker in path.read_text(encoding="utf-8")
+
+
+def _validate_markdown(run_dir: Path, canonical: dict[str, Any], cbom: dict[str, Any]) -> None:
+    """Validate Markdown identity and record parity against canonical JSON."""
+    scan_markdown = run_dir / "scan.md"
+    cbom_markdown = run_dir / "cbom.md"
+    scan = canonical["scan"]
+    target = canonical["target"]
+    for field, value in (
+        ("scan_id", scan["scan_id"]),
+        ("schema_version", canonical["schema_version"]),
+        ("status", scan["status"]),
+        ("locator", target["locator"]),
+    ):
+        if not _markdown_has(scan_markdown, field, value):
+            raise ValueError(f"scan.md: missing canonical {field}")
+    for record in (
+        *canonical.get("assets", []),
+        *canonical.get("findings", []),
+        *canonical.get("evidence", []),
+    ):
+        if (
+            isinstance(record, dict)
+            and record.get("id") is not None
+            and not _markdown_has(scan_markdown, "id", record["id"])
+        ):
+            raise ValueError(f"scan.md: record identity drift: {record['id']}")
+    for field in ("bomFormat", "specVersion", "serialNumber", "version"):
+        value = cbom.get(field)
+        if value is not None and not _markdown_has(cbom_markdown, field, value):
+            raise ValueError(f"cbom.md: missing canonical {field}")
+    for component in cbom.get("components", []):
+        if (
+            isinstance(component, dict)
+            and component.get("bom-ref") is not None
+            and not _markdown_has(cbom_markdown, "bom-ref", component["bom-ref"])
+        ):
+            raise ValueError(f"cbom.md: component identity drift: {component['bom-ref']}")
+
+
 def _rich_contains_value(compact_rich: str, value: str) -> bool:
     """Match a value despite Rich wrapping a table cell between characters."""
     normalized_rich = re.sub(r"[^A-Za-z0-9]", "", compact_rich)
@@ -361,6 +405,7 @@ def validate_bundle(run_dir: Path, scanner: str, target: str, sarif: Path | None
     cbom = _validate_cbom(run_dir)
     _validate_cbom_identity(cbom, scanner, target)
     _validate_cbom_summary(cbom, scan, summary)
+    _validate_markdown(run_dir, canonical, cbom)
     jsonl_count = _validate_jsonl_parity(run_dir, scan, summary, findings)
     _validate_rich(run_dir, scanner, findings)
     sarif_count = "not-requested"

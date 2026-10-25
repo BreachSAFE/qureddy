@@ -15,6 +15,7 @@ working as the fixture grows.
 from __future__ import annotations
 
 import io
+import json
 import re
 from typing import TYPE_CHECKING, Any
 
@@ -207,6 +208,26 @@ def test_cbom_markdown_uses_qureddy_identity_and_json_safe_scalars() -> None:
     assert "<object object at" not in output
 
 
+def test_cbom_markdown_preserves_all_identity_fields() -> None:
+    """Every CycloneDX identity field remains visible in the projection."""
+    payload = {
+        "bomFormat": "CycloneDX",
+        "specVersion": "1.7",
+        "serialNumber": "urn:uuid:test",
+        "version": 1,
+        "metadata": {},
+        "components": [],
+    }
+    document = io.StringIO()
+
+    render_cbom_markdown(payload, document)
+
+    output = document.getvalue()
+    for field, value in payload.items():
+        if field not in {"metadata", "components"}:
+            assert f"- {field}: {value}\n" in output
+
+
 @pytest.mark.parametrize(
     ("payload", "message"),
     [
@@ -258,6 +279,17 @@ def test_markdown_escapes_invisible_unicode_controls_in_keys() -> None:
     output = document.getvalue()
     assert '"safe\\u202e-key": 1' in output
     assert "\u202e" not in output
+
+
+@pytest.mark.parametrize("key", ["a\u2028b", "a\u2029b", "a:b"])
+def test_markdown_quotes_keys_that_break_bullet_paths(key: str) -> None:
+    """Line separators and field delimiters cannot corrupt a bullet path."""
+    document = io.StringIO()
+    render_cbom_markdown({"metadata": {key: "value"}, "components": []}, document)
+
+    output = document.getvalue()
+    assert json.dumps(key, ensure_ascii=True) in output
+    assert output.count("- ") >= 1
 
 
 def test_cbom_markdown_projects_components_and_future_fields() -> None:

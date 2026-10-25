@@ -353,7 +353,8 @@ finding, so the machine-document contract holds regardless of the filter.
 writes every supported projection from the same in-memory result, preserving the
 same `scan.scan_id`, timestamps, target, findings, and evidence. The bundle
 contains `scan.json` (`qureddy.scan.v1`), `scan.cdx.json` (CycloneDX 1.7),
-`scan.jsonl` (one finding per line), `scan.rich.txt`, `scan.md`, and `cbom.md`.
+`scan.jsonl` (one finding per line), `scan.rich.txt`, `scan.md`, `cbom.md`, and
+`manifest.json` (the hashed completion marker).
 
 ## 11. Output streams
 
