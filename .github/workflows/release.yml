@@ -5,9 +5,8 @@
 # Register a matching TestPyPI "pending publisher":
 #   owner=breachsafe  repo=qureddy  workflow=release.yml  environment=testpypi
 #
-# "TestPyPI gets the latest": every GitHub Release (and manual dispatch) rebuilds and uploads.
-# `skip-existing` keeps a re-run from failing when a version is already present — bump the
-# version (pyproject) to publish a genuinely new one.
+# A GitHub Release rebuilds, signs, verifies, and uploads to TestPyPI. A manual dispatch is a
+# build-only rehearsal; it never publishes because it has no release tag to sign and verify.
 name: release
 
 on:
@@ -122,7 +121,8 @@ jobs:
 
   testpypi:
     name: publish to TestPyPI (OIDC)
-    needs: build
+    needs: [build, verify-signing]
+    if: github.event_name == 'release'
     runs-on: ubuntu-latest
     environment: testpypi     # must match the TestPyPI pending-publisher "Environment name"
     permissions:

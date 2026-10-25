@@ -26,6 +26,20 @@ def test_public_network_probes_are_scheduled_or_manual_only() -> None:
     assert "tests/ike_lab" not in live_phase
 
 
+def test_ci_verifies_direct_commits_to_main() -> None:
+    """Merged commits must execute the normal CI workflow, not only CodeQL."""
+    workflow = CI_WORKFLOW.read_text(encoding="utf-8")
+    assert "  push:\n    branches: [main]" in workflow
+
+
+def test_release_dispatch_cannot_publish_without_release_signing() -> None:
+    """Manual rehearsal must not reach TestPyPI without release verification."""
+    workflow = Path(".github/workflows/release.yml").read_text(encoding="utf-8")
+    publish = workflow.split("  testpypi:", 1)[1]
+    assert "needs: [build, verify-signing]" in publish
+    assert "if: github.event_name == 'release'" in publish
+
+
 def test_unit_matrix_exercises_windows_pipe_behavior() -> None:
     """Run the real bounded-process tests where selectors cannot read pipes."""
     workflow = CI_WORKFLOW.read_text(encoding="utf-8")
