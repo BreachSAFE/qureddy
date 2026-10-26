@@ -207,6 +207,7 @@ jobs:
           docker buildx build \
             --platform "linux/${{ matrix.arch }}" \
             --build-arg "QUREDDY_VERSION=${QUREDDY_VERSION}" \
+            --build-arg "QUREDDY_SOURCE_REVISION=${GITHUB_SHA}" \
             --provenance=true --sbom=true \
             --cache-from "type=registry,ref=ghcr.io/breachsafe/qureddy:buildcache-${{ matrix.arch }}" \
             --cache-to "type=registry,ref=ghcr.io/breachsafe/qureddy:buildcache-${{ matrix.arch }},mode=max" \
