@@ -361,7 +361,12 @@ def test_ike_global_hndl_guard_uses_normalized_resolved_protocol(
 
     assert interpretation.hndl_exposure is HndlExposure.UNKNOWN
     assert interpretation.display.future_quantum_risk == "Exposure is unknown"
-    assert interpretation.display.evaluation.hndl_risk == "Exposure could not be determined"
+    expected_hndl = (
+        "HNDL exposure remains unconfirmed; present-day cryptographic weakness was observed"
+        if finding_type == "ike.kex.classical"
+        else "Exposure could not be determined"
+    )
+    assert interpretation.display.evaluation.hndl_risk == expected_hndl
 
 
 def test_classical_only_is_at_risk_and_action_needed() -> None:
@@ -394,6 +399,31 @@ def test_classical_only_is_at_risk_and_action_needed() -> None:
 
     unknown = build_interpretation([], [], None)
     assert unknown.headline == "PQC posture is unknown."
+
+
+def test_unknown_pqc_with_weak_finding_does_not_hide_present_day_risk() -> None:
+    interpretation = build_interpretation(
+        [
+            _finding(
+                "tls.transport.weak",
+                "tls.transport.weak",
+                Readiness.CLASSICALLY_WEAK,
+            )
+        ],
+        [],
+        None,
+    )
+
+    assert interpretation.hndl_exposure is HndlExposure.UNKNOWN
+    assert interpretation.headline == "Classically weak algorithm exposure was observed."
+    assert (
+        "present-day cryptographic weakness was observed"
+        in interpretation.display.evaluation.summary
+    )
+    assert "present-day cryptographic weakness" in interpretation.display.evaluation.hndl_risk
+    assert (
+        "Remediate observed weak algorithms" in interpretation.display.evaluation.recommended_action
+    )
 
 
 def test_current_classical_protocol_is_not_deprecated_protocol_exposure() -> None:
