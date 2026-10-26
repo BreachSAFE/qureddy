@@ -71,6 +71,7 @@ class TestTLSScannerOrchestration:
         )
         monkeypatch.setattr(scanner, "_collect_evidence", lambda **_kwargs: ([], 0))
         monkeypatch.setattr(scanner, "_collect_legacy_evidence", lambda **_kwargs: ([], []))
+        monkeypatch.setattr(scanner, "_collect_signature_evidence", lambda **_kwargs: ([], 0))
 
         def collect_cert(**kwargs: object) -> tuple[Evidence, tuple[Finding, ...]]:
             asset = kwargs["asset"]
