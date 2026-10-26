@@ -10,6 +10,8 @@ from typing import TYPE_CHECKING
 from rich import box
 from rich.table import Table
 
+from qureddy.core.models import ObservationType
+
 if TYPE_CHECKING:
     from qureddy.core.models import ProbeResult, ScanResult
 
@@ -90,7 +92,11 @@ def _error_rows(result: ScanResult) -> list[tuple[str, str, str]]:
     rows: list[tuple[str, str, str]] = []
     for ev in result.evidence:
         probe = ev.probe_result
-        if probe is None or probe.failure_category is None:
+        if (
+            probe is None
+            or probe.failure_category is None
+            or ev.observation_type is ObservationType.NOT_OFFERED
+        ):
             continue
         group = _probe_group(probe, ev.evidence_type)
         rows.append((group, str(probe.attempt_number), _last_error_line(probe)))

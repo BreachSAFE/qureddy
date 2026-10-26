@@ -125,6 +125,22 @@ def test_signature_peer_decline_is_not_offered_evidence() -> None:
     assert evidence.failure_category is None
 
 
+def test_signature_illegal_parameter_alert_is_not_offered_evidence() -> None:
+    evidence = evidence_from_signature_probe(
+        asset=_asset(),
+        probe=_probe(
+            return_code=1,
+            parser_input="ssl/tls alert illegal parameter",
+            failure_category=FailureCategory.TLS_HANDSHAKE_FAILED,
+        ),
+        signature_algorithm="ecdsa_secp256r1_sha256",
+        runtime="openssl",
+    )
+
+    assert evidence.observation_type is ObservationType.NOT_OFFERED
+    assert evidence.failure_category is None
+
+
 def test_signature_local_failure_is_not_testable() -> None:
     evidence = evidence_from_signature_probe(
         asset=_asset(),

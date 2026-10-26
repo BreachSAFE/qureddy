@@ -154,6 +154,40 @@ def _certificate_table(result: ScanResult) -> Table | None:
     return table
 
 
+def _signature_algorithms_table(result: ScanResult) -> Table | None:
+    """Render native TLS signature evidence without reclassifying it."""
+    records = tuple(
+        evidence
+        for evidence in result.evidence
+        if evidence.evidence_type == "tls.signature_algorithm"
+    )
+    if not records:
+        return None
+    table = Table(
+        title="Signature algorithms",
+        title_style="bold",
+        title_justify="left",
+        show_header=True,
+        header_style="bold cyan",
+        box=box.SIMPLE_HEAD,
+        pad_edge=False,
+    )
+    table.add_column("Runtime", style="bold cyan", no_wrap=True)
+    table.add_column("Algorithm", style=BODY_TEXT)
+    table.add_column("TLS", no_wrap=True)
+    table.add_column("Observation", style=BODY_TEXT, no_wrap=True)
+    for evidence in records:
+        observation = evidence.observation_type.value
+        style = "green" if observation == "offered" else "yellow"
+        table.add_row(
+            evidence.runtime or "-",
+            evidence.algorithm or "-",
+            evidence.protocol_version or "-",
+            Text(observation, style=style),
+        )
+    return table
+
+
 def _run_details_table(result: ScanResult) -> Table:
     """Render scan execution metadata in the same form as scan details."""
     duration = (result.scan.completed_at - result.scan.started_at).total_seconds()

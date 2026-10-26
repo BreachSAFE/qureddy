@@ -35,7 +35,7 @@ from qureddy.core.models import (
     ScanTarget,
 )
 from qureddy.scanners.common.assets import build_endpoint_asset
-from qureddy.scanners.tls._classify import is_server_decline
+from qureddy.scanners.tls._classify import is_server_decline, is_signature_algorithm_decline
 from qureddy.scanners.tls.parse import ParsedNegotiation, parse_brief_output
 
 
@@ -79,7 +79,7 @@ def evidence_from_signature_probe(
         observation = ObservationType.OFFERED
         failure_category = None
         notes = ("server accepted client-advertised signature algorithm",)
-    elif is_server_decline(transcript):
+    elif is_signature_algorithm_decline(transcript):
         observation = ObservationType.NOT_OFFERED
         failure_category = None
         notes = ("server declined client-advertised signature algorithm",)

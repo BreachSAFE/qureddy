@@ -237,6 +237,25 @@ class TestErrorsTable:
         out = _render(_result_with_probes((ev,)))
         assert "Errors" not in out
 
+    def test_peer_declined_capability_is_not_rendered_as_error(self) -> None:
+        ev = _evidence(
+            "ev-declined",
+            _probe(
+                ("s_client", "-sigalgs", "ecdsa_secp256r1_sha256"),
+                failure=FailureCategory.TLS_HANDSHAKE_FAILED,
+                stderr="alert illegal parameter",
+            ),
+        ).model_copy(
+            update={
+                "evidence_type": "tls.signature_algorithm",
+                "observation_type": ObservationType.NOT_OFFERED,
+            }
+        )
+        out = _render(_result_with_probes((ev,)))
+        assert "Signature algorithms" in out
+        assert "not_offered" in out
+        assert "Errors" not in out
+
 
 class TestCommandsPanel:
     """_commands.py -- the `-vvv` exact-invocation dump with dedup."""
