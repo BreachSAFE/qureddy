@@ -169,7 +169,7 @@ def _signature_algorithms_table(result: ScanResult) -> Table | None:
         for state in ("offered", "not_offered", "not_testable")
     }
     table = Table(
-        title="Signature algorithms · offered",
+        title="Signature algorithms · peer accepted",
         title_style="bold",
         title_justify="left",
         show_header=True,
@@ -180,18 +180,18 @@ def _signature_algorithms_table(result: ScanResult) -> Table | None:
     table.add_column("Runtime", style="bold cyan", no_wrap=True)
     table.add_column("Algorithm", style=BODY_TEXT)
     table.add_column("TLS", no_wrap=True)
-    table.add_column("Observation", style=BODY_TEXT, no_wrap=True)
+    table.add_column("Result", style=BODY_TEXT, no_wrap=True)
     for evidence in offered:
         table.add_row(
             evidence.runtime or "-",
             evidence.algorithm or "-",
             evidence.protocol_version or "-",
-            Text("offered", style="green"),
+            Text("peer accepted", style="green"),
         )
     if not offered:
         table.add_row("-", "none", "-", Text("none offered", style="yellow"))
     table.caption = (
-        f"Probe summary: offered {counts['offered']} · "
+        f"Probe summary: peer accepted {counts['offered']} · "
         f"rejected {counts['not_offered']} · untestable {counts['not_testable']}"
     )
     return table

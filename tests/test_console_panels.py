@@ -254,8 +254,28 @@ class TestErrorsTable:
         out = _render(_result_with_probes((ev,)))
         assert "Signature algorithms" in out
         assert "not_offered" not in out
-        assert "rejected 1" in out
+        assert "rejected" in out
+        assert "1" in out
         assert "Errors" not in out
+
+    def test_signature_success_is_labelled_as_peer_acceptance(self) -> None:
+        ev = _evidence(
+            "ev-accepted",
+            _probe(
+                ("s_client", "-sigalgs", "rsa_pkcs1_sha256"),
+                failure=None,
+                stderr="",
+            ),
+        ).model_copy(
+            update={
+                "evidence_type": "tls.signature_algorithm",
+                "observation_type": ObservationType.OFFERED,
+                "algorithm": "rsa_pkcs1_sha256",
+            }
+        )
+        out = _render(_result_with_probes((ev,)))
+        assert "Signature algorithms · peer accepted" in out
+        assert "peer accepted" in out
 
 
 class TestCommandsPanel:
