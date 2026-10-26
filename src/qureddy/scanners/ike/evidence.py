@@ -87,7 +87,12 @@ def _notify_evidence(
         id=new_id("ev"),
         asset_id=asset_id,
         evidence_type="ike.notify",
-        observation_type=ObservationType.OBSERVED,
+        # A notify is the observation of a refusal, so it must not join the
+        # conclusive set that derives a negotiated algorithm. Marked OBSERVED it
+        # made the rejection finding's name the negotiated value, rendering
+        # "IKE negotiated NO_PROPOSAL_CHOSEN". Nothing was selected, which is
+        # what NOT_OFFERED records.
+        observation_type=ObservationType.NOT_OFFERED,
         source=source,
         protocol="ike",
         protocol_version=response.protocol_version,
