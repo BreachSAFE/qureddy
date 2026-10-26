@@ -147,30 +147,32 @@ def _component_crypto_refs(component: dict[str, Any]) -> Iterator[str]:
     """Yield one component's certificate, material, and cipher-suite references."""
     crypto_properties = component.get("cryptoProperties", {})
     certificate_properties = crypto_properties.get("certificateProperties", {})
-    for ref_field in ("signatureAlgorithmRef", "subjectPublicKeyRef"):
-        reference = certificate_properties.get(ref_field)
-        if isinstance(reference, str):
-            yield reference
-    for related in certificate_properties.get("relatedCryptographicAssets", []):
-        reference = related.get("ref") if isinstance(related, dict) else None
-        if isinstance(reference, str):
-            yield reference
+    yield from _direct_refs(
+        certificate_properties, ("signatureAlgorithmRef", "subjectPublicKeyRef")
+    )
+    yield from _related_refs(certificate_properties)
     protocol_properties = crypto_properties.get("protocolProperties", {})
-    for related in protocol_properties.get("relatedCryptographicAssets", []):
-        reference = related.get("ref") if isinstance(related, dict) else None
-        if isinstance(reference, str):
-            yield reference
+    yield from _related_refs(protocol_properties)
     material_ref = crypto_properties.get("relatedCryptoMaterialProperties", {}).get("algorithmRef")
     if isinstance(material_ref, str):
         yield material_ref
-    for related in crypto_properties.get("relatedCryptoMaterialProperties", {}).get(
-        "relatedCryptographicAssets", []
-    ):
+    yield from _related_refs(crypto_properties.get("relatedCryptoMaterialProperties", {}))
+    for suite in crypto_properties.get("protocolProperties", {}).get("cipherSuites", []):
+        yield from _str_values(suite.get("algorithms", []))
+
+
+def _direct_refs(properties: dict[str, Any], names: tuple[str, ...]) -> Iterator[str]:
+    for name in names:
+        reference = properties.get(name)
+        if isinstance(reference, str):
+            yield reference
+
+
+def _related_refs(properties: dict[str, Any]) -> Iterator[str]:
+    for related in properties.get("relatedCryptographicAssets", []):
         reference = related.get("ref") if isinstance(related, dict) else None
         if isinstance(reference, str):
             yield reference
-    for suite in crypto_properties.get("protocolProperties", {}).get("cipherSuites", []):
-        yield from _str_values(suite.get("algorithms", []))
 
 
 def _contains_secret_like_material(value: object) -> bool:
