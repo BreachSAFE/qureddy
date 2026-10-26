@@ -199,10 +199,13 @@ class TestCycloneDx17Contract:
     def test_real_cipher_suite_name_used_not_synthetic_placeholder(self) -> None:
         payload = _render(_build_result())
         protocol = next(c for c in payload["components"] if c["name"] == "TLSv1.3")
-        cipher_suite_name = protocol["cryptoProperties"]["protocolProperties"]["cipherSuites"][0][
-            "name"
-        ]
+        protocol_properties = protocol["cryptoProperties"]["protocolProperties"]
+        cipher_suite_name = protocol_properties["cipherSuites"][0]["name"]
         assert cipher_suite_name == "TLS_AES_256_GCM_SHA384"
+        assert protocol_properties["relatedCryptographicAssets"] == [
+            {"type": "algorithm", "ref": "crypto/algorithm/tls_aes_256_gcm_sha384"},
+            {"type": "algorithm", "ref": "crypto/algorithm/x25519mlkem768"},
+        ]
 
     def test_certificate_serial_uses_native_17_field(self) -> None:
         certificate = CertificateObservation(
@@ -326,6 +329,20 @@ class TestCycloneDx17Contract:
         assert properties["nistQuantumSecurityLevel"] == 0
         verdict = {p["name"]: p["value"] for p in component["properties"]}
         assert verdict["qureddy:readiness"] == "quantum_vulnerable"
+
+    def test_certificate_carries_signature_classification(self) -> None:
+        payload = _render(
+            self._cert_result(
+                public_key_algorithm="rsaEncryption",
+                public_key_bits=2048,
+            )
+        )
+        certificate = next(
+            item for item in payload["components"] if item["bom-ref"] == "crypto/certificate/leaf"
+        )
+        properties = certificate["cryptoProperties"]["algorithmProperties"]
+        assert properties["primitive"] == "signature"
+        assert properties["nistQuantumSecurityLevel"] == 0
 
     def test_undersized_rsa_subject_key_is_classically_weak(self) -> None:
         payload = _render(

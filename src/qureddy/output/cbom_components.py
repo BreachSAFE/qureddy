@@ -289,6 +289,18 @@ def _protocol_component(
                 type=protocol_type,
                 version=_bare_protocol_version(protocol, protocol_version),
                 cipher_suites=cipher_suites or None,
+                crypto_refs=[
+                    BomRef(value=ref.value)
+                    for ref in sorted(
+                        {
+                            algorithm_ref
+                            for suite in cipher_suites
+                            for algorithm_ref in suite.algorithms
+                        },
+                        key=lambda item: item.value,
+                    )
+                ]
+                or None,
             ),
         ),
     )
@@ -365,6 +377,9 @@ def add_certificate_component(
             bom_ref=ref,
             crypto_properties=CryptoProperties(
                 asset_type=CryptoAssetType.CERTIFICATE,
+                algorithm_properties=signature_algorithm_properties(
+                    certificate.signature_algorithm
+                ),
                 certificate_properties=CertificateProperties(
                     subject_name=certificate.subject,
                     issuer_name=certificate.issuer,

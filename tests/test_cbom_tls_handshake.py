@@ -182,6 +182,14 @@ def test_cbom_emits_ephemeral_public_key_material() -> None:
     material = component["cryptoProperties"]["relatedCryptoMaterialProperties"]
 
     assert material["type"] == "public-key"
+    assert component["cryptoProperties"]["algorithmProperties"] == {
+        "primitive": "key-agree",
+        "curve": "curve25519",
+        "classicalSecurityLevel": 128,
+        "cryptoFunctions": ["keygen"],
+        "nistQuantumSecurityLevel": 0,
+        "ellipticCurve": "other/Curve25519",
+    }
     assert material["algorithmRef"] == "crypto/algorithm/x25519"
     assert material["size"] == 253
     assert material["state"] == "active"
