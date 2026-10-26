@@ -29,6 +29,7 @@ from qureddy.scanners.common.metadata import build_scan_metadata
 from qureddy.scanners.common.posture import build_scan_summary
 from qureddy.scanners.ike.adapter import IkeScanAdapter
 from qureddy.scanners.ike.classify import classify_ike
+from qureddy.scanners.ike.native_adapter import NativeIkeAdapter
 from qureddy.scanners.ike.types import IKEMode
 
 _MODES = (IKEMode.IKEV1_MAIN, IKEMode.IKEV1_AGGRESSIVE, IKEMode.IKEV2)
@@ -43,9 +44,26 @@ class IKEScanner:
     collector_version = "1"
     capabilities = frozenset({Capability.IKE_ENDPOINT})
 
-    def __init__(self, adapter: IkeScanAdapter | None = None, *, nat_t: bool = False) -> None:
-        """Configure the tool adapter and optional NAT-T pass."""
+    def __init__(
+        self,
+        adapter: IkeScanAdapter | None = None,
+        *,
+        nat_t: bool = False,
+        native: NativeIkeAdapter | None = None,
+    ) -> None:
+        """Configure the tool adapter, the native IKEv2 pass and optional NAT-T.
+
+        Both backends run on every scan. They answer different questions: the
+        subprocess backend reaches IKEv1 modes the native prober does not
+        implement, and the native prober reaches a current IKEv2 responder that
+        ike-scan 1.9.5 cannot negotiate with because it predates RFC 8247.
+        Running one alone leaves the other's targets reported as silent.
+        """
         self._adapter = adapter or IkeScanAdapter()
+        # Injected, never self-constructed. A scanner that built its own second
+        # backend would make every caller, including a test injecting a double,
+        # issue a live probe it did not ask for.
+        self._native = native
         self._nat_t = nat_t
 
     def collect(self, source: ScanSource, *, timeout_seconds: int) -> CollectionResult:
@@ -120,6 +138,27 @@ class IKEScanner:
             collection_category = _collection_failure_category(collected.failure)
             if collection_category is not None:
                 categories.append(collection_category)
+
+        # The native IKEv2 pass runs whenever a backend was supplied. A
+        # responder that answered ike-scan is still probed, because only the
+        # native exchange reads the selected proposal and RFC 9370 support off
+        # the wire.
+        if self._native is None:
+            return evidence, categories, attempts
+        native_source = _scan_source(
+            target, asset_id=asset_id, mode=IKEMode.IKEV2, port=target.port, nat_t=self._nat_t
+        )
+        native = self._native.run(native_source, timeout_seconds=timeout_seconds)
+        attempts += 1
+        evidence.extend(native.evidence)
+        categories.extend(
+            record.failure_category
+            for record in native.evidence
+            if record.failure_category is not None
+        )
+        native_category = _collection_failure_category(native.failure)
+        if native_category is not None:
+            categories.append(native_category)
         return evidence, categories, attempts
 
 
@@ -182,10 +221,14 @@ def _scan_status(evidence: list[Evidence], failure: FailureCategory | None) -> s
     if failure is not None:
         return failure.value
     modes = [record for record in evidence if record.evidence_type.startswith("ike.mode.")]
-    if any(record.evidence_type == "ike.notify" for record in evidence):
-        return "rejected"
+    # An observation outranks a notify. A sweep sends many proposals, so one
+    # refusal sits alongside the exchanges that succeeded; reporting the whole
+    # scan as rejected would discard the responder facts the other probes
+    # established. A notify decides the status only when nothing was observed.
     if any(record.observation_type is ObservationType.OBSERVED for record in modes):
         return "completed"
+    if any(record.evidence_type == "ike.notify" for record in evidence):
+        return "rejected"
     return "no_response"
 
 
