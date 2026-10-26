@@ -419,6 +419,18 @@ def _patch_native_crypto_fields(payload: dict[str, Any]) -> None:
         if related:
             certificate["relatedCryptographicAssets"] = related
 
+        protocol = crypto.get("protocolProperties", {})
+        protocol_refs = protocol.get("cryptoRefArray", [])
+        if isinstance(protocol_refs, list) and protocol_refs:
+            protocol["relatedCryptographicAssets"] = [
+                {"type": "algorithm", "ref": ref} for ref in protocol_refs if isinstance(ref, str)
+            ]
+
+        material = crypto.get("relatedCryptoMaterialProperties", {})
+        material_ref = material.get("algorithmRef")
+        if isinstance(material_ref, str):
+            material["relatedCryptographicAssets"] = [{"type": "algorithm", "ref": material_ref}]
+
 
 def _patch_tls_group_fields(payload: dict[str, Any], result: ScanResult) -> None:
     """Add CycloneDX 1.7 TLS named groups omitted by the installed model.

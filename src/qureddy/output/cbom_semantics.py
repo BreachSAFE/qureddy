@@ -155,9 +155,20 @@ def _component_crypto_refs(component: dict[str, Any]) -> Iterator[str]:
         reference = related.get("ref") if isinstance(related, dict) else None
         if isinstance(reference, str):
             yield reference
+    protocol_properties = crypto_properties.get("protocolProperties", {})
+    for related in protocol_properties.get("relatedCryptographicAssets", []):
+        reference = related.get("ref") if isinstance(related, dict) else None
+        if isinstance(reference, str):
+            yield reference
     material_ref = crypto_properties.get("relatedCryptoMaterialProperties", {}).get("algorithmRef")
     if isinstance(material_ref, str):
         yield material_ref
+    for related in crypto_properties.get("relatedCryptoMaterialProperties", {}).get(
+        "relatedCryptographicAssets", []
+    ):
+        reference = related.get("ref") if isinstance(related, dict) else None
+        if isinstance(reference, str):
+            yield reference
     for suite in crypto_properties.get("protocolProperties", {}).get("cipherSuites", []):
         yield from _str_values(suite.get("algorithms", []))
 

@@ -13,7 +13,10 @@ from qureddy.output.cbom_assets import (
     add_algorithm_component,
     algorithm_ref,
 )
-from qureddy.output.cbom_components import signature_algorithm_properties
+from qureddy.output.cbom_components import (
+    key_exchange_algorithm_properties,
+    signature_algorithm_properties,
+)
 from qureddy.output.cbom_public_key import add_public_key_material
 
 if TYPE_CHECKING:
@@ -93,4 +96,5 @@ def _add_ephemeral_key(
         algorithm_ref=algorithm_refs[group],
         provides_edges=provides_edges,
         size=evidence.key_bits,
+        algorithm_properties=key_exchange_algorithm_properties(group),
     )
