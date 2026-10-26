@@ -15,6 +15,7 @@ and receiving IKEv2 evidence would read a version it never tested.
 from __future__ import annotations
 
 import hashlib
+import subprocess
 import time
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse
@@ -69,10 +70,24 @@ _FAILURE_BY_STATUS: dict[IKEParseStatus, FailureCategory | None] = {
 }
 
 
+def _openssl_version(openssl: str) -> str | None:
+    """Return the OpenSSL version string, or None when it cannot be read."""
+    try:
+        out = subprocess.run(  # noqa: S603 - argv list, shell=False
+            [openssl, "version"], capture_output=True, text=True, check=False, timeout=10
+        ).stdout.strip()
+    except OSError, subprocess.SubprocessError:
+        return None
+    return out or None
+
+
 class NativeIkeAdapter:
     """IKEv2 backend that speaks the protocol instead of invoking ``ike-scan``."""
 
     tool_id = TOOL_ID
+
+    #: Exchanges the last run sent, read by the scanner for total_attempts.
+    last_probe_count = 0
 
     def __init__(self, *, openssl: str = "openssl", timeout: float = 4.0, retries: int = 1) -> None:
         """Configure the OpenSSL path, per-probe timeout and silent-probe retries."""
@@ -96,7 +111,10 @@ class NativeIkeAdapter:
         return ExternalToolDependency(
             name="openssl",
             path=self._openssl,
-            version=f"{len(methods)} key exchange methods" if methods else None,
+            # The real version. Capability is reported through the failure
+            # category, because a version string that encodes a count cannot be
+            # compared against a pinned release.
+            version=_openssl_version(self._openssl),
             failure_category=None if methods else _EMPTY,
         )
 
@@ -145,6 +163,11 @@ class NativeIkeAdapter:
                     nat_t=nat_t,
                 )
             )
+        # The sweep sends one datagram per key exchange method and per
+        # additional-key-exchange offer, so the count is the number of
+        # exchanges attempted on the wire rather than the number of adapter
+        # calls. Reporting 1 would understate the probing a target saw.
+        self.last_probe_count = len(probes)
         return CollectionResult(
             collector=TOOL_ID,
             collector_version=self.version(),

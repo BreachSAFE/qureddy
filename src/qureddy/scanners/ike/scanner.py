@@ -29,7 +29,7 @@ from qureddy.scanners.common.metadata import build_scan_metadata
 from qureddy.scanners.common.posture import build_scan_summary
 from qureddy.scanners.ike.adapter import IkeScanAdapter
 from qureddy.scanners.ike.classify import classify_ike
-from qureddy.scanners.ike.native_adapter import NativeIkeAdapter
+from qureddy.scanners.ike.native_adapter import NativeIkeAdapter  # noqa: TC001
 from qureddy.scanners.ike.types import IKEMode
 
 _MODES = (IKEMode.IKEV1_MAIN, IKEMode.IKEV1_AGGRESSIVE, IKEMode.IKEV2)
@@ -103,12 +103,24 @@ class IKEScanner:
                 total_attempts=attempts,
             ),
             target=subject,
-            dependencies=(self._adapter.dependency(),),
+            dependencies=self._dependencies(),
             assets=(asset,),
             evidence=tuple(evidence),
             findings=tuple(findings),
             summary=build_scan_summary(subject, findings, evidence, failure, protocol="ike"),
         )
+
+    def _dependencies(self) -> tuple[ExternalToolDependency, ...]:
+        """Report every runtime a result depended on, so provenance is complete.
+
+        The native backend calls OpenSSL to generate ephemeral public values, so
+        omitting it would leave a CBOM claiming evidence from a tool it never
+        names.
+        """
+        deps = [self._adapter.dependency()]
+        if self._native is not None:
+            deps.append(self._native.dependency())
+        return tuple(deps)
 
     def _collect(
         self, target: ScanTarget, *, asset_id: str, timeout_seconds: int
@@ -149,7 +161,7 @@ class IKEScanner:
             target, asset_id=asset_id, mode=IKEMode.IKEV2, port=target.port, nat_t=self._nat_t
         )
         native = self._native.run(native_source, timeout_seconds=timeout_seconds)
-        attempts += 1
+        attempts += max(getattr(self._native, "last_probe_count", 0), 1)
         evidence.extend(native.evidence)
         categories.extend(
             record.failure_category
