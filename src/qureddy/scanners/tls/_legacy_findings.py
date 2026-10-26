@@ -156,12 +156,15 @@ def deduplicate_protocol_findings(findings: list[Finding]) -> list[Finding]:
             continue
         index = indexes[key]
         current = merged[index]
+        runtimes = tuple(
+            sorted({runtime for runtime in (current.runtime, finding.runtime) if runtime})
+        )
         merged[index] = current.model_copy(
             update={
                 "evidence_ids": tuple(
                     dict.fromkeys((*current.evidence_ids, *finding.evidence_ids))
                 ),
-                "runtime": None,
+                "runtime": ",".join(runtimes) or None,
             }
         )
     return merged

@@ -163,7 +163,18 @@ def test_deprecated_protocol_with_weak_cipher_preserves_both_facts() -> None:
 
 
 def test_duplicate_protocol_findings_merge_runtime_evidence() -> None:
-    native = _findings(protocol="TLSv1", accepted=("AES128-SHA",), offered=True)
+    native = finding_from_legacy_result(
+        _ASSET,
+        _EVIDENCE,
+        LegacyProtocolResult(
+            protocol_flag="-tls1",
+            protocol_version="TLSv1",
+            offered=True,
+            accepted_ciphers=("AES128-SHA",),
+            probe_incomplete=False,
+        ),
+        runtime="openssl",
+    )
     compatibility = finding_from_legacy_result(
         _ASSET,
         _EVIDENCE.model_copy(update={"id": "ev-legacy"}),
@@ -182,4 +193,4 @@ def test_duplicate_protocol_findings_merge_runtime_evidence() -> None:
     assert len(deduplicated) == 1
     assert deduplicated[0].rule_id == "tls.legacy.protocol_offered"
     assert deduplicated[0].evidence_ids == ("ev-1", "ev-legacy")
-    assert deduplicated[0].runtime is None
+    assert deduplicated[0].runtime == "openssl,openssl-legacy"
