@@ -133,6 +133,38 @@ def cipher_evidence_from_legacy_result(
 
 
 _DEPRECATED_PROTOCOLS = frozenset({"TLSv1", "TLSv1.1"})
+_PROTOCOL_FINDING_RULES = frozenset(
+    {FINDING_TYPE_LEGACY_PROTOCOL_OFFERED, "tls.classical.protocol_offered"}
+)
+
+
+def deduplicate_protocol_findings(findings: list[Finding]) -> list[Finding]:
+    """Merge duplicate protocol findings while retaining all probe evidence.
+
+    The native and compatibility OpenSSL runtimes independently sweep the same
+    protocol versions. Their protocol findings are one endpoint fact, while
+    their evidence records remain separate so the runtime observations stay
+    auditable. Cipher-specific findings are intentionally not merged.
+    """
+    merged: list[Finding] = []
+    indexes: dict[tuple[str, str | None], int] = {}
+    for finding in findings:
+        key = (finding.rule_id, finding.protocol_version)
+        if finding.rule_id not in _PROTOCOL_FINDING_RULES or key not in indexes:
+            indexes[key] = len(merged)
+            merged.append(finding)
+            continue
+        index = indexes[key]
+        current = merged[index]
+        merged[index] = current.model_copy(
+            update={
+                "evidence_ids": tuple(
+                    dict.fromkeys((*current.evidence_ids, *finding.evidence_ids))
+                ),
+                "runtime": None,
+            }
+        )
+    return merged
 
 
 def finding_from_legacy_result(

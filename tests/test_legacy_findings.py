@@ -51,7 +51,10 @@ def test_incomplete_sweep_is_not_testable() -> None:
 
 from qureddy.core.models import Evidence, HygieneStatus, Severity  # noqa: E402
 from qureddy.scanners.common.posture import build_interpretation  # noqa: E402
-from qureddy.scanners.tls._legacy_findings import finding_from_legacy_result  # noqa: E402
+from qureddy.scanners.tls._legacy_findings import (  # noqa: E402
+    deduplicate_protocol_findings,
+    finding_from_legacy_result,
+)
 
 _EVIDENCE = Evidence(
     id="ev-1",
@@ -157,3 +160,26 @@ def test_deprecated_protocol_with_weak_cipher_preserves_both_facts() -> None:
         "deprecated_protocol_observed",
         "weak_classical_algorithm_observed",
     )
+
+
+def test_duplicate_protocol_findings_merge_runtime_evidence() -> None:
+    native = _findings(protocol="TLSv1", accepted=("AES128-SHA",), offered=True)
+    compatibility = finding_from_legacy_result(
+        _ASSET,
+        _EVIDENCE.model_copy(update={"id": "ev-legacy"}),
+        LegacyProtocolResult(
+            protocol_flag="-tls1",
+            protocol_version="TLSv1",
+            offered=True,
+            accepted_ciphers=("AES128-SHA",),
+            probe_incomplete=False,
+        ),
+        runtime="openssl-legacy",
+    )
+
+    deduplicated = deduplicate_protocol_findings([*native, *compatibility])
+
+    assert len(deduplicated) == 1
+    assert deduplicated[0].rule_id == "tls.legacy.protocol_offered"
+    assert deduplicated[0].evidence_ids == ("ev-1", "ev-legacy")
+    assert deduplicated[0].runtime is None
