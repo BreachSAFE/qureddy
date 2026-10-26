@@ -18,7 +18,6 @@ import hashlib
 import os
 import subprocess
 import time
-from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
 from qureddy.core.contracts import (
@@ -28,13 +27,17 @@ from qureddy.core.contracts import (
     ScanSource,
     SourceKind,
 )
+from qureddy.core.ids import new_id
 from qureddy.core.models import (
+    Confidence,
+    Evidence,
     ExternalToolDependency,
     FailureCategory,
+    ObservationType,
     ProbeCommand,
     ProbeResult,
 )
-from qureddy.scanners.ike._packet import PORT_NAT_T, available_methods
+from qureddy.scanners.ike._packet import _NAMES_KE, _T_ADDKE1, PORT_NAT_T, available_methods
 from qureddy.scanners.ike.evidence import response_evidence
 from qureddy.scanners.ike.native import (
     LocalProbeError,
@@ -42,9 +45,6 @@ from qureddy.scanners.ike.native import (
     sweep,
 )
 from qureddy.scanners.ike.types import IKEMode, IKEParseStatus
-
-if TYPE_CHECKING:  # pragma: no cover
-    from qureddy.core.models import Evidence
 
 #: Reported as the tool name so provenance distinguishes a native run from an
 #: ``ike-scan`` run in the same result set.
@@ -95,6 +95,41 @@ def _openssl_version(openssl: str) -> str | None:
     except OSError, subprocess.SubprocessError:
         return None
     return out or None
+
+
+def _addke_evidence(probe: NativeProbe, asset_id: str, source: str) -> Evidence:
+    """Record whether the responder selected an additional key exchange.
+
+    RFC 9370 section 3 requires a responder that supports ADDKE to select one of
+    the algorithms offered for any ADDKE type present, and NONE is a legal
+    selection. An echoed transform is therefore the only positive evidence of
+    support, and its absence is a measured fact rather than a gap.
+
+    The record is NEGOTIATED only when a transform came back. An offer that was
+    ignored stays OFFERED, so a proposal is never promoted to a selection.
+    """
+    accepted = probe.additional_accepted
+    return Evidence(
+        id=new_id("ev"),
+        asset_id=asset_id,
+        evidence_type="ike.addke.selected" if accepted else "ike.addke.not_selected",
+        observation_type=(ObservationType.NEGOTIATED if accepted else ObservationType.NOT_OFFERED),
+        source=source,
+        protocol="ike",
+        protocol_version="IKEv2",
+        algorithm=_NAMES_KE.get(accepted) if accepted else None,
+        negotiated_group=_NAMES_KE.get(accepted) if accepted else None,
+        # High: the responder's own transform, read off the wire. The ike-scan
+        # backend cannot reach this field at all, which is why its records stay
+        # low-confidence.
+        confidence=Confidence.HIGH if accepted else Confidence.MEDIUM,
+        notes=(
+            f"addke1_offered={probe.additional_key_exchange}",
+            f"addke1_offered_name={_NAMES_KE.get(probe.additional_key_exchange, '?')}",
+            f"addke1_accepted={accepted if accepted is not None else 'none'}",
+            f"rfc=9370 transform_type={_T_ADDKE1}",
+        ),
+    )
 
 
 class NativeIkeAdapter:
@@ -158,6 +193,12 @@ class NativeIkeAdapter:
         nat_t = parsed.port == PORT_NAT_T or source.metadata.get("nat_t") == "true"
         evidence: list[Evidence] = []
         for probe in probes:
+            # Emitted before the shared projection so the additional key
+            # exchange is recorded whatever the base exchange did. Without it
+            # the one fact this sweep exists to establish is parsed and
+            # discarded.
+            if probe.additional_key_exchange is not None:
+                evidence.append(_addke_evidence(probe, asset_id, self._source_name(probe)))
             evidence.extend(
                 response_evidence(
                     probe.response,
