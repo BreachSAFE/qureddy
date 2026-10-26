@@ -15,6 +15,7 @@ and receiving IKEv2 evidence would read a version it never tested.
 from __future__ import annotations
 
 import hashlib
+import os
 import subprocess
 import time
 from typing import TYPE_CHECKING
@@ -33,12 +34,11 @@ from qureddy.core.models import (
     ProbeCommand,
     ProbeResult,
 )
+from qureddy.scanners.ike._packet import PORT_NAT_T, available_methods
 from qureddy.scanners.ike.evidence import response_evidence
 from qureddy.scanners.ike.native import (
-    PORT_NAT_T,
     LocalProbeError,
     NativeProbe,
-    available_methods,
     sweep,
 )
 from qureddy.scanners.ike.types import IKEMode, IKEParseStatus
@@ -70,6 +70,22 @@ _FAILURE_BY_STATUS: dict[IKEParseStatus, FailureCategory | None] = {
 }
 
 
+#: The scanner-wide OpenSSL override. Named here rather than imported from the
+#: TLS package so the IKE scanner does not depend on a sibling scanner; the
+#: variable is part of the CLI contract, not of either scanner.
+OPENSSL_ENV = "QUREDDY_OPENSSL"
+
+
+def _default_openssl() -> str:
+    """Resolve the OpenSSL to use, honouring the scanner-wide override.
+
+    A bare ``openssl`` is the fallback and is deliberately last: on a host with
+    several formulae installed the newest owns the unversioned symlink, so the
+    override is what keeps a probe on the pinned series.
+    """
+    return os.environ.get(OPENSSL_ENV) or "openssl"
+
+
 def _openssl_version(openssl: str) -> str | None:
     """Return the OpenSSL version string, or None when it cannot be read."""
     try:
@@ -89,11 +105,13 @@ class NativeIkeAdapter:
     #: Exchanges the last run sent, read by the scanner for total_attempts.
     last_probe_count = 0
 
-    def __init__(self, *, openssl: str = "openssl", timeout: float = 4.0, retries: int = 1) -> None:
+    def __init__(
+        self, *, openssl: str | None = None, timeout: float = 4.0, retries: int = 1
+    ) -> None:
         """Configure the OpenSSL path, per-probe timeout and silent-probe retries."""
         # The OpenSSL path is server-owned, matching the TLS scanner: a caller
         # naming an executable is the primitive the tool contract forbids.
-        self._openssl = openssl
+        self._openssl = openssl or _default_openssl()
         self._timeout = timeout
         self._retries = retries
 
@@ -120,26 +138,12 @@ class NativeIkeAdapter:
 
     def run(self, source: ScanSource, *, timeout_seconds: int) -> CollectionResult:
         """Probe one endpoint and project every exchange onto canonical Evidence."""
-        if source.kind is not SourceKind.ENDPOINT or source.protocol != "ike":
-            return self._failure(CollectionFailureKind.UNSUPPORTED, "source is not an IKE endpoint")
-        if not self.available():
-            return self._failure(
-                CollectionFailureKind.UNAVAILABLE, "no key exchange method can be generated locally"
-            )
+        rejection = self._reject(source)
+        if rejection is not None:
+            return rejection
 
-        mode = source.metadata.get("mode")
-        if mode and IKEMode(mode) is not IKEMode.IKEV2:
-            # Reporting IKEv2 evidence for an IKEv1 request would attribute a
-            # version the caller never asked about.
-            return self._failure(
-                CollectionFailureKind.UNSUPPORTED, f"native backend probes IKEv2 only, not {mode}"
-            )
-
-        asset_id = source.metadata.get("asset_id")
         parsed = urlparse(source.locator)
-        if asset_id is None or parsed.hostname is None or parsed.port is None:
-            return self._failure(CollectionFailureKind.MALFORMED, "invalid IKE source metadata")
-
+        asset_id = source.metadata["asset_id"]
         started = time.monotonic()
         try:
             probes = sweep(
@@ -176,6 +180,33 @@ class NativeIkeAdapter:
             # a second place severity is decided.
             findings=(),
         )
+
+    def _reject(self, source: ScanSource) -> CollectionResult | None:
+        """Refuse a source this backend cannot answer for, or return None.
+
+        An IKEv1 mode is refused rather than silently probed over IKEv2: a
+        caller asking for Main Mode and receiving IKEv2 evidence would read a
+        version it never tested.
+        """
+        if source.kind is not SourceKind.ENDPOINT or source.protocol != "ike":
+            return self._failure(CollectionFailureKind.UNSUPPORTED, "source is not an IKE endpoint")
+        if not self.available():
+            return self._failure(
+                CollectionFailureKind.UNAVAILABLE, "no key exchange method can be generated locally"
+            )
+        mode = source.metadata.get("mode")
+        if mode and IKEMode(mode) is not IKEMode.IKEV2:
+            return self._failure(
+                CollectionFailureKind.UNSUPPORTED, f"native backend probes IKEv2 only, not {mode}"
+            )
+        parsed = urlparse(source.locator)
+        if (
+            source.metadata.get("asset_id") is None
+            or parsed.hostname is None
+            or parsed.port is None
+        ):
+            return self._failure(CollectionFailureKind.MALFORMED, "invalid IKE source metadata")
+        return None
 
     def _source_name(self, probe: NativeProbe) -> str:
         """Name the exchange so one probe is distinguishable in the evidence set."""
