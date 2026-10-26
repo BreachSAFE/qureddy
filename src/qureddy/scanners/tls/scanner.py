@@ -38,7 +38,11 @@ from qureddy.scanners.tls._cert_findings import (
     evidence_from_certificate,
     findings_from_certificate,
 )
-from qureddy.scanners.tls._evidence import build_asset, evidence_from_probe
+from qureddy.scanners.tls._evidence import (
+    build_asset,
+    evidence_from_probe,
+    evidence_from_signature_probe,
+)
 from qureddy.scanners.tls._legacy_findings import (
     cipher_evidence_from_legacy_result,
     evidence_from_legacy_result,
@@ -67,6 +71,10 @@ from qureddy.scanners.tls.openssl_probe import (
 )
 from qureddy.scanners.tls.openssl_probe.capability import resolve_openssl_with_capability
 from qureddy.scanners.tls.openssl_probe.resolver import resolve_legacy_openssl
+from qureddy.scanners.tls.openssl_probe.signature import (
+    run_signature_algorithm_probe,
+    signature_algorithm_plan,
+)
 
 if TYPE_CHECKING:
     from qureddy.scanners.tls.connection import StartTLSMode
@@ -129,6 +137,24 @@ def _collect_optional_axes(
         )
         evidence.extend(compatibility_evidence)
         findings.extend(compatibility_findings)
+    signature_evidence, signature_attempts = scanner._collect_signature_evidence(  # noqa: SLF001
+        target=target,
+        asset=asset,
+        openssl_path=openssl_path,
+        timeout_seconds=timeout_seconds,
+        runtime="openssl",
+    )
+    evidence.extend(signature_evidence)
+    if legacy_openssl_path is not None:
+        legacy_signature_evidence, legacy_signature_attempts = scanner._collect_signature_evidence(  # noqa: SLF001
+            target=target,
+            asset=asset,
+            openssl_path=legacy_openssl_path,
+            timeout_seconds=timeout_seconds,
+            runtime="openssl-legacy",
+        )
+        evidence.extend(legacy_signature_evidence)
+        signature_attempts += legacy_signature_attempts
     cert_evidence, cert_findings = scanner._collect_cert_evidence(  # noqa: SLF001
         target=target,
         asset=asset,
@@ -138,7 +164,7 @@ def _collect_optional_axes(
     )
     evidence.append(cert_evidence)
     findings.extend(cert_findings)
-    return len(legacy_evidence) + 1
+    return len(legacy_evidence) + signature_attempts + 1
 
 
 def _completed_scan_result(
@@ -362,6 +388,47 @@ class TLSScanner(Scanner[ScanTarget]):
             evidence.extend(cipher_evidence_from_legacy_result(asset, r, runtime=runtime))
         return evidence, findings
 
+    def _collect_signature_evidence(
+        self,
+        *,
+        target: ScanTarget,
+        asset: Asset,
+        openssl_path: str,
+        timeout_seconds: int,
+        runtime: str,
+        starttls: StartTLSMode | None = None,
+    ) -> tuple[list[Evidence], int]:
+        """Probe each runtime's supported TLS signature-algorithm spelling."""
+        log = get_logger(__name__)
+        log.info("probe.phase.start", phase="signature_algorithms", runtime=runtime)
+        evidence: list[Evidence] = []
+        for signature_algorithm in signature_algorithm_plan(runtime):
+            results = self._probe_with_retries(
+                run_signature_algorithm_probe,
+                target=target,
+                openssl_path=openssl_path,
+                timeout_seconds=timeout_seconds,
+                signature_algorithm=signature_algorithm,
+                runtime=runtime,
+                starttls=starttls,
+            )
+            evidence.extend(
+                evidence_from_signature_probe(
+                    asset=asset,
+                    probe=result,
+                    signature_algorithm=signature_algorithm,
+                    runtime=runtime,
+                )
+                for result in results
+            )
+        log.info(
+            "probe.phase.complete",
+            phase="signature_algorithms",
+            runtime=runtime,
+            probe_count=len(evidence),
+        )
+        return evidence, len(evidence)
+
     @staticmethod
     def _collect_cert_evidence(
         *,
@@ -407,9 +474,17 @@ class TLSScanner(Scanner[ScanTarget]):
         openssl_path: str,
         timeout_seconds: int,
         group: str | None = None,
+        signature_algorithm: str | None = None,
+        runtime: str | None = None,
         starttls: StartTLSMode | None = None,
     ) -> list[ProbeResult]:
-        extra = {"group": group} if group is not None else {}
+        extra = {}
+        if group is not None:
+            extra["group"] = group
+        if signature_algorithm is not None:
+            extra["signature_algorithm"] = signature_algorithm
+        if runtime is not None:
+            extra["runtime"] = runtime
         return run_with_retries(
             lambda n: probe_fn(
                 openssl_path,

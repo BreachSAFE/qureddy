@@ -66,6 +66,46 @@ def build_asset(target: ScanTarget) -> Asset:
     return build_endpoint_asset(target, asset_type="tls.endpoint")
 
 
+def evidence_from_signature_probe(
+    *,
+    asset: Asset,
+    probe: ProbeResult,
+    signature_algorithm: str,
+    runtime: str,
+) -> Evidence:
+    """Record server acceptance of one client-advertised signature scheme."""
+    transcript = probe.parser_input or probe.stderr_excerpt
+    if probe.failure_category is None and probe.return_code == 0:
+        observation = ObservationType.OFFERED
+        failure_category = None
+        notes = ("server accepted client-advertised signature algorithm",)
+    elif is_server_decline(transcript):
+        observation = ObservationType.NOT_OFFERED
+        failure_category = None
+        notes = ("server declined client-advertised signature algorithm",)
+    else:
+        observation = ObservationType.NOT_TESTABLE
+        failure_category = probe.failure_category
+        notes = ("signature-algorithm capability probe did not complete",)
+    return Evidence(
+        id=new_id("ev"),
+        asset_id=asset.id,
+        evidence_type="tls.signature_algorithm",
+        observation_type=observation,
+        source="qureddy.openssl_probe",
+        runtime=runtime,
+        protocol="tls",
+        protocol_version=(
+            "TLSv1.3" if signature_algorithm.startswith(("mldsa", "ecdsa_brainpool")) else "TLSv1.2"
+        ),
+        algorithm=signature_algorithm,
+        probe_role=ProbeRole.SIGNATURE_ALGORITHM,
+        probe_result=probe,
+        failure_category=failure_category,
+        notes=notes,
+    )
+
+
 def evidence_from_probe(
     *,
     asset: Asset,
