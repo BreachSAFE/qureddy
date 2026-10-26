@@ -54,6 +54,17 @@ _T_ADDKE_RANGE = range(6, 13)
 #: RFC 7296 section 3.10.1. The notify data of an INVALID_KE_PAYLOAD holds the
 #: group the responder expects, in two octets.
 _NOTIFY_INVALID_KE = 17
+
+#: RFC 9242 section 3. A responder advertises IKE_INTERMEDIATE support with this
+#: status notification in its IKE_SA_INIT response. RFC 9370 carries additional
+#: key exchanges in IKE_INTERMEDIATE exchanges, so a responder without this
+#: notification cannot complete a multi-round post-quantum key exchange whatever
+#: its ADDKE transforms say.
+NOTIFY_INTERMEDIATE_SUPPORTED = 16438
+
+#: RFC 3947 section 4. Present in a successful response when a NAT is on path.
+NOTIFY_NAT_DETECTION_SOURCE = 16388
+NOTIFY_NAT_DETECTION_DESTINATION = 16389
 _NOTIFY_NO_PROPOSAL = 14
 
 #: RFC 3948 section 2.2: four zero octets aligned with an ESP SPI, so a

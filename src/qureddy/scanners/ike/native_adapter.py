@@ -37,7 +37,13 @@ from qureddy.core.models import (
     ProbeCommand,
     ProbeResult,
 )
-from qureddy.scanners.ike._packet import _NAMES_KE, _T_ADDKE1, PORT_NAT_T, available_methods
+from qureddy.scanners.ike._packet import (
+    _NAMES_KE,
+    _T_ADDKE1,
+    NOTIFY_INTERMEDIATE_SUPPORTED,
+    PORT_NAT_T,
+    available_methods,
+)
 from qureddy.scanners.ike.evidence import response_evidence
 from qureddy.scanners.ike.native import (
     LocalProbeError,
@@ -132,6 +138,36 @@ def _addke_evidence(probe: NativeProbe, asset_id: str, source: str) -> Evidence:
     )
 
 
+def _intermediate_evidence(probe: NativeProbe, asset_id: str, source: str) -> Evidence:
+    """Record whether the responder advertised RFC 9242 IKE_INTERMEDIATE support.
+
+    RFC 9370 carries additional key exchanges inside IKE_INTERMEDIATE
+    exchanges, so a responder that never sends INTERMEDIATE_EXCHANGE_SUPPORTED
+    cannot complete a multi-round post-quantum exchange whatever its ADDKE
+    transforms say. That makes this an independent post-quantum signal rather
+    than a restatement of the ADDKE result.
+    """
+    supported = NOTIFY_INTERMEDIATE_SUPPORTED in probe.status_notifies
+    return Evidence(
+        id=new_id("ev"),
+        asset_id=asset_id,
+        evidence_type=("ike.intermediate.supported" if supported else "ike.intermediate.absent"),
+        # The notification is the responder's own advertisement, so its presence
+        # is observed. Its absence is observed too: the exchange succeeded and
+        # the notification was not in it.
+        observation_type=ObservationType.OBSERVED,
+        source=source,
+        protocol="ike",
+        protocol_version="IKEv2",
+        confidence=Confidence.HIGH,
+        notes=(
+            f"rfc=9242 notify={NOTIFY_INTERMEDIATE_SUPPORTED}",
+            f"intermediate_exchange_supported={supported}",
+            "status_notifies=" + ",".join(str(n) for n in probe.status_notifies),
+        ),
+    )
+
+
 class NativeIkeAdapter:
     """IKEv2 backend that speaks the protocol instead of invoking ``ike-scan``."""
 
@@ -191,23 +227,7 @@ class NativeIkeAdapter:
 
         elapsed_ms = int((time.monotonic() - started) * 1000)
         nat_t = parsed.port == PORT_NAT_T or source.metadata.get("nat_t") == "true"
-        evidence: list[Evidence] = []
-        for probe in probes:
-            # Emitted before the shared projection so the additional key
-            # exchange is recorded whatever the base exchange did. Without it
-            # the one fact this sweep exists to establish is parsed and
-            # discarded.
-            if probe.additional_key_exchange is not None:
-                evidence.append(_addke_evidence(probe, asset_id, self._source_name(probe)))
-            evidence.extend(
-                response_evidence(
-                    probe.response,
-                    asset_id=asset_id,
-                    source=self._source_name(probe),
-                    probe_result=self._probe_result(probe, elapsed_ms // max(len(probes), 1)),
-                    nat_t=nat_t,
-                )
-            )
+        evidence = self._project(probes, asset_id, elapsed_ms, nat_t=nat_t)
         # The sweep sends one datagram per key exchange method and per
         # additional-key-exchange offer, so the count is the number of
         # exchanges attempted on the wire rather than the number of adapter
@@ -221,6 +241,39 @@ class NativeIkeAdapter:
             # a second place severity is decided.
             findings=(),
         )
+
+    def _project(
+        self,
+        probes: tuple[NativeProbe, ...],
+        asset_id: str,
+        elapsed_ms: int,
+        *,
+        nat_t: bool,
+    ) -> list[Evidence]:
+        """Turn every exchange into canonical Evidence.
+
+        The post-quantum records come first and are independent of the shared
+        projection: RFC 9242 support and an RFC 9370 selection are facts about
+        the exchange itself, and the shared builder has no concept of either.
+        """
+        per_probe_ms = elapsed_ms // max(len(probes), 1)
+        records: list[Evidence] = []
+        for probe in probes:
+            source = self._source_name(probe)
+            if probe.status_notifies:
+                records.append(_intermediate_evidence(probe, asset_id, source))
+            if probe.additional_key_exchange is not None:
+                records.append(_addke_evidence(probe, asset_id, source))
+            records.extend(
+                response_evidence(
+                    probe.response,
+                    asset_id=asset_id,
+                    source=source,
+                    probe_result=self._probe_result(probe, per_probe_ms),
+                    nat_t=nat_t,
+                )
+            )
+        return records
 
     def _reject(self, source: ScanSource) -> CollectionResult | None:
         """Refuse a source this backend cannot answer for, or return None.

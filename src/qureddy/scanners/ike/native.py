@@ -63,6 +63,10 @@ class NativeProbe:
     #: Set when the responder echoed a Transform Type 5, which is the only
     #: positive evidence of RFC 9370 support.
     additional_accepted: int | None = None
+    #: Status notifications carried in a successful response. RFC 9242's
+    #: INTERMEDIATE_EXCHANGE_SUPPORTED decides whether RFC 9370 is reachable at
+    #: all, so dropping it would lose a post-quantum fact the exchange proved.
+    status_notifies: tuple[int, ...] = ()
 
 
 def _walk_transforms(
@@ -143,6 +147,17 @@ def _is_bound(
     )
 
 
+def _collect_notify(data: bytes, offset: int, notifies: list[int]) -> None:
+    """Record a status notification carried alongside a successful selection.
+
+    A notify in an accepted response is an advertisement rather than a refusal,
+    which is why it is collected here instead of ending the parse.
+    """
+    if offset + _NOTIFY_HEADER_LEN > len(data):
+        return
+    notifies.append(struct.unpack("!BBHBBH", data[offset : offset + _NOTIFY_HEADER_LEN])[5])
+
+
 def _established(spi: bytes, groups: list[tuple[int, str]]) -> bool:
     """Decide whether the responder actually selected a proposal.
 
@@ -182,6 +197,45 @@ def _notify_probe(data: bytes, key_exchange: int, additional: int | None) -> Nat
     )
 
 
+@dataclass(frozen=True, slots=True)
+class _Selection:
+    """What a successful response carried, grouped by transform type."""
+
+    encryption: tuple[str, ...] = ()
+    prf: tuple[str, ...] = ()
+    integrity: tuple[str, ...] = ()
+    groups: tuple[tuple[int, str], ...] = ()
+    additional: dict[int, int] | None = None
+    notifies: tuple[int, ...] = ()
+
+
+def _walk_payloads(data: bytes, first_payload: int) -> _Selection:
+    """Walk the payload chain of a successful response.
+
+    Each length is declared by the peer, so the cursor advances only on a
+    length that is both at least a header and inside the datagram. Without that
+    pair of checks a declared zero would never advance and the walk would spin.
+    """
+    encr: list[str] = []
+    prf: list[str] = []
+    integ: list[str] = []
+    groups: list[tuple[int, str]] = []
+    found: dict[int, int] = {}
+    notifies: list[int] = []
+    offset, current = _HEADER_LEN, first_payload
+    while current and offset + _PAYLOAD_HEADER_LEN <= len(data):
+        nxt_p, _, plen = struct.unpack("!BBH", data[offset : offset + 4])
+        if plen < _PAYLOAD_HEADER_LEN or offset + plen > len(data):
+            break
+        if current == _P_NOTIFY:
+            _collect_notify(data, offset, notifies)
+        if current == _P_SA and offset + _PROPOSAL_HEADER_LEN <= len(data):
+            _walk_transforms(data, offset, encr, prf, integ, groups, found)
+        offset += plen
+        current = nxt_p
+    return _Selection(tuple(encr), tuple(prf), tuple(integ), tuple(groups), found, tuple(notifies))
+
+
 def _parse(
     data: bytes, key_exchange: int, additional: int | None, sent_spi: bytes | None = None
 ) -> NativeProbe:
@@ -200,34 +254,22 @@ def _parse(
     if nxt == _P_NOTIFY and len(data) >= _HEADER_LEN + _NOTIFY_HEADER_LEN:
         return _notify_probe(data, key_exchange, additional)
 
-    encr: list[str] = []
-    prf: list[str] = []
-    integ: list[str] = []
-    groups: list[tuple[int, str]] = []
-    found: dict[int, int] = {}
-    offset, current = _HEADER_LEN, nxt
-    while current and offset + _PAYLOAD_HEADER_LEN <= len(data):
-        nxt_p, _, plen = struct.unpack("!BBH", data[offset : offset + 4])
-        if plen < _PAYLOAD_HEADER_LEN or offset + plen > len(data):
-            break
-        if current == _P_SA and offset + _PROPOSAL_HEADER_LEN <= len(data):
-            _walk_transforms(data, offset, encr, prf, integ, groups, found)
-        offset += plen
-        current = nxt_p
+    selection = _walk_payloads(data, nxt)
 
-    established = _established(spi, groups)
+    established = _established(spi, list(selection.groups))
     return NativeProbe(
         key_exchange=key_exchange,
         additional_key_exchange=additional,
         responder_spi=spi.hex() if established else None,
-        additional_accepted=found.get(_T_ADDKE1) if established else None,
+        additional_accepted=(selection.additional or {}).get(_T_ADDKE1) if established else None,
+        status_notifies=selection.notifies if established else (),
         response=ParsedIKEResponse(
             mode=IKEMode.IKEV2,
             status=IKEParseStatus.RESPONDED if established else IKEParseStatus.UNBOUND,
-            dh_groups=tuple(groups),
-            encryption=tuple(encr),
-            prf=tuple(prf),
-            integrity=tuple(integ),
+            dh_groups=selection.groups,
+            encryption=selection.encryption,
+            prf=selection.prf,
+            integrity=selection.integrity,
             transforms_offered=len(_BASE_TRANSFORMS) + 1 + (additional is not None),
         ),
     )

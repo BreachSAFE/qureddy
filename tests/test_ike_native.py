@@ -20,6 +20,7 @@ from qureddy.scanners.ike._packet import (
     _NON_ESP_MARKER,
     _T_ADDKE1,
     _VERSION_2_0,
+    NOTIFY_INTERMEDIATE_SUPPORTED,
     build_sa_init,
 )
 from qureddy.scanners.ike.native import _parse
@@ -83,6 +84,25 @@ def accepted_response(*, addke: int | None = None) -> bytes:
     if addke is not None:
         items.append(transform(True, _T_ADDKE1, addke))
     body = sa_payload(b"".join(items), len(items))
+    return header(length=_HEADER_LEN + len(body)) + body
+
+
+def status_notify(kind: int, next_payload: int = 0) -> bytes:
+    """A status notification payload inside a successful response."""
+    return struct.pack("!BBHBBH", next_payload, 0, 8, 0, 0, kind)
+
+
+def accepted_with_notifies(kinds: tuple[int, ...]) -> bytes:
+    """A responder that selected a proposal and advertised status notifications."""
+    items = [
+        transform(False, 1, 12, 128),
+        transform(False, 2, 5),
+        transform(False, 3, 12),
+        transform(True, 4, 19),
+    ]
+    body = sa_payload(b"".join(items), len(items), next_payload=41)
+    for index, kind in enumerate(kinds):
+        body += status_notify(kind, 41 if index < len(kinds) - 1 else 0)
     return header(length=_HEADER_LEN + len(body)) + body
 
 
@@ -234,6 +254,32 @@ class TestNotify:
         result = _parse(notify_response(14), 19, None, sent_spi=SENT_SPI)
         assert result.response.encryption == ()
         assert result.response.dh_groups == ()
+
+
+class TestIntermediateExchange:
+    """RFC 9242 support decides whether RFC 9370 is reachable at all."""
+
+    def test_advertised_support_is_recorded(self) -> None:
+        data = accepted_with_notifies((NOTIFY_INTERMEDIATE_SUPPORTED,))
+        result = _parse(data, 19, None, sent_spi=SENT_SPI)
+        assert result.response.status is IKEParseStatus.RESPONDED
+        assert NOTIFY_INTERMEDIATE_SUPPORTED in result.status_notifies
+
+    def test_absent_support_is_a_measured_fact(self) -> None:
+        # NAT detection alone: the exchange succeeded and the notification was
+        # not in it, which is different from never having asked.
+        result = _parse(accepted_with_notifies((16388, 16389)), 19, None, sent_spi=SENT_SPI)
+        assert result.status_notifies == (16388, 16389)
+        assert NOTIFY_INTERMEDIATE_SUPPORTED not in result.status_notifies
+
+    def test_notifies_are_not_claimed_without_an_established_sa(self) -> None:
+        body = accepted_with_notifies((NOTIFY_INTERMEDIATE_SUPPORTED,))[_HEADER_LEN:]
+        data = header(responder=b"\x00" * 8, length=_HEADER_LEN + len(body)) + body
+        result = _parse(data, 19, None, sent_spi=SENT_SPI)
+        assert result.status_notifies == ()
+
+    def test_the_notify_type_matches_rfc9242(self) -> None:
+        assert NOTIFY_INTERMEDIATE_SUPPORTED == 16438
 
 
 # --- adversarial input -------------------------------------------------------
