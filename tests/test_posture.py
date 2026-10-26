@@ -124,6 +124,64 @@ def test_failed_target_is_not_testable_even_with_partial_findings() -> None:
     assert interpretation.axes.authentication.value == "not_testable"
 
 
+def test_transport_failed_pq_probe_cannot_roll_up_as_quantum_vulnerable() -> None:
+    evidence = [
+        Evidence(
+            id="ev-1",
+            asset_id="asset-1",
+            evidence_type="tls.probe.failure",
+            observation_type=ObservationType.NOT_TESTABLE,
+            source="openssl",
+            protocol="tls",
+            failure_category=FailureCategory.MIDDLEBOX_OR_MTU_FAILURE,
+        ),
+        Evidence(
+            id="ev-classical",
+            asset_id="asset-1",
+            evidence_type="tls.negotiation",
+            observation_type=ObservationType.NEGOTIATED,
+            source="openssl",
+            protocol="tls",
+            negotiated_group="X25519",
+            nist_quantum_security_level=0,
+        ),
+    ]
+    findings = [
+        _finding("tls.hybrid.probe_failed", "tls.kex.probe_failed", Readiness.UNKNOWN),
+        Finding(
+            id="finding-classical",
+            asset_id="asset-1",
+            evidence_ids=("ev-classical",),
+            rule_id="tls.classical.negotiated_x25519",
+            finding_type="tls.kex.classical",
+            title="classical",
+            description="classical",
+            severity=Severity.LOW,
+            readiness=Readiness.QUANTUM_VULNERABLE,
+            confidence=Confidence.HIGH,
+            protocol="tls",
+        ),
+    ]
+
+    summary = build_scan_summary(
+        ScanTarget(
+            original_input="example.com",
+            host="example.com",
+            port=443,
+            sni="example.com",
+            locator="tls://example.com:443",
+        ),
+        findings,
+        evidence,
+        FailureCategory.MIDDLEBOX_OR_MTU_FAILURE,
+        protocol="tls",
+    )
+
+    assert summary.readiness is Readiness.UNKNOWN
+    assert summary.interpretation.hndl_exposure is HndlExposure.UNKNOWN
+    assert summary.nist_quantum_security_level_max is None
+
+
 def test_failed_target_does_not_claim_classical_key_exchange_observed() -> None:
     """Do not turn a failed connection into peer-behaviour evidence (#896)."""
     interpretation = build_interpretation(

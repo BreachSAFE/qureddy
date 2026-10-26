@@ -24,6 +24,7 @@ from qureddy.core.models import (
     ObservationType,
     PostureAxes,
     PqcSupport,
+    Readiness,
     ScanInterpretation,
     ScanSummary,
     ScanTarget,
@@ -122,6 +123,17 @@ def _is_not_testable(failure_category: FailureCategory | None) -> bool:
         FailureCategory.LOCAL_OPENSSL_TOO_OLD,
         FailureCategory.LOCAL_OPENSSL_VERSION_MISMATCH,
         FailureCategory.LOCAL_OPENSSL_LACKS_GROUP,
+    }
+
+
+def _is_pqc_unresolved(failure_category: FailureCategory | None) -> bool:
+    """Return whether the PQ probe failed before establishing peer behavior."""
+    return _is_not_testable(failure_category) or failure_category in {
+        FailureCategory.TLS_HANDSHAKE_FAILED,
+        FailureCategory.SNI_REQUIRED_OR_WRONG,
+        FailureCategory.MIDDLEBOX_OR_MTU_FAILURE,
+        FailureCategory.PARSE_NO_GROUP,
+        FailureCategory.PARSE_AMBIGUOUS,
     }
 
 
@@ -321,6 +333,7 @@ def _statuses(
     *,
     protocol: str,
     not_testable: bool,
+    hndl_not_testable: bool,
     has_findings: bool,
 ) -> tuple[HndlExposure, HygieneStatus]:
     """Compute the two independent status axes from one set of signals."""
@@ -330,7 +343,7 @@ def _statuses(
             classical=signals.classical_kex,
             hybrid=signals.hybrid,
             pure_pq=signals.pure_pq,
-            not_testable=not_testable,
+            not_testable=hndl_not_testable,
             signature_classical=signals.authentication_classical,
         ),
         _hygiene_status(signals, not_testable=not_testable, has_findings=has_findings),
@@ -348,6 +361,7 @@ def build_interpretation(
     axes, signals, not_testable = _build_axes(
         findings, evidence, failure_category, resolved_protocol
     )
+    pqc_unresolved = _is_pqc_unresolved(failure_category)
     reason_codes = build_reason_codes(findings, failure_category)
     positive_evidence = _has_positive_evidence(evidence, failure_category)
     headline, recommended_action = _ciso_text(
@@ -357,6 +371,7 @@ def build_interpretation(
         signals,
         protocol=resolved_protocol,
         not_testable=not_testable,
+        hndl_not_testable=pqc_unresolved,
         has_findings=bool(findings),
     )
     evaluation = evaluate_posture(
@@ -368,7 +383,7 @@ def build_interpretation(
         hygiene_status=hygiene_status,
     )
     return ScanInterpretation(
-        effective=scan_readiness(findings, evidence),
+        effective=Readiness.UNKNOWN if pqc_unresolved else scan_readiness(findings, evidence),
         headline=headline,
         recommended_action=recommended_action,
         display=build_display(
@@ -403,7 +418,11 @@ def build_scan_summary(
         failure_category,
         protocol=protocol,
     )
-    nist_levels = scan_nist_quantum_security_levels(evidence)
+    nist_levels = (
+        None
+        if _is_pqc_unresolved(failure_category)
+        else scan_nist_quantum_security_levels(evidence)
+    )
     return ScanSummary(
         target=target.locator,
         finding_count=len(findings),
