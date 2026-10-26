@@ -56,6 +56,9 @@ def test_container_build_passes_exact_source_revision() -> None:
     """The published image must receive the source revision it claims."""
     assert '--build-arg "QUREDDY_SOURCE_REVISION=${GITHUB_SHA}"' in WORKFLOW
 
+    publish = WORKFLOW[WORKFLOW.index("\n  publish:\n") : WORKFLOW.index("\n  manifest:\n")]
+    assert '--build-arg "QUREDDY_SOURCE_REVISION=${GITHUB_SHA}"' in publish
+
 
 def test_manual_container_publisher_passes_exact_source_revision() -> None:
     """The manual multi-arch publisher must preserve the same provenance contract."""
