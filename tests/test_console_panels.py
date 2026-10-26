@@ -253,7 +253,8 @@ class TestErrorsTable:
         )
         out = _render(_result_with_probes((ev,)))
         assert "Signature algorithms" in out
-        assert "not_offered" in out
+        assert "not_offered" not in out
+        assert "rejected 1" in out
         assert "Errors" not in out
 
 

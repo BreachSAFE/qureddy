@@ -163,8 +163,13 @@ def _signature_algorithms_table(result: ScanResult) -> Table | None:
     )
     if not records:
         return None
+    offered = tuple(record for record in records if record.observation_type.value == "offered")
+    counts = {
+        state: sum(record.observation_type.value == state for record in records)
+        for state in ("offered", "not_offered", "not_testable")
+    }
     table = Table(
-        title="Signature algorithms",
+        title="Signature algorithms · offered",
         title_style="bold",
         title_justify="left",
         show_header=True,
@@ -176,15 +181,19 @@ def _signature_algorithms_table(result: ScanResult) -> Table | None:
     table.add_column("Algorithm", style=BODY_TEXT)
     table.add_column("TLS", no_wrap=True)
     table.add_column("Observation", style=BODY_TEXT, no_wrap=True)
-    for evidence in records:
-        observation = evidence.observation_type.value
-        style = "green" if observation == "offered" else "yellow"
+    for evidence in offered:
         table.add_row(
             evidence.runtime or "-",
             evidence.algorithm or "-",
             evidence.protocol_version or "-",
-            Text(observation, style=style),
+            Text("offered", style="green"),
         )
+    if not offered:
+        table.add_row("-", "none", "-", Text("none offered", style="yellow"))
+    table.caption = (
+        f"Probe summary: offered {counts['offered']} · "
+        f"rejected {counts['not_offered']} · untestable {counts['not_testable']}"
+    )
     return table
 
 

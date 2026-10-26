@@ -59,6 +59,7 @@ from qureddy.output.cbom_assets import (
     add_provides_edge,
     algorithm_ref,
     protocol_ref,
+    select_algorithm_by_evidence_type,
 )
 from qureddy.output.cbom_cipher import cipher_classical_bits, cipher_primitive
 from qureddy.output.cbom_public_key import add_public_key_component
@@ -83,6 +84,7 @@ _SPECIALIZED_EVIDENCE_TYPES = frozenset(
         "ssh.cipher",
         "ssh.mac",
         "tls.legacy.cipher",
+        "tls.signature_algorithm",
         "ike.cipher",
         "ike.dh_group",
         "ike.prf",
@@ -109,6 +111,19 @@ def add_algorithm_components(
             e.negotiated_group if e.evidence_type not in _SPECIALIZED_EVIDENCE_TYPES else None
         ),
         algorithm_properties=key_exchange_algorithm_properties,
+    )
+
+
+def add_tls_signature_algorithm_components(
+    bom: Bom, result: ScanResult, provides_edges: dict[str, list[str]]
+) -> None:
+    """Emit offered TLS signature capabilities as CycloneDX signature assets."""
+    add_algorithm_assets(
+        bom,
+        result,
+        provides_edges,
+        select=select_algorithm_by_evidence_type("tls.signature_algorithm"),
+        algorithm_properties=signature_algorithm_properties,
     )
 
 
