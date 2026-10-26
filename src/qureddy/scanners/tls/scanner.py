@@ -41,6 +41,7 @@ from qureddy.scanners.tls._cert_findings import (
 from qureddy.scanners.tls._evidence import build_asset, evidence_from_probe
 from qureddy.scanners.tls._legacy_findings import (
     cipher_evidence_from_legacy_result,
+    deduplicate_protocol_findings,
     evidence_from_legacy_result,
     finding_from_legacy_result,
 )
@@ -153,6 +154,7 @@ def _completed_scan_result(
     total_attempts: int,
 ) -> ScanResult:
     completed = datetime.now(UTC)
+    findings = deduplicate_protocol_findings(findings)
     summary = build_summary(target, findings, evidence)
     get_logger(__name__).info(
         "scan.complete",
