@@ -96,6 +96,7 @@ class ProbeRole(str, Enum):
     CLASSICAL_CONTROL = "classical_control"
     HYBRID_COVERAGE = "hybrid_coverage"
     PURE_PQ_COVERAGE = "pure_pq_coverage"
+    SIGNATURE_ALGORITHM = "signature_algorithm"
 
 
 class StartTLSMode(str, Enum):

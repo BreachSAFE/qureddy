@@ -291,6 +291,7 @@ def _negotiated_algorithm(findings: list[Finding], evidence: list[Evidence]) -> 
         if ev.observation_type in {ObservationType.NEGOTIATED, ObservationType.OBSERVED}
         and ev.failure_category is None
     }
+    evidence_by_id = {ev.id: ev for ev in evidence}
     return _first(
         (
             *(ev.negotiated_group for ev in evidence if ev.id in conclusive_ids),
@@ -298,6 +299,11 @@ def _negotiated_algorithm(findings: list[Finding], evidence: list[Evidence]) -> 
                 value
                 for finding in findings
                 if conclusive_ids.intersection(finding.evidence_ids)
+                and any(
+                    evidence_by_id[evidence_id].negotiated_group
+                    for evidence_id in finding.evidence_ids
+                    if evidence_id in evidence_by_id
+                )
                 for value in (finding.negotiated_group, finding.algorithm)
             ),
         )

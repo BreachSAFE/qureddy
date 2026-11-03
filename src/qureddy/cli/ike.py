@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+import os
+
 import typer
 
 from qureddy._branding import PROJECT_URL
@@ -37,6 +39,7 @@ from qureddy.core.models import OutputFormat, ScanTarget
 from qureddy.core.registry import CollectorRegistry
 from qureddy.core.targets import parse_ike_target
 from qureddy.scanners.ike import IkeScanAdapter, IKEScanner
+from qureddy.scanners.ike.native_adapter import NATIVE_IKE_ENV, NativeIkeAdapter
 
 _SCAN_IKE_EPILOG = _colorize_help_text(f"""\
 EXAMPLES:
@@ -81,9 +84,18 @@ def _select_ike_scanner(
     target: ScanTarget, *, binary_name: str, source_port: int, nat_t: bool
 ) -> IKEScanner:
     """Select the configured IKE scanner through the canonical registry."""
+    # Both backends on every CLI scan, with no flag to forget: ike-scan reaches
+    # the IKEv1 modes, and the native prober reaches a current IKEv2 responder
+    # that ike-scan 1.9.5 cannot negotiate with.
+    # Both backends on every scan, with no flag to forget: ike-scan reaches the
+    # IKEv1 modes, and the native prober reaches a current IKEv2 responder that
+    # ike-scan 1.9.5 cannot negotiate with. The environment switch exists so a
+    # hermetic test can stub ike-scan and stay off the network; a stubbed
+    # subprocess cannot otherwise suppress a probe that bypasses it.
     scanner = IKEScanner(
         IkeScanAdapter(binary_name, source_port=source_port),
         nat_t=nat_t,
+        native=None if os.environ.get(NATIVE_IKE_ENV) == "0" else NativeIkeAdapter(),
     )
     selected = CollectorRegistry([scanner]).select_scanner(
         ScanSource(kind=SourceKind.ENDPOINT, protocol="ike", locator=target.locator)

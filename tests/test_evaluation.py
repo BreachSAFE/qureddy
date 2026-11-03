@@ -113,3 +113,40 @@ def test_classical_fact_requires_classical_control_probe_role() -> None:
     )
     interpretation = build_interpretation([finding], [hybrid], None, protocol="tls")
     assert interpretation.display.evaluation.observed_facts == ("TLS negotiated X25519MLKEM768",)
+
+
+def test_certificate_signature_is_not_reported_as_negotiated_tls_algorithm() -> None:
+    asset = Asset(
+        id="asset-1",
+        asset_type="tls.endpoint",
+        locator="tls://example.com:443",
+        display_name="example.com:443",
+    )
+    certificate = Evidence(
+        id="ev-cert",
+        asset_id=asset.id,
+        evidence_type="tls.cert.signature",
+        observation_type=ObservationType.OBSERVED,
+        source="test",
+        algorithm="sha256WithRSAEncryption",
+        nist_quantum_security_level=0,
+    )
+    finding = Finding(
+        id="finding-cert",
+        asset_id=asset.id,
+        evidence_ids=(certificate.id,),
+        rule_id="tls.cert.signature_algorithm",
+        finding_type="tls.cert.classical_signature",
+        title="certificate signature",
+        description="certificate signature",
+        severity=Severity.INFO,
+        readiness=Readiness.QUANTUM_VULNERABLE,
+        confidence=Confidence.HIGH,
+        algorithm="sha256WithRSAEncryption",
+    )
+
+    interpretation = build_interpretation([finding], [certificate], None, protocol="tls")
+
+    assert interpretation.display.evaluation.observed_facts == (
+        "Certificate-chain issuer signature: sha256WithRSAEncryption",
+    )
