@@ -17,6 +17,11 @@ if TYPE_CHECKING:
 def _hndl_risk(facts: PostureFacts) -> str:
     if facts.account_without_key:
         return "No key is held at this address, so it carries no harvest exposure"
+    if facts.hndl_exposure is HndlExposure.UNKNOWN and facts.hygiene_status in {
+        HygieneStatus.ACTION_NEEDED,
+        HygieneStatus.WEAK,
+    }:
+        return "HNDL exposure remains unconfirmed; present-day cryptographic weakness was observed"
     return {
         HndlExposure.AT_RISK: "At risk of harvest-now/decrypt-later exposure",
         HndlExposure.PROTECTED_DEFEASIBLE: (
@@ -42,7 +47,12 @@ def _summary(facts: PostureFacts) -> str:
         return f"{protocol} pure post-quantum protection was observed."
     if facts.support is PqcSupport.CLASSICAL_ONLY_OBSERVED:
         return _classical_summary(facts, protocol)
-    return f"{protocol} post-quantum protection could not be confirmed."
+    return (
+        f"{protocol} post-quantum protection could not be confirmed; "
+        "present-day cryptographic weakness was observed."
+        if facts.hygiene_status in {HygieneStatus.ACTION_NEEDED, HygieneStatus.WEAK}
+        else f"{protocol} post-quantum protection could not be confirmed."
+    )
 
 
 def _no_key_summary(facts: PostureFacts) -> str:
@@ -81,7 +91,12 @@ def _protection(facts: PostureFacts) -> str:
         PqcSupport.HYBRID_OBSERVED: "Hybrid post-quantum protection observed",
         PqcSupport.PURE_PQ_OBSERVED: "Pure post-quantum protection observed",
         PqcSupport.CLASSICAL_ONLY_OBSERVED: "Only classical protection observed",
-    }.get(facts.support, "Post-quantum protection could not be confirmed")
+    }.get(
+        facts.support,
+        "PQC protection unconfirmed; present-day cryptographic weakness observed"
+        if facts.hygiene_status in {HygieneStatus.ACTION_NEEDED, HygieneStatus.WEAK}
+        else "Post-quantum protection could not be confirmed",
+    )
 
 
 def _action(facts: PostureFacts) -> str:
@@ -96,7 +111,11 @@ def _action(facts: PostureFacts) -> str:
             # No configuration on this side changes a chain's signing algorithm.
             return "Track the published key, since exposure begins at publication."
         return f"Enable hybrid post-quantum protection for {facts.protocol.upper()} and re-run."
-    return "Resolve probe limitations and re-run the assessment."
+    return (
+        "Remediate observed weak algorithms, resolve probe limitations, and re-run."
+        if facts.hygiene_status in {HygieneStatus.ACTION_NEEDED, HygieneStatus.WEAK}
+        else "Resolve probe limitations and re-run the assessment."
+    )
 
 
 def _hardening(facts: PostureFacts) -> str:
