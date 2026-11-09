@@ -146,6 +146,7 @@ def add_public_key_material(
     size: int | None = None,
     value: str | None = None,
     key_format: str | None = None,
+    algorithm_properties: AlgorithmProperties | None = None,
 ) -> None:
     """Emit one observed public key as `related-crypto-material`.
 
@@ -171,6 +172,7 @@ def add_public_key_material(
             bom_ref=ref,
             crypto_properties=CryptoProperties(
                 asset_type=CryptoAssetType.RELATED_CRYPTO_MATERIAL,
+                algorithm_properties=algorithm_properties,
                 related_crypto_material_properties=RelatedCryptoMaterialProperties(
                     type=RelatedCryptoMaterialType.PUBLIC_KEY,
                     state=RelatedCryptoMaterialState.ACTIVE,

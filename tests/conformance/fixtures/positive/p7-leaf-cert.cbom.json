@@ -207,6 +207,14 @@
     {
       "bom-ref": "crypto/certificate/leaf",
       "cryptoProperties": {
+        "algorithmProperties": {
+          "cryptoFunctions": [
+            "sign",
+            "verify"
+          ],
+          "nistQuantumSecurityLevel": 0,
+          "primitive": "signature"
+        },
         "assetType": "certificate",
         "certificateProperties": {
           "certificateFormat": "X.509",

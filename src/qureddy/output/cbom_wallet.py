@@ -20,7 +20,11 @@ from typing import TYPE_CHECKING
 from qureddy.core.vocabulary import WALLET_SIGNATURE_EVIDENCE
 from qureddy.output.cbom_assets import add_algorithm_assets, algorithm_ref, select_by_evidence_type
 from qureddy.output.cbom_components import signature_algorithm_properties
-from qureddy.output.cbom_public_key import add_public_key_component, add_public_key_material
+from qureddy.output.cbom_public_key import (
+    add_public_key_component,
+    add_public_key_material,
+    classify_public_key,
+)
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
     from cyclonedx.model.bom import Bom
@@ -71,6 +75,7 @@ def add_wallet_signature_components(
     add_public_key_component(bom, _EC_ALGORITHM, _KEY_SIZE_BITS, provides_edges, curve=_CURVE)
     # The keys themselves, through the shared emitter TLS ephemeral keys use.
     # CycloneDX calls this related-crypto-material of type public-key.
+    key_asset = classify_public_key(_EC_ALGORITHM, _KEY_SIZE_BITS, _CURVE)
     for item in keys:
         key = item.public_key or ""
         add_public_key_material(
@@ -82,4 +87,5 @@ def add_wallet_signature_components(
             size=_KEY_SIZE_BITS,
             value=key,
             key_format=item.public_key_format,
+            algorithm_properties=key_asset.properties if key_asset is not None else None,
         )
