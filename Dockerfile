@@ -43,7 +43,7 @@ FROM ghcr.io/paul007ex/breachsafe-openssl:1.0.2u@sha256:f1ea087b0e6b44f7134773b0
 # Build the wheel from source inside the image (#253) so a fresh `docker build .`
 # needs no host-built dist/ artifact. hatchling reads the static version from
 # pyproject.toml, so the wheel version is intrinsic to the source, not an ARG.
-FROM python:3.14-slim-bookworm@sha256:9ab8d9c8514b44f90cf0029dd42fdd7e9e211e639c8b995304cc04568dee900f AS wheel-build
+FROM python:3.15-slim-bookworm@sha256:575f8bc12ec26542e0678bc6b60e385218248019d433157ec327264a78c3a853 AS wheel-build
 RUN pip install --no-cache-dir build==1.3.0 hatchling==1.31.0
 WORKDIR /src
 COPY pyproject.toml README.md LICENSE NOTICE ./
@@ -51,7 +51,7 @@ COPY LICENSES/ ./LICENSES/
 COPY src/ ./src/
 RUN python -m build --wheel --no-isolation --outdir /tmp/wheel
 
-FROM python:3.14-slim-bookworm@sha256:9ab8d9c8514b44f90cf0029dd42fdd7e9e211e639c8b995304cc04568dee900f
+FROM python:3.15-slim-bookworm@sha256:575f8bc12ec26542e0678bc6b60e385218248019d433157ec327264a78c3a853
 
 ARG QUREDDY_VERSION=0.9.32
 ARG QUREDDY_SOURCE_REVISION
