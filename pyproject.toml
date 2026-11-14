@@ -81,7 +81,7 @@ dev = [
     # excludes `**/*.md` from the FORMATTER only (lint still scans everything,
     # real .py files still format-checked). 0.16.4 verified green under that
     # policy; bound is <0.17.
-    "ruff>=0.15,<0.17",
+    "ruff>=0.15,<0.18",
     "mypy>=1.10",
     # duplicate-code (R0801): AST-level structural clone detection the token-based
     # jscpd gate misses; run disable-all/enable-duplicate-code only (#314).
