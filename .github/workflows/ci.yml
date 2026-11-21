@@ -104,11 +104,20 @@ jobs:
     needs: changes
     if: ${{ !cancelled() && needs.changes.outputs.code != 'false' }}
     name: "Phase 1: Static (${{ matrix.os }})"
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.runner || matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
+        include:
+          # macos-latest resolved to macos-26-arm64 on 2026-11-03 and that
+          # pool starves: jobs sit 15m with no runner assigned and are
+          # dropped. Pin the settled macos-15 pool, same arm64 arch, while
+          # keeping matrix.os as the job-name token so the required checks
+          # in branch protection keep resolving.
+          - os: macos-latest
+            runner: macos-15
+
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -161,12 +170,21 @@ jobs:
   # ===========================================================================
   phase-2-unit:
     name: "Phase 2: Unit (${{ matrix.os }})"
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.runner || matrix.os }}
     needs: phase-1-static
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
+        include:
+          # macos-latest resolved to macos-26-arm64 on 2026-11-03 and that
+          # pool starves: jobs sit 15m with no runner assigned and are
+          # dropped. Pin the settled macos-15 pool, same arm64 arch, while
+          # keeping matrix.os as the job-name token so the required checks
+          # in branch protection keep resolving.
+          - os: macos-latest
+            runner: macos-15
+
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -240,12 +258,21 @@ jobs:
   # ===========================================================================
   phase-3-integration:
     name: "Phase 3: Integration (${{ matrix.os }}, OpenSSL ${{ matrix.openssl.version }})"
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.runner || matrix.os }}
     needs: [phase-2-unit, phase-2-ike-windows]
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
+        include:
+          # macos-latest resolved to macos-26-arm64 on 2026-11-03 and that
+          # pool starves: jobs sit 15m with no runner assigned and are
+          # dropped. Pin the settled macos-15 pool, same arm64 arch, while
+          # keeping matrix.os as the job-name token so the required checks
+          # in branch protection keep resolving.
+          - os: macos-latest
+            runner: macos-15
+
         openssl:
           - version: "3.5.8"
             sha256: "a8f84a39918ec6415ce765d9b429d313ba97b8143169c172e734b9514464f5b2"
@@ -283,12 +310,21 @@ jobs:
   phase-4-live:
     name: "Phase 4: Live (${{ matrix.os }})"
     if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.runner || matrix.os }}
     needs: phase-3-integration
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
+        include:
+          # macos-latest resolved to macos-26-arm64 on 2026-11-03 and that
+          # pool starves: jobs sit 15m with no runner assigned and are
+          # dropped. Pin the settled macos-15 pool, same arm64 arch, while
+          # keeping matrix.os as the job-name token so the required checks
+          # in branch protection keep resolving.
+          - os: macos-latest
+            runner: macos-15
+
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -588,11 +624,20 @@ jobs:
   packaging-install:
     name: "Package: clean install (${{ matrix.os }})"
     needs: packaging-build
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.runner || matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          # macos-latest resolved to macos-26-arm64 on 2026-11-03 and that
+          # pool starves: jobs sit 15m with no runner assigned and are
+          # dropped. Pin the settled macos-15 pool, same arm64 arch, while
+          # keeping matrix.os as the job-name token so the required checks
+          # in branch protection keep resolving.
+          - os: macos-latest
+            runner: macos-15
+
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
