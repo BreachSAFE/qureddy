@@ -108,3 +108,23 @@ def test_manifest_job_checks_out_repository_before_using_its_scripts() -> None:
     verify = manifest.index("scripts/verify_container_signature.sh")
 
     assert checkout < no_credentials < download < verify
+
+
+def test_docker_hub_mirror_is_gated_and_parity_is_always_reported() -> None:
+    """The mirror is opt-in, and a skipped mirror still reports its state.
+
+    The signature-ordering assertions above read the workflow as text, so they
+    hold for both the executed and the skipped mirror. Two of the four
+    verify_container_signature.sh calls sit inside the gated step. This case
+    pins the gate itself and the ungated parity step that carries the signal
+    when the gate is closed.
+    """
+    gate = "if: ${{ vars.MIRROR_TO_DOCKERHUB == 'true' }}"
+    for step in ("Log in to Docker Hub", "Promote the signed digest to Docker Hub"):
+        body = WORKFLOW[WORKFLOW.index(f"- name: {step}") :]
+        assert gate in body[: body.index("run: |")], f"{step} is not gated on the variable"
+
+    parity = WORKFLOW[WORKFLOW.index("- name: Report container registry parity") :]
+    assert "if: always()" in parity[: parity.index("run: |")]
+    assert "GITHUB_STEP_SUMMARY" in parity
+    assert "::warning title=Docker Hub mirror diverges from GHCR" in parity

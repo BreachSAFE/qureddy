@@ -339,3 +339,37 @@ jobs:
             scripts/verify_container_signature.sh "$DEST_IMAGE:$tag"
             previous_tag="$tag"
           done
+
+      - name: Report container registry parity
+        # Runs whatever the mirror did, so a skipped mirror still reports.
+        # Both reads are anonymous, so this needs no registry credentials.
+        # Divergence is a warning, which reaches the run page and the commit
+        # status of a green run. A skipped step reaches only the expanded job
+        # list. Three red Container runs across 26 days each sent a failure
+        # email and produced no rotation, so the signal belongs in the summary
+        # and an annotation.
+        if: always()
+        env:
+          MIRROR_ENABLED: ${{ vars.MIRROR_TO_DOCKERHUB }}
+          GHCR_IMAGE: ghcr.io/breachsafe/qureddy
+          HUB_IMAGE: docker.io/breachsafe/qureddy
+        run: |
+          set -uo pipefail
+          read_digest() {
+            docker buildx imagetools inspect --raw "$1:latest" 2>/dev/null \
+              | sha256sum | cut -d' ' -f1
+          }
+          ghcr_digest="$(read_digest "$GHCR_IMAGE")" || ghcr_digest=unreadable
+          hub_digest="$(read_digest "$HUB_IMAGE")" || hub_digest=unreadable
+          {
+            echo "### Container registry parity"
+            echo ""
+            echo "| Registry | \`latest\` digest |"
+            echo "|---|---|"
+            echo "| GHCR (canonical) | \`sha256:${ghcr_digest}\` |"
+            echo "| Docker Hub (mirror) | \`sha256:${hub_digest}\` |"
+            echo "| \`MIRROR_TO_DOCKERHUB\` | \`${MIRROR_ENABLED:-unset}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$ghcr_digest" != "$hub_digest" ]; then
+            echo "::warning title=Docker Hub mirror diverges from GHCR::docker.io/breachsafe/qureddy:latest is sha256:${hub_digest}, GHCR is sha256:${ghcr_digest}. MIRROR_TO_DOCKERHUB is ${MIRROR_ENABLED:-unset}. Rotate DOCKERHUB_TOKEN and set MIRROR_TO_DOCKERHUB=true to resume the mirror. GHCR carries the canonical image (README.md)."
+          fi
