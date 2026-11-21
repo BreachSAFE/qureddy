@@ -74,12 +74,21 @@ jobs:
     needs: changes
     if: ${{ !cancelled() && needs.changes.outputs.code != 'false' }}
     name: Local release gate (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.runner || matrix.os }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
+        include:
+          # macos-latest resolved to macos-26-arm64 on 2026-11-03 and that
+          # pool starves: jobs sit 15m with no runner assigned and are
+          # dropped. Pin the settled macos-15 pool, same arm64 arch, while
+          # keeping matrix.os as the job-name token so the required checks
+          # in branch protection keep resolving.
+          - os: macos-latest
+            runner: macos-15
+
 
     steps:
       - name: Checkout candidate history
