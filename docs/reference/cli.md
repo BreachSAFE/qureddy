@@ -131,7 +131,14 @@ qureddy scan tls [OPTIONS] TARGET
 | `-h`, `--help` | flag | n/a | Print TLS help and exit |
 
 `--timeout` applies to each capability, handshake, legacy protocol, and
-certificate probe. Total wall time can exceed the option value.
+certificate probe. Total wall time can exceed the option value. When the first
+TLS 1.3 group probe proves `target_connect_failed`, QuReddy stops the remaining
+group, classical, legacy, and certificate probes because they cannot obtain
+additional endpoint evidence:
+
+```text
+transport failure ──▶ one typed failure ──▶ no duplicate network probes
+```
 
 Examples:
 

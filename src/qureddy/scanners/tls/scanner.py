@@ -1,10 +1,27 @@
 # SPDX-FileCopyrightText: 2026 BreachSAFE
 # SPDX-License-Identifier: Apache-2.0
-"""TLS scanner orchestrator.
+"""TLS scanner orchestration and evidence collection.
 
-Composes the capability check, probe runners, parser, policy, and
-summary rollup. Evidence-record construction lives in `_evidence.py`;
-summary rollup helpers live in `_summary.py`.
+This module owns the scan lifecycle; specialized modules own probe execution,
+parsing, finding construction, and summary policy. The important boundary is
+that probe results become typed evidence before policy classifies them:
+
+    CLI target
+        │
+        ├── capability resolution ──▶ OpenSSL dependencies
+        │
+        ├── TLS 1.3 group probes ──▶ typed probe evidence
+        │       │
+        │       └── target_connect_failed ──▶ stop duplicate network probes
+        │
+        ├── classical / legacy / certificate probes
+        │
+        └── evidence ──▶ findings ──▶ summary ──▶ ScanResult
+
+Evidence-record construction lives in `_evidence.py`; legacy and certificate
+finding construction lives in their dedicated modules; summary rollup helpers
+live in `_summary.py`. This module coordinates those seams without re-parsing
+or re-implementing their domain rules.
 """
 
 from __future__ import annotations
@@ -101,6 +118,26 @@ def _collect_optional_axes(
     evidence: list[Evidence],
     findings: list[Finding],
 ) -> int:
+    """Collect legacy and certificate evidence after primary TLS probing.
+
+    These axes are supplementary: they enrich a reached endpoint with legacy
+    cipher and certificate facts but do not replace the primary TLS result.
+    An explicit transport failure from the primary phase suppresses them,
+    because a second lane cannot recover endpoint evidence from an unreachable
+    port. The return value counts only the certificate plus native legacy
+    evidence added to the attempt total; compatibility evidence is reported in
+    the evidence stream but is intentionally not double-counted here.
+
+    Data-flow invariant:
+
+        primary evidence ──unreachable──▶ return 0
+                              │
+                              └──reached──▶ legacy + certificate evidence
+
+    This function mutates the caller-owned ``evidence`` and ``findings``
+    lists so every lane contributes to one final summary; it does not create a
+    second status or policy path.
+    """
     if target_appears_unreachable(evidence):
         get_logger(__name__).info(
             "scan.legacy_and_cert_probes_skipped",
@@ -152,6 +189,17 @@ def _completed_scan_result(
     started: datetime,
     total_attempts: int,
 ) -> ScanResult:
+    """Assemble the canonical result after all permitted probes finish.
+
+    Findings are already classified when this helper runs. It derives the
+    summary and public scan status from the complete typed evidence set, then
+    preserves both OpenSSL dependency records so consumers can distinguish the
+    primary capability runtime from the optional legacy runtime.
+
+    The status is derived once, here, after classification. Renderers and
+    serializers must consume this ``ScanResult`` rather than infer a status
+    from individual findings or subprocess text.
+    """
     completed = datetime.now(UTC)
     summary = build_summary(target, findings, evidence)
     get_logger(__name__).info(
@@ -184,6 +232,20 @@ def _run_tls_scan(
     target: ScanTarget,
     timeout_seconds: int,
 ) -> ScanResult:
+    """Execute the ordered TLS scan pipeline for one target.
+
+    Capability resolution happens before any network probe. The primary group
+    and classical probes establish reachability and negotiation evidence;
+    policy classification follows; optional legacy and certificate lanes then
+    enrich the same evidence list. Probe failures are represented as data by
+    the lower layers and are converted into the final status by
+    `_completed_scan_result`.
+
+    Ordering is intentional: capability errors happen before network work;
+    primary evidence is classified before optional axes; final assembly owns
+    the single public status. Do not move policy classification into a probe
+    runner or make certificate collection a prerequisite for a scan result.
+    """
     started = datetime.now(UTC)
     scan_id = _begin_scan(target)
     openssl_path, dependency = scanner._check_capability(timeout_seconds)  # noqa: SLF001
@@ -222,6 +284,12 @@ def _run_tls_scan(
 
 
 def _begin_scan(target: ScanTarget) -> str:
+    """Create the scan identifier and bind target context to structured logs.
+
+    The identifier is generated once per invocation and reused by metadata and
+    structured log records. Clearing context first prevents a prior scan in a
+    reused process from contaminating this target's diagnostics.
+    """
     scan_id = new_id("scan")
     structlog.contextvars.clear_contextvars()
     structlog.contextvars.bind_contextvars(scan_id=scan_id, target=target.locator)
@@ -230,7 +298,12 @@ def _begin_scan(target: ScanTarget) -> str:
 
 
 class TLSScanner(Scanner[ScanTarget]):
-    """Orchestrate one TLS scan from capability check through classification."""
+    """Orchestrate one TLS scan from capability check through classification.
+
+    The scanner is deliberately a coordinator rather than a probe
+    implementation. It selects the probe lanes, converts their results to
+    evidence, and delegates classification and rollup to shared helpers.
+    """
 
     scanner_name = "tls"
 
@@ -267,6 +340,13 @@ class TLSScanner(Scanner[ScanTarget]):
         return _run_tls_scan(self, target, timeout_seconds)
 
     def _check_capability(self, timeout_seconds: int) -> tuple[str, OpenSSLDependency]:
+        """Resolve and validate the primary OpenSSL runtime for this scan.
+
+        Resolution and capability validation remain in the resolver module so
+        CLI overrides, environment overrides, PATH discovery, and feature
+        checks have one owner. This method only passes the configured override
+        through and returns the typed dependency record.
+        """
         return resolve_openssl_with_capability(
             self._openssl_path_override, timeout_seconds=timeout_seconds
         )
@@ -274,6 +354,17 @@ class TLSScanner(Scanner[ScanTarget]):
     def _check_legacy_capability(
         self, timeout_seconds: int
     ) -> tuple[str | None, OpenSSLDependency]:
+        """Resolve the optional legacy runtime without making it mandatory.
+
+        A missing legacy binary is a capability limitation recorded in the
+        dependency metadata; it must not prevent the primary OpenSSL lane from
+        producing a result.
+
+        The returned path is ``None`` when compatibility probing is unavailable.
+        Callers use that value to select the native fallback and preserve the
+        limitation in dependency metadata rather than silently claiming
+        complete legacy coverage.
+        """
         path, dependency = resolve_legacy_openssl(timeout_seconds=timeout_seconds)
         get_logger(__name__).info("legacy_openssl.resolved", path=path, version=dependency.version)
         return path, dependency
@@ -286,6 +377,20 @@ class TLSScanner(Scanner[ScanTarget]):
         openssl_path: str,
         timeout_seconds: int,
     ) -> tuple[list[Evidence], int]:
+        """Collect ordered TLS group and classical-control evidence.
+
+        `_GROUP_PROBE_PLAN` starts with the readiness group, followed by
+        coverage groups. A group-level peer rejection remains useful evidence
+        and allows the sweep to continue. A completed group whose every result
+        is `TARGET_CONNECT_FAILED` proves the transport is unreachable, so
+        continuing would only multiply the same timeout and duplicate failure
+        records; #998 stops at that boundary.
+
+        The returned attempt count is the number of actual probe invocations,
+        not the number of planned groups. That distinction is the regression
+        contract for filtered ports: skipped work must not be reported as work
+        that ran.
+        """
         log = get_logger(__name__)
         evidence: list[Evidence] = []
         probe_count = 0
@@ -305,6 +410,16 @@ class TLSScanner(Scanner[ScanTarget]):
                 evidence_from_probe(asset=asset, probe=r, expected_group=group, probe_role=role)
                 for r in results
             )
+            # #998: a target we cannot reach cannot answer any later group either.
+            # Every remaining probe would spend the full timeout to restate one
+            # fact, so an unreachable port costs timeout x len(_GROUP_PROBE_PLAN).
+            # Stop on the transport failure; a server that merely declines this
+            # group reports a different category and does not stop the sweep.
+            if results and all(
+                r.failure_category is FailureCategory.TARGET_CONNECT_FAILED for r in results
+            ):
+                log.info("probe.sweep.abandoned", reason="target_connect_failed", group=group)
+                return evidence, probe_count
         log.info("probe.phase.start", phase="tls13_classical")
         classical_results = self._probe_with_retries(
             run_classical_probe,
@@ -338,7 +453,13 @@ class TLSScanner(Scanner[ScanTarget]):
         legacy_compat: bool = False,
         native_fallback: bool = False,
     ) -> tuple[list[Evidence], list[Finding]]:
-        """Enumerate legacy protocols and ciphers without retrying the sweep."""
+        """Enumerate legacy protocols and ciphers without retrying the sweep.
+
+        The legacy probe owns its protocol/cipher matrix and returns one typed
+        result per attempted combination. This helper adapts those results to
+        evidence and findings while preserving the runtime label (`openssl` or
+        `openssl-legacy`) for downstream comparisons.
+        """
         log = get_logger(__name__)
         log.info("probe.phase.start", phase="legacy_tls1_tls11_tls12")
         results = probe_all_legacy_protocols(
@@ -372,7 +493,13 @@ class TLSScanner(Scanner[ScanTarget]):
         starttls: StartTLSMode | None = None,
         now: datetime | None = None,
     ) -> tuple[Evidence, tuple[Finding, ...]]:
-        """Collect certificate evidence without making it a scan prerequisite."""
+        """Collect certificate evidence without making it a scan prerequisite.
+
+        Certificate retrieval and parsing are best-effort enrichment. Missing
+        local OpenSSL capability, malformed certificate material, and an empty
+        response produce certificate evidence without aborting the scan or
+        hiding the primary TLS findings.
+        """
         log = get_logger(__name__)
         log.info("probe.phase.start", phase="certificate")
         pem = ""
@@ -409,6 +536,18 @@ class TLSScanner(Scanner[ScanTarget]):
         group: str | None = None,
         starttls: StartTLSMode | None = None,
     ) -> list[ProbeResult]:
+        """Run one probe lane through the configured retry policy.
+
+        The callable receives the resolved executable, target coordinates,
+        timeout, attempt number, optional group, and StartTLS mode. Retry
+        decisions remain centralized in `run_with_retries`; this coordinator
+        only supplies the lane-specific arguments and returns raw typed probe
+        results for evidence conversion.
+
+        A retry can produce several results for one lane. Callers must preserve
+        that list: later summary logic needs the complete attempt history to
+        distinguish a transient failure from a successful retry.
+        """
         extra = {"group": group} if group is not None else {}
         return run_with_retries(
             lambda n: probe_fn(
