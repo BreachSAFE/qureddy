@@ -288,6 +288,13 @@ jobs:
             previous_tag="$tag"
           done
       - name: Log in to Docker Hub
+        # The Docker Hub mirror is optional. GHCR is the primary registry;
+        # a mirror credential must never block the primary publish. Both
+        # mirror steps are gated on the MIRROR_TO_DOCKERHUB repository
+        # variable so a stale PAT shows as a skipped step instead of a
+        # failed run. Set the variable to 'true' once the Docker Hub token
+        # is rotated.
+        if: ${{ vars.MIRROR_TO_DOCKERHUB == 'true' }}
         env:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -298,6 +305,7 @@ jobs:
           printf '%s' "$DOCKERHUB_TOKEN" | docker login docker.io \
             --username "$DOCKERHUB_USERNAME" --password-stdin
       - name: Promote the signed digest to Docker Hub
+        if: ${{ vars.MIRROR_TO_DOCKERHUB == 'true' }}
         env:
           EVENT_NAME: ${{ github.event_name }}
           QUREDDY_VERSION: ${{ needs.version.outputs.version }}
