@@ -4,8 +4,9 @@
 
 The QuReddy container packages the release wheel with checksum-verified
 OpenSSL runtimes, stock `ike-scan`, and `cbomkit-theia` for artifact scans. It runs as an unprivileged user and
-is published to the BreachSAFE GitHub Container Registry (GHCR) and Docker Hub
-mirror.
+is published to the BreachSAFE GitHub Container Registry (GHCR), which is the
+canonical registry. `docker.io/breachsafe/qureddy` is an opt-in mirror and can
+lag GHCR; see section 9.
 
 ## Contents
 
@@ -46,7 +47,7 @@ docker run --rm docker.io/breachsafe/qureddy:latest \
 The container needs outbound TCP port 443 for TLS, TCP port 22 for SSH, or UDP
 port 500/4500 for IKE.
 
-If Docker Hub is unavailable, run the same commands from GHCR:
+GHCR carries the canonical image. Prefer these:
 
 ```bash
 docker run --rm ghcr.io/breachsafe/qureddy:latest scan tls badssl.com:443
@@ -60,14 +61,14 @@ To download the image without running a scan:
 docker pull ghcr.io/breachsafe/qureddy:latest
 ```
 
-The GHCR image is also available:
+The mirror serves the same image when it is current:
 
 ```bash
 docker pull docker.io/breachsafe/qureddy:latest
 ```
 
-GHCR is the canonical image registry. Both registries are promoted from the same
-verified multi-architecture manifest.
+GHCR is the canonical image registry. The mirror receives a copy of the same
+verified multi-architecture manifest on the runs where it is enabled.
 
 Docker Hub applies limits to unauthenticated pulls. Authenticate with
 `docker login` for automation, or use the GHCR copy when Docker Hub access is
@@ -199,15 +200,22 @@ final image.
 The repository workflow at `.github/workflows/container.yml` publishes when a
 GitHub Release is published, and on demand through a manual dispatch with
 `publish=true`. It authenticates to GHCR with the repository token, builds
-`linux/amd64` and `linux/arm64` on native runners, promotes the same manifest to
-Docker Hub, and emits the version tag, `latest`, and a commit (`sha-`) tag. Pull
-requests run the smoke gate but never publish.
+`linux/amd64` and `linux/arm64` on native runners, and emits the version tag,
+`latest`, and a commit (`sha-`) tag. Pull requests run the smoke gate and stop
+before publishing.
 
 Publishing requires the GHCR package to grant this repository write access under
-the package's "Manage Actions access" settings. Docker Hub publication additionally
-requires the repository secrets `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN`. The
-workflow fails closed when either registry authentication or digest verification
-fails.
+the package's "Manage Actions access" settings. GHCR authentication and every
+digest verification fail closed, so a GHCR tag moves only after its signature
+verifies.
+
+The Docker Hub mirror is opt-in. It runs when the `MIRROR_TO_DOCKERHUB`
+repository variable is `true` and the `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN`
+secrets are set. With the variable unset the two mirror steps are skipped and
+the run completes on the GHCR publish, so `docker.io/breachsafe/qureddy` holds
+whatever it last received. Every run ends with a parity step that reads both
+registries and annotates the run when the two `latest` digests differ, so the
+mirror's state is on the run page whether the mirror executed or was skipped.
 
 See [installation and troubleshooting](install.md), [CBOM reference](../reference/cbom.md),
 and [exit codes](../reference/exit-codes.md) for the surrounding contracts.
