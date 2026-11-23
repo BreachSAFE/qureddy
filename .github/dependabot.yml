@@ -28,6 +28,18 @@ updates:
     commit-message:
       prefix: "build"
       include: scope
+    ignore:
+      # Both OpenSSL stages share one repository path, so Dependabot cannot
+      # tell the current-strength lane (3.5.8) from the compatibility lane
+      # (1.0.2u). Constrain by version instead of by name, which keeps the
+      # 3.5.x digest refresh flowing and refuses anything past the platform
+      # pin (CLAUDE.md §7: OpenSSL >=3.5.8 <3.6).
+      #
+      # PR #1036 proposed 1.0.2u -> 4.0.2 on the legacy stage. A 4.x build
+      # omits SSLv3 and the weak suites that stage exists to offer, so the
+      # bump would silently delete the compatibility probe lane (§12).
+      - dependency-name: "paul007ex/breachsafe-openssl"
+        versions: [">= 3.6"]
 
   # ---------------------------------------------------------------------------
   # Python runtime + dev dependencies (pyproject.toml)

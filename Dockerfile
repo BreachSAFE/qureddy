@@ -34,7 +34,7 @@ RUN tar -xzf /tmp/theia.tar.gz --strip-components=1 \
 #
 # The prefixes are built on python:3.14-slim-bookworm, the same base as the final
 # stage below, so these binaries link the same libc.
-FROM ghcr.io/paul007ex/breachsafe-openssl:3.5.8@sha256:36dbb1ef300eab5ff775dd51b73efe7351273ddd90c533bf3f8013d0c47e8fa9 AS openssl-src
+FROM ghcr.io/paul007ex/breachsafe-openssl:3.5.8@sha256:a2671024598c5e31179722826c78ac7a5effafb53dda97825da652df9241b46f AS openssl-src
 
 # Isolated legacy compatibility helper, its own image and its own digest so it can
 # never be confused with the production OpenSSL above.
