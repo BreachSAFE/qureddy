@@ -126,9 +126,7 @@ def build_evaluation(facts: PostureFacts) -> PostureEvaluation:
     if facts.classical_alternative:
         observed.append(f"Classical alternative accepted: {facts.classical_alternative}")
     if facts.certificate_chain_signature:
-        observed.append(
-            f"Classical certificate-chain issuer signature: {facts.certificate_chain_signature}"
-        )
+        observed.append(f"Certificate-chain issuer signature: {facts.certificate_chain_signature}")
     observed.extend(
         f"{protocol} weak algorithm offered: {algorithm}" for algorithm in facts.weak_algorithms
     )

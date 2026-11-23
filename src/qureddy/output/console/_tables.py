@@ -154,6 +154,49 @@ def _certificate_table(result: ScanResult) -> Table | None:
     return table
 
 
+def _signature_algorithms_table(result: ScanResult) -> Table | None:
+    """Render native TLS signature evidence without reclassifying it."""
+    records = tuple(
+        evidence
+        for evidence in result.evidence
+        if evidence.evidence_type == "tls.signature_algorithm"
+    )
+    if not records:
+        return None
+    offered = tuple(record for record in records if record.observation_type.value == "offered")
+    counts = {
+        state: sum(record.observation_type.value == state for record in records)
+        for state in ("offered", "not_offered", "not_testable")
+    }
+    table = Table(
+        title="Signature algorithms · peer accepted",
+        title_style="bold",
+        title_justify="left",
+        show_header=True,
+        header_style="bold cyan",
+        box=box.SIMPLE_HEAD,
+        pad_edge=False,
+    )
+    table.add_column("Runtime", style="bold cyan", no_wrap=True)
+    table.add_column("Algorithm", style=BODY_TEXT)
+    table.add_column("TLS", no_wrap=True)
+    table.add_column("Result", style=BODY_TEXT, no_wrap=True)
+    for evidence in offered:
+        table.add_row(
+            evidence.runtime or "-",
+            evidence.algorithm or "-",
+            evidence.protocol_version or "-",
+            Text("peer accepted", style="green"),
+        )
+    if not offered:
+        table.add_row("-", "none", "-", Text("none offered", style="yellow"))
+    table.caption = (
+        f"Probe summary: peer accepted {counts['offered']} · "
+        f"rejected {counts['not_offered']} · untestable {counts['not_testable']}"
+    )
+    return table
+
+
 def _run_details_table(result: ScanResult) -> Table:
     """Render scan execution metadata in the same form as scan details."""
     duration = (result.scan.completed_at - result.scan.started_at).total_seconds()

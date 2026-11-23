@@ -44,6 +44,7 @@ from qureddy.output.cbom_components import (
     add_certificate_component,
     add_cipher_suite_components,
     add_protocol_components,
+    add_tls_signature_algorithm_components,
 )
 from qureddy.output.cbom_ike import add_ike_transport_components
 from qureddy.output.cbom_legacy import add_legacy_cipher_components
@@ -156,6 +157,7 @@ def _add_observed_components(
     add_ssh_transport_components(bom, result, provides_edges)
     add_ike_transport_components(bom, result, provides_edges)
     add_cipher_suite_components(bom, result, provides_edges)
+    add_tls_signature_algorithm_components(bom, result, provides_edges)
     add_legacy_cipher_components(bom, result, provides_edges)
     add_protocol_components(bom, result, algorithm_refs, provides_edges)
     add_tls_handshake_components(bom, result, algorithm_refs, provides_edges)

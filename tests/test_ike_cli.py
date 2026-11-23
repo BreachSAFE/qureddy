@@ -10,9 +10,11 @@ import stat
 import sys
 from pathlib import Path
 
+import pytest
 from typer.testing import CliRunner
 
 from qureddy.cli import app
+from qureddy.scanners.ike.native_adapter import NATIVE_IKE_ENV
 
 
 def _tool(
@@ -37,7 +39,10 @@ def _tool(
     return str(path)
 
 
-def test_cli_runs_real_tool_and_closes_output_file(tmp_path: Path) -> None:
+def test_cli_runs_real_tool_and_closes_output_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv(NATIVE_IKE_ENV, "0")
     output = tmp_path / "result.json"
     result = CliRunner().invoke(
         app,
@@ -64,8 +69,11 @@ def test_cli_runs_real_tool_and_closes_output_file(tmp_path: Path) -> None:
     output.rename(tmp_path / "closed.json")
 
 
-def test_silent_ike_cli_has_consistent_json_and_cbom_contract(tmp_path: Path) -> None:
+def test_silent_ike_cli_has_consistent_json_and_cbom_contract(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Render completed-unknown silence consistently through both document formats."""
+    monkeypatch.setenv(NATIVE_IKE_ENV, "0")
     tool = _tool(tmp_path, "")
     for output_format in ("json", "cbom"):
         output = tmp_path / f"silent.{output_format}"

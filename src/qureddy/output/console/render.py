@@ -21,6 +21,7 @@ from qureddy.output.console._tables import (
     _certificate_table,
     _findings_table,
     _run_details_table,
+    _signature_algorithms_table,
     _summary_table,
 )
 from qureddy.output.console._verdict import _verdict_panel
@@ -86,6 +87,10 @@ def render_rich(
     if nist_categories is not None:
         console.print()
         console.print(nist_categories)
+    signature_algorithms = _signature_algorithms_table(result)
+    if signature_algorithms is not None:
+        console.print()
+        console.print(signature_algorithms)
     shown_findings = _filter_by_min_severity(result.findings, min_severity)
     if shown_findings:
         console.print()

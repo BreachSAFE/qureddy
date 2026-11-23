@@ -54,6 +54,14 @@ def is_server_decline(transcript: str) -> bool:
     return any(signature in normalized for signature in _DECLINE_SIGNATURES)
 
 
+def is_signature_algorithm_decline(transcript: str) -> bool:
+    """Return whether a signature-algorithm offer was rejected by the peer."""
+    normalized = transcript.casefold()
+    return is_server_decline(transcript) or any(
+        signature in normalized for signature in ("ssl alert number 47", "alert illegal parameter")
+    )
+
+
 def _is_unambiguous_decline(transcript: str) -> bool:
     """Require every non-empty transcript line to carry a decline signature.
 
@@ -106,6 +114,8 @@ _STDERR_SIGNATURES: tuple[tuple[str, FailureCategory], ...] = (
     ("premature close", FailureCategory.MIDDLEBOX_OR_MTU_FAILURE),
     # TLS handshake-level alerts (client + server)
     *((signature, FailureCategory.TLS_HANDSHAKE_FAILED) for signature in _DECLINE_SIGNATURES),
+    ("ssl alert number 47", FailureCategory.TLS_HANDSHAKE_FAILED),
+    ("alert illegal parameter", FailureCategory.TLS_HANDSHAKE_FAILED),
     ("inappropriate fallback", FailureCategory.TLS_HANDSHAKE_FAILED),
     ("ssl alert number 86", FailureCategory.TLS_HANDSHAKE_FAILED),
     ("no shared cipher", FailureCategory.TLS_HANDSHAKE_FAILED),

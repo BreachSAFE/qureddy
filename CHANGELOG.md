@@ -12,9 +12,10 @@ versions follow [PEP 440](https://peps.python.org/pep-0440/).
 ## Contents
 
 1. [Unreleased](#unreleased)
-2. [0.9.32](#0932---2026-10-24)
-3. [0.9.31](#0931---2026-09-13)
-4. [0.9.30](#0930---2026-09-12)
+2. [0.9.33](#0933---2026-10-26)
+3. [0.9.32](#0932---2026-10-24)
+4. [0.9.31](#0931---2026-09-13)
+5. [0.9.30](#0930---2026-09-12)
 5. [0.9.24](#0924---2026-09-10)
 6. [0.9.23](#0923---2026-09-09)
 7. [0.9.22](#0922---2026-09-08)
@@ -53,6 +54,40 @@ versions follow [PEP 440](https://peps.python.org/pep-0440/).
 ## Unreleased
 
 No unreleased changes.
+
+## [0.9.33] - 2026-10-26
+
+### Added
+
+- IKE scans run a native IKEv2 `IKE_SA_INIT` pass alongside `ike-scan`. The
+  bundled `ike-scan` 1.9.5 predates RFC 8247, so its proposal carries
+  transforms a current responder refuses, and RFC 7296 permits that responder
+  to stay silent rather than answer an unauthenticated initiator. A reachable
+  IKEv2 gateway was therefore reported as `no_response` with every posture axis
+  `unknown`. The native pass reads the responder's own selection off the wire.
+- RFC 9370 additional-key-exchange evidence. Each probe offering an ADDKE
+  transform records whether the responder selected one, so a post-quantum offer
+  that was ignored is a measured fact rather than a gap.
+- RFC 9242 `INTERMEDIATE_EXCHANGE_SUPPORTED` evidence. RFC 9370 carries
+  additional key exchanges inside `IKE_INTERMEDIATE` exchanges, so a responder
+  that never advertises support cannot complete a multi-round post-quantum
+  exchange whatever its ADDKE transforms say.
+
+### Fixed
+
+- A refused proposal is no longer reported as a negotiated algorithm. Notify
+  evidence was `OBSERVED`, which placed it in the conclusive set that derives a
+  negotiated value, and the rejection finding is named after the notify, so a
+  refusal rendered as "IKE negotiated NO_PROPOSAL_CHOSEN".
+- Scan status no longer collapses to `rejected` when any notify is present. A
+  sweep sends many proposals, so one refusal sits alongside the exchanges that
+  succeeded; an observation now outranks a notify.
+- `total_attempts` counts the exchanges actually sent rather than the number of
+  adapter calls.
+- Provenance names OpenSSL when the native pass used it, and reports its real
+  version instead of a capability count. The path resolves through
+  `QUREDDY_OPENSSL` rather than a bare `openssl`, which on a host with several
+  formulae installed selected a build outside the pinned 3.5 series.
 
 ## [0.9.32] - 2026-10-24
 

@@ -42,6 +42,30 @@ class TestCycloneDx17Contract:
         assert payload["specVersion"] == "1.7"
         assert payload["$schema"] == "http://cyclonedx.org/schema/bom-1.7.schema.json"
 
+    def test_offered_tls_signature_capability_emits_signature_asset(self) -> None:
+        signature = Evidence(
+            id="ev-sig",
+            asset_id="asset-1",
+            evidence_type="tls.signature_algorithm",
+            observation_type=ObservationType.OFFERED,
+            source="qureddy.openssl_probe",
+            runtime="openssl",
+            protocol_version="TLSv1.2",
+            algorithm="rsa_pkcs1_sha256",
+            probe_role="signature_algorithm",  # type: ignore[arg-type]
+        )
+        payload = _render(
+            _build_result().model_copy(update={"evidence": (*_build_result().evidence, signature)})
+        )
+        component = next(
+            item
+            for item in payload["components"]
+            if item["bom-ref"] == "crypto/algorithm/rsa_pkcs1_sha256"
+        )
+        assert component["cryptoProperties"]["algorithmProperties"]["primitive"] == "signature"
+        properties = {item["name"]: item["value"] for item in component["properties"]}
+        assert properties["qureddy:observation"] == "offered"
+
     def test_finding_annotation_carries_cwe_classification(self) -> None:
         result = _build_result()
         values = result.findings[0].model_dump()

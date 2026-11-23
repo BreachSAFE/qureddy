@@ -267,6 +267,8 @@ def _provenance_fields(evidence: Evidence, name: str | None, *, reproducible: bo
         fields.append(f"cipher_suite={evidence.cipher_suite}")
     if evidence.probe_role:
         fields.append(f"role={evidence.probe_role.value}")
+    if evidence.runtime:
+        fields.append(f"runtime={evidence.runtime}")
     if evidence.expected_group:
         fields.append(f"expected={evidence.expected_group}")
     probe = evidence.probe_result
